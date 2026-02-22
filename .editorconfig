@@ -105,6 +105,12 @@ dotnet_diagnostic.CA5350.severity = error  # Do not use weak crypto
 dotnet_diagnostic.CA5351.severity = error  # Do not use broken crypto
 dotnet_diagnostic.CA5359.severity = error  # Do not disable certificate validation
 
+# Suppress StyleCop rules that conflict with modern C# and project conventions
+dotnet_diagnostic.SA1101.severity = none   # Don't require 'this.' prefix — modern C# convention
+dotnet_diagnostic.SA1309.severity = none   # Allow _camelCase private fields — matches project naming rules above
+dotnet_diagnostic.SA1200.severity = none   # Allow usings outside namespace — required for file-scoped namespaces
+dotnet_diagnostic.SA0001.severity = none   # Don't require XML comment analysis on all files
+
 # XML files
 [*.{xml,xaml,csproj,props,targets}]
 indent_size = 2
