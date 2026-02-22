@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
+             x:Class="CipherBank_app.Views.LoginPage"
+             x:DataType="viewmodels:LoginViewModel"
+             Title="Login"
+             Shell.NavBarIsVisible="False">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30,0"
+            Spacing="25"
+            VerticalOptions="Center">
+
+            <!-- App Title -->
+            <Label
+                Text="CipherBank"
+                FontSize="32"
+                FontAttributes="Bold"
+                HorizontalOptions="Center"
+                Margin="0,40,0,20" />
+
+            <Label
+                Text="Welcome Back"
+                FontSize="24"
+                HorizontalOptions="Center"
+                Margin="0,0,0,40" />
+
+            <!-- Username Entry -->
+            <Border
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 8"
+                Padding="10"
+                Margin="0,10">
+                <Entry
+                    x:Name="UsernameEntry"
+                    Placeholder="Username"
+                    Text="{Binding Username}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                    ReturnType="Next"
+                    Completed="OnUsernameCompleted" />
+            </Border>
+
+            <!-- Password Entry -->
+            <Border
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 8"
+                Padding="10"
+                Margin="0,10">
+                <Entry
+                    x:Name="PasswordEntry"
+                    Placeholder="Password"
+                    Text="{Binding Password}"
+                    IsPassword="True"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                    ReturnType="Done"
+                    Completed="OnPasswordCompleted" />
+            </Border>
+
+            <!-- Error Message -->
+            <Label
+                Text="{Binding ErrorMessage}"
+                TextColor="Red"
+                IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+                HorizontalOptions="Center"
+                Margin="0,10" />
+
+            <!-- Sign In Button -->
+            <Button
+                Text="Sign In"
+                Command="{Binding SignInCommand}"
+                IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                HorizontalOptions="Fill"
+                Margin="0,20"
+                Padding="0,15" />
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator
+                IsRunning="{Binding IsBusy}"
+                IsVisible="{Binding IsBusy}"
+                HorizontalOptions="Center"
+                Margin="0,20" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

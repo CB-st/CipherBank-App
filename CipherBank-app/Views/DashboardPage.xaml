@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
+             xmlns:models="clr-namespace:CipherBank_app.Models"
+             x:Class="CipherBank_app.Views.DashboardPage"
+             x:DataType="viewmodels:DashboardViewModel"
+             Title="Dashboard">
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                 Command="{Binding RefreshPricesCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="16" Spacing="16">
+
+                <!-- Header -->
+                <Label Text="Market Overview"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Start" />
+
+                <!-- Loading Indicator -->
+                <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                   IsVisible="{Binding IsLoading}"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"
+                                   HeightRequest="50" />
+
+                <!-- Error Message -->
+                <Border IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+                        BackgroundColor="#FFF3CD"
+                        Stroke="#FFC107"
+                        StrokeThickness="1"
+                        Padding="12"
+                        StrokeShape="RoundRectangle 8">
+                    <Label Text="{Binding ErrorMessage}"
+                           TextColor="#856404" />
+                </Border>
+
+                <!-- Cryptocurrency List -->
+                <CollectionView ItemsSource="{Binding Cryptocurrencies}"
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedCrypto}"
+                                IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:CryptoCurrency">
+                            <Border Margin="0,4"
+                                    Padding="12"
+                                    StrokeShape="RoundRectangle 12"
+                                    Stroke="Transparent"
+                                    BackgroundColor="White">
+                                <Border.Shadow>
+                                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                                </Border.Shadow>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DashboardViewModel}}, Path=ViewCryptoDetailsCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <!-- Icon placeholder -->
+                                    <Border Grid.Column="0"
+                                            WidthRequest="48"
+                                            HeightRequest="48"
+                                            StrokeShape="RoundRectangle 24"
+                                            Stroke="Transparent"
+                                            BackgroundColor="#F0F0F0"
+                                            Padding="0">
+                                        <Label Text="{Binding Symbol, StringFormat='{0:0}'}"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center" />
+                                    </Border>
+
+                                    <!-- Name and Symbol -->
+                                    <VerticalStackLayout Grid.Column="1"
+                                                         VerticalOptions="Center"
+                                                         Spacing="2">
+                                        <Label Text="{Binding Name}"
+                                               FontSize="16"
+                                               FontAttributes="Bold" />
+                                        <Label Text="{Binding Symbol}"
+                                               FontSize="12"
+                                               TextColor="Gray" />
+                                    </VerticalStackLayout>
+
+                                    <!-- Price and Change -->
+                                    <VerticalStackLayout Grid.Column="2"
+                                                         VerticalOptions="Center"
+                                                         HorizontalOptions="End"
+                                                         Spacing="2">
+                                        <Label Text="{Binding FormattedPrice}"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               HorizontalTextAlignment="End" />
+                                        <Label Text="{Binding FormattedPercentChange}"
+                                               FontSize="12"
+                                               HorizontalTextAlignment="End"
+                                               TextColor="{Binding IsPriceUp, Converter={StaticResource PriceChangeColorConverter}}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout VerticalOptions="Center"
+                                             HorizontalOptions="Center"
+                                             Padding="40">
+                            <Label Text="No cryptocurrencies available"
+                                   FontSize="16"
+                                   TextColor="Gray"
+                                   HorizontalTextAlignment="Center" />
+                            <Button Text="Refresh"
+                                    Command="{Binding LoadPricesCommand}"
+                                    Margin="0,20,0,0" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+                <!-- Quick Actions -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
+                    <Button Grid.Column="0"
+                            Text="Buy Crypto"
+                            Command="{Binding NavigateToPurchaseCommand}"
+                            BackgroundColor="#512BD4"
+                            TextColor="White"
+                            CornerRadius="8"
+                            HeightRequest="50" />
+
+                    <Button Grid.Column="1"
+                            Text="My Wallets"
+                            Clicked="OnWalletsClicked"
+                            BackgroundColor="#6C757D"
+                            TextColor="White"
+                            CornerRadius="8"
+                            HeightRequest="50" />
+                </Grid>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+
+</ContentPage>

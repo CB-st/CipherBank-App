@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="CipherBank_app.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:CipherBank_app"
+    xmlns:views="clr-namespace:CipherBank_app.Views"
+    Title="CipherBank"
+    FlyoutBehavior="Flyout"
+    Shell.NavBarIsVisible="True">
+
+    <!-- Login Page (no navigation bar, standalone) -->
+    <ShellContent
+        Title="Login"
+        ContentTemplate="{DataTemplate views:LoginPage}"
+        Route="LoginPage"
+        FlyoutItemIsVisible="False"
+        Shell.NavBarIsVisible="False" />
+
+    <!-- Main Tab Bar after login -->
+    <TabBar Route="MainTabs">
+        <ShellContent
+            Title="Dashboard"
+            ContentTemplate="{DataTemplate views:DashboardPage}"
+            Route="DashboardPage" />
+
+        <ShellContent
+            Title="Wallets"
+            ContentTemplate="{DataTemplate views:WalletPage}"
+            Route="WalletPage" />
+
+        <ShellContent
+            Title="Buy"
+            ContentTemplate="{DataTemplate views:PurchasePage}"
+            Route="PurchasePage" />
+
+        <ShellContent
+            Title="Settings"
+            ContentTemplate="{DataTemplate views:SettingsPage}"
+            Route="SettingsPage" />
+    </TabBar>
+
+    <!-- Keep MainPage for backward compatibility -->
+    <ShellContent
+        Title="Home"
+        ContentTemplate="{DataTemplate local:MainPage}"
+        Route="MainPage"
+        FlyoutItemIsVisible="False" />
+
+</Shell>

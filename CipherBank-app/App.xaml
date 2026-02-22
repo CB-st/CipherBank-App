@@ -1,0 +1,21 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:CipherBank_app"
+             xmlns:converters="clr-namespace:CipherBank_app.Converters"
+             x:Class="CipherBank_app.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Value Converters -->
+            <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+            <converters:StringToBoolConverter x:Key="StringToBoolConverter" />
+            <converters:BoolToColorConverter x:Key="PriceChangeColorConverter" TrueColor="#28A745" FalseColor="#DC3545" />
+            <converters:BoolToColorConverter x:Key="StatusColorConverter" TrueColor="#D4EDDA" FalseColor="#F8D7DA" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

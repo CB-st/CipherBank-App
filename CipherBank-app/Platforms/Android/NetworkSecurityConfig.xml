@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+===================================================================================
+TODO: REPLACE CERTIFICATE PINS BEFORE PRODUCTION DEPLOYMENT
+===================================================================================
+These placeholder pins MUST be replaced with actual certificate pins before release.
+The app will fail to connect to the API with these placeholder values.
+
+To obtain production pins, run the following commands:
+
+For api.cipherbank.money (production):
+  openssl s_client -servername api.cipherbank.money -connect api.cipherbank.money:443 < /dev/null 2>/dev/null | \
+    openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
+    openssl dgst -sha256 -binary | openssl enc -base64
+
+For api.sandbox.cipherbank.money (sandbox):
+  openssl s_client -servername api.sandbox.cipherbank.money -connect api.sandbox.cipherbank.money:443 < /dev/null 2>/dev/null | \
+    openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
+    openssl dgst -sha256 -binary | openssl enc -base64
+
+IMPORTANT: Always include a backup pin for certificate rotation.
+See CERTIFICATE_PINNING_SETUP.md for detailed instructions.
+===================================================================================
+-->
+<network-security-config>
+    <!-- Certificate pinning configuration for CipherBank API endpoints -->
+    <domain-config>
+        <!-- Production API endpoint -->
+        <domain includeSubdomains="true">api.cipherbank.money</domain>
+        <pin-set expiration="2027-12-31">
+            <!-- TODO: Replace with actual pins - see instructions above -->
+            <pin digest="SHA-256">REPLACE_WITH_PRODUCTION_PIN=</pin>
+            <!-- Backup pin for certificate rotation -->
+            <pin digest="SHA-256">REPLACE_WITH_BACKUP_PIN=</pin>
+        </pin-set>
+    </domain-config>
+
+    <domain-config>
+        <!-- Sandbox API endpoint -->
+        <domain includeSubdomains="true">api.sandbox.cipherbank.money</domain>
+        <pin-set expiration="2027-12-31">
+            <!-- TODO: Replace with actual pins - see instructions above -->
+            <pin digest="SHA-256">REPLACE_WITH_SANDBOX_PIN=</pin>
+            <!-- Backup pin for certificate rotation -->
+            <pin digest="SHA-256">REPLACE_WITH_SANDBOX_BACKUP_PIN=</pin>
+        </pin-set>
+    </domain-config>
+
+    <!-- Base configuration: use system certificates for all other domains -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

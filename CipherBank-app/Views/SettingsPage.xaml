@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
+             x:Class="CipherBank_app.Views.SettingsPage"
+             x:DataType="viewmodels:SettingsViewModel"
+             Title="Settings">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="16">
+
+            <!-- API Settings -->
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                </Border.Shadow>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="API Configuration"
+                           FontSize="18"
+                           FontAttributes="Bold" />
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="API Endpoint"
+                               FontSize="12"
+                               TextColor="Gray" />
+                        <Entry Placeholder="https://api.cipherbank.money"
+                               Text="{Binding ApiEndpoint}"
+                               Keyboard="Url"
+                               IsEnabled="{Binding UseMocks, Converter={StaticResource InvertedBoolConverter}}" />
+                    </VerticalStackLayout>
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="Use Mock Data"
+                               VerticalOptions="Center" />
+                        <Switch Grid.Column="1"
+                                IsToggled="{Binding UseMocks}" />
+                    </Grid>
+
+                    <Label Text="When enabled, the app uses simulated data instead of real API calls."
+                           FontSize="11"
+                           TextColor="Gray" />
+
+                    <Button Text="Test Connection"
+                            Command="{Binding TestConnectionCommand}"
+                            IsEnabled="{Binding IsTesting, Converter={StaticResource InvertedBoolConverter}}"
+                            IsVisible="{Binding UseMocks, Converter={StaticResource InvertedBoolConverter}}"
+                            BackgroundColor="#6C757D"
+                            TextColor="White"
+                            CornerRadius="8" />
+
+                    <ActivityIndicator IsRunning="{Binding IsTesting}"
+                                       IsVisible="{Binding IsTesting}"
+                                       HeightRequest="30" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Appearance Settings -->
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                </Border.Shadow>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Appearance"
+                           FontSize="18"
+                           FontAttributes="Bold" />
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Theme"
+                               FontSize="12"
+                               TextColor="Gray" />
+                        <Picker Title="Select theme"
+                                ItemsSource="{Binding ThemeModes}"
+                                SelectedItem="{Binding ThemeMode}" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Default Currency"
+                               FontSize="12"
+                               TextColor="Gray" />
+                        <Picker Title="Select currency"
+                                ItemsSource="{Binding Currencies}"
+                                SelectedItem="{Binding DefaultCurrency}" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Security Settings -->
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                </Border.Shadow>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Security"
+                           FontSize="18"
+                           FontAttributes="Bold" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="Biometric Authentication"
+                               VerticalOptions="Center" />
+                        <Switch Grid.Column="1"
+                                IsToggled="{Binding BiometricEnabled}" />
+                    </Grid>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Auto-Lock Timeout"
+                               FontSize="12"
+                               TextColor="Gray" />
+                        <Picker Title="Select timeout"
+                                SelectedItem="{Binding AutoLockTimeout}">
+                            <Picker.Items>
+                                <x:String>0</x:String>
+                                <x:String>1</x:String>
+                                <x:String>5</x:String>
+                                <x:String>15</x:String>
+                                <x:String>30</x:String>
+                                <x:String>60</x:String>
+                            </Picker.Items>
+                        </Picker>
+                        <Label Text="Minutes until auto-lock (0 = disabled)"
+                               FontSize="11"
+                               TextColor="Gray" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Notifications -->
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                </Border.Shadow>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Notifications"
+                           FontSize="18"
+                           FontAttributes="Bold" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="Push Notifications"
+                               VerticalOptions="Center" />
+                        <Switch Grid.Column="1"
+                                IsToggled="{Binding NotificationsEnabled}" />
+                    </Grid>
+
+                    <Label Text="Receive alerts for price changes and transactions."
+                           FontSize="11"
+                           TextColor="Gray" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Status Message -->
+            <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringToBoolConverter}}"
+                    Padding="12"
+                    StrokeShape="RoundRectangle 8"
+                    Stroke="Transparent"
+                    BackgroundColor="{Binding IsStatusSuccess, Converter={StaticResource StatusColorConverter}}">
+                <Label Text="{Binding StatusMessage}"
+                       HorizontalTextAlignment="Center" />
+            </Border>
+
+            <!-- Action Buttons -->
+            <Button Text="Save Settings"
+                    Command="{Binding SaveSettingsCommand}"
+                    IsEnabled="{Binding IsSaving, Converter={StaticResource InvertedBoolConverter}}"
+                    BackgroundColor="#512BD4"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    CornerRadius="8"
+                    HeightRequest="50" />
+
+            <ActivityIndicator IsRunning="{Binding IsSaving}"
+                               IsVisible="{Binding IsSaving}"
+                               HeightRequest="30" />
+
+            <Button Text="Reset to Defaults"
+                    Command="{Binding ResetToDefaultsCommand}"
+                    BackgroundColor="#FFC107"
+                    TextColor="#333"
+                    CornerRadius="8"
+                    HeightRequest="44" />
+
+            <!-- Account Section -->
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White" Margin="0,8,0,0">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                </Border.Shadow>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Account"
+                           FontSize="18"
+                           FontAttributes="Bold" />
+
+                    <Button Text="Log Out"
+                            Command="{Binding LogoutCommand}"
+                            BackgroundColor="#DC3545"
+                            TextColor="White"
+                            CornerRadius="8"
+                            HeightRequest="44" />
+
+                    <Button Text="About CipherBank"
+                            Command="{Binding ShowAboutCommand}"
+                            BackgroundColor="Transparent"
+                            TextColor="#512BD4"
+                            HeightRequest="44" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Version Info -->
+            <Label Text="Version 1.0.0"
+                   FontSize="12"
+                   TextColor="Gray"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,8" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

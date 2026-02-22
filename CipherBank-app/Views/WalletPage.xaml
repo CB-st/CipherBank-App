@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
+             xmlns:models="clr-namespace:CipherBank_app.Models"
+             x:Class="CipherBank_app.Views.WalletPage"
+             x:DataType="viewmodels:WalletViewModel"
+             Title="Wallets">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="16">
+
+            <!-- Portfolio Summary -->
+            <Border BackgroundColor="#512BD4"
+                    StrokeShape="RoundRectangle 16"
+                    Stroke="Transparent"
+                    Padding="20">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                </Border.Shadow>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Total Portfolio Value"
+                           FontSize="14"
+                           TextColor="White"
+                           Opacity="0.8" />
+                    <Label Text="{Binding TotalBalanceUsd, StringFormat='${0:N2}'}"
+                           FontSize="32"
+                           FontAttributes="Bold"
+                           TextColor="White" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                               IsVisible="{Binding IsLoading}"
+                               HorizontalOptions="Center"
+                               HeightRequest="40" />
+
+            <!-- Error Message -->
+            <Border IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+                    BackgroundColor="#FFF3CD"
+                    Stroke="#FFC107"
+                    StrokeThickness="1"
+                    Padding="12"
+                    StrokeShape="RoundRectangle 8">
+                <Label Text="{Binding ErrorMessage}"
+                       TextColor="#856404" />
+            </Border>
+
+            <!-- Wallets Section -->
+            <Label Text="My Wallets"
+                   FontSize="20"
+                   FontAttributes="Bold" />
+
+            <CollectionView ItemsSource="{Binding Wallets}"
+                            SelectionMode="Single"
+                            SelectedItem="{Binding SelectedWallet}"
+                            HeightRequest="200">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Wallet">
+                        <Border WidthRequest="160"
+                                Padding="12"
+                                StrokeShape="RoundRectangle 12"
+                                Stroke="Transparent"
+                                BackgroundColor="White">
+                            <Border.Shadow>
+                                <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                            </Border.Shadow>
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="{Binding CryptoSymbol}"
+                                       FontSize="18"
+                                       FontAttributes="Bold" />
+                                <Label Text="{Binding CryptoName}"
+                                       FontSize="12"
+                                       TextColor="Gray" />
+                                <Label Text="{Binding FormattedBalance}"
+                                       FontSize="14"
+                                       FontAttributes="Bold"
+                                       Margin="0,8,0,0" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <Label Text="No wallets yet"
+                           TextColor="Gray"
+                           HorizontalOptions="Center" />
+                </CollectionView.EmptyView>
+            </CollectionView>
+
+            <!-- Send Crypto Section -->
+            <Border StrokeShape="RoundRectangle 12"
+                    Padding="16"
+                    Stroke="Transparent"
+                    BackgroundColor="White"
+                    IsVisible="{Binding SelectedWallet, Converter={StaticResource StringToBoolConverter}}">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                </Border.Shadow>
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Send Crypto"
+                           FontSize="18"
+                           FontAttributes="Bold" />
+
+                    <Label Text="{Binding SelectedWallet.CryptoName, StringFormat='From: {0} Wallet'}"
+                           FontSize="14"
+                           TextColor="Gray" />
+
+                    <Entry Placeholder="Destination Address"
+                           Text="{Binding SendToAddress}"
+                           IsEnabled="{Binding IsSending, Converter={StaticResource InvertedBoolConverter}}" />
+
+                    <Entry Placeholder="Amount"
+                           Text="{Binding SendAmount}"
+                           Keyboard="Numeric"
+                           IsEnabled="{Binding IsSending, Converter={StaticResource InvertedBoolConverter}}" />
+
+                    <Label Text="{Binding SelectedWallet.FormattedBalance, StringFormat='Available: {0}'}"
+                           FontSize="12"
+                           TextColor="Gray" />
+
+                    <Button Text="Send"
+                            Command="{Binding SendCryptoCommand}"
+                            IsEnabled="{Binding IsSending, Converter={StaticResource InvertedBoolConverter}}"
+                            BackgroundColor="#512BD4"
+                            TextColor="White"
+                            CornerRadius="8" />
+
+                    <ActivityIndicator IsRunning="{Binding IsSending}"
+                                       IsVisible="{Binding IsSending}"
+                                       HeightRequest="30" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Transaction History -->
+            <Label Text="Recent Transactions"
+                   FontSize="20"
+                   FontAttributes="Bold"
+                   Margin="0,8,0,0" />
+
+            <ActivityIndicator IsRunning="{Binding IsLoadingTransactions}"
+                               IsVisible="{Binding IsLoadingTransactions}"
+                               HeightRequest="30" />
+
+            <CollectionView ItemsSource="{Binding Transactions}"
+                            IsVisible="{Binding IsLoadingTransactions, Converter={StaticResource InvertedBoolConverter}}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:Transaction">
+                        <Border Margin="0,4"
+                                Padding="12"
+                                StrokeShape="RoundRectangle 8"
+                                Stroke="Transparent"
+                                BackgroundColor="White">
+                            <Border.Shadow>
+                                <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
+                            </Border.Shadow>
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <!-- Transaction Type Icon -->
+                                <Border Grid.Column="0"
+                                        WidthRequest="40"
+                                        HeightRequest="40"
+                                        StrokeShape="RoundRectangle 20"
+                                        Stroke="Transparent"
+                                        BackgroundColor="{Binding IsOutgoing, Converter={StaticResource StatusColorConverter}}"
+                                        Padding="0">
+                                    <Label Text="{Binding TypeDescription, StringFormat='{0:0}'}"
+                                           FontSize="10"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+
+                                <!-- Details -->
+                                <VerticalStackLayout Grid.Column="1"
+                                                     VerticalOptions="Center"
+                                                     Spacing="2">
+                                    <Label Text="{Binding TypeDescription}"
+                                           FontSize="14"
+                                           FontAttributes="Bold" />
+                                    <Label Text="{Binding Timestamp, StringFormat='{0:MMM dd, yyyy HH:mm}'}"
+                                           FontSize="11"
+                                           TextColor="Gray" />
+                                </VerticalStackLayout>
+
+                                <!-- Amount -->
+                                <VerticalStackLayout Grid.Column="2"
+                                                     VerticalOptions="Center"
+                                                     HorizontalOptions="End">
+                                    <Label Text="{Binding FormattedAmount}"
+                                           FontSize="14"
+                                           FontAttributes="Bold"
+                                           HorizontalTextAlignment="End" />
+                                    <Label Text="{Binding Status}"
+                                           FontSize="11"
+                                           HorizontalTextAlignment="End"
+                                           TextColor="{Binding IsComplete, Converter={StaticResource PriceChangeColorConverter}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <Label Text="No transactions yet"
+                           TextColor="Gray"
+                           HorizontalOptions="Center"
+                           Margin="0,20" />
+                </CollectionView.EmptyView>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
