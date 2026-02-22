@@ -1,0 +1,138 @@
+# CipherBank App - Current Architecture
+
+```mermaid
+classDiagram
+    %% Application Entry Point
+    class App {
+        +CreateWindow() Window
+    }
+
+    class AppShell {
+        +AppShell()
+    }
+
+    class MauiProgram {
+        +CreateMauiApp() MauiApp
+        +RegisterServices() MauiAppBuilder
+        +RegisterViewModels() MauiAppBuilder
+        +RegisterViews() MauiAppBuilder
+    }
+
+    %% Views
+    class MainPage {
+        -int count
+        +MainPage(MainPageViewModel)
+        +OnCounterClicked()
+    }
+
+    class LoginPage {
+        +LoginPage(LoginViewModel)
+    }
+
+    %% ViewModels
+    class MainPageViewModel {
+    }
+
+    class LoginViewModel {
+        +string Username
+        +string Password
+        +bool IsBusy
+        +string ErrorMessage
+        -CancellationTokenSource _cts
+        +SignInAsync() Task
+        +CancelLogin()
+    }
+
+    %% Services - Interfaces
+    class IAuthService {
+        <<interface>>
+        +LoginAsync(user, password) Task~AuthToken~
+        +RefreshAsync(refreshToken) Task~AuthToken~
+        +GetStoredTokenAsync() Task~AuthToken~
+        +IsTokenExpiredAsync() Task~bool~
+        +LogoutAsync() Task
+    }
+
+    class ISettingsService {
+        <<interface>>
+        +UseMocks bool
+        +CipherBankEndpointBase string
+    }
+
+    %% Services - Implementations
+    class AuthService {
+        -const string AccessTokenKey
+        -const string RefreshTokenKey
+        -const string ExpiresUtcKey
+        -ILogger logger
+        -HttpClient http
+        +LoginAsync(user, password) Task~AuthToken~
+        +RefreshAsync(refreshToken) Task~AuthToken~
+        +GetStoredTokenAsync() Task~AuthToken~
+        +IsTokenExpiredAsync() Task~bool~
+        +LogoutAsync() Task
+    }
+
+    class SettingsService {
+        -const string IdUseMocks
+        -const string IdCipherBankEndpointBase
+        -const bool DefaultUseMocks
+        -const string DefaultCipherBankEndpointBase
+        +UseMocks bool
+        +CipherBankEndpointBase string
+    }
+
+    %% Models
+    class AuthToken {
+        <<record>>
+        +string AccessToken
+        +string RefreshToken
+        +DateTimeOffset ExpiresUtc
+    }
+
+    %% Relationships
+    App --> AppShell : creates
+    AppShell --> MainPage : routes to
+    AppShell --> LoginPage : routes to
+
+    MainPage --> MainPageViewModel : binds to
+    LoginPage --> LoginViewModel : binds to
+
+    LoginViewModel --> IAuthService : uses
+    IAuthService <|.. AuthService : implements
+
+    AuthService --> AuthToken : returns
+    AuthService --> ISettingsService : uses
+    ISettingsService <|.. SettingsService : implements
+
+    MauiProgram --> AuthService : registers
+    MauiProgram --> SettingsService : registers
+    MauiProgram --> MainPageViewModel : registers
+    MauiProgram --> LoginViewModel : registers
+    MauiProgram --> MainPage : registers
+    MauiProgram --> LoginPage : registers
+```
+
+## Component Overview
+
+### Current Components
+
+1. **App Layer**
+   - `App`: Main application entry point
+   - `AppShell`: Navigation shell container
+   - `MauiProgram`: Dependency injection and service registration
+
+2. **Views**
+   - `MainPage`: Placeholder main page
+   - `LoginPage`: User authentication page
+
+3. **ViewModels**
+   - `MainPageViewModel`: Empty placeholder
+   - `LoginViewModel`: Handles login logic and user interaction
+
+4. **Services**
+   - `IAuthService` / `AuthService`: Authentication and token management
+   - `ISettingsService` / `SettingsService`: Application settings
+
+5. **Models**
+   - `AuthToken`: Authentication token data structure
