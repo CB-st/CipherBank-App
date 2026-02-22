@@ -25,10 +25,13 @@ out/
 *.sln.iml
 
 # VS Code (optional: uncomment to ignore)
-# .vscode/
+.vscode/
 
 # Cursor
 .cursor/
+
+# Claude Code
+.claude/
 
 # macOS
 .DS_Store

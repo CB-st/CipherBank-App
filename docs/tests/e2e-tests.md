@@ -98,6 +98,15 @@ CipherBank-app.E2ETests/
 | LogoutFlow_ShouldReturnToLogin | Login → Logout → login page |
 | CriticalPath_LoginPurchaseLogout_ShouldComplete | Login → Purchase ETH → Wallet → Logout |
 
-## AutomationId / x:Name
+## AutomationId Requirements
 
-Page objects use `By.Id()` which maps to `AutomationId` in MAUI. Ensure XAML controls have `x:Name` or `AutomationId` set for the locators used (e.g. UsernameEntry, LoginButton). Some buttons may need explicit `AutomationId` if they only have `Text`.
+Page objects use `By.Id()` which maps to `AutomationId` in MAUI. All interactive elements used by E2E tests **must** have `AutomationId` set in XAML.
+
+| Page | Required AutomationIds |
+|------|-------------------------|
+| LoginPage | UsernameEntry, PasswordEntry, LoginButton, ErrorLabel |
+| DashboardPage | WelcomeLabel, TotalBalanceLabel, WalletButton, PurchaseButton, RefreshButton, ErrorLabel, RecentTransactionsList |
+| WalletPage | WalletBalanceLabel, WalletAddressLabel, RecipientAddressEntry, SendAmountEntry, SendButton, TransactionHistoryList, ErrorLabel |
+| PurchasePage | CryptoSelector, AmountEntry, PurchaseButton, FeeLabel, ErrorLabel |
+
+When adding new UI elements used by E2E flows, add the corresponding `AutomationId` and update PageObjects.

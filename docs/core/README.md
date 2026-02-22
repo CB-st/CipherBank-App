@@ -17,10 +17,11 @@ The CipherBank-app.Core project contains shared interfaces, models, and utilitie
 
 The Core project is referenced by:
 
+- **CipherBank-app** – Single source of truth for Models and service interfaces.
 - **CipherBank-app.Tests** – Mocks interfaces, uses models in assertions.
 - **CipherBank-app.IntegrationTests** – Uses models for API response deserialization.
 
-The main MAUI app does **not** reference Core; it defines its own Models and service interfaces. This duplication may be consolidated in a future refactor.
+`ISettingsService` remains in the app (may use MAUI Preferences); all other service interfaces and models live in Core.
 
 ## Structure
 

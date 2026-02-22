@@ -21,11 +21,11 @@ Service for user authentication and token management.
 
 ---
 
-## ICryptoAPIService
+## ICryptoApiService
 
-**File**: `Services/ICryptoAPIService.cs`
+**File**: `Services/ICryptoApiService.cs`
 
-Service for cryptocurrency market data and prices.
+Interface naming uses PascalCase "Api" (ICryptoApiService). Service for cryptocurrency market data and prices.
 
 | Method | Returns | Description |
 |--------|---------|-------------|

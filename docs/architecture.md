@@ -37,7 +37,7 @@ flowchart TB
 | **Services** | API calls, auth, persistence. Implements Core interfaces. |
 | **Core** | Shared interfaces, models, validation, rate limiting. Referenced by tests. |
 
-**Note**: The main app defines its own Models and service interfaces; it does not reference CipherBank-app.Core. The Core library is used by the test projects.
+**Note**: The app references CipherBank-app.Core as the single source of truth for Models and service interfaces. Core is MAUI-agnostic.
 
 ## Data Flow
 
@@ -73,17 +73,18 @@ Outgoing HTTP requests pass through the following pipeline (order matters):
 
 ## Navigation
 
-Shell-based navigation with the following routes:
+Shell-based navigation via `INavigationService` and `IDialogService` abstractions (implemented with Shell wrappers). ViewModels use these services instead of `Shell.Current` for testability.
 
-| Route | Page | Notes |
-|-------|------|-------|
-| `//LoginPage` | LoginPage | No nav bar, flyout hidden |
-| `//MainTabs` | TabBar | Dashboard, Wallets, Buy, Settings |
-| `//DashboardPage` | DashboardPage | Market overview |
-| `//WalletPage` | WalletPage | Wallet list |
-| `//PurchasePage` | PurchasePage | Buy crypto (query: `?symbol=`) |
-| `//SettingsPage` | SettingsPage | App settings |
-| `//MainPage` | MainPage | Legacy/home |
+Route constants are defined in `Constants/Routes.cs`:
+
+| Constant | Route | Page |
+|----------|-------|------|
+| Routes.Login | `//LoginPage` | LoginPage |
+| Routes.Dashboard | `//DashboardPage` | DashboardPage |
+| Routes.Wallet | `//WalletPage` | WalletPage |
+| Routes.Purchase | `//PurchasePage` | PurchasePage |
+| Routes.PurchaseWithSymbol(symbol) | `//PurchasePage?symbol=BTC` | PurchasePage with pre-selected crypto |
+| Routes.Settings | `//SettingsPage` | SettingsPage |
 
 ## Security
 
@@ -109,9 +110,9 @@ Pinned hostnames: `api.cipherbank.money`, `api.sandbox.cipherbank.money`. Placeh
 
 ## Mock vs Real Services
 
-`ISettingsService.UseMocks` toggles between mock and real API implementations:
+Mock strategy is **build-time only** (no runtime switching):
 
-- **DEBUG**: Default `UseMocks = true` (development).
-- **Release**: Default `UseMocks = false` (production).
+- **DEBUG**: Uses mock services (`MockAuthService`, `MockCryptoAPIService`, etc.).
+- **Release**: Always uses real services (AuthService, CryptoAPIService, etc.).
 
-Registered services resolve to `MockAuthService`, `MockCryptoAPIService`, etc. when mocks are enabled.
+`UseMocks` has been removed from settings; registration is conditional via `#if DEBUG` in MauiProgram.

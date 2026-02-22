@@ -13,8 +13,8 @@ The CipherBank-app project is the main .NET MAUI application targeting Android, 
 
 1. **UseMauiApp<App>()** – Sets the application type.
 2. **ConfigureFonts()** – OpenSans-Regular, OpenSans-Semibold.
-3. **ConfigureLogging()** – Serilog file sink, rolling daily, 7-day retention, `AppData/Logs/cipherbank-.log`.
-4. **RegisterServices()** – All services and HTTP clients.
+3. **ConfigureLogging()** – Serilog; log level and file sink vary by build (see [config/README.md](../config/README.md)).
+4. **RegisterServices()** – All services via `AddCipherBankHttpClient<T>` extension; mock/real by `#if DEBUG`.
 5. **RegisterViewModels()** – ViewModels for DI.
 6. **RegisterViews()** – Pages for DI.
 
@@ -22,13 +22,16 @@ The CipherBank-app project is the main .NET MAUI application targeting Android, 
 
 | Component | Lifetime | Notes |
 |-----------|----------|-------|
-| ISettingsService | Singleton | Loaded first; used for mock/real switching |
+| ISettingsService | Singleton | Loaded first |
 | RateLimiter | Singleton | Shared across HTTP clients |
-| Mock services | Singleton | MockAuthService, MockCryptoAPIService, etc. |
-| IAuthService, ICryptoApiService, etc. | Transient | Resolved based on UseMocks |
-| AuthService, CryptoAPIService, etc. | Transient | Typed HttpClient |
-| ViewModels | Singleton (MainPage) / Transient | Per-page ViewModels |
-| Views | Singleton (MainPage) / Transient | Per-page Views |
+| INavigationService, IDialogService | Singleton | Shell wrappers |
+| IErrorHandler | Singleton | Centralized API error handling |
+| IHealthCheckClient | Transient | For Settings Test Connection (cert pinning) |
+| Mock services | Singleton | MockAuthService, MockCryptoAPIService, etc. (DEBUG only) |
+| IAuthService, ICryptoApiService, etc. | Transient | Resolved by `#if DEBUG` (mocks vs real) |
+| AuthService, CryptoAPIService, etc. | Transient | Typed HttpClient via AddCipherBankHttpClient |
+| ViewModels | Transient | Per-page |
+| Views | Transient | Per-page |
 
 ## HTTP Client Resilience
 

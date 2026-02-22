@@ -4,24 +4,16 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 ---
 
-## MainPageViewModel
-
-**File**: `ViewModels/MainPageViewModel.cs`
-
-Placeholder ViewModel for MainPage. Empty implementation.
-
----
-
 ## LoginViewModel
 
 **File**: `ViewModels/LoginViewModel.cs`
 
-**Dependencies**: `ILogger<LoginViewModel>`, `IAuthService`
+**Dependencies**: `ILogger`, `IAuthService`, `INavigationService`, `IDialogService`
 
 **Properties**: Username, Password, IsBusy, ErrorMessage
 
 **Commands**:
-- `SignInCommand` – Validates input, calls `LoginAsync`, navigates to `//DashboardPage` on success. Handles HttpRequestException, Canceled, InvalidOperationException.
+- `SignInCommand` – Validates input, calls `LoginAsync`, navigates via `INavigationService` on success. Uses `IDialogService` for error alerts.
 
 **Methods**: `CancelLogin()` – Cancels in-flight login.
 
@@ -31,15 +23,16 @@ Placeholder ViewModel for MainPage. Empty implementation.
 
 **File**: `ViewModels/DashboardViewModel.cs`
 
-**Dependencies**: `ILogger<DashboardViewModel>`, `ICryptoApiService`
+**Dependencies**: `ILogger`, `ICryptoApiService`, `IErrorHandler`, `INavigationService`, `IDialogService`
 
 **Properties**: Cryptocurrencies, SelectedCrypto, IsLoading, IsRefreshing, ErrorMessage, TotalPortfolioValue
 
 **Commands**:
-- `LoadPricesCommand` – Loads crypto prices, populates Cryptocurrencies.
-- `RefreshPricesCommand` – Pull-to-refresh; same logic.
-- `NavigateToPurchaseCommand` – Navigates to `//PurchasePage?symbol={SelectedCrypto.Symbol}`.
-- `ViewCryptoDetailsCommand` – Shows alert with selected crypto details.
+- `LoadPricesCommand` – Loads crypto prices via `LoadCryptoPricesAsync(isRefresh: false)`.
+- `RefreshPricesCommand` – Pull-to-refresh; calls `LoadCryptoPricesAsync(isRefresh: true)`.
+- `NavigateToPurchaseCommand` – Navigates via `INavigationService` to `Routes.PurchaseWithSymbol(SelectedCrypto.Symbol)`.
+- `NavigateToWalletsCommand` – Navigates to Wallet page.
+- `ViewCryptoDetailsCommand` – Shows alert via `IDialogService`.
 
 **Methods**: `OnDisappearing()` – Cancels operations.
 
@@ -49,7 +42,7 @@ Placeholder ViewModel for MainPage. Empty implementation.
 
 **File**: `ViewModels/WalletViewModel.cs`
 
-**Dependencies**: `ILogger`, `IWalletService`, `ITransactionService`, `ICryptoApiService`
+**Dependencies**: `ILogger`, `IWalletService`, `ITransactionService`, `ICryptoApiService`, `IErrorHandler`, `INavigationService`, `IDialogService`
 
 **Properties**: Wallets, Transactions, SelectedWallet, TotalBalance, TotalBalanceUsd, IsLoading, IsLoadingTransactions, ErrorMessage, SendToAddress, SendAmount, IsSending
 
@@ -71,7 +64,7 @@ Placeholder ViewModel for MainPage. Empty implementation.
 
 **Implements**: `IQueryAttributable` (for `?symbol=` query param)
 
-**Dependencies**: `ILogger`, `ICryptoApiService`, `ITransactionService`
+**Dependencies**: `ILogger`, `ICryptoApiService`, `ITransactionService`, `IErrorHandler`, `INavigationService`, `IDialogService`
 
 **Properties**: AvailableCryptos, SelectedCrypto, Amount, TotalCost, Fee, IsPurchasing, IsLoading, ErrorMessage, AmountText
 
@@ -97,17 +90,17 @@ Placeholder ViewModel for MainPage. Empty implementation.
 
 **File**: `ViewModels/SettingsViewModel.cs`
 
-**Dependencies**: `ILogger`, `ISettingsService`, `IAuthService`
+**Dependencies**: `ILogger`, `ISettingsService`, `IAuthService`, `INavigationService`, `IDialogService`, `IHealthCheckClient`
 
-**Properties**: ApiEndpoint, UseMocks, ThemeMode, NotificationsEnabled, BiometricEnabled, AutoLockTimeout, DefaultCurrency, IsTesting, IsSaving, StatusMessage, IsStatusSuccess
+**Properties**: ApiEndpoint, ThemeMode, NotificationsEnabled, BiometricEnabled, AutoLockTimeout, DefaultCurrency, IsTesting, IsSaving, StatusMessage, IsStatusSuccess
 
 **Static options**: ThemeModes, Currencies, AutoLockOptions
 
 **Commands**:
 - `SaveSettingsCommand` – Validates endpoint, persists to ISettingsService, applies theme.
-- `TestConnectionCommand` – GET `{ApiEndpoint}/health` to test connectivity.
-- `ResetToDefaultsCommand` – Resets to defaults, saves.
-- `LogoutCommand` – Confirms, calls LogoutAsync, navigates to LoginPage.
+- `TestConnectionCommand` – Uses `IHealthCheckClient` (cert pinning) to hit `/health`.
+- `ResetToDefaultsCommand` – Calls `ISettingsService.ResetToDefaults()`, loads, saves.
+- `LogoutCommand` – Confirms via `IDialogService`, calls LogoutAsync, navigates via `INavigationService`.
 - `ShowAboutCommand` – Shows about dialog.
 
 **Methods**: `OnDisappearing()` – Cancels operations.

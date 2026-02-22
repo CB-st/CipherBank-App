@@ -12,11 +12,11 @@ Implements `IAuthService`. Uses `HttpClient` for login/refresh; stores tokens in
 
 | Method | Description |
 |--------|-------------|
-| LoginAsync | POST `auth/login`, stores tokens, sets Authorization header |
+| LoginAsync | POST `auth/login`, stores tokens in SecureStorage |
 | RefreshAsync | POST `auth/refresh`, updates stored tokens |
 | GetStoredTokenAsync | Reads from SecureStorage |
 | IsTokenExpiredAsync | Compares ExpiresUtc to UtcNow |
-| LogoutAsync | Clears SecureStorage, removes header |
+| LogoutAsync | Clears SecureStorage |
 | RevokeTokenAsync | POST to revoke endpoint (if available) |
 
 **Storage keys**: `auth_access_token`, `auth_refresh_token`, `auth_expires_utc`.
@@ -61,7 +61,7 @@ Implements `ITransactionService`. Manages transactions.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GetTransactionHistoryAsync | GET /api/v1/wallets/{id}/transactions | History |
+| GetTransactionHistoryAsync | GET /api/v1/transactions?walletId={id} | History |
 | PurchaseCryptoAsync | POST /api/v1/transactions/purchase | Buy crypto |
 | SendCryptoAsync | POST /api/v1/transactions/send | Send to address |
 | GetTransactionStatusAsync | GET /api/v1/transactions/{id}/status | Status |
@@ -74,15 +74,46 @@ Implements `ITransactionService`. Manages transactions.
 
 Implements `ISettingsService`. Uses `Preferences` for persistence.
 
-| Property | Default (DEBUG) | Default (Release) |
-|----------|-----------------|-------------------|
-| UseMocks | true | false |
-| CipherBankEndpointBase | https://api.sandbox.cipherbank.money | same |
+| Property | Default |
+|----------|---------|
+| CipherBankEndpointBase | https://api.sandbox.cipherbank.money |
 | ThemeMode | System | System |
 | NotificationsEnabled | true | true |
 | BiometricAuthEnabled | false | false |
 | AutoLockTimeoutMinutes | 5 | 5 |
 | DefaultCurrency | USD | USD |
+
+---
+
+## IHealthCheckClient / HealthCheckClient
+
+**File**: `Services/HealthCheckClient.cs`
+
+Used by Settings Test Connection. Uses app's configured HttpClient (certificate pinning) to hit `/health`. Replaces raw `HttpClient` for security and consistency.
+
+---
+
+## INavigationService / ShellNavigationService
+
+**File**: `Services/ShellNavigationService.cs`
+
+Abstraction for `Shell.Current.GoToAsync` and `GoBackAsync`. Enables ViewModel testability.
+
+---
+
+## IDialogService / ShellDialogService
+
+**File**: `Services/ShellDialogService.cs`
+
+Abstraction for `Shell.Current.DisplayAlertAsync`. Enables ViewModel testability.
+
+---
+
+## IErrorHandler / ErrorHandler
+
+**File**: `Services/ErrorHandler.cs`
+
+Centralizes catch logic for `HttpRequestException`, `UnauthorizedAccessException`, `OperationCanceledException`. Sets ErrorMessage, navigates to Login on 401. ViewModels call `HandleApiErrorsAsync`.
 
 ---
 
@@ -126,4 +157,4 @@ Static factory. Returns platform-specific handler:
 | MockWalletService.cs | IWalletService | Returns sample wallets |
 | MockTransactionService.cs | ITransactionService | Returns sample transactions |
 
-Mocks are used when `ISettingsService.UseMocks` is true.
+Mocks are used in DEBUG builds only (`#if DEBUG`). `ResetToDefaults()` exposed for Settings reset.
