@@ -1,5 +1,8 @@
+// <copyright file="PlatformHttpHandlerFactory.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System.Net.Http;
-using Microsoft.Maui.ApplicationModel;
 
 namespace CipherBank_app.Services;
 
@@ -16,13 +19,16 @@ public static class PlatformHttpHandlerFactory
     {
 #if ANDROID
         // Android: Use AndroidClientHandler which respects NetworkSecurityConfig.xml
-        return new Platforms.Android.AndroidCertificatePinningHandler();
-#elif IOS || MACCATALYST
-        // iOS/Mac Catalyst: Use custom NSUrlSessionHandler with certificate pinning
-        return new Platforms.iOS.IosCertificatePinningHandler();
+        return new CipherBank_app.Platforms.Android.AndroidCertificatePinningHandler();
+#elif IOS
+        // iOS: Use custom NSUrlSessionHandler with certificate pinning
+        return new CipherBank_app.Platforms.iOS.IosCertificatePinningHandler();
+#elif MACCATALYST
+        // Mac Catalyst: Use custom NSUrlSessionHandler with certificate pinning
+        return new CipherBank_app.Platforms.MacCatalyst.MacCatalystCertificatePinningHandler();
 #elif WINDOWS
         // Windows: Use custom HttpClientHandler with certificate pinning
-        return new Platforms.Windows.WindowsCertificatePinningHandler();
+        return new CipherBank_app.Platforms.Windows.WindowsCertificatePinningHandler();
 #else
         // Other platforms: Use default handler (certificate pinning should be implemented)
         return new HttpClientHandler();
