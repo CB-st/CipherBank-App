@@ -1,3 +1,7 @@
+// <copyright file="TransactionServiceTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 using CipherBank_app.Services;
 using FluentAssertions;
@@ -15,10 +19,26 @@ public class TransactionServiceTests
         var mockService = new Mock<ITransactionService>();
         var expectedTransactions = new List<Transaction>
         {
-            new("tx1", TransactionType.Purchase, 0.1m, "BTC", null, "addr1",
-                DateTimeOffset.UtcNow, TransactionStatus.Confirmed, 0.001m),
-            new("tx2", TransactionType.Send, 0.05m, "BTC", "addr1", "addr2",
-                DateTimeOffset.UtcNow, TransactionStatus.Confirmed, 0.0001m)
+            new(
+                "tx1",
+                TransactionType.Purchase,
+                0.1m,
+                "BTC",
+                null,
+                "addr1",
+                DateTimeOffset.UtcNow,
+                TransactionStatus.Confirmed,
+                0.001m),
+            new(
+                "tx2",
+                TransactionType.Send,
+                0.05m,
+                "BTC",
+                "addr1",
+                "addr2",
+                DateTimeOffset.UtcNow,
+                TransactionStatus.Confirmed,
+                0.0001m),
         };
 
         mockService
@@ -40,9 +60,15 @@ public class TransactionServiceTests
         // Arrange
         var mockService = new Mock<ITransactionService>();
         var expectedTransaction = new Transaction(
-            "tx_purchase", TransactionType.Purchase, 0.5m, "ETH",
-            null, "0xmywallet", DateTimeOffset.UtcNow,
-            TransactionStatus.Confirmed, 0.0075m);
+            "tx_purchase",
+            TransactionType.Purchase,
+            0.5m,
+            "ETH",
+            null,
+            "0xmywallet",
+            DateTimeOffset.UtcNow,
+            TransactionStatus.Confirmed,
+            0.0075m);
 
         mockService
             .Setup(x => x.PurchaseCryptoAsync("ETH", 0.5m, It.IsAny<CancellationToken>()))
@@ -81,9 +107,15 @@ public class TransactionServiceTests
         // Arrange
         var mockService = new Mock<ITransactionService>();
         var expectedTransaction = new Transaction(
-            "tx_send", TransactionType.Send, 0.1m, "BTC",
-            "bc1qfrom", "bc1qto", DateTimeOffset.UtcNow,
-            TransactionStatus.Pending, 0.0001m);
+            "tx_send",
+            TransactionType.Send,
+            0.1m,
+            "BTC",
+            "bc1qfrom",
+            "bc1qto",
+            DateTimeOffset.UtcNow,
+            TransactionStatus.Pending,
+            0.0001m);
 
         mockService
             .Setup(x => x.SendCryptoAsync("wallet1", "bc1qto", 0.1m, It.IsAny<CancellationToken>()))

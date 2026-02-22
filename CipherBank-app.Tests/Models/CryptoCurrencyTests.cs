@@ -1,3 +1,7 @@
+// <copyright file="CryptoCurrencyTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 using FluentAssertions;
 using Xunit;
@@ -11,8 +15,14 @@ public class CryptoCurrencyTests
     {
         // Arrange
         var crypto = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, 500m, 1.5m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000m,
+            500m,
+            1.5m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         // Act & Assert
         crypto.IsPriceUp.Should().BeTrue();
@@ -23,8 +33,14 @@ public class CryptoCurrencyTests
     {
         // Arrange
         var crypto = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, -500m, -1.5m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000m,
+            -500m,
+            -1.5m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         // Act & Assert
         crypto.IsPriceUp.Should().BeFalse();
@@ -35,8 +51,14 @@ public class CryptoCurrencyTests
     {
         // Arrange
         var crypto = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, 0m, 0m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000m,
+            0m,
+            0m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         // Act & Assert
         crypto.IsPriceUp.Should().BeTrue();
@@ -47,8 +69,14 @@ public class CryptoCurrencyTests
     {
         // Arrange
         var crypto = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000.50m, 0m, 0m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000.50m,
+            0m,
+            0m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         // Act
         var result = crypto.FormattedPrice;
@@ -62,8 +90,14 @@ public class CryptoCurrencyTests
     {
         // Arrange
         var crypto = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, 500m, 1.5m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000m,
+            500m,
+            1.5m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         // Act
         var result = crypto.FormattedPercentChange;
@@ -78,8 +112,14 @@ public class CryptoCurrencyTests
     {
         // Arrange
         var crypto = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, -500m, -1.5m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000m,
+            -500m,
+            -1.5m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         // Act
         var result = crypto.FormattedPercentChange;
@@ -94,12 +134,24 @@ public class CryptoCurrencyTests
     {
         // Arrange
         var crypto1 = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, 500m, 1.5m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000m,
+            500m,
+            1.5m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         var crypto2 = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, 500m, 1.5m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000m,
+            500m,
+            1.5m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         // Act & Assert
         crypto1.Should().Be(crypto2);
@@ -110,8 +162,14 @@ public class CryptoCurrencyTests
     {
         // Arrange
         var crypto = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, 500m, 1.5m,
-            1000000000m, 50000000m, "https://example.com/btc.png");
+            "BTC",
+            "Bitcoin",
+            50000m,
+            500m,
+            1.5m,
+            1000000000m,
+            50000000m,
+            "https://example.com/btc.png");
 
         // Act
         var modified = crypto with { CurrentPrice = 55000m };

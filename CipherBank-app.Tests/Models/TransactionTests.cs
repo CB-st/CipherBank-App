@@ -1,3 +1,7 @@
+// <copyright file="TransactionTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 using FluentAssertions;
 using Xunit;
@@ -67,9 +71,15 @@ public class TransactionTests
     {
         // Arrange
         var transaction = new Transaction(
-            "tx123", TransactionType.Purchase, 0.12345678m, "BTC",
-            null, "bc1qtest", DateTimeOffset.UtcNow,
-            TransactionStatus.Confirmed, 0.001m);
+            "tx123",
+            TransactionType.Purchase,
+            0.12345678m,
+            "BTC",
+            null,
+            "bc1qtest",
+            DateTimeOffset.UtcNow,
+            TransactionStatus.Confirmed,
+            0.001m);
 
         // Act
         var result = transaction.FormattedAmount;
@@ -83,9 +93,15 @@ public class TransactionTests
     {
         // Arrange
         var transaction = new Transaction(
-            "tx123", TransactionType.Purchase, 1m, "ETH",
-            null, "0xtest", DateTimeOffset.UtcNow,
-            TransactionStatus.Confirmed, 0.00150000m);
+            "tx123",
+            TransactionType.Purchase,
+            1m,
+            "ETH",
+            null,
+            "0xtest",
+            DateTimeOffset.UtcNow,
+            TransactionStatus.Confirmed,
+            0.00150000m);
 
         // Act
         var result = transaction.FormattedFee;
@@ -99,8 +115,14 @@ public class TransactionTests
         TransactionStatus status = TransactionStatus.Confirmed)
     {
         return new Transaction(
-            "tx123", type, 1.0m, "BTC",
-            "from_address", "to_address",
-            DateTimeOffset.UtcNow, status, 0.001m);
+            "tx123",
+            type,
+            1.0m,
+            "BTC",
+            "from_address",
+            "to_address",
+            DateTimeOffset.UtcNow,
+            status,
+            0.001m);
     }
 }

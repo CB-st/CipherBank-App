@@ -1,10 +1,12 @@
+// <copyright file="RateLimiterTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Threading.Tasks;
+using CipherBank_app.Services;
 using FluentAssertions;
 using Xunit;
-
-// RateLimiter is in CipherBank_app.Services namespace (from Core project)
-using CipherBank_app.Services;
 
 namespace CipherBank_app.Tests.Services;
 
@@ -88,15 +90,15 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void CurrentRequestCount_TracksRequests()
+    public async Task CurrentRequestCount_TracksRequests()
     {
         // Arrange
         var rateLimiter = new RateLimiter(null, 10, TimeSpan.FromMinutes(1));
 
         // Act
-        rateLimiter.TryAcquireAsync().Wait();
-        rateLimiter.TryAcquireAsync().Wait();
-        rateLimiter.TryAcquireAsync().Wait();
+        await rateLimiter.TryAcquireAsync();
+        await rateLimiter.TryAcquireAsync();
+        await rateLimiter.TryAcquireAsync();
 
         // Assert
         rateLimiter.CurrentRequestCount.Should().Be(3);

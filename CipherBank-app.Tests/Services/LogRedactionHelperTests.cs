@@ -1,3 +1,7 @@
+// <copyright file="LogRedactionHelperTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Services.Logging;
 using FluentAssertions;
 using Xunit;
@@ -9,8 +13,6 @@ namespace CipherBank_app.Tests.Services;
 /// </summary>
 public class LogRedactionHelperTests
 {
-    #region RedactUsername Tests
-
     [Fact]
     public void RedactUsername_StandardUsername_RedactsMiddle()
     {
@@ -55,15 +57,11 @@ public class LogRedactionHelperTests
     public void RedactUsername_EmptyUsername_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.RedactUsername("");
+        var redacted = LogRedactionHelper.RedactUsername(string.Empty);
 
         // Assert
         redacted.Should().Be("[empty]");
     }
-
-    #endregion
-
-    #region RedactWalletId Tests
 
     [Fact]
     public void RedactWalletId_StandardWalletId_RedactsMiddle()
@@ -105,10 +103,6 @@ public class LogRedactionHelperTests
         // Assert
         redacted.Should().Be("[empty]");
     }
-
-    #endregion
-
-    #region RedactAddress Tests
 
     [Fact]
     public void RedactAddress_BitcoinAddress_RedactsMiddle()
@@ -166,10 +160,6 @@ public class LogRedactionHelperTests
         redacted.Should().Be("[empty]");
     }
 
-    #endregion
-
-    #region RedactToken Tests
-
     [Fact]
     public void RedactToken_JwtToken_RedactsAfterPrefix()
     {
@@ -208,10 +198,6 @@ public class LogRedactionHelperTests
         // Assert
         redacted.Should().Be("[empty]");
     }
-
-    #endregion
-
-    #region RedactEmail Tests
 
     [Fact]
     public void RedactEmail_StandardEmail_RedactsLocalPart()
@@ -266,10 +252,6 @@ public class LogRedactionHelperTests
         redacted.Should().Be("[empty]");
     }
 
-    #endregion
-
-    #region RedactTransactionId Tests
-
     [Fact]
     public void RedactTransactionId_StandardId_RedactsMiddle()
     {
@@ -310,10 +292,6 @@ public class LogRedactionHelperTests
         redacted.Should().Be("[empty]");
     }
 
-    #endregion
-
-    #region Generic Redact Tests
-
     [Theory]
     [InlineData("abcdefghijklmnop", 4, "abcd...mnop")]
     [InlineData("short", 4, "***")]
@@ -336,6 +314,4 @@ public class LogRedactionHelperTests
         // Assert
         redacted.Should().Be("[empty]");
     }
-
-    #endregion
 }

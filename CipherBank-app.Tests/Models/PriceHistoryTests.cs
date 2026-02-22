@@ -1,3 +1,7 @@
+// <copyright file="PriceHistoryTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 using FluentAssertions;
 using Xunit;
@@ -14,7 +18,7 @@ public class PriceHistoryTests
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
-            new(DateTimeOffset.UtcNow.AddHours(-1), 120m)
+            new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
         };
         var history = CreatePriceHistory(pricePoints);
 
@@ -30,7 +34,7 @@ public class PriceHistoryTests
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
-            new(DateTimeOffset.UtcNow.AddHours(-1), 120m)
+            new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
         };
         var history = CreatePriceHistory(pricePoints);
 
@@ -46,7 +50,7 @@ public class PriceHistoryTests
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
-            new(DateTimeOffset.UtcNow.AddHours(-1), 200m)
+            new(DateTimeOffset.UtcNow.AddHours(-1), 200m),
         };
         var history = CreatePriceHistory(pricePoints);
 
@@ -62,7 +66,7 @@ public class PriceHistoryTests
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
-            new(DateTimeOffset.UtcNow.AddHours(-1), 120m)
+            new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
         };
         var history = CreatePriceHistory(pricePoints);
 
@@ -77,7 +81,7 @@ public class PriceHistoryTests
         var pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-2), 100m),
-            new(DateTimeOffset.UtcNow.AddHours(-1), 120m)
+            new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
         };
         var history = CreatePriceHistory(pricePoints);
 
@@ -105,7 +109,7 @@ public class PriceHistoryTests
         // Arrange
         var pricePoints = new List<PricePoint>
         {
-            new(DateTimeOffset.UtcNow, 100m)
+            new(DateTimeOffset.UtcNow, 100m),
         };
         var history = CreatePriceHistory(pricePoints);
 

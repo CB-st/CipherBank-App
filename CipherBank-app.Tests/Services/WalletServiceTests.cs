@@ -1,3 +1,7 @@
+// <copyright file="WalletServiceTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 using CipherBank_app.Services;
 using FluentAssertions;
@@ -16,7 +20,7 @@ public class WalletServiceTests
         var expectedWallets = new List<Wallet>
         {
             new("wallet1", "BTC", "Bitcoin", 0.5m, "bc1qtest1", DateTimeOffset.UtcNow),
-            new("wallet2", "ETH", "Ethereum", 2.0m, "0xtest2", DateTimeOffset.UtcNow)
+            new("wallet2", "ETH", "Ethereum", 2.0m, "0xtest2", DateTimeOffset.UtcNow),
         };
 
         mockService

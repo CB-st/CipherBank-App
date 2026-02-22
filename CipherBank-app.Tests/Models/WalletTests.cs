@@ -1,3 +1,7 @@
+// <copyright file="WalletTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 using FluentAssertions;
 using Xunit;
@@ -11,8 +15,12 @@ public class WalletTests
     {
         // Arrange
         var wallet = new Wallet(
-            "wallet123", "BTC", "Bitcoin", 0.5m,
-            "bc1qtest123", DateTimeOffset.UtcNow);
+            "wallet123",
+            "BTC",
+            "Bitcoin",
+            0.5m,
+            "bc1qtest123",
+            DateTimeOffset.UtcNow);
 
         // Act & Assert
         wallet.HasBalance.Should().BeTrue();
@@ -23,8 +31,12 @@ public class WalletTests
     {
         // Arrange
         var wallet = new Wallet(
-            "wallet123", "BTC", "Bitcoin", 0m,
-            "bc1qtest123", DateTimeOffset.UtcNow);
+            "wallet123",
+            "BTC",
+            "Bitcoin",
+            0m,
+            "bc1qtest123",
+            DateTimeOffset.UtcNow);
 
         // Act & Assert
         wallet.HasBalance.Should().BeFalse();
@@ -35,8 +47,12 @@ public class WalletTests
     {
         // Arrange
         var wallet = new Wallet(
-            "wallet123", "BTC", "Bitcoin", 0.12345678m,
-            "bc1qtest123", DateTimeOffset.UtcNow);
+            "wallet123",
+            "BTC",
+            "Bitcoin",
+            0.12345678m,
+            "bc1qtest123",
+            DateTimeOffset.UtcNow);
 
         // Act
         var result = wallet.FormattedBalance;
@@ -50,8 +66,12 @@ public class WalletTests
     {
         // Arrange
         var wallet = new Wallet(
-            "wallet123", "DOGE", "Dogecoin", 10000.00000000m,
-            "DTest123", DateTimeOffset.UtcNow);
+            "wallet123",
+            "DOGE",
+            "Dogecoin",
+            10000.00000000m,
+            "DTest123",
+            DateTimeOffset.UtcNow);
 
         // Act
         var result = wallet.FormattedBalance;

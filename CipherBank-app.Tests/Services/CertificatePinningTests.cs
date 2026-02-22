@@ -1,3 +1,7 @@
+// <copyright file="CertificatePinningTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;

@@ -1,3 +1,7 @@
+// <copyright file="RateLimitingHandlerTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Threading.Tasks;
 using CipherBank_app.Services;
@@ -11,7 +15,7 @@ namespace CipherBank_app.Tests.Services;
 /// Note: Full RateLimitingHandler tests require the MAUI app context.
 /// These tests verify the core rate limiting logic.
 /// </summary>
-public class RateLimitingIntegrationTests
+public class RateLimitingHandlerTests
 {
     [Fact]
     public async Task RateLimiter_HighVolumeScenario_EnforcesLimit()

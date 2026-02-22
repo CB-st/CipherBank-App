@@ -1,3 +1,7 @@
+// <copyright file="AddressValidatorTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Services.Validation;
 using FluentAssertions;
 using Xunit;
@@ -9,8 +13,6 @@ namespace CipherBank_app.Tests.Services;
 /// </summary>
 public class AddressValidatorTests
 {
-    #region Bitcoin Address Tests
-
     [Theory]
     [InlineData("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", true)] // Genesis block address
     [InlineData("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2", true)] // P2PKH
@@ -81,10 +83,6 @@ public class AddressValidatorTests
         result.Should().BeTrue();
     }
 
-    #endregion
-
-    #region Ethereum Address Tests
-
     [Theory]
     [InlineData("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0", true)]
     [InlineData("0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe", true)]
@@ -130,10 +128,6 @@ public class AddressValidatorTests
         result.Should().BeTrue();
     }
 
-    #endregion
-
-    #region Solana Address Tests
-
     [Theory]
     [InlineData("DRpbCBMxVnDK7maPM5tGv6MvB3v1sRMC86PZ8okm21hy", true)] // Valid Solana address
     [InlineData("9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM", true)]
@@ -148,10 +142,6 @@ public class AddressValidatorTests
         // Assert
         result.Should().Be(expected);
     }
-
-    #endregion
-
-    #region Edge Cases
 
     [Fact]
     public void IsValidAddress_NullAddress_ReturnsFalse()
@@ -207,6 +197,4 @@ public class AddressValidatorTests
         AddressValidator.IsValidAddress(address, "BTC").Should().BeTrue();
         AddressValidator.IsValidAddress(address, "Btc").Should().BeTrue();
     }
-
-    #endregion
 }

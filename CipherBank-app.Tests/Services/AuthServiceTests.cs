@@ -1,3 +1,7 @@
+// <copyright file="AuthServiceTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 using CipherBank_app.Services;
 using FluentAssertions;
