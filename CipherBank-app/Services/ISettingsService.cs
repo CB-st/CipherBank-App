@@ -1,3 +1,7 @@
+// <copyright file="ISettingsService.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 namespace CipherBank_app.Services;
 
 /// <summary>
@@ -5,11 +9,6 @@ namespace CipherBank_app.Services;
 /// </summary>
 public interface ISettingsService
 {
-    /// <summary>
-    /// Gets or sets whether mock services should be used instead of real API calls.
-    /// </summary>
-    bool UseMocks { get; set; }
-
     /// <summary>
     /// Gets or sets the base URL for the CipherBank API.
     /// </summary>
@@ -39,4 +38,9 @@ public interface ISettingsService
     /// Gets or sets the default currency for displaying prices.
     /// </summary>
     string DefaultCurrency { get; set; }
+
+    /// <summary>
+    /// Resets all settings to their default values.
+    /// </summary>
+    void ResetToDefaults();
 }

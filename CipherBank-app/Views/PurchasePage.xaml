@@ -30,7 +30,9 @@
                     StrokeThickness="1"
                     Padding="12"
                     StrokeShape="RoundRectangle 8">
-                <Label Text="{Binding ErrorMessage}"
+                <Label x:Name="ErrorLabel"
+                       AutomationId="ErrorLabel"
+                       Text="{Binding ErrorMessage}"
                        TextColor="#856404" />
             </Border>
 
@@ -48,7 +50,9 @@
                            FontSize="16"
                            FontAttributes="Bold" />
 
-                    <Picker Title="Choose a cryptocurrency"
+                    <Picker x:Name="CryptoSelector"
+                            AutomationId="CryptoSelector"
+                            Title="Choose a cryptocurrency"
                             ItemsSource="{Binding AvailableCryptos}"
                             SelectedItem="{Binding SelectedCrypto}"
                             ItemDisplayBinding="{Binding Name}" />
@@ -97,6 +101,8 @@
 
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <Entry Grid.Column="0"
+                               x:Name="AmountEntry"
+                               AutomationId="AmountEntry"
                                Placeholder="0.00000000"
                                Text="{Binding AmountText}"
                                Keyboard="Numeric"
@@ -183,6 +189,8 @@
                                Text="Fee (1.5%)"
                                TextColor="Gray" />
                         <Label Grid.Row="2" Grid.Column="1"
+                               x:Name="FeeLabel"
+                               AutomationId="FeeLabel"
                                Text="{Binding Fee, StringFormat='${0:F2}'}"
                                HorizontalTextAlignment="End" />
 
@@ -206,7 +214,9 @@
             </Border>
 
             <!-- Purchase Button -->
-            <Button Text="Purchase"
+            <Button x:Name="PurchaseButton"
+                    AutomationId="PurchaseButton"
+                    Text="Purchase"
                     Command="{Binding PurchaseCryptoCommand}"
                     IsEnabled="{Binding IsPurchasing, Converter={StaticResource InvertedBoolConverter}}"
                     IsVisible="{Binding SelectedCrypto, Converter={StaticResource StringToBoolConverter}}"

@@ -1,3 +1,7 @@
+// <copyright file="AuthToken.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 namespace CipherBank_app.Models;
 
 /// <summary>

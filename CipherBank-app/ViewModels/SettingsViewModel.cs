@@ -1,7 +1,12 @@
+// <copyright file="SettingsViewModel.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CipherBank_app.Constants;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,31 +17,19 @@ namespace CipherBank_app.ViewModels;
 /// <summary>
 /// ViewModel for the Settings page managing application preferences.
 /// </summary>
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<SettingsViewModel> _logger;
     private readonly ISettingsService _settings;
     private readonly IAuthService _authService;
+    private readonly INavigationService _navigation;
+    private readonly IDialogService _dialog;
+    private readonly IHealthCheckClient _healthCheck;
     private CancellationTokenSource? _cts;
-
-    public SettingsViewModel(
-        ILogger<SettingsViewModel> logger,
-        ISettingsService settings,
-        IAuthService authService)
-    {
-        _logger = logger;
-        _settings = settings;
-        _authService = authService;
-
-        // Load current settings
-        LoadSettings();
-    }
+    private bool _disposed;
 
     [ObservableProperty]
     private string apiEndpoint = string.Empty;
-
-    [ObservableProperty]
-    private bool useMocks;
 
     [ObservableProperty]
     private string themeMode = "System";
@@ -65,6 +58,25 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool isStatusSuccess;
 
+    public SettingsViewModel(
+        ILogger<SettingsViewModel> logger,
+        ISettingsService settings,
+        IAuthService authService,
+        INavigationService navigation,
+        IDialogService dialog,
+        IHealthCheckClient healthCheck)
+    {
+        _logger = logger;
+        _settings = settings;
+        _authService = authService;
+        _navigation = navigation;
+        _dialog = dialog;
+        _healthCheck = healthCheck;
+
+        // Load current settings
+        LoadSettings();
+    }
+
     /// <summary>
     /// Available theme modes.
     /// </summary>
@@ -80,17 +92,32 @@ public partial class SettingsViewModel : ObservableObject
     /// </summary>
     public int[] AutoLockOptions { get; } = [0, 1, 5, 15, 30, 60];
 
+    /// <summary>
+    /// Cancels any ongoing operations when leaving the page.
+    /// </summary>
+    public void OnDisappearing()
+    {
+        _cts?.Cancel();
+        LogSettingsDisappearing(_logger);
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     private void LoadSettings()
     {
         ApiEndpoint = _settings.CipherBankEndpointBase;
-        UseMocks = _settings.UseMocks;
         ThemeMode = _settings.ThemeMode;
         NotificationsEnabled = _settings.NotificationsEnabled;
         BiometricEnabled = _settings.BiometricAuthEnabled;
         AutoLockTimeout = _settings.AutoLockTimeoutMinutes;
         DefaultCurrency = _settings.DefaultCurrency;
 
-        _logger.LogInformation("Settings loaded");
+        LogSettingsLoaded(_logger);
     }
 
     /// <summary>
@@ -99,17 +126,20 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveSettingsAsync()
     {
-        if (IsSaving) return;
+        if (IsSaving)
+        {
+            return;
+        }
 
         IsSaving = true;
         StatusMessage = null;
 
         try
         {
-            _logger.LogInformation("Saving settings");
+            LogSavingSettings(_logger);
 
             // Validate API endpoint
-            if (!UseMocks && !Uri.TryCreate(ApiEndpoint, UriKind.Absolute, out var uri))
+            if (!Uri.TryCreate(ApiEndpoint, UriKind.Absolute, out _))
             {
                 StatusMessage = "Invalid API endpoint URL";
                 IsStatusSuccess = false;
@@ -117,7 +147,6 @@ public partial class SettingsViewModel : ObservableObject
             }
 
             _settings.CipherBankEndpointBase = ApiEndpoint;
-            _settings.UseMocks = UseMocks;
             _settings.ThemeMode = ThemeMode;
             _settings.NotificationsEnabled = NotificationsEnabled;
             _settings.BiometricAuthEnabled = BiometricEnabled;
@@ -130,15 +159,14 @@ public partial class SettingsViewModel : ObservableObject
             StatusMessage = "Settings saved successfully";
             IsStatusSuccess = true;
 
-            _logger.LogInformation("Settings saved: UseMocks={UseMocks}, Theme={Theme}",
-                UseMocks, ThemeMode);
+            LogSettingsSaved(_logger, ThemeMode);
 
             await Task.Delay(2000);
             StatusMessage = null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving settings");
+            LogErrorSavingSettings(_logger, ex);
             StatusMessage = "Failed to save settings";
             IsStatusSuccess = false;
         }
@@ -154,7 +182,10 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task TestConnectionAsync()
     {
-        if (IsTesting) return;
+        if (IsTesting)
+        {
+            return;
+        }
 
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -165,46 +196,40 @@ public partial class SettingsViewModel : ObservableObject
 
         try
         {
-            _logger.LogInformation("Testing API connection to {Endpoint}", ApiEndpoint);
+            LogTestingConnection(_logger, ApiEndpoint);
 
-            using var http = new HttpClient
-            {
-                BaseAddress = new Uri(ApiEndpoint),
-                Timeout = TimeSpan.FromSeconds(10)
-            };
+            var isHealthy = await _healthCheck.CheckHealthAsync(ApiEndpoint, _cts.Token);
 
-            var response = await http.GetAsync("health", _cts.Token);
-
-            if (response.IsSuccessStatusCode)
+            if (isHealthy)
             {
                 StatusMessage = "Connection successful!";
                 IsStatusSuccess = true;
-                _logger.LogInformation("API connection test successful");
+                LogConnectionTestSuccessful(_logger);
             }
             else
             {
-                StatusMessage = $"Connection failed: {response.StatusCode}";
+                StatusMessage = "Connection failed";
                 IsStatusSuccess = false;
-                _logger.LogWarning("API connection test failed: {StatusCode}", response.StatusCode);
+                LogConnectionTestFailed(_logger);
             }
         }
         catch (TaskCanceledException)
         {
             StatusMessage = "Connection timed out";
             IsStatusSuccess = false;
-            _logger.LogWarning("API connection test timed out");
+            LogConnectionTestTimedOut(_logger);
         }
         catch (HttpRequestException ex)
         {
             StatusMessage = $"Network error: {ex.Message}";
             IsStatusSuccess = false;
-            _logger.LogError(ex, "API connection test network error");
+            LogConnectionTestNetworkError(_logger, ex);
         }
         catch (Exception ex)
         {
             StatusMessage = "Connection test failed";
             IsStatusSuccess = false;
-            _logger.LogError(ex, "API connection test error");
+            LogConnectionTestError(_logger, ex);
         }
         finally
         {
@@ -218,26 +243,25 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task ResetToDefaultsAsync()
     {
-        var confirm = await Shell.Current.DisplayAlertAsync(
+        var confirm = await _dialog.ShowConfirmAsync(
             "Reset Settings",
             "Are you sure you want to reset all settings to defaults?",
-            "Reset", "Cancel");
+            "Reset",
+            "Cancel");
 
-        if (!confirm) return;
+        if (!confirm)
+        {
+            return;
+        }
 
-        _logger.LogInformation("Resetting settings to defaults");
+        LogResettingSettings(_logger);
 
-        ApiEndpoint = "https://api.sandbox.cipherbank.money";
-        UseMocks = true;
-        ThemeMode = "System";
-        NotificationsEnabled = true;
-        BiometricEnabled = false;
-        AutoLockTimeout = 5;
-        DefaultCurrency = "USD";
+        _settings.ResetToDefaults();
+        LoadSettings();
 
         await SaveSettingsAsync();
 
-        _logger.LogInformation("Settings reset to defaults");
+        LogSettingsReset(_logger);
     }
 
     /// <summary>
@@ -246,25 +270,31 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task LogoutAsync()
     {
-        var confirm = await Shell.Current.DisplayAlertAsync(
+        var confirm = await _dialog.ShowConfirmAsync(
             "Log Out",
             "Are you sure you want to log out?",
-            "Log Out", "Cancel");
+            "Log Out",
+            "Cancel");
 
-        if (!confirm) return;
+        if (!confirm)
+        {
+            return;
+        }
 
         try
         {
-            _logger.LogInformation("User logging out");
+            LogUserLoggingOut(_logger);
             await _authService.LogoutAsync();
-            await Shell.Current.GoToAsync("//LoginPage");
-            _logger.LogInformation("User logged out successfully");
+            await _navigation.GoToAsync(Routes.Login);
+            LogUserLoggedOut(_logger);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during logout");
-            await Shell.Current.DisplayAlertAsync("Error",
-                "Failed to log out. Please try again.", "OK");
+            LogErrorDuringLogout(_logger, ex);
+            await _dialog.ShowAlertAsync(
+                "Error",
+                "Failed to log out. Please try again.",
+                "OK");
         }
     }
 
@@ -274,34 +304,96 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task ShowAboutAsync()
     {
-        await Shell.Current.DisplayAlertAsync(
-            "CipherBank",
+        var aboutMessage =
             "Version 1.0.0\n\n" +
             "A secure cryptocurrency wallet and trading application.\n\n" +
-            "© 2026 CipherBank. All rights reserved.",
+            "© 2026 CipherBank. All rights reserved.";
+        await _dialog.ShowAlertAsync(
+            "CipherBank",
+            aboutMessage,
             "OK");
     }
 
     private void ApplyTheme()
     {
-        if (Application.Current == null) return;
+        if (Application.Current == null)
+        {
+            return;
+        }
 
         Application.Current.UserAppTheme = ThemeMode switch
         {
             "Light" => AppTheme.Light,
             "Dark" => AppTheme.Dark,
-            _ => AppTheme.Unspecified
+            _ => AppTheme.Unspecified,
         };
 
-        _logger.LogDebug("Applied theme: {Theme}", ThemeMode);
+        LogAppliedTheme(_logger, ThemeMode);
     }
 
-    /// <summary>
-    /// Cancels any ongoing operations when leaving the page.
-    /// </summary>
-    public void OnDisappearing()
+#pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
+    [LoggerMessage(Level = LogLevel.Information, Message = "Settings loaded")]
+    private static partial void LogSettingsLoaded(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Saving settings")]
+    private static partial void LogSavingSettings(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Settings saved: Theme={Theme}")]
+    private static partial void LogSettingsSaved(ILogger logger, string theme);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error saving settings")]
+    private static partial void LogErrorSavingSettings(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Testing API connection to {Endpoint}")]
+    private static partial void LogTestingConnection(ILogger logger, string endpoint);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "API connection test successful")]
+    private static partial void LogConnectionTestSuccessful(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "API connection test failed")]
+    private static partial void LogConnectionTestFailed(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "API connection test timed out")]
+    private static partial void LogConnectionTestTimedOut(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "API connection test network error")]
+    private static partial void LogConnectionTestNetworkError(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "API connection test error")]
+    private static partial void LogConnectionTestError(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Resetting settings to defaults")]
+    private static partial void LogResettingSettings(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Settings reset to defaults")]
+    private static partial void LogSettingsReset(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "User logging out")]
+    private static partial void LogUserLoggingOut(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "User logged out successfully")]
+    private static partial void LogUserLoggedOut(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error during logout")]
+    private static partial void LogErrorDuringLogout(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Applied theme: {Theme}")]
+    private static partial void LogAppliedTheme(ILogger logger, string theme);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Settings page disappearing, operations cancelled")]
+    private static partial void LogSettingsDisappearing(ILogger logger);
+#pragma warning restore SA1204 // Static members should appear before non-static members
+
+    private void Dispose(bool disposing)
     {
-        _cts?.Cancel();
-        _logger.LogDebug("Settings page disappearing, operations cancelled");
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _cts?.Dispose();
+            }
+
+            _disposed = true;
+        }
     }
 }

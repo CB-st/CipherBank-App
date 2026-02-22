@@ -1,3 +1,9 @@
+// <copyright file="CryptoCurrency.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using System.Globalization;
+
 namespace CipherBank_app.Models;
 
 /// <summary>
@@ -14,6 +20,8 @@ public record CryptoCurrency(
     string IconUrl)
 {
     public bool IsPriceUp => PercentChange24h >= 0;
-    public string FormattedPrice => CurrentPrice.ToString("C2");
-    public string FormattedPercentChange => $"{(PercentChange24h >= 0 ? "+" : "")}{PercentChange24h:F2}%";
+
+    public string FormattedPrice => CurrentPrice.ToString("C2", CultureInfo.InvariantCulture);
+
+    public string FormattedPercentChange => $"{(PercentChange24h >= 0 ? "+" : string.Empty)}{PercentChange24h:F2}%";
 }

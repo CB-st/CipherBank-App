@@ -1,3 +1,7 @@
+// <copyright file="RateLimitingHandler.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Net;
 using System.Net.Http;
@@ -12,15 +16,15 @@ namespace CipherBank_app.Services.Handlers;
 /// HTTP message handler that applies rate limiting to outgoing requests.
 /// Uses a sliding window algorithm to enforce request limits.
 /// </summary>
-public sealed class RateLimitingHandler : DelegatingHandler
+public sealed partial class RateLimitingHandler : DelegatingHandler
 {
-    private readonly RateLimiter _rateLimiter;
-    private readonly ILogger<RateLimitingHandler>? _logger;
-
     /// <summary>
     /// Maximum time to wait for rate limit to clear before timing out.
     /// </summary>
     private static readonly TimeSpan MaxWaitTime = TimeSpan.FromSeconds(30);
+
+    private readonly RateLimiter _rateLimiter;
+    private readonly ILogger<RateLimitingHandler>? _logger;
 
     public RateLimitingHandler(IServiceProvider serviceProvider)
     {
@@ -47,19 +51,25 @@ public sealed class RateLimitingHandler : DelegatingHandler
 
         if (waitTime > MaxWaitTime)
         {
-            _logger?.LogWarning("Rate limit exceeded, wait time {WaitTime} exceeds maximum {MaxWait}",
-                waitTime, MaxWaitTime);
+            if (_logger != null)
+            {
+                LogRateLimitExceeded(_logger, waitTime, MaxWaitTime);
+            }
 
             return new HttpResponseMessage(HttpStatusCode.TooManyRequests)
             {
                 ReasonPhrase = "Rate limit exceeded",
-                Content = new StringContent("Too many requests. Please try again later.")
+                Content = new StringContent("Too many requests. Please try again later."),
             };
         }
 
         if (waitTime > TimeSpan.Zero)
         {
-            _logger?.LogDebug("Rate limited, waiting {WaitTime} before retry", waitTime);
+            if (_logger != null)
+            {
+                LogRateLimitedWaiting(_logger, waitTime);
+            }
+
             await Task.Delay(waitTime, cancellationToken);
         }
 
@@ -70,11 +80,24 @@ public sealed class RateLimitingHandler : DelegatingHandler
         }
 
         // Still rate limited, return 429
-        _logger?.LogWarning("Rate limit still exceeded after waiting");
+        if (_logger != null)
+        {
+            LogRateLimitStillExceeded(_logger);
+        }
+
         return new HttpResponseMessage(HttpStatusCode.TooManyRequests)
         {
             ReasonPhrase = "Rate limit exceeded",
-            Content = new StringContent("Too many requests. Please try again later.")
+            Content = new StringContent("Too many requests. Please try again later."),
         };
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit exceeded, wait time {WaitTime} exceeds maximum {MaxWait}")]
+    private static partial void LogRateLimitExceeded(ILogger logger, TimeSpan waitTime, TimeSpan maxWait);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Rate limited, waiting {WaitTime} before retry")]
+    private static partial void LogRateLimitedWaiting(ILogger logger, TimeSpan waitTime);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit still exceeded after waiting")]
+    private static partial void LogRateLimitStillExceeded(ILogger logger);
 }

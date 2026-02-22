@@ -1,7 +1,14 @@
+// <copyright file="AppShell.xaml.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Views;
 
 namespace CipherBank_app;
 
+/// <summary>
+/// The application shell providing navigation structure.
+/// </summary>
 public partial class AppShell : Shell
 {
     public AppShell()

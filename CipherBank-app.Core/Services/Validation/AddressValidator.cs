@@ -1,3 +1,7 @@
+// <copyright file="AddressValidator.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -31,7 +35,7 @@ public static partial class AddressValidator
             "BTC" => IsValidBitcoinAddress(address),
             "ETH" => IsValidEthereumAddress(address),
             "SOL" => IsValidSolanaAddress(address),
-            _ => IsValidGenericAddress(address)
+            _ => IsValidGenericAddress(address),
         };
     }
 

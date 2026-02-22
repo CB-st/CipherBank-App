@@ -1,3 +1,7 @@
+// <copyright file="MockAuthService.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Security.Cryptography;
 using System.Threading;
@@ -11,12 +15,8 @@ namespace CipherBank_app.Services.Mocks;
 /// Mock implementation of IAuthService for development and testing.
 /// Provides simulated authentication without making actual API calls.
 /// </summary>
-public class MockAuthService : IAuthService
+public sealed partial class MockAuthService : IAuthService
 {
-    private readonly ILogger<MockAuthService> _logger;
-    private AuthToken? _currentToken;
-    private RandomNumberGenerator _random = RandomNumberGenerator.Create();
-
     // Simulated latency range in milliseconds
     private const int MinLatencyMs = 200;
     private const int MaxLatencyMs = 600;
@@ -27,10 +27,14 @@ public class MockAuthService : IAuthService
     private const string TestPassword = "password123";
 #endif
 
+    private readonly ILogger<MockAuthService> _logger;
+
+    private AuthToken? _currentToken;
+
     public MockAuthService(ILogger<MockAuthService> logger)
     {
         _logger = logger;
-        _logger.LogDebug("MockAuthService initialized");
+        LogMockAuthServiceInitialized(_logger);
     }
 
     public async Task<AuthToken> LoginAsync(string user, string password, CancellationToken cancellationToken = default)
@@ -38,7 +42,7 @@ public class MockAuthService : IAuthService
         ArgumentException.ThrowIfNullOrWhiteSpace(user);
         ArgumentException.ThrowIfNullOrWhiteSpace(password);
 
-        _logger.LogDebug("Attempting login (mock)");
+        LogAttemptingLogin(_logger);
         await SimulateNetworkDelayAsync(cancellationToken);
 
 #if DEBUG
@@ -49,12 +53,12 @@ public class MockAuthService : IAuthService
         // In RELEASE builds, MockAuthService should not be used
         // Always reject authentication to prevent accidental production use
         var isValidCredentials = false;
-        _logger.LogError("MockAuthService should not be used in production builds");
+        LogMockAuthServiceInProduction(_logger);
 #endif
 
         if (!isValidCredentials)
         {
-            _logger.LogWarning("Login failed for user {Username}: Invalid credentials", user);
+            LogLoginFailed(_logger, user);
             throw new UnauthorizedAccessException("Invalid username or password");
         }
 
@@ -64,8 +68,7 @@ public class MockAuthService : IAuthService
             GenerateRefreshToken(),
             DateTimeOffset.UtcNow.AddHours(1));
 
-        _logger.LogInformation("User {Username} logged in successfully. Token expires at {ExpiresUtc}",
-            user, _currentToken.ExpiresUtc);
+        LogLoginSucceeded(_logger, user, _currentToken.ExpiresUtc);
 
         return _currentToken;
     }
@@ -74,13 +77,13 @@ public class MockAuthService : IAuthService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
 
-        _logger.LogDebug("Refreshing token (mock)");
+        LogRefreshingToken(_logger);
         await SimulateNetworkDelayAsync(cancellationToken);
 
         // Validate refresh token exists
         if (_currentToken == null || _currentToken.RefreshToken != refreshToken)
         {
-            _logger.LogWarning("Token refresh failed: Invalid refresh token");
+            LogRefreshTokenInvalid(_logger);
             throw new UnauthorizedAccessException("Invalid refresh token");
         }
 
@@ -90,15 +93,14 @@ public class MockAuthService : IAuthService
             GenerateRefreshToken(),
             DateTimeOffset.UtcNow.AddHours(1));
 
-        _logger.LogInformation("Token refreshed successfully. New token expires at {ExpiresUtc}",
-            _currentToken.ExpiresUtc);
+        LogTokenRefreshedSuccessfully(_logger, _currentToken.ExpiresUtc);
 
         return _currentToken;
     }
 
     public Task<AuthToken?> GetStoredTokenAsync()
     {
-        _logger.LogDebug("Getting stored token (mock): {HasToken}", _currentToken != null);
+        LogGettingStoredToken(_logger, _currentToken != null);
         return Task.FromResult(_currentToken);
     }
 
@@ -106,20 +108,19 @@ public class MockAuthService : IAuthService
     {
         if (_currentToken == null)
         {
-            _logger.LogDebug("No token stored, considering expired");
+            LogNoTokenStoredConsideringExpired(_logger);
             return Task.FromResult(true);
         }
 
         var isExpired = _currentToken.ExpiresUtc <= DateTimeOffset.UtcNow.AddMinutes(5);
-        _logger.LogDebug("Token expiration check: IsExpired={IsExpired}, ExpiresUtc={ExpiresUtc}",
-            isExpired, _currentToken.ExpiresUtc);
+        LogTokenExpirationCheck(_logger, isExpired, _currentToken.ExpiresUtc);
         return Task.FromResult(isExpired);
     }
 
     public async Task LogoutAsync()
     {
         await RevokeTokenAsync();
-        _logger.LogInformation("User logged out (mock)");
+        LogUserLoggedOut(_logger);
         _currentToken = null;
     }
 
@@ -129,15 +130,15 @@ public class MockAuthService : IAuthService
 
         if (_currentToken == null)
         {
-            _logger.LogDebug("No token to revoke (mock)");
+            LogNoTokenToRevoke(_logger);
             return true;
         }
 
-        _logger.LogInformation("Token revoked (mock)");
+        LogTokenRevoked(_logger);
         return true;
     }
 
-    private string GenerateJwtToken(string username)
+    private static string GenerateJwtToken(string username)
     {
         // Generate a mock JWT-like token (not a real JWT, just for testing)
         string header = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
@@ -149,16 +150,58 @@ public class MockAuthService : IAuthService
         return $"{header}.{payload}.{signature}";
     }
 
-    private string GenerateRefreshToken()
+    private static string GenerateRefreshToken()
     {
         byte[] bytes = new byte[32];
-        _random.GetBytes(bytes);
+        RandomNumberGenerator.Fill(bytes);
         return Convert.ToBase64String(bytes);
     }
 
-    private async Task SimulateNetworkDelayAsync(CancellationToken cancellationToken)
+    private static async Task SimulateNetworkDelayAsync(CancellationToken cancellationToken)
     {
         int delay = RandomNumberGenerator.GetInt32(MinLatencyMs, MaxLatencyMs);
         await Task.Delay(delay, cancellationToken);
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "MockAuthService initialized")]
+    private static partial void LogMockAuthServiceInitialized(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Attempting login (mock)")]
+    private static partial void LogAttemptingLogin(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "MockAuthService should not be used in production builds")]
+    private static partial void LogMockAuthServiceInProduction(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Login failed for user {Username}: Invalid credentials")]
+    private static partial void LogLoginFailed(ILogger logger, string username);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "User {Username} logged in successfully. Token expires at {ExpiresUtc}")]
+    private static partial void LogLoginSucceeded(ILogger logger, string username, DateTimeOffset expiresUtc);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Refreshing token (mock)")]
+    private static partial void LogRefreshingToken(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Token refresh failed: Invalid refresh token")]
+    private static partial void LogRefreshTokenInvalid(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Token refreshed successfully. New token expires at {ExpiresUtc}")]
+    private static partial void LogTokenRefreshedSuccessfully(ILogger logger, DateTimeOffset expiresUtc);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Getting stored token (mock): {HasToken}")]
+    private static partial void LogGettingStoredToken(ILogger logger, bool hasToken);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No token stored, considering expired")]
+    private static partial void LogNoTokenStoredConsideringExpired(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Token expiration check: IsExpired={IsExpired}, ExpiresUtc={ExpiresUtc}")]
+    private static partial void LogTokenExpirationCheck(ILogger logger, bool isExpired, DateTimeOffset expiresUtc);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "User logged out (mock)")]
+    private static partial void LogUserLoggedOut(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No token to revoke (mock)")]
+    private static partial void LogNoTokenToRevoke(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Token revoked (mock)")]
+    private static partial void LogTokenRevoked(ILogger logger);
 }

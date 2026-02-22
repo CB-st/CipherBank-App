@@ -1,3 +1,7 @@
+// <copyright file="Wallet.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 namespace CipherBank_app.Models;
 
 /// <summary>
@@ -12,5 +16,6 @@ public record Wallet(
     DateTimeOffset CreatedAt)
 {
     public string FormattedBalance => $"{Balance:F8} {CryptoSymbol}";
+
     public bool HasBalance => Balance > 0;
 }

@@ -1,3 +1,7 @@
+// <copyright file="LogRedactionHelper.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 
 namespace CipherBank_app.Services.Logging;
@@ -108,7 +112,7 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        var atIndex = email.IndexOf('@');
+        var atIndex = email.IndexOf('@', StringComparison.Ordinal);
         if (atIndex <= 0)
         {
             return RedactionMarker;

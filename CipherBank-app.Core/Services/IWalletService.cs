@@ -1,3 +1,7 @@
+// <copyright file="IWalletService.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 
 namespace CipherBank_app.Services;
@@ -8,7 +12,10 @@ namespace CipherBank_app.Services;
 public interface IWalletService
 {
     Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken = default);
+
     Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken = default);
+
     Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken = default);
+
     Task<Wallet> CreateWalletAsync(string cryptoSymbol, CancellationToken cancellationToken = default);
 }

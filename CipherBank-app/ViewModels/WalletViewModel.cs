@@ -1,9 +1,14 @@
+// <copyright file="WalletViewModel.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -15,25 +20,16 @@ namespace CipherBank_app.ViewModels;
 /// <summary>
 /// ViewModel for the Wallet page displaying user's cryptocurrency wallets and transactions.
 /// </summary>
-public partial class WalletViewModel : ObservableObject
+public partial class WalletViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<WalletViewModel> _logger;
     private readonly IWalletService _walletService;
     private readonly ITransactionService _transactionService;
     private readonly ICryptoApiService _cryptoService;
+    private readonly IErrorHandler _errorHandler;
+    private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
-
-    public WalletViewModel(
-        ILogger<WalletViewModel> logger,
-        IWalletService walletService,
-        ITransactionService transactionService,
-        ICryptoApiService cryptoService)
-    {
-        _logger = logger;
-        _walletService = walletService;
-        _transactionService = transactionService;
-        _cryptoService = cryptoService;
-    }
+    private bool _disposed;
 
     [ObservableProperty]
     private ObservableCollection<Wallet> wallets = [];
@@ -68,6 +64,40 @@ public partial class WalletViewModel : ObservableObject
     [ObservableProperty]
     private bool isSending;
 
+    public WalletViewModel(
+        ILogger<WalletViewModel> logger,
+        IWalletService walletService,
+        ITransactionService transactionService,
+        ICryptoApiService cryptoService,
+        IErrorHandler errorHandler,
+        INavigationService navigation,
+        IDialogService dialog)
+    {
+        _logger = logger;
+        _walletService = walletService;
+        _transactionService = transactionService;
+        _cryptoService = cryptoService;
+        _errorHandler = errorHandler;
+        _ = navigation; // Reserved for future navigation needs
+        _dialog = dialog;
+    }
+
+    /// <summary>
+    /// Cancels any ongoing operations when leaving the page.
+    /// </summary>
+    public void OnDisappearing()
+    {
+        _cts?.Cancel();
+        LogWalletDisappearing(_logger);
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     partial void OnSelectedWalletChanged(Wallet? value)
     {
         if (value != null)
@@ -82,7 +112,10 @@ public partial class WalletViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadWalletsAsync()
     {
-        if (IsLoading) return;
+        if (IsLoading)
+        {
+            return;
+        }
 
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -92,56 +125,55 @@ public partial class WalletViewModel : ObservableObject
 
         try
         {
-            _logger.LogInformation("Loading wallets");
-            var walletList = await _walletService.GetWalletsAsync(_cts.Token);
+            LogLoadingWallets(_logger);
 
-            Wallets.Clear();
-            decimal totalUsd = 0;
-
-            foreach (var wallet in walletList)
-            {
-                Wallets.Add(wallet);
-
-                // Calculate USD value for each wallet
-                try
+            var success = await _errorHandler.HandleApiErrorsAsync(
+                async () =>
                 {
-                    var crypto = await _cryptoService.GetCryptoPriceAsync(wallet.CryptoSymbol, _cts.Token);
-                    totalUsd += wallet.Balance * crypto.CurrentPrice;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Could not get price for {Symbol}", wallet.CryptoSymbol);
-                }
-            }
+                    var walletList = await _walletService.GetWalletsAsync(_cts.Token);
 
-            TotalBalanceUsd = totalUsd;
+                    Wallets.Clear();
+                    decimal totalUsd = 0;
 
-            if (Wallets.Count > 0 && SelectedWallet == null)
+                    foreach (var wallet in walletList)
+                    {
+                        Wallets.Add(wallet);
+
+                        try
+                        {
+                            var crypto = await _cryptoService.GetCryptoPriceAsync(wallet.CryptoSymbol, _cts.Token);
+                            totalUsd += wallet.Balance * crypto.CurrentPrice;
+                        }
+                        catch (Exception ex)
+                        {
+                            LogCouldNotGetPrice(_logger, ex, wallet.CryptoSymbol);
+                        }
+                    }
+
+                    TotalBalanceUsd = totalUsd;
+
+                    if (Wallets.Count > 0 && SelectedWallet == null)
+                    {
+                        SelectedWallet = Wallets.First();
+                    }
+
+                    LogLoadedWallets(_logger, walletList.Count, TotalBalanceUsd);
+                },
+                msg => ErrorMessage = msg);
+
+            if (!success)
             {
-                SelectedWallet = Wallets.First();
-            }
+                if (ErrorMessage == null)
+                {
+                    LogLoadWalletsCancelled(_logger);
+                }
 
-            _logger.LogInformation("Loaded {Count} wallets with total value ${Value:N2}",
-                walletList.Count, TotalBalanceUsd);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogDebug("Load wallets operation was cancelled");
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Network error loading wallets");
-            ErrorMessage = "Network error. Please check your connection.";
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            _logger.LogWarning(ex, "Unauthorized access while loading wallets");
-            ErrorMessage = "Session expired. Please log in again.";
-            await Shell.Current.GoToAsync("//LoginPage");
+                return;
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error loading wallets");
+            LogUnexpectedErrorLoadingWallets(_logger, ex);
             ErrorMessage = "Failed to load wallets. Please try again.";
         }
         finally
@@ -156,7 +188,10 @@ public partial class WalletViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadTransactionsAsync()
     {
-        if (SelectedWallet == null || IsLoadingTransactions) return;
+        if (SelectedWallet == null || IsLoadingTransactions)
+        {
+            return;
+        }
 
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -165,7 +200,7 @@ public partial class WalletViewModel : ObservableObject
 
         try
         {
-            _logger.LogInformation("Loading transactions for wallet {WalletId}", SelectedWallet.Id);
+            LogLoadingTransactions(_logger, SelectedWallet.Id);
             var txList = await _transactionService.GetTransactionHistoryAsync(
                 SelectedWallet.Id, _cts.Token);
 
@@ -175,15 +210,15 @@ public partial class WalletViewModel : ObservableObject
                 Transactions.Add(tx);
             }
 
-            _logger.LogInformation("Loaded {Count} transactions", txList.Count);
+            LogLoadedTransactions(_logger, txList.Count);
         }
         catch (OperationCanceledException)
         {
-            _logger.LogDebug("Load transactions operation was cancelled");
+            LogLoadTransactionsCancelled(_logger);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading transactions");
+            LogErrorLoadingTransactions(_logger, ex);
         }
         finally
         {
@@ -199,36 +234,41 @@ public partial class WalletViewModel : ObservableObject
     {
         if (SelectedWallet == null)
         {
-            await Shell.Current.DisplayAlertAsync("Error", "Please select a wallet first.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please select a wallet first.", "OK");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(SendToAddress))
         {
-            await Shell.Current.DisplayAlertAsync("Error", "Please enter a destination address.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please enter a destination address.", "OK");
             return;
         }
 
         if (SendAmount <= 0)
         {
-            await Shell.Current.DisplayAlertAsync("Error", "Please enter a valid amount.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.", "OK");
             return;
         }
 
         if (SendAmount > SelectedWallet.Balance)
         {
-            await Shell.Current.DisplayAlertAsync("Error",
-                $"Insufficient balance. Available: {SelectedWallet.FormattedBalance}", "OK");
+            var insufficientMessage = $"Insufficient balance. Available: {SelectedWallet.FormattedBalance}";
+            await _dialog.ShowAlertAsync("Error", insufficientMessage, "OK");
             return;
         }
 
         // Confirm transaction
-        var confirm = await Shell.Current.DisplayAlertAsync(
+        var confirmMessage = $"Send {SendAmount:F8} {SelectedWallet.CryptoSymbol} to:\n{SendToAddress}";
+        var confirm = await _dialog.ShowConfirmAsync(
             "Confirm Send",
-            $"Send {SendAmount:F8} {SelectedWallet.CryptoSymbol} to:\n{SendToAddress}",
-            "Send", "Cancel");
+            confirmMessage,
+            "Send",
+            "Cancel");
 
-        if (!confirm) return;
+        if (!confirm)
+        {
+            return;
+        }
 
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -238,13 +278,12 @@ public partial class WalletViewModel : ObservableObject
 
         try
         {
-            _logger.LogInformation("Sending {Amount} {Symbol} to {Address}",
-                SendAmount, SelectedWallet.CryptoSymbol, SendToAddress);
+            LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol, SendToAddress);
 
             var transaction = await _transactionService.SendCryptoAsync(
                 SelectedWallet.Id, SendToAddress, SendAmount, _cts.Token);
 
-            await Shell.Current.DisplayAlertAsync(
+            await _dialog.ShowAlertAsync(
                 "Success",
                 $"Transaction submitted!\nID: {transaction.Id}\nStatus: {transaction.Status}",
                 "OK");
@@ -255,23 +294,25 @@ public partial class WalletViewModel : ObservableObject
             await LoadWalletsAsync();
             await LoadTransactionsAsync();
 
-            _logger.LogInformation("Send completed. Transaction ID: {TransactionId}", transaction.Id);
+            LogSendCompleted(_logger, transaction.Id);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Send failed: {Message}", ex.Message);
-            await Shell.Current.DisplayAlertAsync("Transaction Failed", ex.Message, "OK");
+            LogSendFailed(_logger, ex, ex.Message);
+            await _dialog.ShowAlertAsync("Transaction Failed", ex.Message, "OK");
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid send parameters");
-            await Shell.Current.DisplayAlertAsync("Invalid Input", ex.Message, "OK");
+            LogInvalidSendParameters(_logger, ex);
+            await _dialog.ShowAlertAsync("Invalid Input", ex.Message, "OK");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending crypto");
-            await Shell.Current.DisplayAlertAsync("Error",
-                "Failed to send transaction. Please try again.", "OK");
+            LogErrorSendingCrypto(_logger, ex);
+            await _dialog.ShowAlertAsync(
+                "Error",
+                "Failed to send transaction. Please try again.",
+                "OK");
         }
         finally
         {
@@ -285,42 +326,110 @@ public partial class WalletViewModel : ObservableObject
     [RelayCommand]
     private async Task CreateWalletAsync(string cryptoSymbol)
     {
-        if (string.IsNullOrWhiteSpace(cryptoSymbol)) return;
+        if (string.IsNullOrWhiteSpace(cryptoSymbol))
+        {
+            return;
+        }
 
         try
         {
-            _logger.LogInformation("Creating wallet for {Symbol}", cryptoSymbol);
+            LogCreatingWallet(_logger, cryptoSymbol);
             var wallet = await _walletService.CreateWalletAsync(cryptoSymbol);
 
             Wallets.Add(wallet);
             SelectedWallet = wallet;
 
-            await Shell.Current.DisplayAlertAsync(
+            await _dialog.ShowAlertAsync(
                 "Wallet Created",
                 $"New {wallet.CryptoName} wallet created!\nAddress: {wallet.Address}",
                 "OK");
 
-            _logger.LogInformation("Created wallet {WalletId} for {Symbol}", wallet.Id, cryptoSymbol);
+            LogCreatedWallet(_logger, wallet.Id, cryptoSymbol);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Could not create wallet: {Message}", ex.Message);
-            await Shell.Current.DisplayAlertAsync("Error", ex.Message, "OK");
+            LogCouldNotCreateWallet(_logger, ex, ex.Message);
+            await _dialog.ShowAlertAsync("Error", ex.Message, "OK");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating wallet");
-            await Shell.Current.DisplayAlertAsync("Error",
-                "Failed to create wallet. Please try again.", "OK");
+            LogErrorCreatingWallet(_logger, ex);
+            await _dialog.ShowAlertAsync(
+                "Error",
+                "Failed to create wallet. Please try again.",
+                "OK");
         }
     }
 
-    /// <summary>
-    /// Cancels any ongoing operations when leaving the page.
-    /// </summary>
-    public void OnDisappearing()
+#pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loading wallets")]
+    private static partial void LogLoadingWallets(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not get price for {Symbol}")]
+    private static partial void LogCouldNotGetPrice(ILogger logger, Exception ex, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loaded {Count} wallets with total value ${Value:N2}")]
+    private static partial void LogLoadedWallets(ILogger logger, int count, decimal value);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Load wallets operation was cancelled")]
+    private static partial void LogLoadWalletsCancelled(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unexpected error loading wallets")]
+    private static partial void LogUnexpectedErrorLoadingWallets(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loading transactions for wallet {WalletId}")]
+    private static partial void LogLoadingTransactions(ILogger logger, string walletId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loaded {Count} transactions")]
+    private static partial void LogLoadedTransactions(ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Load transactions operation was cancelled")]
+    private static partial void LogLoadTransactionsCancelled(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error loading transactions")]
+    private static partial void LogErrorLoadingTransactions(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Sending {Amount} {Symbol} to {Address}")]
+    private static partial void LogSendingCrypto(ILogger logger, decimal amount, string symbol, string address);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Send completed. Transaction ID: {TransactionId}")]
+    private static partial void LogSendCompleted(ILogger logger, string transactionId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Send failed: {Message}")]
+    private static partial void LogSendFailed(ILogger logger, Exception ex, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Invalid send parameters")]
+    private static partial void LogInvalidSendParameters(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error sending crypto")]
+    private static partial void LogErrorSendingCrypto(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Creating wallet for {Symbol}")]
+    private static partial void LogCreatingWallet(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Created wallet {WalletId} for {Symbol}")]
+    private static partial void LogCreatedWallet(ILogger logger, string walletId, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not create wallet: {Message}")]
+    private static partial void LogCouldNotCreateWallet(ILogger logger, Exception ex, string message);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error creating wallet")]
+    private static partial void LogErrorCreatingWallet(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Wallet page disappearing, operations cancelled")]
+    private static partial void LogWalletDisappearing(ILogger logger);
+#pragma warning restore SA1204 // Static members should appear before non-static members
+
+    private void Dispose(bool disposing)
     {
-        _cts?.Cancel();
-        _logger.LogDebug("Wallet page disappearing, operations cancelled");
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _cts?.Dispose();
+            }
+
+            _disposed = true;
+        }
     }
 }

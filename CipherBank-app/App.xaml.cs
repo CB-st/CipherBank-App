@@ -1,9 +1,12 @@
-﻿// <copyright file="App.xaml.cs" company="PlaceholderCompany">
-// Copyright (c) PlaceholderCompany. All rights reserved.
+// <copyright file="App.xaml.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 namespace CipherBank_app;
 
+/// <summary>
+/// The main application class.
+/// </summary>
 public partial class App : Application
 {
     public App()

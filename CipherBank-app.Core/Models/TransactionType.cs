@@ -1,3 +1,7 @@
+// <copyright file="TransactionType.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 namespace CipherBank_app.Models;
 
 /// <summary>
@@ -8,5 +12,5 @@ public enum TransactionType
     Purchase,
     Send,
     Receive,
-    Exchange
+    Exchange,
 }

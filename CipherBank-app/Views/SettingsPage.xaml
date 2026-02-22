@@ -26,26 +26,12 @@
                                TextColor="Gray" />
                         <Entry Placeholder="https://api.cipherbank.money"
                                Text="{Binding ApiEndpoint}"
-                               Keyboard="Url"
-                               IsEnabled="{Binding UseMocks, Converter={StaticResource InvertedBoolConverter}}" />
+                               Keyboard="Url" />
                     </VerticalStackLayout>
-
-                    <Grid ColumnDefinitions="*,Auto">
-                        <Label Grid.Column="0"
-                               Text="Use Mock Data"
-                               VerticalOptions="Center" />
-                        <Switch Grid.Column="1"
-                                IsToggled="{Binding UseMocks}" />
-                    </Grid>
-
-                    <Label Text="When enabled, the app uses simulated data instead of real API calls."
-                           FontSize="11"
-                           TextColor="Gray" />
 
                     <Button Text="Test Connection"
                             Command="{Binding TestConnectionCommand}"
                             IsEnabled="{Binding IsTesting, Converter={StaticResource InvertedBoolConverter}}"
-                            IsVisible="{Binding UseMocks, Converter={StaticResource InvertedBoolConverter}}"
                             BackgroundColor="#6C757D"
                             TextColor="White"
                             CornerRadius="8" />

@@ -24,7 +24,9 @@
                            FontSize="14"
                            TextColor="White"
                            Opacity="0.8" />
-                    <Label Text="{Binding TotalBalanceUsd, StringFormat='${0:N2}'}"
+                    <Label x:Name="WalletBalanceLabel"
+                           AutomationId="WalletBalanceLabel"
+                           Text="{Binding TotalBalanceUsd, StringFormat='${0:N2}'}"
                            FontSize="32"
                            FontAttributes="Bold"
                            TextColor="White" />
@@ -38,13 +40,15 @@
                                HeightRequest="40" />
 
             <!-- Error Message -->
-            <Border IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
-                    BackgroundColor="#FFF3CD"
-                    Stroke="#FFC107"
-                    StrokeThickness="1"
-                    Padding="12"
-                    StrokeShape="RoundRectangle 8">
-                <Label Text="{Binding ErrorMessage}"
+                <Border IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+                        BackgroundColor="#FFF3CD"
+                        Stroke="#FFC107"
+                        StrokeThickness="1"
+                        Padding="12"
+                        StrokeShape="RoundRectangle 8">
+                <Label x:Name="ErrorLabel"
+                       AutomationId="ErrorLabel"
+                       Text="{Binding ErrorMessage}"
                        TextColor="#856404" />
             </Border>
 
@@ -111,11 +115,22 @@
                            FontSize="14"
                            TextColor="Gray" />
 
-                    <Entry Placeholder="Destination Address"
+                    <Label x:Name="WalletAddressLabel"
+                           AutomationId="WalletAddressLabel"
+                           Text="{Binding SelectedWallet.Address}"
+                           FontSize="12"
+                           TextColor="Gray"
+                           LineBreakMode="TailTruncation" />
+
+                    <Entry x:Name="RecipientAddressEntry"
+                           AutomationId="RecipientAddressEntry"
+                           Placeholder="Destination Address"
                            Text="{Binding SendToAddress}"
                            IsEnabled="{Binding IsSending, Converter={StaticResource InvertedBoolConverter}}" />
 
-                    <Entry Placeholder="Amount"
+                    <Entry x:Name="SendAmountEntry"
+                           AutomationId="SendAmountEntry"
+                           Placeholder="Amount"
                            Text="{Binding SendAmount}"
                            Keyboard="Numeric"
                            IsEnabled="{Binding IsSending, Converter={StaticResource InvertedBoolConverter}}" />
@@ -124,7 +139,9 @@
                            FontSize="12"
                            TextColor="Gray" />
 
-                    <Button Text="Send"
+                    <Button x:Name="SendButton"
+                            AutomationId="SendButton"
+                            Text="Send"
                             Command="{Binding SendCryptoCommand}"
                             IsEnabled="{Binding IsSending, Converter={StaticResource InvertedBoolConverter}}"
                             BackgroundColor="#512BD4"
@@ -147,7 +164,9 @@
                                IsVisible="{Binding IsLoadingTransactions}"
                                HeightRequest="30" />
 
-            <CollectionView ItemsSource="{Binding Transactions}"
+            <CollectionView x:Name="TransactionHistoryList"
+                            AutomationId="TransactionHistoryList"
+                            ItemsSource="{Binding Transactions}"
                             IsVisible="{Binding IsLoadingTransactions, Converter={StaticResource InvertedBoolConverter}}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="models:Transaction">

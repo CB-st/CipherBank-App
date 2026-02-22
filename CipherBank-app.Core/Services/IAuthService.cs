@@ -1,3 +1,7 @@
+// <copyright file="IAuthService.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using CipherBank_app.Models;
 
 namespace CipherBank_app.Services;
@@ -8,9 +12,13 @@ namespace CipherBank_app.Services;
 public interface IAuthService
 {
     Task<AuthToken> LoginAsync(string user, string password, CancellationToken cancellationToken = default);
+
     Task<AuthToken> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default);
+
     Task<AuthToken?> GetStoredTokenAsync();
+
     Task<bool> IsTokenExpiredAsync();
+
     Task LogoutAsync();
 
     /// <summary>

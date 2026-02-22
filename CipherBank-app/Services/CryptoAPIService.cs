@@ -1,5 +1,10 @@
+// <copyright file="CryptoAPIService.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading;
@@ -13,32 +18,28 @@ namespace CipherBank_app.Services;
 /// Production implementation of ICryptoAPIService using HTTP client.
 /// Retrieves cryptocurrency market data from the CipherBank API.
 /// </summary>
-public class CryptoAPIService : ICryptoApiService
+public sealed partial class CryptoAPIService : ICryptoApiService
 {
-    private readonly ILogger<CryptoAPIService> _logger;
-    private readonly HttpClient _http;
-    private readonly IAuthService _auth;
-
     private const string PricesEndpoint = "api/v1/crypto/prices";
     private const string PriceEndpoint = "api/v1/crypto/price";
     private const string HistoryEndpoint = "api/v1/crypto/history";
     private const string SearchEndpoint = "api/v1/crypto/search";
 
-    public CryptoAPIService(ILogger<CryptoAPIService> logger, HttpClient http, IAuthService auth)
+    private readonly ILogger<CryptoAPIService> _logger;
+    private readonly HttpClient _http;
+
+    public CryptoAPIService(ILogger<CryptoAPIService> logger, HttpClient http)
     {
         _logger = logger;
         _http = http;
-        _auth = auth;
     }
 
     public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Fetching all cryptocurrency prices from API");
+        LogFetchingAllPrices(_logger);
 
         try
         {
-            await EnsureAuthenticatedAsync(cancellationToken);
-
             var response = await _http.GetAsync(PricesEndpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -46,16 +47,16 @@ public class CryptoAPIService : ICryptoApiService
 
             if (cryptos == null)
             {
-                _logger.LogWarning("API returned null response for crypto prices");
+                LogNullResponseForPrices(_logger);
                 return [];
             }
 
-            _logger.LogInformation("Retrieved {Count} cryptocurrency prices from API", cryptos.Count);
+            LogRetrievedPrices(_logger, cryptos.Count);
             return cryptos;
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error fetching crypto prices: {StatusCode}", ex.StatusCode);
+            LogHttpErrorFetchingPrices(_logger, ex, ex.StatusCode);
             throw new InvalidOperationException("Failed to retrieve cryptocurrency prices from server", ex);
         }
     }
@@ -64,12 +65,10 @@ public class CryptoAPIService : ICryptoApiService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
 
-        _logger.LogDebug("Fetching price for {Symbol} from API", symbol);
+        LogFetchingPriceForSymbol(_logger, symbol);
 
         try
         {
-            await EnsureAuthenticatedAsync(cancellationToken);
-
             var endpoint = $"{PriceEndpoint}/{Uri.EscapeDataString(symbol.ToUpperInvariant())}";
             var response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -78,21 +77,21 @@ public class CryptoAPIService : ICryptoApiService
 
             if (crypto == null)
             {
-                _logger.LogWarning("API returned null response for {Symbol}", symbol);
+                LogNullResponseForSymbol(_logger, symbol);
                 throw new KeyNotFoundException($"Cryptocurrency '{symbol}' not found");
             }
 
-            _logger.LogInformation("Retrieved price for {Symbol}: {Price}", symbol, crypto.CurrentPrice);
+            LogRetrievedPriceForSymbol(_logger, symbol, crypto.CurrentPrice);
             return crypto;
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            _logger.LogWarning("Cryptocurrency {Symbol} not found", symbol);
+            LogSymbolNotFound(_logger, symbol);
             throw new KeyNotFoundException($"Cryptocurrency '{symbol}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error fetching price for {Symbol}: {StatusCode}", symbol, ex.StatusCode);
+            LogHttpErrorFetchingSymbolPrice(_logger, ex, symbol, ex.StatusCode);
             throw new InvalidOperationException($"Failed to retrieve price for {symbol} from server", ex);
         }
     }
@@ -102,12 +101,10 @@ public class CryptoAPIService : ICryptoApiService
         ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(period);
 
-        _logger.LogDebug("Fetching price history for {Symbol} over {Period} from API", symbol, period);
+        LogFetchingHistory(_logger, symbol, period);
 
         try
         {
-            await EnsureAuthenticatedAsync(cancellationToken);
-
             var endpoint = $"{HistoryEndpoint}/{Uri.EscapeDataString(symbol.ToUpperInvariant())}?period={Uri.EscapeDataString(period)}";
             var response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -116,22 +113,21 @@ public class CryptoAPIService : ICryptoApiService
 
             if (history == null)
             {
-                _logger.LogWarning("API returned null response for {Symbol} history", symbol);
+                LogNullResponseForHistory(_logger, symbol);
                 throw new KeyNotFoundException($"Price history for '{symbol}' not found");
             }
 
-            _logger.LogInformation("Retrieved {Count} price points for {Symbol} over {Period}",
-                history.PricePoints.Count, symbol, period);
+            LogRetrievedHistory(_logger, history.PricePoints.Count, symbol, period);
             return history;
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            _logger.LogWarning("Price history for {Symbol} not found", symbol);
+            LogHistoryNotFound(_logger, symbol);
             throw new KeyNotFoundException($"Price history for '{symbol}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error fetching history for {Symbol}: {StatusCode}", symbol, ex.StatusCode);
+            LogHttpErrorFetchingHistory(_logger, ex, symbol, ex.StatusCode);
             throw new InvalidOperationException($"Failed to retrieve price history for {symbol} from server", ex);
         }
     }
@@ -140,12 +136,10 @@ public class CryptoAPIService : ICryptoApiService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
 
-        _logger.LogDebug("Searching cryptocurrencies for '{Query}' from API", query);
+        LogSearchingCrypto(_logger, query);
 
         try
         {
-            await EnsureAuthenticatedAsync(cancellationToken);
-
             var endpoint = $"{SearchEndpoint}?q={Uri.EscapeDataString(query)}";
             var response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -154,36 +148,71 @@ public class CryptoAPIService : ICryptoApiService
 
             if (results == null)
             {
-                _logger.LogWarning("API returned null response for search query '{Query}'", query);
+                LogNullResponseForSearch(_logger, query);
                 return [];
             }
 
-            _logger.LogInformation("Search for '{Query}' returned {Count} results", query, results.Count);
+            LogSearchResults(_logger, query, results.Count);
             return results;
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error searching for '{Query}': {StatusCode}", query, ex.StatusCode);
-            throw new InvalidOperationException($"Failed to search cryptocurrencies from server", ex);
+            LogHttpErrorSearching(_logger, ex, query, ex.StatusCode);
+            throw new InvalidOperationException("Failed to search cryptocurrencies from server", ex);
         }
     }
 
-    private async Task EnsureAuthenticatedAsync(CancellationToken cancellationToken)
-    {
-        // Check if token needs refresh
-        if (await _auth.IsTokenExpiredAsync())
-        {
-            var token = await _auth.GetStoredTokenAsync();
-            if (token != null)
-            {
-                _logger.LogInformation("Token expired, attempting refresh");
-                await _auth.RefreshAsync(token.RefreshToken, cancellationToken);
-            }
-            else
-            {
-                _logger.LogWarning("No stored token available for refresh");
-                throw new UnauthorizedAccessException("Authentication required. Please log in.");
-            }
-        }
-    }
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching all cryptocurrency prices from API")]
+    private static partial void LogFetchingAllPrices(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "API returned null response for crypto prices")]
+    private static partial void LogNullResponseForPrices(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Retrieved {Count} cryptocurrency prices from API")]
+    private static partial void LogRetrievedPrices(ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "HTTP error fetching crypto prices: {StatusCode}")]
+    private static partial void LogHttpErrorFetchingPrices(ILogger logger, Exception ex, HttpStatusCode? statusCode);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching price for {Symbol} from API")]
+    private static partial void LogFetchingPriceForSymbol(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "API returned null response for {Symbol}")]
+    private static partial void LogNullResponseForSymbol(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Retrieved price for {Symbol}: {Price}")]
+    private static partial void LogRetrievedPriceForSymbol(ILogger logger, string symbol, decimal price);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Cryptocurrency {Symbol} not found")]
+    private static partial void LogSymbolNotFound(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "HTTP error fetching price for {Symbol}: {StatusCode}")]
+    private static partial void LogHttpErrorFetchingSymbolPrice(ILogger logger, Exception ex, string symbol, HttpStatusCode? statusCode);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Fetching price history for {Symbol} over {Period} from API")]
+    private static partial void LogFetchingHistory(ILogger logger, string symbol, string period);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "API returned null response for {Symbol} history")]
+    private static partial void LogNullResponseForHistory(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Retrieved {Count} price points for {Symbol} over {Period}")]
+    private static partial void LogRetrievedHistory(ILogger logger, int count, string symbol, string period);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Price history for {Symbol} not found")]
+    private static partial void LogHistoryNotFound(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "HTTP error fetching history for {Symbol}: {StatusCode}")]
+    private static partial void LogHttpErrorFetchingHistory(ILogger logger, Exception ex, string symbol, HttpStatusCode? statusCode);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Searching cryptocurrencies for '{Query}' from API")]
+    private static partial void LogSearchingCrypto(ILogger logger, string query);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "API returned null response for search query '{Query}'")]
+    private static partial void LogNullResponseForSearch(ILogger logger, string query);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Search for '{Query}' returned {Count} results")]
+    private static partial void LogSearchResults(ILogger logger, string query, int count);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "HTTP error searching for '{Query}': {StatusCode}")]
+    private static partial void LogHttpErrorSearching(ILogger logger, Exception ex, string query, HttpStatusCode? statusCode);
 }

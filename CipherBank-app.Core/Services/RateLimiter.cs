@@ -1,3 +1,7 @@
+// <copyright file="RateLimiter.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -10,11 +14,33 @@ namespace CipherBank_app.Services;
 /// Thread-safe sliding window rate limiter.
 /// Limits requests to a configurable number per time window.
 /// </summary>
-public sealed class RateLimiter
+public sealed partial class RateLimiter : IDisposable
 {
     private readonly ILogger<RateLimiter>? _logger;
     private readonly ConcurrentQueue<DateTimeOffset> _requestTimestamps = new();
     private readonly SemaphoreSlim _lock = new(1, 1);
+
+    public RateLimiter()
+        : this(null, 60, TimeSpan.FromMinutes(1))
+    {
+    }
+
+    public RateLimiter(ILogger<RateLimiter>? logger)
+        : this(logger, 60, TimeSpan.FromMinutes(1))
+    {
+    }
+
+    public RateLimiter(ILogger<RateLimiter>? logger, int maxRequests, TimeSpan windowDuration)
+    {
+        _logger = logger;
+        MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), "Must be positive");
+        WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), "Must be positive");
+
+        if (_logger is not null)
+        {
+            LogRateLimiterInitialized(_logger, maxRequests, windowDuration);
+        }
+    }
 
     /// <summary>
     /// Maximum number of requests allowed per window. Default: 60.
@@ -26,22 +52,10 @@ public sealed class RateLimiter
     /// </summary>
     public TimeSpan WindowDuration { get; }
 
-    public RateLimiter() : this(null, 60, TimeSpan.FromMinutes(1))
-    {
-    }
-
-    public RateLimiter(ILogger<RateLimiter>? logger) : this(logger, 60, TimeSpan.FromMinutes(1))
-    {
-    }
-
-    public RateLimiter(ILogger<RateLimiter>? logger, int maxRequests, TimeSpan windowDuration)
-    {
-        _logger = logger;
-        MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), "Must be positive");
-        WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), "Must be positive");
-
-        _logger?.LogInformation("RateLimiter initialized: {MaxRequests} requests per {WindowDuration}", maxRequests, windowDuration);
-    }
+    /// <summary>
+    /// Gets the current number of requests in the sliding window.
+    /// </summary>
+    public int CurrentRequestCount => _requestTimestamps.Count;
 
     /// <summary>
     /// Attempts to acquire a permit to make a request.
@@ -64,7 +78,11 @@ public sealed class RateLimiter
             // Check if we're at the limit
             if (_requestTimestamps.Count >= MaxRequests)
             {
-                _logger?.LogWarning("Rate limit exceeded: {Count}/{Max} requests in window", _requestTimestamps.Count, MaxRequests);
+                if (_logger is not null)
+                {
+                    LogRateLimitExceeded(_logger, _requestTimestamps.Count, MaxRequests);
+                }
+
                 return false;
             }
 
@@ -117,8 +135,15 @@ public sealed class RateLimiter
         }
     }
 
-    /// <summary>
-    /// Gets the current number of requests in the sliding window.
-    /// </summary>
-    public int CurrentRequestCount => _requestTimestamps.Count;
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _lock.Dispose();
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "RateLimiter initialized: {MaxRequests} requests per {WindowDuration}")]
+    private static partial void LogRateLimiterInitialized(ILogger logger, int maxRequests, TimeSpan windowDuration);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit exceeded: {Count}/{Max} requests in window")]
+    private static partial void LogRateLimitExceeded(ILogger logger, int count, int max);
 }

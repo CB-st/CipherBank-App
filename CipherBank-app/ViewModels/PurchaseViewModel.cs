@@ -1,9 +1,15 @@
+// <copyright file="PurchaseViewModel.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -15,24 +21,18 @@ namespace CipherBank_app.ViewModels;
 /// <summary>
 /// ViewModel for the Purchase page allowing users to buy cryptocurrency.
 /// </summary>
-public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
+public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, IDisposable
 {
+    private const decimal FeePercentage = 0.015m; // 1.5% fee
+
     private readonly ILogger<PurchaseViewModel> _logger;
     private readonly ICryptoApiService _cryptoService;
     private readonly ITransactionService _transactionService;
+    private readonly IErrorHandler _errorHandler;
+    private readonly INavigationService _navigation;
+    private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
-
-    private const decimal FeePercentage = 0.015m; // 1.5% fee
-
-    public PurchaseViewModel(
-        ILogger<PurchaseViewModel> logger,
-        ICryptoApiService cryptoService,
-        ITransactionService transactionService)
-    {
-        _logger = logger;
-        _cryptoService = cryptoService;
-        _transactionService = transactionService;
-    }
+    private bool _disposed;
 
     [ObservableProperty]
     private ObservableCollection<CryptoCurrency> availableCryptos = [];
@@ -61,6 +61,50 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
     [ObservableProperty]
     private string amountText = string.Empty;
 
+    public PurchaseViewModel(
+        ILogger<PurchaseViewModel> logger,
+        ICryptoApiService cryptoService,
+        ITransactionService transactionService,
+        IErrorHandler errorHandler,
+        INavigationService navigation,
+        IDialogService dialog)
+    {
+        _logger = logger;
+        _cryptoService = cryptoService;
+        _transactionService = transactionService;
+        _errorHandler = errorHandler;
+        _navigation = navigation;
+        _dialog = dialog;
+    }
+
+    /// <summary>
+    /// Handles query parameters passed to this page.
+    /// </summary>
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        if (query.TryGetValue("symbol", out var symbolObj) && symbolObj is string symbol)
+        {
+            LogReceivedSymbol(_logger, symbol);
+            _ = SelectCryptoBySymbolAsync(symbol);
+        }
+    }
+
+    /// <summary>
+    /// Cancels any ongoing operations when leaving the page.
+    /// </summary>
+    public void OnDisappearing()
+    {
+        _cts?.Cancel();
+        LogPurchaseDisappearing(_logger);
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     partial void OnSelectedCryptoChanged(CryptoCurrency? value)
     {
         CalculateTotalCost();
@@ -80,18 +124,6 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
         }
     }
 
-    /// <summary>
-    /// Handles query parameters passed to this page.
-    /// </summary>
-    public void ApplyQueryAttributes(IDictionary<string, object> query)
-    {
-        if (query.TryGetValue("symbol", out var symbolObj) && symbolObj is string symbol)
-        {
-            _logger.LogInformation("Received symbol parameter: {Symbol}", symbol);
-            _ = SelectCryptoBySymbolAsync(symbol);
-        }
-    }
-
     private async Task SelectCryptoBySymbolAsync(string symbol)
     {
         await LoadAvailableCryptosAsync();
@@ -102,7 +134,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
         if (crypto != null)
         {
             SelectedCrypto = crypto;
-            _logger.LogInformation("Pre-selected {Symbol} for purchase", symbol);
+            LogPreSelectedSymbol(_logger, symbol);
         }
     }
 
@@ -112,7 +144,10 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
     [RelayCommand]
     private async Task LoadAvailableCryptosAsync()
     {
-        if (IsLoading) return;
+        if (IsLoading)
+        {
+            return;
+        }
 
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -122,40 +157,41 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
 
         try
         {
-            _logger.LogInformation("Loading available cryptocurrencies for purchase");
-            var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+            LogLoadingCryptos(_logger);
 
-            AvailableCryptos.Clear();
-            foreach (var crypto in cryptos)
+            var success = await _errorHandler.HandleApiErrorsAsync(
+                async () =>
+                {
+                    var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+
+                    AvailableCryptos.Clear();
+                    foreach (var crypto in cryptos)
+                    {
+                        AvailableCryptos.Add(crypto);
+                    }
+
+                    if (AvailableCryptos.Count > 0 && SelectedCrypto == null)
+                    {
+                        SelectedCrypto = AvailableCryptos.First();
+                    }
+
+                    LogLoadedCryptos(_logger, cryptos.Count);
+                },
+                msg => ErrorMessage = msg);
+
+            if (!success)
             {
-                AvailableCryptos.Add(crypto);
-            }
+                if (ErrorMessage == null)
+                {
+                    LogLoadCryptosCancelled(_logger);
+                }
 
-            if (AvailableCryptos.Count > 0 && SelectedCrypto == null)
-            {
-                SelectedCrypto = AvailableCryptos.First();
+                return;
             }
-
-            _logger.LogInformation("Loaded {Count} cryptocurrencies for purchase", cryptos.Count);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogDebug("Load cryptos operation was cancelled");
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Network error loading cryptocurrencies");
-            ErrorMessage = "Network error. Please check your connection.";
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            _logger.LogWarning(ex, "Unauthorized access while loading cryptocurrencies");
-            ErrorMessage = "Session expired. Please log in again.";
-            await Shell.Current.GoToAsync("//LoginPage");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error loading cryptocurrencies");
+            LogUnexpectedErrorLoadingCryptos(_logger, ex);
             ErrorMessage = "Failed to load cryptocurrencies. Please try again.";
         }
         finally
@@ -181,8 +217,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
         Fee = subtotal * FeePercentage;
         TotalCost = subtotal + Fee;
 
-        _logger.LogDebug("Calculated purchase: {Amount} {Symbol} = ${Subtotal:F2} + ${Fee:F2} fee = ${Total:F2}",
-            Amount, SelectedCrypto.Symbol, subtotal, Fee, TotalCost);
+        LogCalculatedPurchase(_logger, Amount, SelectedCrypto.Symbol, subtotal, Fee, TotalCost);
     }
 
     /// <summary>
@@ -193,26 +228,32 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
     {
         if (SelectedCrypto == null)
         {
-            await Shell.Current.DisplayAlertAsync("Error", "Please select a cryptocurrency.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please select a cryptocurrency.", "OK");
             return;
         }
 
         if (Amount <= 0)
         {
-            await Shell.Current.DisplayAlertAsync("Error", "Please enter a valid amount.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.", "OK");
             return;
         }
 
         // Confirm purchase
-        var confirm = await Shell.Current.DisplayAlertAsync(
-            "Confirm Purchase",
+        var confirmMessage =
             $"Buy {Amount:F8} {SelectedCrypto.Symbol} ({SelectedCrypto.Name})\n\n" +
             $"Subtotal: ${Amount * SelectedCrypto.CurrentPrice:F2}\n" +
             $"Fee (1.5%): ${Fee:F2}\n" +
-            $"Total: ${TotalCost:F2}",
-            "Purchase", "Cancel");
+            $"Total: ${TotalCost:F2}";
+        var confirm = await _dialog.ShowConfirmAsync(
+            "Confirm Purchase",
+            confirmMessage,
+            "Purchase",
+            "Cancel");
 
-        if (!confirm) return;
+        if (!confirm)
+        {
+            return;
+        }
 
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -222,16 +263,18 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
 
         try
         {
-            _logger.LogInformation("Purchasing {Amount} {Symbol}", Amount, SelectedCrypto.Symbol);
+            LogPurchasing(_logger, Amount, SelectedCrypto.Symbol);
 
             var transaction = await _transactionService.PurchaseCryptoAsync(
                 SelectedCrypto.Symbol, Amount, _cts.Token);
 
-            await Shell.Current.DisplayAlertAsync(
-                "Purchase Complete",
+            var successMessage =
                 $"Successfully purchased {transaction.Amount:F8} {transaction.CryptoSymbol}!\n\n" +
                 $"Transaction ID: {transaction.Id}\n" +
-                $"Fee: {transaction.FeeAmount:F8} {transaction.CryptoSymbol}",
+                $"Fee: {transaction.FeeAmount:F8} {transaction.CryptoSymbol}";
+            await _dialog.ShowAlertAsync(
+                "Purchase Complete",
+                successMessage,
                 "OK");
 
             // Clear form
@@ -239,38 +282,41 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
             Amount = 0;
             CalculateTotalCost();
 
-            _logger.LogInformation("Purchase completed. Transaction ID: {TransactionId}", transaction.Id);
+            LogPurchaseCompleted(_logger, transaction.Id);
 
             // Optionally navigate to wallet
-            var viewWallet = await Shell.Current.DisplayAlertAsync(
+            var viewWallet = await _dialog.ShowConfirmAsync(
                 "View Wallet?",
                 "Would you like to view your wallet?",
-                "Yes", "No");
+                "Yes",
+                "No");
 
             if (viewWallet)
             {
-                await Shell.Current.GoToAsync("//WalletPage");
+                await _navigation.GoToAsync(Routes.Wallet);
             }
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Purchase failed: {Message}", ex.Message);
-            await Shell.Current.DisplayAlertAsync("Purchase Failed", ex.Message, "OK");
+            LogPurchaseFailed(_logger, ex, ex.Message);
+            await _dialog.ShowAlertAsync("Purchase Failed", ex.Message, "OK");
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid purchase parameters");
-            await Shell.Current.DisplayAlertAsync("Invalid Input", ex.Message, "OK");
+            LogInvalidPurchaseParameters(_logger, ex);
+            await _dialog.ShowAlertAsync("Invalid Input", ex.Message, "OK");
         }
         catch (OperationCanceledException)
         {
-            _logger.LogDebug("Purchase operation was cancelled");
+            LogPurchaseCancelled(_logger);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing purchase");
-            await Shell.Current.DisplayAlertAsync("Error",
-                "Failed to complete purchase. Please try again.", "OK");
+            LogErrorProcessingPurchase(_logger, ex);
+            await _dialog.ShowAlertAsync(
+                "Error",
+                "Failed to complete purchase. Please try again.",
+                "OK");
         }
         finally
         {
@@ -285,22 +331,74 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable
     private void SetPresetAmount(string usdAmountString)
     {
         if (SelectedCrypto == null || !decimal.TryParse(usdAmountString, out var usdAmount))
+        {
             return;
+        }
 
         Amount = usdAmount / SelectedCrypto.CurrentPrice;
-        AmountText = Amount.ToString("F8");
+        AmountText = Amount.ToString("F8", CultureInfo.CurrentCulture);
         CalculateTotalCost();
 
-        _logger.LogDebug("Set preset amount: ${USD} = {Amount} {Symbol}",
-            usdAmount, Amount, SelectedCrypto.Symbol);
+        LogSetPresetAmount(_logger, usdAmount, Amount, SelectedCrypto.Symbol);
     }
 
-    /// <summary>
-    /// Cancels any ongoing operations when leaving the page.
-    /// </summary>
-    public void OnDisappearing()
+#pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
+    [LoggerMessage(Level = LogLevel.Information, Message = "Received symbol parameter: {Symbol}")]
+    private static partial void LogReceivedSymbol(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Pre-selected {Symbol} for purchase")]
+    private static partial void LogPreSelectedSymbol(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loading available cryptocurrencies for purchase")]
+    private static partial void LogLoadingCryptos(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loaded {Count} cryptocurrencies for purchase")]
+    private static partial void LogLoadedCryptos(ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Load cryptos operation was cancelled")]
+    private static partial void LogLoadCryptosCancelled(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unexpected error loading cryptocurrencies")]
+    private static partial void LogUnexpectedErrorLoadingCryptos(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Calculated purchase: {Amount} {Symbol} = ${Subtotal:F2} + ${Fee:F2} fee = ${Total:F2}")]
+    private static partial void LogCalculatedPurchase(ILogger logger, decimal amount, string symbol, decimal subtotal, decimal fee, decimal total);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Purchasing {Amount} {Symbol}")]
+    private static partial void LogPurchasing(ILogger logger, decimal amount, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Purchase completed. Transaction ID: {TransactionId}")]
+    private static partial void LogPurchaseCompleted(ILogger logger, string transactionId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Purchase failed: {Message}")]
+    private static partial void LogPurchaseFailed(ILogger logger, Exception ex, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Invalid purchase parameters")]
+    private static partial void LogInvalidPurchaseParameters(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Purchase operation was cancelled")]
+    private static partial void LogPurchaseCancelled(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error processing purchase")]
+    private static partial void LogErrorProcessingPurchase(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Set preset amount: ${Usd} = {Amount} {Symbol}")]
+    private static partial void LogSetPresetAmount(ILogger logger, decimal usd, decimal amount, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Purchase page disappearing, operations cancelled")]
+    private static partial void LogPurchaseDisappearing(ILogger logger);
+#pragma warning restore SA1204 // Static members should appear before non-static members
+
+    private void Dispose(bool disposing)
     {
-        _cts?.Cancel();
-        _logger.LogDebug("Purchase page disappearing, operations cancelled");
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _cts?.Dispose();
+            }
+
+            _disposed = true;
+        }
     }
 }

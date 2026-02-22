@@ -1,8 +1,13 @@
+// <copyright file="DashboardViewModel.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using System;
 using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,17 +19,15 @@ namespace CipherBank_app.ViewModels;
 /// <summary>
 /// ViewModel for the Dashboard page displaying cryptocurrency prices and market data.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject
+public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<DashboardViewModel> _logger;
     private readonly ICryptoApiService _cryptoService;
+    private readonly IErrorHandler _errorHandler;
+    private readonly INavigationService _navigation;
+    private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
-
-    public DashboardViewModel(ILogger<DashboardViewModel> logger, ICryptoApiService cryptoService)
-    {
-        _logger = logger;
-        _cryptoService = cryptoService;
-    }
+    private bool _disposed;
 
     [ObservableProperty]
     private ObservableCollection<CryptoCurrency> cryptocurrencies = [];
@@ -44,98 +47,134 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private decimal totalPortfolioValue;
 
+    public DashboardViewModel(
+        ILogger<DashboardViewModel> logger,
+        ICryptoApiService cryptoService,
+        IErrorHandler errorHandler,
+        INavigationService navigation,
+        IDialogService dialog)
+    {
+        _logger = logger;
+        _cryptoService = cryptoService;
+        _errorHandler = errorHandler;
+        _navigation = navigation;
+        _dialog = dialog;
+    }
+
+    /// <summary>
+    /// Cancels any ongoing operations when leaving the page.
+    /// </summary>
+    public void OnDisappearing()
+    {
+        _cts?.Cancel();
+        LogDashboardDisappearing(_logger);
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     /// <summary>
     /// Loads cryptocurrency prices from the API.
     /// </summary>
     [RelayCommand]
-    private async Task LoadPricesAsync()
-    {
-        if (IsLoading) return;
-
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
-
-        IsLoading = true;
-        ErrorMessage = null;
-
-        try
-        {
-            _logger.LogInformation("Loading cryptocurrency prices");
-            var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
-
-            Cryptocurrencies.Clear();
-            foreach (var crypto in cryptos)
-            {
-                Cryptocurrencies.Add(crypto);
-            }
-
-            _logger.LogInformation("Loaded {Count} cryptocurrencies", cryptos.Count);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogDebug("Load prices operation was cancelled");
-        }
-        catch (HttpRequestException ex)
-        {
-            _logger.LogError(ex, "Network error loading crypto prices");
-            ErrorMessage = "Network error. Please check your connection.";
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            _logger.LogWarning(ex, "Unauthorized access while loading prices");
-            ErrorMessage = "Session expired. Please log in again.";
-            await Shell.Current.GoToAsync("//LoginPage");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error loading crypto prices");
-            ErrorMessage = "Failed to load prices. Please try again.";
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
+    private async Task LoadPricesAsync() => await LoadCryptoPricesAsync(isRefresh: false);
 
     /// <summary>
     /// Refreshes cryptocurrency prices (pull-to-refresh).
     /// </summary>
     [RelayCommand]
-    private async Task RefreshPricesAsync()
+    private async Task RefreshPricesAsync() => await LoadCryptoPricesAsync(isRefresh: true);
+
+    private async Task LoadCryptoPricesAsync(bool isRefresh)
     {
-        if (IsRefreshing) return;
+        if (isRefresh ? IsRefreshing : IsLoading)
+        {
+            return;
+        }
 
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
 
-        IsRefreshing = true;
+        if (isRefresh)
+        {
+            IsRefreshing = true;
+        }
+        else
+        {
+            IsLoading = true;
+        }
+
         ErrorMessage = null;
 
         try
         {
-            _logger.LogInformation("Refreshing cryptocurrency prices");
-            var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
-
-            Cryptocurrencies.Clear();
-            foreach (var crypto in cryptos)
+            if (isRefresh)
             {
-                Cryptocurrencies.Add(crypto);
+                LogRefreshingPrices(_logger);
+            }
+            else
+            {
+                LogLoadingPrices(_logger);
             }
 
-            _logger.LogInformation("Refreshed {Count} cryptocurrencies", cryptos.Count);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogDebug("Refresh operation was cancelled");
+            var success = await _errorHandler.HandleApiErrorsAsync(
+                async () =>
+                {
+                    var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                    Cryptocurrencies.Clear();
+                    foreach (var crypto in cryptos)
+                    {
+                        Cryptocurrencies.Add(crypto);
+                    }
+
+                    if (isRefresh)
+                    {
+                        LogRefreshedCount(_logger, cryptos.Count);
+                    }
+                    else
+                    {
+                        LogLoadedCount(_logger, cryptos.Count);
+                    }
+                },
+                msg => ErrorMessage = msg,
+                isRefresh ? "Failed to refresh. Pull down to try again." : "Network error. Please check your connection.");
+
+            if (!success)
+            {
+                if (ErrorMessage == null)
+                {
+                    if (isRefresh)
+                    {
+                        LogRefreshCancelled(_logger);
+                    }
+                    else
+                    {
+                        LogLoadPricesCancelled(_logger);
+                    }
+                }
+
+                return;
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error refreshing crypto prices");
-            ErrorMessage = "Failed to refresh. Pull down to try again.";
+            LogErrorLoadingPrices(_logger, ex);
+            ErrorMessage = isRefresh ? "Failed to refresh. Pull down to try again." : "Failed to load prices. Please try again.";
         }
         finally
         {
-            IsRefreshing = false;
+            if (isRefresh)
+            {
+                IsRefreshing = false;
+            }
+            else
+            {
+                IsLoading = false;
+            }
         }
     }
 
@@ -147,12 +186,22 @@ public partial class DashboardViewModel : ObservableObject
     {
         if (SelectedCrypto == null)
         {
-            _logger.LogWarning("No cryptocurrency selected for purchase navigation");
+            LogNoCryptoSelected(_logger);
             return;
         }
 
-        _logger.LogInformation("Navigating to purchase page for {Symbol}", SelectedCrypto.Symbol);
-        await Shell.Current.GoToAsync($"//PurchasePage?symbol={SelectedCrypto.Symbol}");
+        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol);
+        await _navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
+    }
+
+    /// <summary>
+    /// Navigates to the wallets page.
+    /// </summary>
+    [RelayCommand]
+    private async Task NavigateToWalletsAsync()
+    {
+        LogNavigatingToWallets(_logger);
+        await _navigation.GoToAsync(Routes.Wallet);
     }
 
     /// <summary>
@@ -161,23 +210,70 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private async Task ViewCryptoDetailsAsync(CryptoCurrency crypto)
     {
-        if (crypto == null) return;
+        if (crypto == null)
+        {
+            return;
+        }
 
-        _logger.LogInformation("Viewing details for {Symbol}", crypto.Symbol);
+        LogViewingDetails(_logger, crypto.Symbol);
         SelectedCrypto = crypto;
+
         // Could navigate to a details page here
-        await Shell.Current.DisplayAlertAsync(
+        var detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
+        await _dialog.ShowAlertAsync(
             crypto.Name,
-            $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}",
+            detailMessage,
             "OK");
     }
 
-    /// <summary>
-    /// Cancels any ongoing operations when leaving the page.
-    /// </summary>
-    public void OnDisappearing()
+#pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
+    [LoggerMessage(Level = LogLevel.Information, Message = "Refreshing cryptocurrency prices")]
+    private static partial void LogRefreshingPrices(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loading cryptocurrency prices")]
+    private static partial void LogLoadingPrices(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Refreshed {Count} cryptocurrencies")]
+    private static partial void LogRefreshedCount(ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loaded {Count} cryptocurrencies")]
+    private static partial void LogLoadedCount(ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Refresh operation was cancelled")]
+    private static partial void LogRefreshCancelled(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Load prices operation was cancelled")]
+    private static partial void LogLoadPricesCancelled(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error loading crypto prices")]
+    private static partial void LogErrorLoadingPrices(ILogger logger, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No cryptocurrency selected for purchase navigation")]
+    private static partial void LogNoCryptoSelected(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Navigating to purchase page for {Symbol}")]
+    private static partial void LogNavigatingToPurchase(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Navigating to wallets page")]
+    private static partial void LogNavigatingToWallets(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Viewing details for {Symbol}")]
+    private static partial void LogViewingDetails(ILogger logger, string symbol);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Dashboard page disappearing, operations cancelled")]
+    private static partial void LogDashboardDisappearing(ILogger logger);
+#pragma warning restore SA1204 // Static members should appear before non-static members
+
+    private void Dispose(bool disposing)
     {
-        _cts?.Cancel();
-        _logger.LogDebug("Dashboard page disappearing, operations cancelled");
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _cts?.Dispose();
+            }
+
+            _disposed = true;
+        }
     }
 }

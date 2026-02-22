@@ -1,3 +1,7 @@
+// <copyright file="PriceHistory.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 namespace CipherBank_app.Models;
 
 /// <summary>
@@ -10,7 +14,9 @@ public record PriceHistory(
     DateTimeOffset EndDate)
 {
     public decimal HighPrice => PricePoints.Count > 0 ? PricePoints.Max(p => p.Price) : 0;
+
     public decimal LowPrice => PricePoints.Count > 0 ? PricePoints.Min(p => p.Price) : 0;
+
     public decimal AveragePrice => PricePoints.Count > 0 ? PricePoints.Average(p => p.Price) : 0;
 
     public decimal PriceChange => PricePoints.Count >= 2

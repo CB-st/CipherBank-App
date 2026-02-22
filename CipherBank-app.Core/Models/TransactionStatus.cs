@@ -1,3 +1,7 @@
+// <copyright file="TransactionStatus.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 namespace CipherBank_app.Models;
 
 /// <summary>
@@ -8,5 +12,5 @@ public enum TransactionStatus
     Pending,
     Confirmed,
     Failed,
-    Cancelled
+    Cancelled,
 }

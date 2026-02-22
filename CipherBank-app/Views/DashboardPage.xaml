@@ -14,10 +14,19 @@
             <VerticalStackLayout Padding="16" Spacing="16">
 
                 <!-- Header -->
-                <Label Text="Market Overview"
+                <Label x:Name="WelcomeLabel"
+                       AutomationId="WelcomeLabel"
+                       Text="Market Overview"
                        FontSize="24"
                        FontAttributes="Bold"
                        HorizontalOptions="Start" />
+
+                <Label x:Name="TotalBalanceLabel"
+                       AutomationId="TotalBalanceLabel"
+                       Text="{Binding TotalPortfolioValue, StringFormat='Portfolio: ${0:N2}'}"
+                       FontSize="16"
+                       TextColor="Gray"
+                       Margin="0,-8,0,8" />
 
                 <!-- Loading Indicator -->
                 <ActivityIndicator IsRunning="{Binding IsLoading}"
@@ -33,12 +42,16 @@
                         StrokeThickness="1"
                         Padding="12"
                         StrokeShape="RoundRectangle 8">
-                    <Label Text="{Binding ErrorMessage}"
+                    <Label x:Name="ErrorLabel"
+                           AutomationId="ErrorLabel"
+                           Text="{Binding ErrorMessage}"
                            TextColor="#856404" />
                 </Border>
 
                 <!-- Cryptocurrency List -->
-                <CollectionView ItemsSource="{Binding Cryptocurrencies}"
+                <CollectionView x:Name="CryptocurrenciesList"
+                               AutomationId="RecentTransactionsList"
+                               ItemsSource="{Binding Cryptocurrencies}"
                                 SelectionMode="Single"
                                 SelectedItem="{Binding SelectedCrypto}"
                                 IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
@@ -113,7 +126,9 @@
                                    FontSize="16"
                                    TextColor="Gray"
                                    HorizontalTextAlignment="Center" />
-                            <Button Text="Refresh"
+                            <Button x:Name="RefreshButton"
+                                    AutomationId="RefreshButton"
+                                    Text="Refresh"
                                     Command="{Binding LoadPricesCommand}"
                                     Margin="0,20,0,0" />
                         </VerticalStackLayout>
@@ -123,6 +138,8 @@
                 <!-- Quick Actions -->
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,8,0,0">
                     <Button Grid.Column="0"
+                            x:Name="PurchaseButton"
+                            AutomationId="PurchaseButton"
                             Text="Buy Crypto"
                             Command="{Binding NavigateToPurchaseCommand}"
                             BackgroundColor="#512BD4"
@@ -131,8 +148,10 @@
                             HeightRequest="50" />
 
                     <Button Grid.Column="1"
+                            x:Name="WalletButton"
+                            AutomationId="WalletButton"
                             Text="My Wallets"
-                            Clicked="OnWalletsClicked"
+                            Command="{Binding NavigateToWalletsCommand}"
                             BackgroundColor="#6C757D"
                             TextColor="White"
                             CornerRadius="8"
