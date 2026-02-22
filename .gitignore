@@ -69,6 +69,10 @@ out/
 *.svclog
 *.scc
 
+# Top-level docs (architecture, summaries)
+/*.md
+/*.mmd
+
 # Test results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
