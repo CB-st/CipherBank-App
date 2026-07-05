@@ -4,6 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
              xmlns:models="clr-namespace:CipherBank_app.Models"
+             xmlns:models1="clr-namespace:CipherBank_app.Models;assembly=CipherBank-app.Core"
              x:Class="CipherBank_app.Views.DashboardPage"
              x:DataType="viewmodels:DashboardViewModel"
              Title="Dashboard">
@@ -17,15 +18,14 @@
                 <Label x:Name="WelcomeLabel"
                        AutomationId="WelcomeLabel"
                        Text="Market Overview"
-                       FontSize="24"
-                       FontAttributes="Bold"
+                       Style="{StaticResource PageHeader}"
                        HorizontalOptions="Start" />
 
                 <Label x:Name="TotalBalanceLabel"
                        AutomationId="TotalBalanceLabel"
                        Text="{Binding TotalPortfolioValue, StringFormat='Portfolio: ${0:N2}'}"
                        FontSize="16"
-                       TextColor="Gray"
+                       Style="{StaticResource SecondaryText}"
                        Margin="0,-8,0,8" />
 
                 <!-- Loading Indicator -->
@@ -37,15 +37,11 @@
 
                 <!-- Error Message -->
                 <Border IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
-                        BackgroundColor="#FFF3CD"
-                        Stroke="#FFC107"
-                        StrokeThickness="1"
-                        Padding="12"
-                        StrokeShape="RoundRectangle 8">
+                        Style="{StaticResource WarningBanner}">
                     <Label x:Name="ErrorLabel"
                            AutomationId="ErrorLabel"
                            Text="{Binding ErrorMessage}"
-                           TextColor="#856404" />
+                           Style="{StaticResource WarningBannerText}" />
                 </Border>
 
                 <!-- Cryptocurrency List -->
@@ -56,12 +52,12 @@
                                 SelectedItem="{Binding SelectedCrypto}"
                                 IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
                     <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="models:CryptoCurrency">
+                        <DataTemplate x:DataType="models1:CryptoCurrency">
                             <Border Margin="0,4"
                                     Padding="12"
                                     StrokeShape="RoundRectangle 12"
                                     Stroke="Transparent"
-                                    BackgroundColor="White">
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}">
                                 <Border.Shadow>
                                     <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
                                 </Border.Shadow>
@@ -70,6 +66,16 @@
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DashboardViewModel}}, Path=ViewCryptoDetailsCommand}"
                                         CommandParameter="{Binding .}" />
                                 </Border.GestureRecognizers>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="Selected">
+                                            <VisualState.Setters>
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark=#3D2B7A}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
 
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                     <!-- Icon placeholder -->
@@ -78,7 +84,7 @@
                                             HeightRequest="48"
                                             StrokeShape="RoundRectangle 24"
                                             Stroke="Transparent"
-                                            BackgroundColor="#F0F0F0"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource IconPlaceholderBackground}, Dark={StaticResource IconPlaceholderBackgroundDark}}"
                                             Padding="0">
                                         <Label Text="{Binding Symbol, StringFormat='{0:0}'}"
                                                FontSize="14"
@@ -96,7 +102,7 @@
                                                FontAttributes="Bold" />
                                         <Label Text="{Binding Symbol}"
                                                FontSize="12"
-                                               TextColor="Gray" />
+                                               Style="{StaticResource SecondaryText}" />
                                     </VerticalStackLayout>
 
                                     <!-- Price and Change -->
@@ -124,7 +130,7 @@
                                              Padding="40">
                             <Label Text="No cryptocurrencies available"
                                    FontSize="16"
-                                   TextColor="Gray"
+                                   Style="{StaticResource SecondaryText}"
                                    HorizontalTextAlignment="Center" />
                             <Button x:Name="RefreshButton"
                                     AutomationId="RefreshButton"
@@ -142,8 +148,6 @@
                             AutomationId="PurchaseButton"
                             Text="Buy Crypto"
                             Command="{Binding NavigateToPurchaseCommand}"
-                            BackgroundColor="#512BD4"
-                            TextColor="White"
                             CornerRadius="8"
                             HeightRequest="50" />
 
@@ -152,9 +156,7 @@
                             AutomationId="WalletButton"
                             Text="My Wallets"
                             Command="{Binding NavigateToWalletsCommand}"
-                            BackgroundColor="#6C757D"
-                            TextColor="White"
-                            CornerRadius="8"
+                            Style="{StaticResource SecondaryButton}"
                             HeightRequest="50" />
                 </Grid>
 

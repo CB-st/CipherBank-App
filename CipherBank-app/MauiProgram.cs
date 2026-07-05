@@ -111,8 +111,20 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddCipherBankHttpClient<AuthService>();
 
 #if DEBUG
-        mauiAppBuilder.Services.AddTransient<IAuthService>(sp => sp.GetRequiredService<MockAuthService>());
-        Log.Debug("Using MockAuthService");
+        mauiAppBuilder.Services.AddTransient<IAuthService>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            if (settings.UseMockServices)
+            {
+                Log.Debug("Using MockAuthService (based on settings)");
+                return sp.GetRequiredService<MockAuthService>();
+            }
+            else
+            {
+                Log.Debug("Using AuthService (real API)");
+                return sp.GetRequiredService<AuthService>();
+            }
+        });
 #else
         mauiAppBuilder.Services.AddTransient<IAuthService>(sp => sp.GetRequiredService<AuthService>());
 #endif
@@ -121,8 +133,20 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddCipherBankHttpClient<CryptoAPIService>();
 
 #if DEBUG
-        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<MockCryptoAPIService>());
-        Log.Debug("Using MockCryptoAPIService");
+        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            if (settings.UseMockServices)
+            {
+                Log.Debug("Using MockCryptoAPIService (based on settings)");
+                return sp.GetRequiredService<MockCryptoAPIService>();
+            }
+            else
+            {
+                Log.Debug("Using CryptoAPIService (real API)");
+                return sp.GetRequiredService<CryptoAPIService>();
+            }
+        });
 #else
         mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<CryptoAPIService>());
 #endif
@@ -131,8 +155,20 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddCipherBankHttpClient<WalletService>();
 
 #if DEBUG
-        mauiAppBuilder.Services.AddTransient<IWalletService>(sp => sp.GetRequiredService<MockWalletService>());
-        Log.Debug("Using MockWalletService");
+        mauiAppBuilder.Services.AddTransient<IWalletService>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            if (settings.UseMockServices)
+            {
+                Log.Debug("Using MockWalletService (based on settings)");
+                return sp.GetRequiredService<MockWalletService>();
+            }
+            else
+            {
+                Log.Debug("Using WalletService (real API)");
+                return sp.GetRequiredService<WalletService>();
+            }
+        });
 #else
         mauiAppBuilder.Services.AddTransient<IWalletService>(sp => sp.GetRequiredService<WalletService>());
 #endif
@@ -141,8 +177,20 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddCipherBankHttpClient<TransactionService>();
 
 #if DEBUG
-        mauiAppBuilder.Services.AddTransient<ITransactionService>(sp => sp.GetRequiredService<MockTransactionService>());
-        Log.Debug("Using MockTransactionService");
+        mauiAppBuilder.Services.AddTransient<ITransactionService>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            if (settings.UseMockServices)
+            {
+                Log.Debug("Using MockTransactionService (based on settings)");
+                return sp.GetRequiredService<MockTransactionService>();
+            }
+            else
+            {
+                Log.Debug("Using TransactionService (real API)");
+                return sp.GetRequiredService<TransactionService>();
+            }
+        });
 #else
         mauiAppBuilder.Services.AddTransient<ITransactionService>(sp => sp.GetRequiredService<TransactionService>());
 #endif

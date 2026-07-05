@@ -40,6 +40,23 @@ public interface ISettingsService
     string DefaultCurrency { get; set; }
 
     /// <summary>
+    /// Gets or sets the current environment (Production, Sandbox, Development, Local).
+    /// </summary>
+    string Environment { get; set; }
+
+#if DEBUG
+    /// <summary>
+    /// Gets or sets whether developer mode is enabled.
+    /// </summary>
+    bool DeveloperModeEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether to use mock services instead of real API.
+    /// </summary>
+    bool UseMockServices { get; set; }
+#endif
+
+    /// <summary>
     /// Resets all settings to their default values.
     /// </summary>
     void ResetToDefaults();

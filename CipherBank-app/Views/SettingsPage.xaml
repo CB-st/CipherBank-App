@@ -8,22 +8,22 @@
              Title="Settings">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="16">
+        <VerticalStackLayout x:Name="SettingsLayout" Padding="16" Spacing="16">
 
             <!-- API Settings -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
+            <Border x:Name="ApiSettingsCard" StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
                 </Border.Shadow>
                 <VerticalStackLayout Spacing="12">
                     <Label Text="API Configuration"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
                     <VerticalStackLayout Spacing="4">
                         <Label Text="API Endpoint"
                                FontSize="12"
-                               TextColor="Gray" />
+                               Style="{StaticResource SecondaryText}" />
                         <Entry Placeholder="https://api.cipherbank.money"
                                Text="{Binding ApiEndpoint}"
                                Keyboard="Url" />
@@ -32,9 +32,7 @@
                     <Button Text="Test Connection"
                             Command="{Binding TestConnectionCommand}"
                             IsEnabled="{Binding IsTesting, Converter={StaticResource InvertedBoolConverter}}"
-                            BackgroundColor="#6C757D"
-                            TextColor="White"
-                            CornerRadius="8" />
+                            Style="{StaticResource SecondaryButton}" />
 
                     <ActivityIndicator IsRunning="{Binding IsTesting}"
                                        IsVisible="{Binding IsTesting}"
@@ -42,20 +40,22 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Developer Mode card (DEBUG only) is added in code-behind so it is absent from Release builds. -->
+
             <!-- Appearance Settings -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
                 </Border.Shadow>
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Appearance"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Theme"
                                FontSize="12"
-                               TextColor="Gray" />
+                               Style="{StaticResource SecondaryText}" />
                         <Picker Title="Select theme"
                                 ItemsSource="{Binding ThemeModes}"
                                 SelectedItem="{Binding ThemeMode}" />
@@ -64,7 +64,7 @@
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Default Currency"
                                FontSize="12"
-                               TextColor="Gray" />
+                               Style="{StaticResource SecondaryText}" />
                         <Picker Title="Select currency"
                                 ItemsSource="{Binding Currencies}"
                                 SelectedItem="{Binding DefaultCurrency}" />
@@ -73,14 +73,14 @@
             </Border>
 
             <!-- Security Settings -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
                 </Border.Shadow>
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Security"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Grid.Column="0"
@@ -93,34 +93,26 @@
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Auto-Lock Timeout"
                                FontSize="12"
-                               TextColor="Gray" />
+                               Style="{StaticResource SecondaryText}" />
                         <Picker Title="Select timeout"
-                                SelectedItem="{Binding AutoLockTimeout}">
-                            <Picker.Items>
-                                <x:String>0</x:String>
-                                <x:String>1</x:String>
-                                <x:String>5</x:String>
-                                <x:String>15</x:String>
-                                <x:String>30</x:String>
-                                <x:String>60</x:String>
-                            </Picker.Items>
-                        </Picker>
+                                ItemsSource="{Binding AutoLockOptions}"
+                                SelectedItem="{Binding AutoLockTimeout}" />
                         <Label Text="Minutes until auto-lock (0 = disabled)"
                                FontSize="11"
-                               TextColor="Gray" />
+                               Style="{StaticResource SecondaryText}" />
                     </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 
             <!-- Notifications -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
                 </Border.Shadow>
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Notifications"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Grid.Column="0"
@@ -132,7 +124,7 @@
 
                     <Label Text="Receive alerts for price changes and transactions."
                            FontSize="11"
-                           TextColor="Gray" />
+                           Style="{StaticResource SecondaryText}" />
                 </VerticalStackLayout>
             </Border>
 
@@ -150,10 +142,7 @@
             <Button Text="Save Settings"
                     Command="{Binding SaveSettingsCommand}"
                     IsEnabled="{Binding IsSaving, Converter={StaticResource InvertedBoolConverter}}"
-                    BackgroundColor="#512BD4"
-                    TextColor="White"
                     FontAttributes="Bold"
-                    CornerRadius="8"
                     HeightRequest="50" />
 
             <ActivityIndicator IsRunning="{Binding IsSaving}"
@@ -162,40 +151,40 @@
 
             <Button Text="Reset to Defaults"
                     Command="{Binding ResetToDefaultsCommand}"
-                    BackgroundColor="#FFC107"
-                    TextColor="#333"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource ButtonWarning}, Dark={StaticResource ButtonWarningDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource QuickAmountText}, Dark={StaticResource QuickAmountTextDark}}"
                     CornerRadius="8"
                     HeightRequest="44" />
 
             <!-- Account Section -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White" Margin="0,8,0,0">
+            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}"
+                    Margin="0,8,0,0">
                 <Border.Shadow>
                     <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
                 </Border.Shadow>
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Account"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
                     <Button Text="Log Out"
                             Command="{Binding LogoutCommand}"
-                            BackgroundColor="#DC3545"
-                            TextColor="White"
-                            CornerRadius="8"
+                            Style="{StaticResource DangerButton}"
                             HeightRequest="44" />
 
                     <Button Text="About CipherBank"
                             Command="{Binding ShowAboutCommand}"
                             BackgroundColor="Transparent"
-                            TextColor="#512BD4"
+                            TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}"
                             HeightRequest="44" />
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Version Info -->
-            <Label Text="Version 1.0.0"
+            <!-- Version Info (tap 3 times for dev mode; gesture wired in code-behind, DEBUG only) -->
+            <Label x:Name="VersionLabel"
+                   Text="Version 1.0.0"
                    FontSize="12"
-                   TextColor="Gray"
+                   Style="{StaticResource SecondaryText}"
                    HorizontalTextAlignment="Center"
                    Margin="0,8" />
 

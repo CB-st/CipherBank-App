@@ -62,6 +62,9 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     private decimal sendAmount;
 
     [ObservableProperty]
+    private bool isRefreshing;
+
+    [ObservableProperty]
     private bool isSending;
 
     public WalletViewModel(
@@ -179,6 +182,22 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Refreshes wallets via pull-to-refresh.
+    /// </summary>
+    [RelayCommand]
+    private async Task RefreshWalletsAsync()
+    {
+        try
+        {
+            await LoadWalletsAsync();
+        }
+        finally
+        {
+            IsRefreshing = false;
         }
     }
 
