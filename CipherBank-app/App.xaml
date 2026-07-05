@@ -15,8 +15,8 @@
             <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
             <converters:StringToBoolConverter x:Key="StringToBoolConverter" />
             <converters:ObjectToBoolConverter x:Key="ObjectToBoolConverter" />
-            <converters:BoolToColorConverter x:Key="PriceChangeColorConverter" TrueColor="#28A745" FalseColor="#DC3545" />
-            <converters:BoolToColorConverter x:Key="StatusColorConverter" TrueColor="#D4EDDA" FalseColor="#F8D7DA" />
+            <converters:BoolToColorConverter x:Key="PriceChangeColorConverter" TrueColor="#0BA360" FalseColor="#DC3545" />
+            <converters:BoolToColorConverter x:Key="StatusColorConverter" TrueColor="#D9F5E8" FalseColor="#FBDDE1" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
