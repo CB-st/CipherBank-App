@@ -81,4 +81,57 @@ public class CarouselMathTests
         CarouselMath.ComputeTargetIndex(1.0, 9.0, count: 10, flickThreshold: 2.0)
             .Should().BeGreaterThan(2);
     }
+
+    [Fact]
+    public void SpringStep_Underdamped_ConvergesToTarget()
+    {
+        var end = RunSpring(0, 0, target: 1, zeta: 0.75, omega: 12, steps: 600, out _);
+
+        end.Position.Should().BeApproximately(1.0, 0.001);
+        end.Velocity.Should().BeApproximately(0.0, 0.001);
+    }
+
+    [Fact]
+    public void SpringStep_Underdamped_OvershootsTarget()
+    {
+        RunSpring(0, 0, target: 1, zeta: 0.6, omega: 12, steps: 600, out double maxPosition);
+
+        maxPosition.Should().BeGreaterThan(1.0); // a single overshoot past the target
+    }
+
+    [Fact]
+    public void SpringStep_CriticallyDamped_DoesNotOvershoot()
+    {
+        RunSpring(0, 0, target: 1, zeta: 1.0, omega: 12, steps: 600, out double maxPosition);
+
+        maxPosition.Should().BeLessThanOrEqualTo(1.0001); // no meaningful overshoot
+    }
+
+    [Fact]
+    public void SpringStep_RespectsSeedVelocity()
+    {
+        var first = CarouselMath.SpringStep(0, velocity: 4, target: 1, dt: 1.0 / 60.0, dampingRatio: 0.75, angularFrequency: 12);
+
+        first.Position.Should().BeGreaterThan(0); // moves in the seeded direction immediately
+    }
+
+    private static SpringState RunSpring(
+        double start,
+        double startVelocity,
+        double target,
+        double zeta,
+        double omega,
+        int steps,
+        out double maxPosition)
+    {
+        var state = new SpringState(start, startVelocity);
+        maxPosition = start;
+        for (int i = 0; i < steps; i++)
+        {
+            state = CarouselMath.SpringStep(state.Position, state.Velocity, target, 1.0 / 60.0, zeta, omega);
+            maxPosition = Math.Max(maxPosition, state.Position);
+        }
+
+        return state;
+    }
 }

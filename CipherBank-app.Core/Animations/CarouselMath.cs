@@ -58,4 +58,33 @@ public static class CarouselMath
 
         return Math.Clamp(target, 0, count - 1);
     }
+
+    /// <summary>
+    /// Advances a damped-spring snap by one fixed timestep using semi-implicit Euler.
+    /// </summary>
+    /// <param name="position">Current position (index units).</param>
+    /// <param name="velocity">Current velocity (index units/second).</param>
+    /// <param name="target">Target index.</param>
+    /// <param name="dt">Timestep in seconds.</param>
+    /// <param name="dampingRatio">Damping ratio (zeta); &lt;1 is underdamped.</param>
+    /// <param name="angularFrequency">Angular frequency (omega) in rad/second.</param>
+    public static SpringState SpringStep(
+        double position,
+        double velocity,
+        double target,
+        double dt,
+        double dampingRatio,
+        double angularFrequency)
+    {
+        double k = angularFrequency * angularFrequency;
+        double c = 2.0 * dampingRatio * angularFrequency;
+
+        double displacement = position - target;
+        double acceleration = (-k * displacement) - (c * velocity);
+
+        double newVelocity = velocity + (acceleration * dt);
+        double newPosition = position + (newVelocity * dt);
+
+        return new SpringState(newPosition, newVelocity);
+    }
 }
