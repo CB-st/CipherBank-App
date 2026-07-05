@@ -27,4 +27,35 @@ public static class CarouselMath
 
         return new CardTransform(translationX, translationY, rotationY, scale, opacity, zIndex);
     }
+
+    /// <summary>
+    /// Chooses the card index to settle on after a drag, given the release velocity.
+    /// Below the flick threshold it snaps to the nearest index; above it, it advances one
+    /// or more steps in the flick direction.
+    /// </summary>
+    public static int ComputeTargetIndex(double position, double velocity, int count, double flickThreshold)
+    {
+        if (count <= 0)
+        {
+            return 0;
+        }
+
+        int target;
+        if (Math.Abs(velocity) >= flickThreshold)
+        {
+            int direction = velocity > 0 ? 1 : -1;
+            target = direction > 0
+                ? (int)Math.Floor(position) + 1
+                : (int)Math.Ceiling(position) - 1;
+
+            int extra = (int)((Math.Abs(velocity) - flickThreshold) / (flickThreshold * 2.0));
+            target += direction * extra;
+        }
+        else
+        {
+            target = (int)Math.Round(position, MidpointRounding.AwayFromZero);
+        }
+
+        return Math.Clamp(target, 0, count - 1);
+    }
 }

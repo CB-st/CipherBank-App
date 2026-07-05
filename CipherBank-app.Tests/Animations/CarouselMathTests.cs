@@ -55,4 +55,30 @@ public class CarouselMathTests
         left.RotationY.Should().Be(-right.RotationY);
         left.TranslationX.Should().Be(-right.TranslationX);
     }
+
+    [Theory]
+    [InlineData(2.4, 0.0, 2)] // slow: rounds to nearest (down)
+    [InlineData(2.6, 0.0, 3)] // slow: rounds to nearest (up)
+    [InlineData(2.4, 5.0, 3)] // fast flick right: advances past the floor
+    [InlineData(2.6, -5.0, 2)] // fast flick left: retreats below the ceiling
+    public void ComputeTargetIndex_PicksExpectedIndex(double position, double velocity, int expected)
+    {
+        CarouselMath.ComputeTargetIndex(position, velocity, count: 5, flickThreshold: 2.0)
+            .Should().Be(expected);
+    }
+
+    [Fact]
+    public void ComputeTargetIndex_ClampsToCollectionBounds()
+    {
+        CarouselMath.ComputeTargetIndex(0.1, -10.0, count: 5, flickThreshold: 2.0).Should().Be(0);
+        CarouselMath.ComputeTargetIndex(4.0, 10.0, count: 5, flickThreshold: 2.0).Should().Be(4);
+    }
+
+    [Fact]
+    public void ComputeTargetIndex_VeryFastFlick_SkipsAhead()
+    {
+        // velocity well above 2x threshold advances more than one step
+        CarouselMath.ComputeTargetIndex(1.0, 9.0, count: 10, flickThreshold: 2.0)
+            .Should().BeGreaterThan(2);
+    }
 }
