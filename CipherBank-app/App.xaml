@@ -17,6 +17,12 @@
             <converters:ObjectToBoolConverter x:Key="ObjectToBoolConverter" />
             <converters:BoolToColorConverter x:Key="PriceChangeColorConverter" TrueColor="#0BA360" FalseColor="#DC3545" />
             <converters:BoolToColorConverter x:Key="StatusColorConverter" TrueColor="#D9F5E8" FalseColor="#FBDDE1" />
+            <converters:CoinColorConverter x:Key="CoinColorConverter"
+                                           BtcColor="{StaticResource CoinBtc}"
+                                           EthColor="{StaticResource CoinEth}"
+                                           SolColor="{StaticResource CoinSol}"
+                                           DefaultColor="{StaticResource CoinDefault}" />
+            <converters:CoinGlyphConverter x:Key="CoinGlyphConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

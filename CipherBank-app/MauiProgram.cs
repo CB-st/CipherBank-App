@@ -32,6 +32,12 @@ public static class MauiProgram
                 fonts.AddFont("Inter-Medium.ttf", "InterMedium");
                 fonts.AddFont("Inter-SemiBold.ttf", "InterSemiBold");
             })
+            .ConfigureMauiHandlers(handlers =>
+            {
+#if IOS || MACCATALYST
+                handlers.AddHandler<Controls.BlurBackdropView, Handlers.BlurBackdropViewHandler>();
+#endif
+            })
             .ConfigureLogging()
             .RegisterServices()
             .RegisterViewModels()
