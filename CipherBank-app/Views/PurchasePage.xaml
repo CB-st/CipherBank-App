@@ -3,222 +3,264 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
-             xmlns:models="clr-namespace:CipherBank_app.Models"
+             xmlns:models1="clr-namespace:CipherBank_app.Models;assembly=CipherBank-app.Core"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
              x:Class="CipherBank_app.Views.PurchasePage"
              x:DataType="viewmodels:PurchaseViewModel"
              Title="Buy Crypto">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="20">
+    <Grid RowDefinitions="*,Auto">
+        <controls:GlowBackdrop Grid.RowSpan="2" />
 
-            <!-- Header -->
-            <Label Text="Purchase Cryptocurrency"
-                   Style="{StaticResource PageHeader}"
-                   HorizontalOptions="Center" />
+        <ScrollView>
+            <VerticalStackLayout Padding="20,8,20,16" Spacing="18">
 
-            <!-- Loading Indicator -->
-            <ActivityIndicator IsRunning="{Binding IsLoading}"
-                               IsVisible="{Binding IsLoading}"
-                               HorizontalOptions="Center"
-                               HeightRequest="40" />
+                <!-- Header -->
+                <Label Text="Select Coin"
+                       Style="{StaticResource DisplayTitle}"
+                       HorizontalOptions="Center" />
+                <Label Text="Choose an asset to complete your transaction"
+                       Style="{StaticResource SecondaryText}"
+                       HorizontalOptions="Center"
+                       HorizontalTextAlignment="Center"
+                       Margin="0,-10,0,0" />
 
-            <!-- Error Message -->
-            <Border IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
-                    Style="{StaticResource WarningBanner}">
-                <Label x:Name="ErrorLabel"
-                       AutomationId="ErrorLabel"
-                       Text="{Binding ErrorMessage}"
-                       Style="{StaticResource WarningBannerText}" />
-            </Border>
+                <!-- Loading Indicator -->
+                <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                   IsVisible="{Binding IsLoading}"
+                                   HorizontalOptions="Center"
+                                   HeightRequest="40" />
 
-            <!-- Crypto Selection -->
-            <Border StrokeShape="RoundRectangle 12"
-                    Padding="16"
-                    Stroke="Transparent"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}"
-                    IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                </Border.Shadow>
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="Select Cryptocurrency"
-                           FontSize="16"
-                           FontAttributes="Bold" />
+                <!-- Error Message -->
+                <Border IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+                        Style="{StaticResource WarningBanner}">
+                    <Label x:Name="ErrorLabel"
+                           AutomationId="ErrorLabel"
+                           Text="{Binding ErrorMessage}"
+                           Style="{StaticResource WarningBannerText}" />
+                </Border>
 
-                    <Picker x:Name="CryptoSelector"
-                            AutomationId="CryptoSelector"
-                            Title="Choose a cryptocurrency"
-                            ItemsSource="{Binding AvailableCryptos}"
-                            SelectedItem="{Binding SelectedCrypto}"
-                            ItemDisplayBinding="{Binding Name}" />
+                <!-- Total due -->
+                <controls:GlassCard IsVisible="{Binding SelectedCrypto, Converter={StaticResource ObjectToBoolConverter}}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Total Due"
+                               Style="{StaticResource Eyebrow}"
+                               HorizontalOptions="Center" />
+                        <Label HorizontalOptions="Center">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="$"
+                                          FontFamily="SpaceGroteskBold"
+                                          FontSize="20"
+                                          TextColor="{AppThemeBinding Light={StaticResource Accent}, Dark={StaticResource AccentDark}}" />
+                                    <Span Text="{Binding TotalCost, StringFormat='{0:N2}'}"
+                                          FontFamily="SpaceGroteskBold"
+                                          FontSize="34"
+                                          TextColor="{AppThemeBinding Light={StaticResource Accent}, Dark={StaticResource AccentDark}}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                        <Border Style="{StaticResource InputBorder}">
+                            <Entry AutomationId="PaymentNoteEntry"
+                                   Placeholder="Add payment note..."
+                                   Text="{Binding PaymentNote}" />
+                        </Border>
+                    </VerticalStackLayout>
+                </controls:GlassCard>
 
-                    <!-- Selected Crypto Info -->
-                    <Border IsVisible="{Binding SelectedCrypto, Converter={StaticResource ObjectToBoolConverter}}"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceSecondary}, Dark={StaticResource SurfaceSecondaryDark}}"
-                            Padding="12"
-                            StrokeShape="RoundRectangle 8"
-                            Stroke="Transparent">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <VerticalStackLayout Grid.Column="0">
-                                <Label Text="{Binding SelectedCrypto.Name}"
+                <!-- Coin deck -->
+                <controls:ArcCardDeck x:Name="CoinDeck"
+                                      HeightRequest="230"
+                                      IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
+                                      ItemsSource="{Binding AvailableCryptos}"
+                                      FocusedItem="{Binding FocusedCrypto, Mode=TwoWay}">
+                    <controls:ArcCardDeck.ItemTemplate>
+                        <DataTemplate x:DataType="models1:CryptoCurrency">
+                            <controls:GlassCard WidthRequest="260"
+                                                HeightRequest="180"
+                                                BodyPadding="18"
+                                                SemanticProperties.Description="{Binding Name}"
+                                                SemanticProperties.Hint="{Binding FormattedPrice}">
+                                <Grid>
+                                    <Label Style="{StaticResource WatermarkGlyph}"
+                                           Text="{Binding Symbol, Converter={StaticResource CoinGlyphConverter}}"
+                                           HorizontalOptions="End"
+                                           VerticalOptions="Center"
+                                           TranslationX="24" />
+
+                                    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="2">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                            <Border Style="{StaticResource CoinCircle}"
+                                                    BackgroundColor="{Binding Symbol, Converter={StaticResource CoinColorConverter}}">
+                                                <Label Text="{Binding Symbol, Converter={StaticResource CoinGlyphConverter}}"
+                                                       TextColor="White"
+                                                       FontFamily="SpaceGroteskBold"
+                                                       FontSize="18"
+                                                       HorizontalOptions="Center"
+                                                       VerticalOptions="Center" />
+                                            </Border>
+                                            <Border Grid.Column="2"
+                                                    Style="{StaticResource Pill}"
+                                                    VerticalOptions="Start">
+                                                <Label Text="{Binding Symbol}" Style="{StaticResource PillLabel}" />
+                                            </Border>
+                                        </Grid>
+
+                                        <Label Grid.Row="1"
+                                               Text="{Binding Name}"
+                                               Style="{StaticResource TitleMedium}"
+                                               Margin="0,10,0,0" />
+                                        <Label Grid.Row="2"
+                                               Text="{Binding FormattedPercentChange, StringFormat='{0} · 24h'}"
+                                               FontFamily="InterMedium"
+                                               FontSize="13"
+                                               TextColor="{Binding IsPriceUp, Converter={StaticResource PriceChangeColorConverter}}" />
+
+                                        <VerticalStackLayout Grid.Row="3" Spacing="0">
+                                            <Label Text="Price" Style="{StaticResource Eyebrow}" />
+                                            <Label Text="{Binding FormattedPrice, StringFormat='≈{0}'}"
+                                                   FontFamily="SpaceGroteskBold"
+                                                   FontSize="22" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Grid>
+                            </controls:GlassCard>
+                        </DataTemplate>
+                    </controls:ArcCardDeck.ItemTemplate>
+                </controls:ArcCardDeck>
+
+                <!-- View all -->
+                <Button x:Name="ViewAllButton"
+                        AutomationId="ViewAllButton"
+                        Text="{Binding AvailableCryptos.Count, StringFormat='View All ({0})  ⌄'}"
+                        Style="{StaticResource PillButton}"
+                        HorizontalOptions="Center"
+                        Clicked="OnViewAllClicked"
+                        IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+
+                <!-- Amount -->
+                <controls:GlassCard IsVisible="{Binding SelectedCrypto, Converter={StaticResource ObjectToBoolConverter}}">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Enter Amount" Style="{StaticResource TitleMedium}" />
+
+                        <Border Style="{StaticResource InputBorder}">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <Entry Grid.Column="0"
+                                       x:Name="AmountEntry"
+                                       AutomationId="AmountEntry"
+                                       Placeholder="0.00000000"
+                                       Text="{Binding AmountText}"
+                                       Keyboard="Numeric"
+                                       FontFamily="SpaceGroteskMedium"
+                                       FontSize="20"
+                                       IsEnabled="{Binding IsPurchasing, Converter={StaticResource InvertedBoolConverter}}" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding SelectedCrypto.Symbol}"
+                                       Style="{StaticResource PillLabel}"
                                        FontSize="16"
-                                       FontAttributes="Bold" />
-                                <Label Text="{Binding SelectedCrypto.Symbol}"
-                                       FontSize="12"
-                                       Style="{StaticResource SecondaryText}" />
-                            </VerticalStackLayout>
-                            <VerticalStackLayout Grid.Column="1" HorizontalOptions="End">
-                                <Label Text="{Binding SelectedCrypto.FormattedPrice}"
-                                       FontSize="16"
-                                       FontAttributes="Bold" />
-                                <Label Text="{Binding SelectedCrypto.FormattedPercentChange}"
-                                       FontSize="12"
-                                       HorizontalTextAlignment="End" />
-                            </VerticalStackLayout>
+                                       VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+
+                        <Label Text="Quick amounts (USD)" Style="{StaticResource Eyebrow}" />
+
+                        <HorizontalStackLayout Spacing="8">
+                            <Button Text="$25"
+                                    Command="{Binding SetPresetAmountCommand}"
+                                    CommandParameter="25"
+                                    Style="{StaticResource QuickAmountButton}" />
+                            <Button Text="$50"
+                                    Command="{Binding SetPresetAmountCommand}"
+                                    CommandParameter="50"
+                                    Style="{StaticResource QuickAmountButton}" />
+                            <Button Text="$100"
+                                    Command="{Binding SetPresetAmountCommand}"
+                                    CommandParameter="100"
+                                    Style="{StaticResource QuickAmountButton}" />
+                            <Button Text="$500"
+                                    Command="{Binding SetPresetAmountCommand}"
+                                    CommandParameter="500"
+                                    Style="{StaticResource QuickAmountButton}" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </controls:GlassCard>
+
+                <!-- Order Summary -->
+                <controls:GlassCard IsVisible="{Binding SelectedCrypto, Converter={StaticResource ObjectToBoolConverter}}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Order Summary" Style="{StaticResource TitleMedium}" />
+
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+                            <Label Grid.Row="0" Grid.Column="0"
+                                   Text="Amount"
+                                   Style="{StaticResource SecondaryText}" />
+                            <Label Grid.Row="0" Grid.Column="1"
+                                   Text="{Binding Amount, StringFormat='{0:F8}'}"
+                                   FontFamily="InterMedium"
+                                   HorizontalTextAlignment="End" />
+
+                            <Label Grid.Row="1" Grid.Column="0"
+                                   Text="Price per unit"
+                                   Style="{StaticResource SecondaryText}" />
+                            <Label Grid.Row="1" Grid.Column="1"
+                                   Text="{Binding SelectedCrypto.FormattedPrice}"
+                                   FontFamily="InterMedium"
+                                   HorizontalTextAlignment="End" />
+
+                            <Label Grid.Row="2" Grid.Column="0"
+                                   Text="Fee (1.5%)"
+                                   Style="{StaticResource SecondaryText}" />
+                            <Label Grid.Row="2" Grid.Column="1"
+                                   x:Name="FeeLabel"
+                                   AutomationId="FeeLabel"
+                                   Text="{Binding Fee, StringFormat='${0:F2}'}"
+                                   FontFamily="InterMedium"
+                                   HorizontalTextAlignment="End" />
+
+                            <BoxView Grid.Row="3" Grid.ColumnSpan="2"
+                                     HeightRequest="1" />
                         </Grid>
-                    </Border>
-                </VerticalStackLayout>
-            </Border>
 
-            <!-- Amount Input -->
-            <Border StrokeShape="RoundRectangle 12"
-                    Padding="16"
-                    Stroke="Transparent"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}"
-                    IsVisible="{Binding SelectedCrypto, Converter={StaticResource ObjectToBoolConverter}}">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                </Border.Shadow>
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="Enter Amount"
-                           FontSize="16"
-                           FontAttributes="Bold" />
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                            <Label Grid.Column="0"
+                                   Text="Total"
+                                   Style="{StaticResource TitleMedium}" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding TotalCost, StringFormat='${0:F2}'}"
+                                   FontFamily="SpaceGroteskBold"
+                                   FontSize="18"
+                                   HorizontalTextAlignment="End" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </controls:GlassCard>
 
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <Entry Grid.Column="0"
-                               x:Name="AmountEntry"
-                               AutomationId="AmountEntry"
-                               Placeholder="0.00000000"
-                               Text="{Binding AmountText}"
-                               Keyboard="Numeric"
-                               FontSize="20"
-                               IsEnabled="{Binding IsPurchasing, Converter={StaticResource InvertedBoolConverter}}" />
-                        <Label Grid.Column="1"
-                               Text="{Binding SelectedCrypto.Symbol}"
-                               FontSize="20"
-                               VerticalOptions="Center" />
-                    </Grid>
+                <!-- Purchasing Indicator -->
+                <ActivityIndicator IsRunning="{Binding IsPurchasing}"
+                                   IsVisible="{Binding IsPurchasing}"
+                                   HorizontalOptions="Center"
+                                   HeightRequest="40" />
 
-                    <!-- Quick Amount Buttons -->
-                    <Label Text="Quick amounts (USD)"
-                           FontSize="12"
-                           Style="{StaticResource SecondaryText}" />
+                <!-- Disclaimer -->
+                <Label Text="Cryptocurrency trading involves significant risk. Past performance does not guarantee future results."
+                       FontSize="11"
+                       Style="{StaticResource SecondaryText}"
+                       HorizontalTextAlignment="Center"
+                       Margin="16,0" />
 
-                    <HorizontalStackLayout Spacing="8">
-                        <Button Text="$25"
-                                Command="{Binding SetPresetAmountCommand}"
-                                CommandParameter="25"
-                                Style="{StaticResource QuickAmountButton}" />
-                        <Button Text="$50"
-                                Command="{Binding SetPresetAmountCommand}"
-                                CommandParameter="50"
-                                Style="{StaticResource QuickAmountButton}" />
-                        <Button Text="$100"
-                                Command="{Binding SetPresetAmountCommand}"
-                                CommandParameter="100"
-                                Style="{StaticResource QuickAmountButton}" />
-                        <Button Text="$500"
-                                Command="{Binding SetPresetAmountCommand}"
-                                CommandParameter="500"
-                                Style="{StaticResource QuickAmountButton}" />
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-            </Border>
+            </VerticalStackLayout>
+        </ScrollView>
 
-            <!-- Order Summary -->
-            <Border StrokeShape="RoundRectangle 12"
-                    Padding="16"
-                    Stroke="Transparent"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceSecondary}, Dark={StaticResource SurfaceSecondaryDark}}"
-                    IsVisible="{Binding SelectedCrypto, Converter={StaticResource ObjectToBoolConverter}}">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                </Border.Shadow>
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Order Summary"
-                           FontSize="16"
-                           FontAttributes="Bold" />
-
-                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
-                        <Label Grid.Row="0" Grid.Column="0"
-                               Text="Amount"
-                               Style="{StaticResource SecondaryText}" />
-                        <Label Grid.Row="0" Grid.Column="1"
-                               Text="{Binding Amount, StringFormat='{0:F8}'}"
-                               HorizontalTextAlignment="End" />
-
-                        <Label Grid.Row="1" Grid.Column="0"
-                               Text="Price per unit"
-                               Style="{StaticResource SecondaryText}" />
-                        <Label Grid.Row="1" Grid.Column="1"
-                               Text="{Binding SelectedCrypto.FormattedPrice}"
-                               HorizontalTextAlignment="End" />
-
-                        <Label Grid.Row="2" Grid.Column="0"
-                               Text="Fee (1.5%)"
-                               Style="{StaticResource SecondaryText}" />
-                        <Label Grid.Row="2" Grid.Column="1"
-                               x:Name="FeeLabel"
-                               AutomationId="FeeLabel"
-                               Text="{Binding Fee, StringFormat='${0:F2}'}"
-                               HorizontalTextAlignment="End" />
-
-                        <BoxView Grid.Row="3" Grid.ColumnSpan="2"
-                                 HeightRequest="1"
-                                 Color="{AppThemeBinding Light={StaticResource Divider}, Dark={StaticResource DividerDark}}" />
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-                        <Label Grid.Column="0"
-                               Text="Total"
-                               FontSize="18"
-                               FontAttributes="Bold" />
-                        <Label Grid.Column="1"
-                               Text="{Binding TotalCost, StringFormat='${0:F2}'}"
-                               FontSize="18"
-                               FontAttributes="Bold"
-                               HorizontalTextAlignment="End" />
-                    </Grid>
-                </VerticalStackLayout>
-            </Border>
-
-            <!-- Purchase Button -->
-            <Button x:Name="PurchaseButton"
-                    AutomationId="PurchaseButton"
-                    Text="Purchase"
-                    Command="{Binding PurchaseCryptoCommand}"
-                    IsEnabled="{Binding IsPurchasing, Converter={StaticResource InvertedBoolConverter}}"
-                    IsVisible="{Binding SelectedCrypto, Converter={StaticResource ObjectToBoolConverter}}"
-                    FontAttributes="Bold"
-                    FontSize="18"
-                    CornerRadius="12"
-                    HeightRequest="56"
-                    Margin="0,8" />
-
-            <!-- Purchasing Indicator -->
-            <ActivityIndicator IsRunning="{Binding IsPurchasing}"
-                               IsVisible="{Binding IsPurchasing}"
-                               HorizontalOptions="Center"
-                               HeightRequest="40" />
-
-            <!-- Disclaimer -->
-            <Label Text="Cryptocurrency trading involves significant risk. Past performance does not guarantee future results."
-                   FontSize="11"
-                   Style="{StaticResource SecondaryText}"
-                   HorizontalTextAlignment="Center"
-                   Margin="16,0" />
-
-        </VerticalStackLayout>
-    </ScrollView>
+        <!-- Pinned CTA -->
+        <Button Grid.Row="1"
+                x:Name="PurchaseButton"
+                AutomationId="PurchaseButton"
+                Text="Confirm Payment  →"
+                Command="{Binding PurchaseCryptoCommand}"
+                IsEnabled="{Binding IsPurchasing, Converter={StaticResource InvertedBoolConverter}}"
+                IsVisible="{Binding SelectedCrypto, Converter={StaticResource ObjectToBoolConverter}}"
+                FontSize="17"
+                HeightRequest="56"
+                Margin="20,4,20,16" />
+    </Grid>
 
 </ContentPage>

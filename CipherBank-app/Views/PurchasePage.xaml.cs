@@ -31,4 +31,7 @@ public partial class PurchasePage : ContentPage
         base.OnDisappearing();
         _viewModel.OnDisappearing();
     }
+
+    private async void OnViewAllClicked(object? sender, EventArgs e) =>
+        await Navigation.PushModalAsync(new AssetPickerPage(_viewModel));
 }
