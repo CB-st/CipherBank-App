@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+             xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
+             xmlns:models1="clr-namespace:CipherBank_app.Models;assembly=CipherBank-app.Core"
+             x:Class="CipherBank_app.Views.AssetPickerPage"
+             x:DataType="viewmodels:PurchaseViewModel"
+             Title="All Assets"
+             ios:Page.ModalPresentationStyle="FormSheet">
+
+    <Grid RowDefinitions="Auto,*" Padding="20,16">
+
+        <Grid ColumnDefinitions="*,Auto">
+            <Label Text="Select Asset"
+                   Style="{StaticResource DisplayTitle}"
+                   FontSize="26"
+                   VerticalOptions="Center" />
+            <Button Grid.Column="1"
+                    x:Name="CloseButton"
+                    AutomationId="AssetPickerCloseButton"
+                    Text="Close"
+                    Style="{StaticResource GhostButton}"
+                    Clicked="OnCloseClicked" />
+        </Grid>
+
+        <CollectionView Grid.Row="1"
+                        x:Name="AssetList"
+                        AutomationId="AssetPickerList"
+                        Margin="0,16,0,0"
+                        ItemsSource="{Binding AvailableCryptos}"
+                        SelectionMode="Single"
+                        SelectionChanged="OnAssetSelected">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models1:CryptoCurrency">
+                    <Border Margin="0,6" Style="{StaticResource CardBorder}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Label Style="{StaticResource WatermarkGlyph}"
+                                   Grid.ColumnSpan="3"
+                                   FontSize="64"
+                                   Text="{Binding Symbol, Converter={StaticResource CoinGlyphConverter}}"
+                                   HorizontalOptions="End"
+                                   VerticalOptions="Center"
+                                   TranslationX="10" />
+
+                            <Border Style="{StaticResource CoinCircle}"
+                                    BackgroundColor="{Binding Symbol, Converter={StaticResource CoinColorConverter}}">
+                                <Label Text="{Binding Symbol, Converter={StaticResource CoinGlyphConverter}}"
+                                       TextColor="White"
+                                       FontFamily="SpaceGroteskBold"
+                                       FontSize="18"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="{Binding Name}" Style="{StaticResource TitleMedium}" />
+                                <Label Text="{Binding Symbol}" Style="{StaticResource PillLabel}" />
+                                <Label Text="Price" Style="{StaticResource Eyebrow}" Margin="0,6,0,0" />
+                                <Label Text="{Binding FormattedPrice}"
+                                       FontFamily="SpaceGroteskBold"
+                                       FontSize="22" />
+                            </VerticalStackLayout>
+
+                            <Label Grid.Column="2"
+                                   Text="{Binding FormattedPercentChange}"
+                                   FontFamily="InterSemiBold"
+                                   FontSize="13"
+                                   VerticalOptions="Center"
+                                   Margin="0,0,8,0"
+                                   TextColor="{Binding IsPriceUp, Converter={StaticResource PriceChangeColorConverter}}" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+</ContentPage>
