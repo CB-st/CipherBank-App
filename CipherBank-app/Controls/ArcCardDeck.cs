@@ -195,7 +195,7 @@ public class ArcCardDeck : ContentView
     }
 
     private CarouselLayoutConfig BuildConfig() =>
-        CarouselLayoutConfig.Default with { Stride = Stride, MaxTilt = MaxTilt, ArcDrop = ArcDrop };
+        CarouselLayoutConfig.Default with { Stride = Math.Max(1.0, Stride), MaxTilt = MaxTilt, ArcDrop = ArcDrop };
 
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e) => RebuildCards();
 
@@ -225,7 +225,13 @@ public class ArcCardDeck : ContentView
         int focusIndex = FocusedItem != null ? ItemsSource.IndexOf(FocusedItem) : -1;
         _position = focusIndex >= 0 ? focusIndex : 0;
         ApplyLayout();
-        CommitFocusedItem();
+
+        // Mid-repopulation (Clear + per-item Add) the old focused item is usually absent;
+        // committing item[0] here would overwrite the consumer's pending focus restore.
+        if (FocusedItem == null || focusIndex >= 0)
+        {
+            CommitFocusedItem();
+        }
     }
 
     private void ApplyLayout()

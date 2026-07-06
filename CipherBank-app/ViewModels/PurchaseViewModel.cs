@@ -189,9 +189,14 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                         AvailableCryptos.Add(crypto);
                     }
 
-                    if (AvailableCryptos.Count > 0 && SelectedCrypto == null)
+                    if (AvailableCryptos.Count > 0)
                     {
-                        SelectedCrypto = AvailableCryptos.First();
+                        // Reloaded records are new instances; re-resolve the selection by
+                        // symbol so the deck recenters on the refreshed item.
+                        var restored = SelectedCrypto != null
+                            ? AvailableCryptos.FirstOrDefault(c => c.Symbol == SelectedCrypto.Symbol)
+                            : null;
+                        SelectedCrypto = restored ?? AvailableCryptos.First();
                     }
 
                     LogLoadedCryptos(_logger, cryptos.Count);

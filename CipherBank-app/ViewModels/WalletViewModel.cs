@@ -107,6 +107,8 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    // Note: WalletCardItem is a record — the generated setter uses value equality, so this
+    // handler only fires when the card's data actually differs from the current one.
     partial void OnFocusedWalletCardChanged(WalletCardItem? value)
     {
         var newWallet = value?.Wallet;
