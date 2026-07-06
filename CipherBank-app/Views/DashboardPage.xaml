@@ -3,7 +3,6 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
-             xmlns:models="clr-namespace:CipherBank_app.Models"
              xmlns:models1="clr-namespace:CipherBank_app.Models;assembly=CipherBank-app.Core"
              x:Class="CipherBank_app.Views.DashboardPage"
              x:DataType="viewmodels:DashboardViewModel"
@@ -12,21 +11,23 @@
     <RefreshView IsRefreshing="{Binding IsRefreshing}"
                  Command="{Binding RefreshPricesCommand}">
         <ScrollView>
-            <VerticalStackLayout Padding="16" Spacing="16">
+            <VerticalStackLayout Padding="20,12,20,24" Spacing="16">
 
                 <!-- Header -->
                 <Label x:Name="WelcomeLabel"
                        AutomationId="WelcomeLabel"
                        Text="Market Overview"
-                       Style="{StaticResource PageHeader}"
+                       Style="{StaticResource DisplayTitle}"
+                       FontSize="28"
                        HorizontalOptions="Start" />
 
                 <Label x:Name="TotalBalanceLabel"
                        AutomationId="TotalBalanceLabel"
                        Text="{Binding TotalPortfolioValue, StringFormat='Portfolio: ${0:N2}'}"
-                       FontSize="16"
+                       FontFamily="InterMedium"
+                       FontSize="15"
                        Style="{StaticResource SecondaryText}"
-                       Margin="0,-8,0,8" />
+                       Margin="0,-8,0,4" />
 
                 <!-- Loading Indicator -->
                 <ActivityIndicator IsRunning="{Binding IsLoading}"
@@ -53,14 +54,7 @@
                                 IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}">
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="models1:CryptoCurrency">
-                            <Border Margin="0,4"
-                                    Padding="12"
-                                    StrokeShape="RoundRectangle 12"
-                                    Stroke="Transparent"
-                                    BackgroundColor="{AppThemeBinding Light={StaticResource CardBackground}, Dark={StaticResource CardBackgroundDark}}">
-                                <Border.Shadow>
-                                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                                </Border.Shadow>
+                            <Border Margin="0,6" Style="{StaticResource CardBorder}">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DashboardViewModel}}, Path=ViewCryptoDetailsCommand}"
@@ -71,54 +65,51 @@
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="Selected">
                                             <VisualState.Setters>
-                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark=#3D2B7A}" />
+                                                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource SurfaceInsetDark}}" />
                                             </VisualState.Setters>
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
 
-                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                    <!-- Icon placeholder -->
-                                    <Border Grid.Column="0"
-                                            WidthRequest="48"
-                                            HeightRequest="48"
-                                            StrokeShape="RoundRectangle 24"
-                                            Stroke="Transparent"
-                                            BackgroundColor="{AppThemeBinding Light={StaticResource IconPlaceholderBackground}, Dark={StaticResource IconPlaceholderBackgroundDark}}"
-                                            Padding="0">
-                                        <Label Text="{Binding Symbol, StringFormat='{0:0}'}"
-                                               FontSize="14"
-                                               FontAttributes="Bold"
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                    <Label Style="{StaticResource WatermarkGlyph}"
+                                           Grid.ColumnSpan="3"
+                                           FontSize="64"
+                                           Text="{Binding Symbol, Converter={StaticResource CoinGlyphConverter}}"
+                                           HorizontalOptions="End"
+                                           VerticalOptions="Center"
+                                           TranslationX="10" />
+
+                                    <!-- Coin icon -->
+                                    <Border Style="{StaticResource CoinCircle}"
+                                            VerticalOptions="Start"
+                                            BackgroundColor="{Binding Symbol, Converter={StaticResource CoinColorConverter}}">
+                                        <Label Text="{Binding Symbol, Converter={StaticResource CoinGlyphConverter}}"
+                                               TextColor="White"
+                                               FontFamily="SpaceGroteskBold"
+                                               FontSize="18"
                                                HorizontalOptions="Center"
                                                VerticalOptions="Center" />
                                     </Border>
 
-                                    <!-- Name and Symbol -->
-                                    <VerticalStackLayout Grid.Column="1"
-                                                         VerticalOptions="Center"
-                                                         Spacing="2">
-                                        <Label Text="{Binding Name}"
-                                               FontSize="16"
-                                               FontAttributes="Bold" />
-                                        <Label Text="{Binding Symbol}"
-                                               FontSize="12"
-                                               Style="{StaticResource SecondaryText}" />
+                                    <!-- Name, symbol, price block -->
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                        <Label Text="{Binding Name}" Style="{StaticResource TitleMedium}" />
+                                        <Label Text="{Binding Symbol}" Style="{StaticResource PillLabel}" />
+                                        <Label Text="Current Price" Style="{StaticResource Eyebrow}" Margin="0,6,0,0" />
+                                        <Label Text="{Binding FormattedPrice}"
+                                               FontFamily="SpaceGroteskBold"
+                                               FontSize="24" />
                                     </VerticalStackLayout>
 
-                                    <!-- Price and Change -->
-                                    <VerticalStackLayout Grid.Column="2"
-                                                         VerticalOptions="Center"
-                                                         HorizontalOptions="End"
-                                                         Spacing="2">
-                                        <Label Text="{Binding FormattedPrice}"
-                                               FontSize="16"
-                                               FontAttributes="Bold"
-                                               HorizontalTextAlignment="End" />
-                                        <Label Text="{Binding FormattedPercentChange}"
-                                               FontSize="12"
-                                               HorizontalTextAlignment="End"
-                                               TextColor="{Binding IsPriceUp, Converter={StaticResource PriceChangeColorConverter}}" />
-                                    </VerticalStackLayout>
+                                    <!-- 24h change -->
+                                    <Label Grid.Column="2"
+                                           Text="{Binding FormattedPercentChange}"
+                                           FontFamily="InterSemiBold"
+                                           FontSize="13"
+                                           VerticalOptions="Center"
+                                           Margin="0,0,8,0"
+                                           TextColor="{Binding IsPriceUp, Converter={StaticResource PriceChangeColorConverter}}" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -146,10 +137,9 @@
                     <Button Grid.Column="0"
                             x:Name="PurchaseButton"
                             AutomationId="PurchaseButton"
-                            Text="Buy Crypto"
+                            Text="Buy Crypto  →"
                             Command="{Binding NavigateToPurchaseCommand}"
-                            CornerRadius="8"
-                            HeightRequest="50" />
+                            HeightRequest="52" />
 
                     <Button Grid.Column="1"
                             x:Name="WalletButton"
@@ -157,7 +147,7 @@
                             Text="My Wallets"
                             Command="{Binding NavigateToWalletsCommand}"
                             Style="{StaticResource SecondaryButton}"
-                            HeightRequest="50" />
+                            HeightRequest="52" />
                 </Grid>
 
             </VerticalStackLayout>
