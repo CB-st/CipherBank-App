@@ -21,7 +21,8 @@ public record CryptoCurrency(
 {
     public bool IsPriceUp => PercentChange24h >= 0;
 
-    public string FormattedPrice => CurrentPrice.ToString("C2", CultureInfo.InvariantCulture);
+    public string FormattedPrice => $"${CurrentPrice.ToString("N2", CultureInfo.InvariantCulture)}";
 
-    public string FormattedPercentChange => $"{(PercentChange24h >= 0 ? "+" : string.Empty)}{PercentChange24h:F2}%";
+    public string FormattedPercentChange =>
+        $"{(PercentChange24h >= 0 ? "+" : string.Empty)}{PercentChange24h.ToString("F2", CultureInfo.InvariantCulture)}%";
 }
