@@ -17,12 +17,12 @@ public record WalletCardItem(Wallet Wallet, decimal UsdValue, decimal PercentCha
 
     public string FormattedBalance => Wallet.FormattedBalance;
 
-    public string FormattedUsdValue => UsdValue.ToString("C2", CultureInfo.InvariantCulture);
+    public string FormattedUsdValue => $"${UsdValue.ToString("N2", CultureInfo.InvariantCulture)}";
 
     public bool IsPriceUp => PercentChange24h >= 0;
 
     public string FormattedPercentChange =>
-        $"{(PercentChange24h >= 0 ? "+" : string.Empty)}{PercentChange24h:F2}%";
+        $"{(PercentChange24h >= 0 ? "+" : string.Empty)}{PercentChange24h.ToString("F2", CultureInfo.InvariantCulture)}%";
 
     /// <summary>Builds a card from a wallet and its fetched market price.</summary>
     public static WalletCardItem FromWallet(Wallet wallet, CryptoCurrency crypto) =>
