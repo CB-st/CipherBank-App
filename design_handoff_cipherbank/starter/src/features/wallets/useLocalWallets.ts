@@ -17,28 +17,27 @@ export function mergeLocalWallets(portfolio: Portfolio, drafts: Awaited<ReturnTy
     if (!extras.length) return h;
     const existing = h.wallets ?? defaultWallet(h);
     const byId = new Map(existing.map((w) => [w.id, w]));
-    // Prefer derived draft metadata onto matching primary slots by label/index
+
     for (const d of extras) {
-      const match =
-        byId.get(d.id) ??
-        existing.find(
-          (w) =>
-            w.source === 'local' &&
-            !w.address &&
-            (w.label === 'Primary' || w.label === d.label) &&
-            d.accountIndex === 0,
-        );
-      if (match && (d.address || d.derivationPath)) {
+      const matchById = byId.get(d.id);
+      const matchByLabel = existing.find((w) => w.label === d.label || (w.label === 'Primary' && d.accountIndex === 0));
+      const match = matchById ?? matchByLabel;
+
+      if (match && d.address) {
+        // Prefer API / derived draft address over fixture when present
         byId.set(match.id, {
           ...match,
-          id: d.id.startsWith('wal_local_') ? match.id : match.id,
           label: d.label || match.label,
-          address: d.address ?? match.address,
+          address: d.address,
           derivationPath: d.derivationPath ?? match.derivationPath,
           source: d.source,
+          mode: d.mode ?? match.mode,
+          sync: d.sync ?? match.sync,
+          viewKeyFingerprint: d.viewKeyFingerprint ?? match.viewKeyFingerprint,
         });
         continue;
       }
+
       if (!byId.has(d.id)) {
         byId.set(d.id, {
           id: d.id,
@@ -48,23 +47,13 @@ export function mergeLocalWallets(portfolio: Portfolio, drafts: Awaited<ReturnTy
           address: d.address,
           derivationPath: d.derivationPath,
           source: d.source,
+          mode: d.mode,
+          sync: d.sync,
+          viewKeyFingerprint: d.viewKeyFingerprint,
         });
       }
     }
-    // Also patch fixture wallets missing address when we have a derived Primary
-    const primaryDraft = extras.find((d) => d.accountIndex === 0 && d.address);
-    if (primaryDraft) {
-      for (const [id, w] of byId) {
-        if (w.label === 'Primary' && !w.address) {
-          byId.set(id, {
-            ...w,
-            address: primaryDraft.address,
-            derivationPath: primaryDraft.derivationPath,
-            source: 'local',
-          });
-        }
-      }
-    }
+
     return { ...h, wallets: Array.from(byId.values()) };
   });
   return { ...portfolio, holdings };

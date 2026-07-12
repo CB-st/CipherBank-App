@@ -24,7 +24,11 @@ Canonical shapes the **live API must return** so the Expo app can switch off moc
 | GET | `/vault/binaries` | `fixtures/vault-binaries.json` |
 | GET | `/vault/cards` | `fixtures/vault-cards.json` |
 | GET | `/receive/:asset` | `fixtures/receive.json` (keyed by asset) |
-| GET | `/history?range=&compare=` | computed series |
+| GET | `/history?range=&granularity=&symbols=&from=&to=` | bulk series (OHLC-capable) |
+| GET | `/wallets?symbol=` | list wallet accounts |
+| GET | `/wallets/:id` | wallet detail + sync |
+| POST | `/wallets` | create/import managed · unmanaged · watch |
+| POST | `/wallets/:id/refresh` | kick sync |
 | POST | `/session` · `/session/refresh` | computed tokens |
 | POST | `/quotes` | computed `{ quoteId, rate, amountOut, expiresAt, fee }` |
 | POST | `/convert` · `/transfers` · `/payments` | `202` accepted + stream settle |
@@ -104,13 +108,84 @@ Canonical shapes the **live API must return** so the Expo app can switch off moc
 
 ## 3 · Rates — `GET /rates`
 
+Live **price cache snapshot** for Convert and Home (short TTL; clients should use `staleTime` ~5–15s). Maps to CipherBank-src PriceCache / HTTP `/quote` · `/iquote` when live (currency codes: app `XMR` ↔ backend `MONERO`).
+
 ```json
 {
   "rates": [
-    { "symbol": "BTC", "usd": 63204.18, "change24h": 1.8 }
+    { "symbol": "BTC", "usd": 63204.18, "change24h": 1.8 },
+    { "symbol": "XMR", "usd": 160.0, "change24h": 0.4 }
+  ],
+  "generatedAt": 1720900000000,
+  "ttlMs": 10000
+}
+```
+
+---
+
+## 3b · Wallets — Monero-first product surface
+
+Hybrid light wallets. See also [`docs/MONERO_LINK.md`](../docs/MONERO_LINK.md).
+
+**Modes**
+
+| `mode` | Spend key | Server role | App `source` |
+|--------|-----------|-------------|--------------|
+| `managed` | Server (wallet-rpc) | Create + sync + balance | `server` |
+| `unmanaged` | Device only | View-key sync / balance via wallet-rpc | `local` |
+| `watch` | None | Address metadata only | `watch` |
+
+**Never** send mnemonic, spend key, or BIP39 seed in these bodies. Unmanaged may send **viewKey + address** once at registration.
+
+### `GET /wallets?symbol=XMR`
+
+```json
+{
+  "wallets": [
+    {
+      "id": "wal_xmr_1",
+      "symbol": "XMR",
+      "label": "Primary",
+      "mode": "managed",
+      "address": "4…",
+      "balance": "12.5",
+      "unlockedBalance": "12.5",
+      "restoreHeight": 3100000,
+      "sync": { "height": 3100500, "target": 3100500, "state": "synced" }
+    }
   ]
 }
 ```
+
+### `POST /wallets`
+
+```json
+{
+  "symbol": "XMR",
+  "label": "Cold view",
+  "mode": "unmanaged",
+  "address": "4…",
+  "viewKey": "…",
+  "restoreHeight": 3100000
+}
+```
+
+Managed: `{ "symbol": "XMR", "label": "Managed", "mode": "managed" }`  
+Watch: `{ "symbol": "XMR", "label": "Watch", "mode": "watch", "address": "4…" }`
+
+→ `{ walletId, symbol, label, mode, address, sync }`
+
+### `GET /wallets/:id`
+
+Same fields as list item (single object).
+
+### `POST /wallets/:id/refresh`
+
+→ `{ id, sync }` — kicks wallet-rpc refresh / auto-refresh.
+
+### Future — `POST /wallets/:id/transfer`
+
+Documented only. Managed: server builds transfer. Unmanaged: client-side sign (out of this contract slice).
 
 ---
 
@@ -247,7 +322,11 @@ Per-asset object (fixture is a map; handler returns one entry):
 
 ---
 
-## 10 · History — `GET /history?range=1M&compare=BTC,ETH`
+## 10 · History — bulk market / portfolio series
+
+`GET /history?range=1M&granularity=1h&symbols=BTC,ETH,XMR&from=&to=`
+
+Bulk block for charts. Live Convert pricing uses `/rates` + `/quotes`, not this endpoint.
 
 ```json
 {
@@ -255,13 +334,24 @@ Per-asset object (fixture is a map; handler returns one entry):
     {
       "label": "Wallet",
       "symbol": "WALLET",
-      "points": [{ "t": 1720900000000, "v": 100000 }]
+      "granularity": "1h",
+      "points": [
+        { "t": 1720900000000, "v": 100000, "o": 99800, "h": 100500, "l": 99500, "c": 100000 }
+      ]
     }
-  ]
+  ],
+  "meta": { "source": "mock", "generatedAt": 1720900000000 }
 }
 ```
 
-`range`: `1D` | `1W` | `1M` | `1Y` | `ALL`.
+| Param | Values | Notes |
+|-------|--------|-------|
+| `range` | `1D` \| `1W` \| `1M` \| `1Y` \| `ALL` | Preset window (ignored if `from`+`to` set) |
+| `granularity` | `1m` \| `5m` \| `1h` \| `1d` | Candle / point specificity |
+| `symbols` | comma list | Extends legacy `compare=` |
+| `from` / `to` | unix ms | Custom bulk window |
+
+`v` is the chart close (same as `c` when OHLC present). CipherBank-src has no history feeder yet — see `MONERO_LINK.md`.
 
 ---
 
@@ -352,11 +442,12 @@ Errors: `pos_expired`, `insufficient_funds`, `wallet_locked`, `test_card_require
 
 | Screen | Endpoints |
 |--------|-----------|
-| Home | `GET /portfolio`, `GET /history` |
-| Convert | `POST /quotes`, `POST /convert` + stream |
+| Home | `GET /portfolio`, `GET /history`, `GET /rates` |
+| Convert | `GET /rates` (cache), `POST /quotes`, `POST /convert` + stream |
 | Send | `POST /transfers`, recipients |
 | Pay | `POST /payments` |
 | Receive | `GET /receive/:asset` |
+| Assets / Add wallet | `POST /wallets`, `GET /wallets` (XMR); local derive for BTC/ETH |
 | Profile / prefs | `GET/PUT /prefs`, vault lists |
 | Tap to pay lab | `/pos/*`, vault cards, local unlock |
 

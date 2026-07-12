@@ -1,0 +1,15 @@
+{
+  "wallets": [
+    {
+      "id": "wal_xmr_managed_demo",
+      "symbol": "XMR",
+      "label": "Managed",
+      "mode": "managed",
+      "address": "4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jp2zC5AW6",
+      "balance": "0",
+      "unlockedBalance": "0",
+      "restoreHeight": 3100000,
+      "sync": { "height": 3100500, "target": 3100500, "state": "synced" }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { LocalWalletDraft, WalletSource } from '@/features/portfolio/portfolio.types';
+import type { LocalWalletDraft, WalletMode, WalletSource, WalletSyncStatus } from '@/features/portfolio/portfolio.types';
 import { deriveAddress, isDerivableSymbol } from './derive';
 import { getSessionMnemonic, unlockLocalCustody } from '@/features/vault/custody';
 
@@ -26,16 +26,23 @@ export async function addLocalWallet(input: {
   source?: WalletSource;
   derivationPath?: string;
   accountIndex?: number;
+  mode?: WalletMode;
+  sync?: WalletSyncStatus;
+  viewKeyFingerprint?: string;
+  id?: string;
 }): Promise<LocalWalletDraft> {
   const list = await loadLocalWallets();
   const draft: LocalWalletDraft = {
-    id: 'wal_local_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
+    id: input.id ?? 'wal_local_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
     symbol: input.symbol.toUpperCase(),
     label: input.label.trim() || 'Wallet',
     address: input.address?.trim() || undefined,
     derivationPath: input.derivationPath,
     accountIndex: input.accountIndex,
-    source: input.source ?? (input.address && !input.derivationPath ? 'watch' : 'local'),
+    source: input.source ?? (input.mode === 'managed' ? 'server' : input.address && !input.derivationPath ? 'watch' : 'local'),
+    mode: input.mode,
+    sync: input.sync,
+    viewKeyFingerprint: input.viewKeyFingerprint,
     createdAt: Date.now(),
   };
   list.push(draft);

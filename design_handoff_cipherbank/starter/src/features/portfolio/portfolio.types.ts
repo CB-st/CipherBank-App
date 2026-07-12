@@ -3,6 +3,15 @@ export type AssetType = 'crypto' | 'fiat' | 'security';
 /** Custody origin for a wallet account — prepares for local read / mnemonic-derived addresses. */
 export type WalletSource = 'local' | 'watch' | 'server';
 
+/** Product mode for hybrid assets (esp. XMR). Maps to `/wallets` mode. */
+export type WalletMode = 'managed' | 'unmanaged' | 'watch';
+
+export type WalletSyncStatus = {
+  height: number;
+  target: number;
+  state: 'synced' | 'syncing' | 'pending' | 'error';
+};
+
 /**
  * One spendable / receivable account under an asset.
  * Local wallets will later derive addresses from the on-device mnemonic;
@@ -17,6 +26,9 @@ export interface WalletAccount {
   address?: string;
   derivationPath?: string;
   source: WalletSource;
+  mode?: WalletMode;
+  sync?: WalletSyncStatus;
+  viewKeyFingerprint?: string;
 }
 
 export interface Holding {
@@ -48,5 +60,8 @@ export interface LocalWalletDraft {
   derivationPath?: string;
   accountIndex?: number;
   source: WalletSource;
+  mode?: WalletMode;
+  sync?: WalletSyncStatus;
+  viewKeyFingerprint?: string;
   createdAt: number;
 }

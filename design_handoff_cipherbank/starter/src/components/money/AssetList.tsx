@@ -1,29 +1,42 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Modal, Pressable } from 'react-native';
+import { View, Text, TextInput, Modal, Pressable, ScrollView } from 'react-native';
 import { color, radius, shadow, font } from '@/theme';
 import { AssetRow } from './AssetRow';
 import { Skeleton } from '../primitives/Skeleton';
 import { PressableScale } from '../primitives/PressableScale';
 import { Button } from '../primitives/Button';
 import { useLocalWallets } from '@/features/wallets/useLocalWallets';
-import { isDerivableSymbol } from '@/features/wallets/derive';
+import { useCreateServerWallet } from '@/features/wallets/useXmrWallets';
+import { fingerprintViewKey } from '@/features/wallets/xmr.api';
+import { getWalletModule, type WalletUiMode } from '@/features/wallets/registry';
 import { useToast } from '../primitives/Toast';
 import type { Holding } from '@/features/portfolio/portfolio.types';
 
+type AddMode = WalletUiMode;
+
 export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: boolean }) {
   const { add, deriveNext } = useLocalWallets();
+  const createServer = useCreateServerWallet();
   const toast = useToast();
   const [target, setTarget] = useState<Holding | null>(null);
   const [label, setLabel] = useState('');
   const [address, setAddress] = useState('');
-  const [mode, setMode] = useState<'derive' | 'watch'>('derive');
+  const [viewKey, setViewKey] = useState('');
+  const [mode, setMode] = useState<AddMode>('watch');
+
+  const mod = target ? getWalletModule(target.symbol) : null;
+  const canDerive = mod?.canDerive ?? false;
 
   const openAdd = (h: Holding) => {
+    const m = getWalletModule(h.symbol);
     setTarget(h);
     setLabel('');
     setAddress('');
-    setMode(isDerivableSymbol(h.symbol) ? 'derive' : 'watch');
+    setViewKey('');
+    setMode(m.addModes[0] ?? 'watch');
   };
+
+  const close = () => setTarget(null);
 
   const submitWatch = () => {
     if (!target) return;
@@ -33,6 +46,7 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
         label: label || `Wallet ${(target.wallets?.length ?? 0) + 1}`,
         address: address || undefined,
         source: address ? 'watch' : 'local',
+        mode: 'watch',
       },
       {
         onSuccess: () => {
@@ -41,7 +55,7 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
             title: 'Wallet added',
             sub: address ? 'Watch address saved locally' : 'Slot saved locally',
           });
-          setTarget(null);
+          close();
         },
         onError: () => toast({ kind: 'error', title: 'Could not add wallet', sub: 'Try again.' }),
       },
@@ -59,7 +73,7 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
             title: 'Derived wallet',
             sub: w.address ? w.address.slice(0, 12) + '…' : w.derivationPath ?? 'Saved',
           });
-          setTarget(null);
+          close();
         },
         onError: () =>
           toast({
@@ -71,7 +85,84 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
     );
   };
 
-  const canDerive = target ? isDerivableSymbol(target.symbol) : false;
+  const submitServerWallet = () => {
+    if (!target || !mod?.usesServerWallets) return;
+    const walletMode = mode as 'managed' | 'unmanaged' | 'watch';
+    if (walletMode === 'unmanaged' && (!address.trim() || !viewKey.trim())) {
+      toast({ kind: 'error', title: 'Need address + view key', sub: 'Spend key stays on this device.' });
+      return;
+    }
+    if (walletMode === 'watch' && !address.trim()) {
+      toast({ kind: 'error', title: 'Address required', sub: '' });
+      return;
+    }
+    createServer.mutate(
+      {
+        symbol: target.symbol,
+        label: label || (walletMode === 'managed' ? 'CipherBank managed' : walletMode === 'unmanaged' ? 'Unmanaged' : 'Watch'),
+        mode: walletMode,
+        address: address.trim() || undefined,
+        viewKey: walletMode === 'unmanaged' ? viewKey.trim() : undefined,
+      },
+      {
+        onSuccess: (res) => {
+          add.mutate({
+            id: res.walletId,
+            symbol: target.symbol,
+            label: res.label,
+            address: res.address,
+            source: mod.sourceFor(walletMode),
+            mode: walletMode,
+            sync: res.sync,
+            viewKeyFingerprint: res.viewKeyFingerprint ?? (viewKey ? fingerprintViewKey(viewKey) : undefined),
+          });
+          toast({
+            kind: 'ok',
+            title: walletMode === 'managed' ? 'Managed wallet' : 'Wallet registered',
+            sub: res.address ? res.address.slice(0, 14) + '…' : 'Sync pending',
+          });
+          setViewKey('');
+          close();
+        },
+        onError: () => toast({ kind: 'error', title: 'Could not create wallet', sub: 'Try again.' }),
+      },
+    );
+  };
+
+  const busy = add.isPending || deriveNext.isPending || createServer.isPending;
+
+  const modeLabel = (id: AddMode) => {
+    if (id === 'derive') return 'Derive next';
+    if (id === 'managed') return 'Managed';
+    if (id === 'unmanaged') return 'Unmanaged';
+    return 'Watch';
+  };
+
+  const modeChip = (id: AddMode) => (
+    <PressableScale
+      key={id}
+      onPress={() => setMode(id)}
+      style={{
+        flex: 1,
+        minWidth: '30%',
+        paddingVertical: 10,
+        borderRadius: radius.button,
+        backgroundColor: mode === id ? color.deepPurple : color.track,
+        alignItems: 'center',
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: font.body,
+          fontWeight: '700',
+          fontSize: 12,
+          color: mode === id ? color.gold : color.textMuted,
+        }}
+      >
+        {modeLabel(id)}
+      </Text>
+    </PressableScale>
+  );
 
   return (
     <>
@@ -87,11 +178,8 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
         ))}
       </View>
 
-      <Modal visible={!!target} transparent animationType="fade" onRequestClose={() => setTarget(null)}>
-        <Pressable
-          style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }}
-          onPress={() => setTarget(null)}
-        >
+      <Modal visible={!!target} transparent animationType="fade" onRequestClose={close}>
+        <Pressable style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }} onPress={close}>
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
@@ -101,106 +189,124 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
               padding: 20,
               gap: 12,
               paddingBottom: 32,
+              maxHeight: '88%',
             }}
           >
-            <Text style={{ fontFamily: font.display, fontWeight: '700', fontSize: 20, color: color.text }}>
-              Add {target?.symbol} wallet
-            </Text>
-            <Text style={{ fontSize: 13, color: color.textMuted, fontFamily: font.body }}>
-              {canDerive
-                ? 'Derive the next account from your on-device seed, or paste a watch-only address.'
-                : 'Paste a watch-only address. Full derivation for this asset arrives in a later sprint.'}
-            </Text>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 12 }}>
+              <Text style={{ fontFamily: font.display, fontWeight: '700', fontSize: 20, color: color.text }}>
+                Add {target?.symbol} wallet
+              </Text>
+              <Text style={{ fontSize: 13, color: color.textMuted, fontFamily: font.body }}>
+                {mod?.notes ??
+                  (canDerive
+                    ? 'Derive the next account from your on-device seed, or paste a watch-only address.'
+                    : 'Paste a watch-only address.')}
+              </Text>
 
-            {canDerive ? (
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <PressableScale
-                  onPress={() => setMode('derive')}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: radius.button,
-                    backgroundColor: mode === 'derive' ? color.deepPurple : color.track,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: font.body,
-                      fontWeight: '700',
-                      fontSize: 13,
-                      color: mode === 'derive' ? color.gold : color.textMuted,
-                    }}
-                  >
-                    Derive next
-                  </Text>
-                </PressableScale>
-                <PressableScale
-                  onPress={() => setMode('watch')}
-                  style={{
-                    flex: 1,
-                    paddingVertical: 10,
-                    borderRadius: radius.button,
-                    backgroundColor: mode === 'watch' ? color.deepPurple : color.track,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: font.body,
-                      fontWeight: '700',
-                      fontSize: 13,
-                      color: mode === 'watch' ? color.gold : color.textMuted,
-                    }}
-                  >
-                    Watch address
-                  </Text>
-                </PressableScale>
-              </View>
-            ) : null}
+              {mod && mod.addModes.length > 1 ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{mod.addModes.map(modeChip)}</View>
+              ) : null}
 
-            <TextInput
-              value={label}
-              onChangeText={setLabel}
-              placeholder="Label (e.g. Cold, Trading)"
-              placeholderTextColor={color.textSubtle}
-              style={{
-                backgroundColor: color.track,
-                borderRadius: radius.button,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                color: color.text,
-                fontFamily: font.body,
-                fontSize: 14,
-              }}
-            />
-            {mode === 'watch' || !canDerive ? (
               <TextInput
-                value={address}
-                onChangeText={setAddress}
-                placeholder="Watch address"
+                value={label}
+                onChangeText={setLabel}
+                placeholder="Label (e.g. Cold, Trading)"
                 placeholderTextColor={color.textSubtle}
-                autoCapitalize="none"
-                autoCorrect={false}
                 style={{
                   backgroundColor: color.track,
                   borderRadius: radius.button,
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   color: color.text,
-                  fontFamily: font.mono,
-                  fontSize: 13,
+                  fontFamily: font.body,
+                  fontSize: 14,
                 }}
               />
-            ) : null}
-            <Button
-              label={mode === 'derive' && canDerive ? 'Derive next account' : 'Add wallet'}
-              busy={add.isPending || deriveNext.isPending}
-              onPress={mode === 'derive' && canDerive ? submitDerive : submitWatch}
-            />
-            <PressableScale onPress={() => setTarget(null)} style={{ alignItems: 'center', paddingVertical: 8 }}>
-              <Text style={{ color: color.textSubtle, fontWeight: '600', fontFamily: font.body }}>Cancel</Text>
-            </PressableScale>
+
+              {mod?.usesServerWallets && (mode === 'unmanaged' || mode === 'watch') ? (
+                <TextInput
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Primary address"
+                  placeholderTextColor={color.textSubtle}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={{
+                    backgroundColor: color.track,
+                    borderRadius: radius.button,
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    color: color.text,
+                    fontFamily: font.mono,
+                    fontSize: 13,
+                  }}
+                />
+              ) : null}
+
+              {mod?.usesServerWallets && mode === 'unmanaged' ? (
+                <TextInput
+                  value={viewKey}
+                  onChangeText={setViewKey}
+                  placeholder="Private view key (not spend key)"
+                  placeholderTextColor={color.textSubtle}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  style={{
+                    backgroundColor: color.track,
+                    borderRadius: radius.button,
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    color: color.text,
+                    fontFamily: font.mono,
+                    fontSize: 13,
+                  }}
+                />
+              ) : null}
+
+              {!mod?.usesServerWallets && (mode === 'watch' || !canDerive) ? (
+                <TextInput
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Watch address"
+                  placeholderTextColor={color.textSubtle}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={{
+                    backgroundColor: color.track,
+                    borderRadius: radius.button,
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    color: color.text,
+                    fontFamily: font.mono,
+                    fontSize: 13,
+                  }}
+                />
+              ) : null}
+
+              <Button
+                label={
+                  mod?.usesServerWallets
+                    ? mode === 'managed'
+                      ? 'Create managed wallet'
+                      : mode === 'unmanaged'
+                        ? 'Register view sync'
+                        : 'Add watch address'
+                    : mode === 'derive' && canDerive
+                      ? 'Derive next account'
+                      : 'Add wallet'
+                }
+                busy={busy}
+                onPress={() => {
+                  if (mod?.usesServerWallets) submitServerWallet();
+                  else if (mode === 'derive' && canDerive) submitDerive();
+                  else submitWatch();
+                }}
+              />
+              <PressableScale onPress={close} style={{ alignItems: 'center', paddingVertical: 8 }}>
+                <Text style={{ color: color.textSubtle, fontWeight: '600', fontFamily: font.body }}>Cancel</Text>
+              </PressableScale>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>

@@ -78,8 +78,11 @@ Sprint D  POS: HCE spike on Android device + processor sandbox token
 - [x] Backup write-down + 3-word verify quiz → Set PIN
 - [x] BTC BIP84 + ETH BIP44 derive; `ensureDerivedWallets`; Add-wallet “Derive next”
 - [x] Receive / Home prefer derived addresses; `docs/CUSTODY.md`
+- [x] XMR hybrid wallets contract + mocks (managed / unmanaged / watch); `docs/MONERO_LINK.md`
+- [x] Bulk `/history` (granularity + symbols + from/to); live `/rates` cache for Convert
 - [ ] Sprint C: `EXPO_PUBLIC_USE_MOCK=false` staging cutover
 - [ ] Sprint D: HCE / VTS-MDES
+- [ ] CipherBank-src: expose `/v1/wallets*` over HTTP + history OHLC feeder
 
 ## Doc map (keep updated)
 
@@ -92,4 +95,5 @@ Sprint D  POS: HCE spike on Android device + processor sandbox token
 | `starter/docs/ANDROID_SETUP.md` | Emulator + APK scripts |
 | `starter/docs/TESTING.md` | Web / Android / EAS matrix |
 | `starter/docs/CUSTODY.md` | On-device custody threat model |
+| `starter/docs/MONERO_LINK.md` | XMR hybrid wallets ↔ MoneroRPC / PriceCache |
 | This file | Phase roadmap + storage security |

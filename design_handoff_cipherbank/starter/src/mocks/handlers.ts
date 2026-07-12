@@ -9,6 +9,7 @@ import receive from './fixtures/receive.json';
 import prefsFixture from './fixtures/prefs.json';
 import vaultBinaries from './fixtures/vault-binaries.json';
 import vaultCards from './fixtures/vault-cards.json';
+import walletsFixture from './fixtures/wallets.json';
 import type { UserPrefs } from '@/features/prefs/prefs.types';
 
 type Opts = { idempotencyKey?: string; signal?: AbortSignal };
@@ -25,6 +26,7 @@ let txSeq = 0;
 let prefsState: UserPrefs = deepClone(prefsFixture) as UserPrefs;
 let binariesState = deepClone(vaultBinaries.binaries);
 let cardsState = deepClone(vaultCards.cards) as any[];
+let walletsState = deepClone(walletsFixture.wallets) as any[];
 const posSessions = new Map<string, any>();
 
 const requireTestCard =
@@ -59,21 +61,66 @@ function rateFor(symbol: string): number {
 function rejectMnemonicLeak(body?: unknown) {
   if (!body || typeof body !== 'object') return;
   const raw = JSON.stringify(body).toLowerCase();
-  if (raw.includes('mnemonic') || raw.includes('recovery phrase') || raw.includes('"seed"')) {
-    throw new MockApiError(400, 'custody_local_only', 'Recovery mnemonic must never be sent to the server');
+  if (raw.includes('mnemonic') || raw.includes('recovery phrase') || raw.includes('"seed"') || raw.includes('spendkey') || raw.includes('spend_key')) {
+    throw new MockApiError(400, 'custody_local_only', 'Recovery mnemonic / spend key must never be sent to the server');
   }
 }
 
-function buildSeries(range: string, start: number, drift: number, vol: number) {
-  const N: Record<string, number> = { '1D': 24, '1W': 28, '1M': 30, '1Y': 52, ALL: 60 };
-  const n = N[range] ?? 30;
-  const now = Date.now();
-  const step = 86400e3 / 4;
+function fingerprintKey(viewKey: string): string {
+  const cleaned = viewKey.trim().toLowerCase().replace(/\s+/g, '');
+  if (cleaned.length < 8) return '••••';
+  return cleaned.slice(0, 4) + '…' + cleaned.slice(-4);
+}
+
+function mockXmrAddress(seed: string) {
+  // Deterministic-looking mainnet-shaped mock (not a real checksummed address)
+  const base =
+    '4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jp2zC5AW6';
+  return base.slice(0, 80) + seed.replace(/\W/g, '').slice(0, 15).padEnd(15, '0');
+}
+
+function stepMs(granularity: string): number {
+  const m: Record<string, number> = { '1m': 60e3, '5m': 300e3, '1h': 3600e3, '1d': 86400e3 };
+  return m[granularity] ?? 3600e3;
+}
+
+function pointCount(range: string, granularity: string): number {
+  const presets: Record<string, number> = { '1D': 24, '1W': 28, '1M': 30, '1Y': 52, ALL: 60 };
+  if (granularity === '1m' && range === '1D') return 96;
+  if (granularity === '5m' && range === '1D') return 48;
+  if (granularity === '1h' && (range === '1W' || range === '1M')) return range === '1W' ? 42 : 48;
+  return presets[range] ?? 30;
+}
+
+function buildSeries(
+  range: string,
+  start: number,
+  drift: number,
+  vol: number,
+  granularity: string,
+  fromMs?: number,
+  toMs?: number,
+) {
+  const n = pointCount(range, granularity);
+  const step = stepMs(granularity);
+  const end = toMs ?? Date.now();
+  const startT = fromMs ?? end - n * step;
   let v = start;
-  const points: { t: number; v: number }[] = [];
+  const points: { t: number; v: number; o: number; h: number; l: number; c: number }[] = [];
   for (let i = 0; i < n; i++) {
+    const open = v;
     v = v * (1 + drift / n + (Math.sin(i * 1.7) + Math.cos(i * 0.6)) * (vol / n));
-    points.push({ t: now - (n - i) * step, v: Math.round(v) });
+    const close = Math.round(v);
+    const high = Math.round(Math.max(open, close) * (1 + vol / (n * 2)));
+    const low = Math.round(Math.min(open, close) * (1 - vol / (n * 2)));
+    points.push({
+      t: startT + i * step,
+      v: close,
+      o: Math.round(open),
+      h: high,
+      l: low,
+      c: close,
+    });
   }
   return points;
 }
@@ -83,12 +130,35 @@ async function handleGet(path: string): Promise<unknown> {
 
   if (pathname === '/portfolio') return deepClone(portfolio);
   if (pathname === '/assets') return deepClone(assets);
-  if (pathname === '/rates') return deepClone(rates);
+  if (pathname === '/rates') {
+    return {
+      ...deepClone(rates),
+      generatedAt: Date.now(),
+      ttlMs: 10_000,
+    };
+  }
   if (pathname === '/recipients') return deepClone(recipients);
   if (pathname === '/activity') return deepClone(activity);
   if (pathname === '/prefs') return deepClone(prefsState);
   if (pathname === '/vault/binaries') return { binaries: deepClone(binariesState) };
   if (pathname === '/vault/cards') return { cards: deepClone(cardsState) };
+
+  if (pathname === '/wallets') {
+    const symbol = (query.get('symbol') ?? '').toUpperCase();
+    const list = symbol ? walletsState.filter((w) => w.symbol === symbol) : walletsState;
+    return { wallets: deepClone(list) };
+  }
+
+  if (pathname.startsWith('/wallets/')) {
+    const wid = pathname.slice('/wallets/'.length);
+    if (wid.includes('/')) {
+      /* fall through to refresh POST only */
+    } else {
+      const w = walletsState.find((x) => x.id === wid);
+      if (!w) throw new MockApiError(404, 'not_found', 'Wallet not found');
+      return deepClone(w);
+    }
+  }
 
   if (pathname.startsWith('/pos/sessions/')) {
     const sid = pathname.slice('/pos/sessions/'.length);
@@ -113,16 +183,26 @@ async function handleGet(path: string): Promise<unknown> {
 
   if (pathname === '/history') {
     const range = query.get('range') ?? '1M';
-    const compare = (query.get('compare') ?? '').split(',').filter(Boolean);
+    const granularity = query.get('granularity') ?? '1h';
+    const symbolsRaw = query.get('symbols') || query.get('compare') || '';
+    const compare = symbolsRaw.split(',').filter(Boolean);
+    const from = query.get('from') ? Number(query.get('from')) : undefined;
+    const to = query.get('to') ? Number(query.get('to')) : undefined;
     const series = [
-      { label: 'Wallet', symbol: 'WALLET', points: buildSeries(range, 100000, 0.02, 0.03) },
+      {
+        label: 'Wallet',
+        symbol: 'WALLET',
+        granularity,
+        points: buildSeries(range, 100000, 0.02, 0.03, granularity, from, to),
+      },
       ...compare.map((sym, i) => ({
         label: sym,
         symbol: sym,
-        points: buildSeries(range, 100000 * (0.6 + i * 0.2), 0.015 - i * 0.005, 0.04),
+        granularity,
+        points: buildSeries(range, 100000 * (0.6 + i * 0.2), 0.015 - i * 0.005, 0.04, granularity, from, to),
       })),
     ];
-    return { series };
+    return { series, meta: { source: 'mock', generatedAt: Date.now() } };
   }
 
   if (pathname.startsWith('/convert/') || pathname.startsWith('/transfers/') || pathname.startsWith('/payments/')) {
@@ -172,6 +252,63 @@ async function handlePost(path: string, body?: unknown): Promise<unknown> {
       expiresAt: Date.now() + 15_000,
       fee: '0.00',
     };
+  }
+
+  if (pathname === '/wallets') {
+    const mode = String(b.mode ?? 'watch') as 'managed' | 'unmanaged' | 'watch';
+    const symbol = String(b.symbol ?? 'XMR').toUpperCase();
+    const label = String(b.label ?? (mode === 'managed' ? 'Managed' : mode === 'unmanaged' ? 'Unmanaged' : 'Watch'));
+    if (mode === 'unmanaged') {
+      if (!b.address || !b.viewKey) {
+        throw new MockApiError(422, 'invalid_request', 'Unmanaged XMR requires address + viewKey');
+      }
+    }
+    if (mode === 'watch' && !b.address) {
+      throw new MockApiError(422, 'invalid_request', 'Watch wallet requires address');
+    }
+    const walletId = id('wal_xmr');
+    const address =
+      mode === 'managed'
+        ? mockXmrAddress(walletId)
+        : String(b.address);
+    const row = {
+      id: walletId,
+      symbol,
+      label,
+      mode,
+      address,
+      balance: '0',
+      unlockedBalance: '0',
+      restoreHeight: Number(b.restoreHeight ?? 3100000),
+      sync: {
+        height: mode === 'watch' ? 0 : 3100400,
+        target: 3100500,
+        state: mode === 'watch' ? 'pending' : 'syncing',
+      },
+      viewKeyFingerprint: b.viewKey ? fingerprintKey(String(b.viewKey)) : undefined,
+    };
+    walletsState = [...walletsState, row];
+    return {
+      walletId,
+      symbol,
+      label,
+      mode,
+      address,
+      sync: row.sync,
+      viewKeyFingerprint: row.viewKeyFingerprint,
+    };
+  }
+
+  if (pathname.match(/^\/wallets\/[^/]+\/refresh$/)) {
+    const wid = pathname.split('/')[2];
+    const w = walletsState.find((x) => x.id === wid);
+    if (!w) throw new MockApiError(404, 'not_found', 'Wallet not found');
+    w.sync = {
+      height: w.sync?.target ?? 3100500,
+      target: w.sync?.target ?? 3100500,
+      state: 'synced',
+    };
+    return { id: wid, sync: deepClone(w.sync) };
   }
 
   if (pathname === '/convert') {

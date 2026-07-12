@@ -12,6 +12,7 @@ import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/primitives/Icon';
 import { useQuoteLock } from '@/features/quotes/useQuoteLock';
 import { useConvert } from '@/features/convert/useConvert';
+import { useRatesCache, rateUsd } from '@/features/market/ratesCache';
 import { useToast } from '@/components/primitives/Toast';
 import { useCora } from '@/features/cora/useCora';
 import { formatUSD } from '@/lib/money';
@@ -21,16 +22,32 @@ export function ConvertScreen({ navigation }: any) {
   const [to, setTo] = useState('USD');
   const [amount, setAmount] = useState('0.5');
   const [pick, setPick] = useState<null | 'from' | 'to'>(null);
+  const rates = useRatesCache();
   const { quote, secondsLeft, expired } = useQuoteLock(from, to, amount);
   const convert = useConvert();
   const toast = useToast();
   const { lineFor } = useCora();
 
+  const cachedFrom = rateUsd(rates.data, from);
+  const cachedTo = rateUsd(rates.data, to);
+  const cacheRate =
+    cachedFrom != null && cachedTo != null && cachedTo !== 0 ? cachedFrom / cachedTo : undefined;
+
   const out = quote?.amountOut
     ? Number(quote.amountOut)
     : quote
       ? Number(amount) * quote.rate
-      : 0;
+      : cacheRate
+        ? Number(amount) * cacheRate
+        : 0;
+
+  const rateLabel = quote
+    ? '1 ' + from + ' = ' + formatUSD(quote.rate)
+    : cacheRate
+      ? '1 ' + from + ' ≈ ' + formatUSD(cacheRate) + ' (live cache)'
+      : rates.isLoading
+        ? 'Loading live rates…'
+        : 'Fetching rate…';
 
   const swap = () => {
     setFrom(to);
@@ -132,11 +149,7 @@ export function ConvertScreen({ navigation }: any) {
           />
         </View>
 
-        <RateLockStrip
-          rateLabel={quote ? '1 ' + from + ' = ' + formatUSD(quote.rate) : 'Fetching rate…'}
-          secondsLeft={secondsLeft}
-          expired={expired}
-        />
+        <RateLockStrip rateLabel={rateLabel} secondsLeft={secondsLeft} expired={expired} />
 
         <Card style={{ paddingVertical: 4 }}>
           {[
@@ -172,7 +185,7 @@ export function ConvertScreen({ navigation }: any) {
       </ScrollView>
 
       <AssetSelector visible={pick === 'from'} type="crypto" onClose={() => setPick(null)} onPick={setFrom} />
-      <AssetSelector visible={pick === 'to'} type="fiat" onClose={() => setPick(null)} onPick={setTo} />
+      <AssetSelector visible={pick === 'to'} onClose={() => setPick(null)} onPick={setTo} />
       <CoraAssistant screen="convert" />
     </View>
   );
