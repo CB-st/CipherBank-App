@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  * { -webkit-font-smoothing: antialiased; box-sizing:border-box; }
+  ::-webkit-scrollbar { width:0; height:0; }
+  a { color:#7B4DFF; text-decoration:none; }
+  a:hover { color:#5b34d6; }
+  @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+</style>
+</helmet>
+
+<div style="width:1440px; font-family:'Manrope',sans-serif; color:#F7F5F2; background:#111318;">
+
+  <!-- ===== NAV ===== -->
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:24px 60px; position:sticky; top:0; z-index:20; background:rgba(17,19,24,0.72); backdrop-filter:blur(16px); border-bottom:1px solid #ffffff0d;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <svg width="34" height="34" viewBox="0 0 46 46" fill="none"><rect x="10" y="10" width="26" height="26" rx="6" transform="rotate(45 23 23)" fill="none" stroke="#F2C14E" stroke-width="2.8"/><rect x="16.5" y="16.5" width="13" height="13" rx="3" transform="rotate(45 23 23)" fill="#7B4DFF"/></svg>
+      <span style="font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:22px; letter-spacing:-0.8px;">cipher<span style="color:#F2C14E;">bank</span></span>
+    </div>
+    <div style="display:flex; align-items:center; gap:34px; font-size:14px; font-weight:600; color:#c8c2d2;">
+      <span>Personal</span><span>For Banks</span><span>Developers</span><span>Security</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <span style="font-size:14px; font-weight:600; color:#c8c2d2;">Sign in</span>
+      <div style="background:#F2C14E; color:#111318; font-weight:700; font-size:14px; padding:11px 20px; border-radius:12px;">Get the app</div>
+    </div>
+  </div>
+
+  <!-- ===== HERO ===== -->
+  <div style="position:relative; overflow:hidden; padding:84px 60px 70px; background:radial-gradient(900px 520px at 78% 12%, #241a34 0%, #111318 60%);">
+    <div style="display:flex; align-items:center; gap:40px;">
+      <div style="flex:1; max-width:640px;">
+        <div style="display:inline-flex; align-items:center; gap:9px; background:#7B4DFF14; border:1px solid #7B4DFF33; border-radius:30px; padding:7px 14px; margin-bottom:26px;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#F2C14E;"></span>
+          <span style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:1px; color:#e9e4f2;">CRYPTO ⇄ CASH · INSTANT · SELF-CUSTODIED</span>
+        </div>
+        <h1 style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:64px; line-height:1.02; letter-spacing:-2.5px; margin:0 0 22px;">
+          Move money in <span style="color:#F2C14E;">any</span> form.<br>Keep it <span style="color:#7B4DFF;">yours</span>.
+        </h1>
+        <p style="font-size:19px; line-height:1.55; color:#c8c2d2; margin:0 0 34px; max-width:540px;">
+          Cipherbank turns crypto, cash, and — soon — securities into one balance you actually control. Convert instantly, send by ACH, and pay anyone with whatever you're holding. Privacy first. User first. Always.
+        </p>
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:40px;">
+          <div style="background:#F2C14E; color:#111318; font-weight:800; font-size:16px; padding:16px 28px; border-radius:14px; box-shadow:0 10px 28px rgba(242,193,78,0.3);">Open an account</div>
+          <div style="border:1px solid #ffffff26; color:#F7F5F2; font-weight:700; font-size:16px; padding:16px 26px; border-radius:14px;">Explore the API →</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:26px; font-size:13px; color:#8a8496;">
+          <span style="display:flex; align-items:center; gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3FA46A" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg>Self-custodied</span>
+          <span style="display:flex; align-items:center; gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3FA46A" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg>$0 conversion fees</span>
+          <span style="display:flex; align-items:center; gap:7px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3FA46A" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg>Open-source rails</span>
+        </div>
+      </div>
+
+      <!-- hero visual -->
+      <div style="flex-shrink:0; width:440px; position:relative;">
+        <div style="position:absolute; inset:-40px; background:radial-gradient(circle at 50% 40%, #7B4DFF33, transparent 65%);"></div>
+        <div style="position:relative; animation:floaty 6s ease-in-out infinite;">
+          <!-- Cora hero slot -->
+          <image-slot id="cora-hero" shape="rounded" radius="28" placeholder="Cora — hero cutout (transparent PNG)" style="width:440px; height:480px; --isl-bg:#1c1430; --isl-fg:#8a7fa8;"></image-slot>
+          <!-- floating chips -->
+          <div style="position:absolute; top:36px; left:-34px; background:#F7F5F2; color:#111318; border-radius:14px; padding:12px 15px; box-shadow:0 14px 34px rgba(0,0,0,0.4); display:flex; align-items:center; gap:10px;">
+            <div style="width:32px;height:32px;border-radius:9px;background:#F2C14E22;color:#B8860B;display:flex;align-items:center;justify-content:center;font-weight:700;">₿</div>
+            <div><div style="font-size:11px; color:#8a8496;">Converted</div><div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;">0.5 BTC → $31,570</div></div>
+          </div>
+          <div style="position:absolute; bottom:60px; right:-30px; background:#2B1E3E; border:1px solid #4a3d63; border-radius:14px; padding:12px 15px; box-shadow:0 14px 34px rgba(0,0,0,0.4); display:flex; align-items:center; gap:10px;">
+            <span style="width:9px; height:9px; border-radius:50%; background:#5fce8f; box-shadow:0 0 10px #5fce8f;"></span>
+            <div><div style="font-size:11px; color:#b3aac6;">ACH settled</div><div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;">Instant · $0 fee</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- asset ticker -->
+    <div style="display:flex; align-items:center; gap:14px; margin-top:56px; flex-wrap:wrap;">
+      <span style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:1.5px; color:#8a8496;">SUPPORTED TODAY</span>
+      <span style="width:5px;height:5px;border-radius:50%;background:#4a3d63;"></span>
+      <span style="display:flex; gap:10px; flex-wrap:wrap;">
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#c8c2d2; background:#ffffff08; border:1px solid #ffffff12; padding:6px 12px; border-radius:9px;">₿ BTC</span>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#c8c2d2; background:#ffffff08; border:1px solid #ffffff12; padding:6px 12px; border-radius:9px;">Ξ ETH</span>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#c8c2d2; background:#ffffff08; border:1px solid #ffffff12; padding:6px 12px; border-radius:9px;">Ð DOGE</span>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#c8c2d2; background:#ffffff08; border:1px solid #ffffff12; padding:6px 12px; border-radius:9px;">ɱ XMR</span>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#c8c2d2; background:#ffffff08; border:1px solid #ffffff12; padding:6px 12px; border-radius:9px;">Ł LTC</span>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#c8c2d2; background:#ffffff08; border:1px solid #ffffff12; padding:6px 12px; border-radius:9px;">$ USD</span>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#c8c2d2; background:#ffffff08; border:1px solid #ffffff12; padding:6px 12px; border-radius:9px;">€ EUR</span>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#c8c2d2; background:#ffffff08; border:1px solid #ffffff12; padding:6px 12px; border-radius:9px;">¥ JPY</span>
+        <span style="font-family:'Space Mono',monospace; font-size:13px; color:#F2C14E; background:#F2C14E14; border:1px solid #F2C14E33; padding:6px 12px; border-radius:9px;">◆ Securities · soon</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <div style="padding:88px 60px; background:#F7F5F2; color:#111318;">
+    <div style="text-align:center; margin-bottom:56px;">
+      <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#B8860B; margin-bottom:14px;">HOW IT WORKS</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:44px; letter-spacing:-1.5px; margin:0;">One balance. Every form of value.</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+      <div style="background:#fff; border-radius:22px; padding:30px; box-shadow:0 2px 14px rgba(0,0,0,0.05);">
+        <div style="width:52px; height:52px; border-radius:14px; background:#F2C14E; display:flex; align-items:center; justify-content:center; margin-bottom:20px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#111318" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M7 4L4 7M7 4l3 3M17 20V7M17 20l3-3M17 20l-3-3"/></svg></div>
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:#B8860B; margin-bottom:8px;">01</div>
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px; margin:0 0 10px; letter-spacing:-0.5px;">Convert instantly</h3>
+        <p style="font-size:15px; line-height:1.55; color:#5a5563; margin:0;">Swap crypto to cash — or cash to crypto — at a locked rate with zero conversion fees. Settlement is instant, not "3–5 business days."</p>
+      </div>
+      <div style="background:#fff; border-radius:22px; padding:30px; box-shadow:0 2px 14px rgba(0,0,0,0.05);">
+        <div style="width:52px; height:52px; border-radius:14px; background:#7B4DFF; display:flex; align-items:center; justify-content:center; margin-bottom:20px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div>
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:#7B4DFF; margin-bottom:8px;">02</div>
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px; margin:0 0 10px; letter-spacing:-0.5px;">Pay with a mix</h3>
+        <p style="font-size:15px; line-height:1.55; color:#5a5563; margin:0;">Cover rent with Dogecoin, cash, and a slice of stock. We mediate the exchange in real time — the recipient just gets clean, settled funds.</p>
+      </div>
+      <div style="background:#fff; border-radius:22px; padding:30px; box-shadow:0 2px 14px rgba(0,0,0,0.05);">
+        <div style="width:52px; height:52px; border-radius:14px; background:#2B1E3E; display:flex; align-items:center; justify-content:center; margin-bottom:20px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F2C14E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:#2B1E3E; margin-bottom:8px;">03</div>
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px; margin:0 0 10px; letter-spacing:-0.5px;">Stay self-custodied</h3>
+        <p style="font-size:15px; line-height:1.55; color:#5a5563; margin:0;">Your keys, your funds, your privacy. Shielded swaps and handle-based transfers mean counterparties see a handle — never you.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOR BANKS / API ===== -->
+  <div style="padding:88px 60px; background:#2B1E3E; position:relative; overflow:hidden;">
+    <div style="position:absolute; right:-80px; top:-80px; width:340px; height:340px; border-radius:50%; background:radial-gradient(circle,#7B4DFF2e,transparent 65%);"></div>
+    <div style="display:flex; gap:56px; align-items:center; position:relative;">
+      <div style="flex:1;">
+        <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#F2C14E; margin-bottom:14px;">FOR BANKS & DEVELOPERS</div>
+        <h2 style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:42px; letter-spacing:-1.5px; margin:0 0 18px; line-height:1.08;">The rails are open. Build on them.</h2>
+        <p style="font-size:17px; line-height:1.6; color:#c8c2d2; margin:0 0 28px; max-width:520px;">
+          Cipherbank is an open-source API standard for connecting financial systems. Banks embed crypto accounts and instant conversion directly into their own apps. Developers ship compliant, self-custodied money movement without reinventing the rails.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:14px; max-width:520px;">
+          <div style="display:flex; gap:13px; align-items:flex-start;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2C14E" stroke-width="2.4" style="flex-shrink:0; margin-top:2px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:15px; color:#e9e4f2;"><strong style="color:#fff;">Embeddable UI</strong> — drop crypto account management into your existing app.</span></div>
+          <div style="display:flex; gap:13px; align-items:flex-start;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2C14E" stroke-width="2.4" style="flex-shrink:0; margin-top:2px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:15px; color:#e9e4f2;"><strong style="color:#fff;">Open standard</strong> — one API contract across institutions, no lock-in.</span></div>
+          <div style="display:flex; gap:13px; align-items:flex-start;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2C14E" stroke-width="2.4" style="flex-shrink:0; margin-top:2px;"><path d="M20 6L9 17l-5-5"/></svg><span style="font-size:15px; color:#e9e4f2;"><strong style="color:#fff;">Instant ACH + settlement</strong> — the same rails powering the consumer app.</span></div>
+        </div>
+        <div style="display:flex; gap:14px; margin-top:32px;">
+          <div style="background:#F2C14E; color:#111318; font-weight:800; font-size:15px; padding:14px 24px; border-radius:13px;">Read the docs</div>
+          <div style="border:1px solid #ffffff2e; color:#fff; font-weight:700; font-size:15px; padding:14px 24px; border-radius:13px;">Talk to our team</div>
+        </div>
+      </div>
+      <!-- code card -->
+      <div style="flex-shrink:0; width:440px; background:#15101f; border:1px solid #ffffff14; border-radius:20px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+        <div style="display:flex; align-items:center; gap:8px; padding:14px 18px; border-bottom:1px solid #ffffff10;">
+          <span style="width:11px;height:11px;border-radius:50%;background:#ff5f57;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#febc2e;"></span>
+          <span style="width:11px;height:11px;border-radius:50%;background:#28c840;"></span>
+          <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8a8496; margin-left:8px;">POST /v1/convert</span>
+        </div>
+        <div style="padding:22px; font-family:'Space Mono',monospace; font-size:13px; line-height:1.75;">
+          <div style="color:#8a8496;">// crypto → USD, instant settlement</div>
+          <div><span style="color:#F2C14E;">cipher</span>.convert({</div>
+          <div style="padding-left:20px;"><span style="color:#7fb0ff;">from</span>: <span style="color:#5fce8f;">"BTC"</span>,</div>
+          <div style="padding-left:20px;"><span style="color:#7fb0ff;">to</span>: <span style="color:#5fce8f;">"USD"</span>,</div>
+          <div style="padding-left:20px;"><span style="color:#7fb0ff;">amount</span>: <span style="color:#e0a3ff;">0.5</span>,</div>
+          <div style="padding-left:20px;"><span style="color:#7fb0ff;">settle</span>: <span style="color:#5fce8f;">"instant"</span>,</div>
+          <div style="padding-left:20px;"><span style="color:#7fb0ff;">custody</span>: <span style="color:#5fce8f;">"self"</span></div>
+          <div>})</div>
+          <div style="margin-top:14px; color:#8a8496;">// → settled in 1.2s · fee $0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CORA CTA STRIP ===== -->
+  <div style="padding:64px 60px; background:#111318; display:flex; align-items:center; gap:40px;">
+    <div style="width:120px; height:120px; flex-shrink:0;"><image-slot id="cora-cta" shape="circle" placeholder="Cora" style="width:120px;height:120px; --isl-bg:#1c1430;"></image-slot></div>
+    <div style="flex:1;">
+      <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:1.5px; color:#F2C14E; margin-bottom:8px;">CORA BYTE · DIGITAL TELLER</div>
+      <p style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:26px; line-height:1.3; letter-spacing:-0.6px; margin:0; color:#F7F5F2;">"Banks made you wait three days and call it a feature. We settle before you finish reading this. You're welcome."</p>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <div style="padding:56px 60px 40px; background:#0c0d11; border-top:1px solid #ffffff0d;">
+    <div style="display:flex; justify-content:space-between; gap:40px; flex-wrap:wrap; margin-bottom:40px;">
+      <div style="max-width:300px;">
+        <div style="display:flex; align-items:center; gap:11px; margin-bottom:14px;">
+          <svg width="28" height="28" viewBox="0 0 46 46" fill="none"><rect x="10" y="10" width="26" height="26" rx="6" transform="rotate(45 23 23)" fill="none" stroke="#F2C14E" stroke-width="3"/><rect x="16.5" y="16.5" width="13" height="13" rx="3" transform="rotate(45 23 23)" fill="#7B4DFF"/></svg>
+          <span style="font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:19px;">cipher<span style="color:#F2C14E;">bank</span></span>
+        </div>
+        <p style="font-size:13px; line-height:1.6; color:#8a8496; margin:0;">Privacy first. User first. Always. Move crypto, cash, and securities as one — self-custodied, instant, open.</p>
+      </div>
+      <div style="display:flex; gap:64px; flex-wrap:wrap;">
+        <div><div style="font-size:12px; font-weight:700; color:#F7F5F2; margin-bottom:14px; letter-spacing:0.5px;">Product</div><div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:#8a8496;"><span>Convert</span><span>Pay</span><span>Send &amp; ACH</span><span>Securities</span></div></div>
+        <div><div style="font-size:12px; font-weight:700; color:#F7F5F2; margin-bottom:14px; letter-spacing:0.5px;">Developers</div><div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:#8a8496;"><span>API standard</span><span>Docs</span><span>Open source</span><span>Status</span></div></div>
+        <div><div style="font-size:12px; font-weight:700; color:#F7F5F2; margin-bottom:14px; letter-spacing:0.5px;">Company</div><div style="display:flex; flex-direction:column; gap:10px; font-size:13px; color:#8a8496;"><span>For banks</span><span>Security</span><span>Careers</span><span>Contact</span></div></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding-top:24px; border-top:1px solid #ffffff0d; font-size:12px; color:#6a6577;">
+      <span>© 2026 Cipherbank. Self-custodied money movement.</span>
+      <span style="font-family:'Space Mono',monospace;">Privacy · Terms · Disclosures</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

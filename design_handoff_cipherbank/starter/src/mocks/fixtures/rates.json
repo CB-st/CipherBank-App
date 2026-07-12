@@ -1,0 +1,12 @@
+{
+  "rates": [
+    { "symbol": "BTC", "usd": 63204.18, "change24h": 1.8 },
+    { "symbol": "ETH", "usd": 2520.0, "change24h": 0.9 },
+    { "symbol": "DOGE", "usd": 0.1, "change24h": -1.2 },
+    { "symbol": "XMR", "usd": 160.0, "change24h": 0.4 },
+    { "symbol": "LTC", "usd": 80.0, "change24h": -0.3 },
+    { "symbol": "USD", "usd": 1, "change24h": 0 },
+    { "symbol": "EUR", "usd": 1.08, "change24h": 0.1 },
+    { "symbol": "JPY", "usd": 0.00647, "change24h": 0 }
+  ]
+}

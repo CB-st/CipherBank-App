@@ -1,0 +1,352 @@
+{
+  "name": "Cipherbank Design Package",
+  "version": "1.1.0",
+  "updated": "2026-07-11",
+  "tokens": {
+    "color": {
+      "gold": {
+        "hex": "#F2C14E",
+        "role": "Primary action / accent"
+      },
+      "goldDark": {
+        "hex": "#C9971F",
+        "role": "Gold on light surfaces"
+      },
+      "violet": {
+        "hex": "#7B4DFF",
+        "role": "Interactive / links"
+      },
+      "deepPurple": {
+        "hex": "#2B1E3E",
+        "role": "Dark surface"
+      },
+      "ink": {
+        "hex": "#111318",
+        "role": "Near-black text / bg"
+      },
+      "canvas": {
+        "hex": "#F7F5F2",
+        "role": "Off-white app canvas"
+      },
+      "green": {
+        "hex": "#3FA46A",
+        "role": "Positive / gains"
+      },
+      "red": {
+        "hex": "#C0574B",
+        "role": "Negative / loss"
+      }
+    },
+    "font": {
+      "display": "Space Grotesk",
+      "body": "Manrope",
+      "mono": "Space Mono"
+    },
+    "radius": {
+      "chip": 10,
+      "button": 14,
+      "card": 18,
+      "panel": 22
+    },
+    "shadow": {
+      "card": "0 2px 10px rgba(0,0,0,0.05)",
+      "goldButton": "0 8px 20px rgba(242,193,78,0.35)"
+    }
+  },
+  "logos": [
+    {
+      "file": "assets/logo/cipherbank-app-icon.svg",
+      "name": "cipherbank-app-icon.svg",
+      "desc": "App / home-screen icon 180px"
+    },
+    {
+      "file": "assets/logo/cipherbank-favicon.svg",
+      "name": "cipherbank-favicon.svg",
+      "desc": "Favicon 32px"
+    },
+    {
+      "file": "assets/logo/cipherbank-logo-dark.svg",
+      "name": "cipherbank-logo-dark.svg",
+      "desc": "Wordmark lockup — dark surfaces"
+    },
+    {
+      "file": "assets/logo/cipherbank-logo-light.svg",
+      "name": "cipherbank-logo-light.svg",
+      "desc": "Wordmark lockup — light surfaces"
+    },
+    {
+      "file": "assets/logo/cipherbank-mark.svg",
+      "name": "cipherbank-mark.svg",
+      "desc": "CB diamond mark (standalone)"
+    }
+  ],
+  "icons": [
+    {
+      "file": "assets/icons/asset-btc.svg",
+      "name": "asset-btc.svg",
+      "group": "currency",
+      "desc": "Bitcoin glyph chip"
+    },
+    {
+      "file": "assets/icons/asset-doge.svg",
+      "name": "asset-doge.svg",
+      "group": "currency",
+      "desc": "Dogecoin glyph chip"
+    },
+    {
+      "file": "assets/icons/asset-eth.svg",
+      "name": "asset-eth.svg",
+      "group": "currency",
+      "desc": "Ethereum glyph chip"
+    },
+    {
+      "file": "assets/icons/asset-eur.svg",
+      "name": "asset-eur.svg",
+      "group": "currency",
+      "desc": "Euro glyph chip"
+    },
+    {
+      "file": "assets/icons/asset-jpy.svg",
+      "name": "asset-jpy.svg",
+      "group": "currency",
+      "desc": "Japanese Yen glyph chip"
+    },
+    {
+      "file": "assets/icons/asset-ltc.svg",
+      "name": "asset-ltc.svg",
+      "group": "currency",
+      "desc": "Litecoin glyph chip"
+    },
+    {
+      "file": "assets/icons/asset-usd.svg",
+      "name": "asset-usd.svg",
+      "group": "currency",
+      "desc": "US Dollar glyph chip"
+    },
+    {
+      "file": "assets/icons/asset-xmr.svg",
+      "name": "asset-xmr.svg",
+      "group": "currency",
+      "desc": "Monero glyph chip"
+    },
+    {
+      "file": "assets/icons/ui-activity.svg",
+      "name": "ui-activity.svg",
+      "group": "ui",
+      "desc": "Activity tab"
+    },
+    {
+      "file": "assets/icons/ui-back.svg",
+      "name": "ui-back.svg",
+      "group": "ui",
+      "desc": "Back"
+    },
+    {
+      "file": "assets/icons/ui-bell.svg",
+      "name": "ui-bell.svg",
+      "group": "ui",
+      "desc": "Notifications"
+    },
+    {
+      "file": "assets/icons/ui-caret-down.svg",
+      "name": "ui-caret-down.svg",
+      "group": "ui",
+      "desc": "Dropdown caret"
+    },
+    {
+      "file": "assets/icons/ui-check.svg",
+      "name": "ui-check.svg",
+      "group": "ui",
+      "desc": "Success"
+    },
+    {
+      "file": "assets/icons/ui-chevron.svg",
+      "name": "ui-chevron.svg",
+      "group": "ui",
+      "desc": "Forward chevron"
+    },
+    {
+      "file": "assets/icons/ui-close.svg",
+      "name": "ui-close.svg",
+      "group": "ui",
+      "desc": "Dismiss"
+    },
+    {
+      "file": "assets/icons/ui-convert.svg",
+      "name": "ui-convert.svg",
+      "group": "ui",
+      "desc": "Convert"
+    },
+    {
+      "file": "assets/icons/ui-copy.svg",
+      "name": "ui-copy.svg",
+      "group": "ui",
+      "desc": "Copy"
+    },
+    {
+      "file": "assets/icons/ui-download.svg",
+      "name": "ui-download.svg",
+      "group": "ui",
+      "desc": "Deposit / request"
+    },
+    {
+      "file": "assets/icons/ui-eye-off.svg",
+      "name": "ui-eye-off.svg",
+      "group": "ui",
+      "desc": "Hide value"
+    },
+    {
+      "file": "assets/icons/ui-eye.svg",
+      "name": "ui-eye.svg",
+      "group": "ui",
+      "desc": "Show value"
+    },
+    {
+      "file": "assets/icons/ui-home.svg",
+      "name": "ui-home.svg",
+      "group": "ui",
+      "desc": "Home tab"
+    },
+    {
+      "file": "assets/icons/ui-pay.svg",
+      "name": "ui-pay.svg",
+      "group": "ui",
+      "desc": "Pay"
+    },
+    {
+      "file": "assets/icons/ui-plus.svg",
+      "name": "ui-plus.svg",
+      "group": "ui",
+      "desc": "Add source"
+    },
+    {
+      "file": "assets/icons/ui-profile.svg",
+      "name": "ui-profile.svg",
+      "group": "ui",
+      "desc": "Profile tab"
+    },
+    {
+      "file": "assets/icons/ui-qr.svg",
+      "name": "ui-qr.svg",
+      "group": "ui",
+      "desc": "QR code"
+    },
+    {
+      "file": "assets/icons/ui-receive.svg",
+      "name": "ui-receive.svg",
+      "group": "ui",
+      "desc": "Receive"
+    },
+    {
+      "file": "assets/icons/ui-send.svg",
+      "name": "ui-send.svg",
+      "group": "ui",
+      "desc": "Send"
+    },
+    {
+      "file": "assets/icons/ui-share.svg",
+      "name": "ui-share.svg",
+      "group": "ui",
+      "desc": "Share"
+    },
+    {
+      "file": "assets/icons/ui-shield-check.svg",
+      "name": "ui-shield-check.svg",
+      "group": "ui",
+      "desc": "Custody verified"
+    },
+    {
+      "file": "assets/icons/ui-shield.svg",
+      "name": "ui-shield.svg",
+      "group": "ui",
+      "desc": "Security / custody"
+    },
+    {
+      "file": "assets/icons/ui-wifi.svg",
+      "name": "ui-wifi.svg",
+      "group": "ui",
+      "desc": "Connection"
+    }
+  ],
+  "designs": [
+    {
+      "file": "Cipherbank App.dc.html",
+      "name": "App screens",
+      "desc": "7 mobile screens: Home, Convert, Pay, Send, Receive, Onboarding ×2"
+    },
+    {
+      "file": "Cipherbank Landing.dc.html",
+      "name": "Landing (desktop)",
+      "desc": "1440px marketing site"
+    },
+    {
+      "file": "Cipherbank Landing Mobile.dc.html",
+      "name": "Landing (mobile)",
+      "desc": "390px marketing site"
+    },
+    {
+      "file": "Cipherbank Build Spec.dc.html",
+      "name": "Build spec",
+      "desc": "Tokens, asset library, step-by-step operations"
+    }
+  ],
+  "currencies": [
+    {
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "glyph": "₿",
+      "type": "crypto"
+    },
+    {
+      "symbol": "ETH",
+      "name": "Ethereum",
+      "glyph": "Ξ",
+      "type": "crypto"
+    },
+    {
+      "symbol": "DOGE",
+      "name": "Dogecoin",
+      "glyph": "Ð",
+      "type": "crypto"
+    },
+    {
+      "symbol": "XMR",
+      "name": "Monero",
+      "glyph": "ɱ",
+      "type": "crypto",
+      "note": "shielded"
+    },
+    {
+      "symbol": "LTC",
+      "name": "Litecoin",
+      "glyph": "Ł",
+      "type": "crypto"
+    },
+    {
+      "symbol": "USD",
+      "name": "US Dollar",
+      "glyph": "$",
+      "type": "fiat",
+      "note": "instant ACH"
+    },
+    {
+      "symbol": "EUR",
+      "name": "Euro",
+      "glyph": "€",
+      "type": "fiat"
+    },
+    {
+      "symbol": "JPY",
+      "name": "Japanese Yen",
+      "glyph": "¥",
+      "type": "fiat"
+    },
+    {
+      "symbol": "SEC",
+      "name": "Securities",
+      "glyph": "◆",
+      "type": "security",
+      "note": "coming soon"
+    }
+  ]
+}

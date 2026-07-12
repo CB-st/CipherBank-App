@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  * { -webkit-font-smoothing: antialiased; box-sizing:border-box; }
+  ::-webkit-scrollbar { width:0; height:0; }
+  @keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:200px 0} }
+  @keyframes toastin { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .sk { background:linear-gradient(90deg,#eceae6 25%,#f5f3f0 50%,#eceae6 75%); background-size:400px 100%; animation:shimmer 1.2s infinite linear; border-radius:8px; }
+  .tap { cursor:pointer; transition:transform .08s, filter .12s; }
+  .tap:active { transform:scale(0.97); }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:radial-gradient(1000px 620px at 24% -8%, #241a34 0%, #111318 58%); font-family:'Manrope',sans-serif; color:#F7F5F2; padding:44px 56px 80px;">
+
+  <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+    <svg width="38" height="38" viewBox="0 0 46 46" fill="none"><rect x="10" y="10" width="26" height="26" rx="6" transform="rotate(45 23 23)" fill="none" stroke="#F2C14E" stroke-width="2.8"/><rect x="16.5" y="16.5" width="13" height="13" rx="3" transform="rotate(45 23 23)" fill="#7B4DFF"/></svg>
+    <div>
+      <div style="font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.7px;">Clickable prototype</div>
+      <div style="font-size:13px; color:#9d97a8;">Live: tap the tab bar · watch async loading, rate-lock countdown, and optimistic settlement</div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:48px; align-items:flex-start; margin-top:28px;">
+
+    <!-- PHONE -->
+    <div style="flex-shrink:0;">
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+        <div style="position:relative; height:100%; background:#F7F5F2; display:flex; flex-direction:column; font-family:'Manrope',sans-serif; color:#111318; overflow:hidden;">
+
+          <!-- ===== HEADER ===== -->
+          <div style="padding:56px 20px 8px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <svg width="22" height="22" viewBox="0 0 46 46" fill="none"><rect x="10" y="10" width="26" height="26" rx="6" transform="rotate(45 23 23)" fill="none" stroke="#C9971F" stroke-width="3"/><rect x="16.5" y="16.5" width="13" height="13" rx="3" transform="rotate(45 23 23)" fill="#7B4DFF"/></svg>
+              <span style="font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:15px; letter-spacing:-0.4px;">{{ screenTitle }}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="display:flex; align-items:center; gap:5px; background:#3FA46A14; padding:4px 9px; border-radius:20px;">
+                <span style="width:6px;height:6px;border-radius:50%; background:{{ connDot }};"></span>
+                <span style="font-family:'Space Mono',monospace; font-size:10px; color:#2E7D51;">{{ connText }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== BODY ===== -->
+          <div style="flex:1; overflow:auto; padding:6px 18px 96px;">
+
+            <!-- ---------- HOME ---------- -->
+            <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; gap:13px;">
+                <div style="display:flex; align-items:center; gap:11px; background:#2B1E3E; border-radius:16px; padding:10px 13px 10px 10px;">
+                  <div style="width:42px; height:42px; flex-shrink:0;"><image-slot id="proto-cora" shape="circle" placeholder="Cora" style="width:42px;height:42px; --isl-bg:#4a3d63;"></image-slot></div>
+                  <div style="font-size:13px; color:#e9e4f2; line-height:1.35;">{{ coraLine }}</div>
+                </div>
+
+                <!-- balance hero: skeleton vs data -->
+                <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:#2B1E3E; border-radius:22px; padding:22px;">
+                    <div class="sk" style="width:110px; height:12px; margin-bottom:14px; opacity:.4;"></div>
+                    <div class="sk" style="width:200px; height:34px; margin-bottom:12px; opacity:.4;"></div>
+                    <div class="sk" style="width:150px; height:20px; opacity:.4;"></div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ loaded }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:linear-gradient(150deg,#2B1E3E 0%, #191026 100%); border-radius:22px; padding:20px; color:#fff; position:relative; overflow:hidden;">
+                    <div style="position:absolute; right:-30px; top:-30px; width:120px; height:120px; border-radius:50%; background:radial-gradient(circle,#7B4DFF33,transparent 70%);"></div>
+                    <div style="font-size:12px; color:#b3aac6;">Total balance</div>
+                    <div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:38px; letter-spacing:-1.5px; margin:5px 0 8px;">{{ totalStr }}</div>
+                    <span style="background:#3FA46A22; color:#5fce8f; font-size:12px; font-weight:700; padding:4px 9px; border-radius:20px;">{{ changeStr }}</span>
+                  </div>
+                </sc-if>
+
+                <!-- quick actions -->
+                <div style="display:flex; justify-content:space-between; padding:4px 2px;">
+                  <div class="tap" onClick="{{ goConvert }}" style="display:flex; flex-direction:column; align-items:center; gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:#F2C14E;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(242,193,78,0.35);"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#111318" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M7 4L4 7M7 4l3 3M17 20V7M17 20l3-3M17 20l-3-3"/></svg></div><span style="font-size:12px;font-weight:600;">Convert</span></div>
+                  <div class="tap" onClick="{{ goSend }}" style="display:flex; flex-direction:column; align-items:center; gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2B1E3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></div><span style="font-size:12px;font-weight:600;">Send</span></div>
+                  <div class="tap" onClick="{{ goPay }}" style="display:flex; flex-direction:column; align-items:center; gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2B1E3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div><span style="font-size:12px;font-weight:600;">Pay</span></div>
+                  <div class="tap" onClick="{{ goReceive }}" style="display:flex; flex-direction:column; align-items:center; gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2B1E3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M12 19l-6-6M12 19l6-6"/></svg></div><span style="font-size:12px;font-weight:600;">Receive</span></div>
+                </div>
+
+                <span style="font-size:15px; font-weight:800; margin-top:4px;">Your assets</span>
+                <!-- assets: skeleton vs data -->
+                <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:#fff; border-radius:18px; padding:6px 14px; box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+                    <sc-for list="{{ skeletonRows }}" as="s" hint-placeholder-count="4">
+                      <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #f0edea;">
+                        <div class="sk" style="width:36px;height:36px;border-radius:10px;"></div>
+                        <div style="flex:1;"><div class="sk" style="width:90px;height:12px;margin-bottom:7px;"></div><div class="sk" style="width:60px;height:10px;"></div></div>
+                        <div class="sk" style="width:66px;height:14px;"></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ loaded }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#fff; border-radius:18px; padding:4px 14px; box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+                    <sc-for list="{{ assets }}" as="a" hint-placeholder-count="4">
+                      <div style="display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #f0edea;">
+                        <div style="width:36px;height:36px;border-radius:10px;background:{{ a.tint }};color:{{ a.fg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">{{ a.glyph }}</div>
+                        <div style="flex:1;"><div style="font-weight:700;font-size:14px;">{{ a.name }}</div><div style="font-size:12px;color:#8a8496;font-family:'Space Mono',monospace;">{{ a.held }}</div></div>
+                        <div style="text-align:right;"><div style="font-weight:700;font-size:14px;">{{ a.usd }}</div><div style="font-size:12px;color:{{ a.chColor }};font-weight:600;">{{ a.change }}</div></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- ---------- CONVERT ---------- -->
+            <sc-if value="{{ isConvert }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; align-items:center; gap:11px; background:#2B1E3E; border-radius:16px; padding:10px 13px 10px 10px;">
+                  <div style="width:40px; height:40px; flex-shrink:0;"><image-slot id="proto-cora2" shape="circle" placeholder="Cora" style="width:40px;height:40px; --isl-bg:#4a3d63;"></image-slot></div>
+                  <div style="font-size:13px; color:#e9e4f2;">Locked-in rate. No spread games.</div>
+                </div>
+
+                <div style="background:#fff; border-radius:20px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+                  <div style="font-size:12px; color:#8a8496; margin-bottom:8px;">You pay</div>
+                  <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:32px; letter-spacing:-1px;">{{ fromAmt }}</span>
+                    <div style="display:flex; align-items:center; gap:7px; background:#F7F5F2; border-radius:30px; padding:6px 11px 6px 7px;"><div style="width:26px;height:26px;border-radius:8px;background:#F2C14E1f;color:#B8860B;display:flex;align-items:center;justify-content:center;font-weight:700;">₿</div><span style="font-weight:700; font-size:14px;">BTC</span></div>
+                  </div>
+                </div>
+                <div style="background:#2B1E3E; border-radius:20px; padding:16px; color:#fff;">
+                  <div style="font-size:12px; color:#b3aac6; margin-bottom:8px;">You receive</div>
+                  <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:32px; letter-spacing:-1px;">{{ toAmt }}</span>
+                    <div style="display:flex; align-items:center; gap:7px; background:#ffffff14; border-radius:30px; padding:6px 11px 6px 7px;"><div style="width:26px;height:26px;border-radius:8px;background:#3FA46A33;color:#7fe0a8;display:flex;align-items:center;justify-content:center;font-weight:700;">$</div><span style="font-weight:700; font-size:14px;">USD</span></div>
+                  </div>
+                </div>
+
+                <!-- LIVE rate lock strip -->
+                <div style="display:flex; align-items:center; justify-content:space-between; background:{{ lockBg }}; border:1px solid {{ lockBorder }}; border-radius:14px; padding:11px 14px;">
+                  <span style="font-size:13px; font-weight:600; font-family:'Space Mono',monospace;">{{ rateStr }}</span>
+                  <span style="font-size:12px; font-weight:700; color:{{ lockFg }}; background:{{ lockPill }}; padding:4px 10px; border-radius:20px;">{{ lockLabel }}</span>
+                </div>
+
+                <div class="tap" onClick="{{ doConvert }}" style="background:{{ ctaBg }}; color:{{ ctaFg }}; font-weight:800; border-radius:16px; padding:16px; text-align:center; font-size:16px; box-shadow:0 8px 20px rgba(242,193,78,0.3); display:flex; align-items:center; justify-content:center; gap:9px;">
+                  <sc-if value="{{ busy }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;border:2px solid #11131855;border-top-color:#111318;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;"></span></sc-if>
+                  {{ ctaLabel }}
+                </div>
+                <div style="text-align:center; font-size:12px; color:#8a8496;">{{ convertHint }}</div>
+              </div>
+            </sc-if>
+
+            <!-- ---------- SEND ---------- -->
+            <sc-if value="{{ isSend }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="background:#fff; border-radius:20px; padding:16px; box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+                  <div style="font-size:12px; color:#8a8496; margin-bottom:10px;">To</div>
+                  <div style="display:flex; align-items:center; gap:12px;"><div style="width:42px;height:42px;border-radius:50%;background:#7B4DFF1a;color:#5b34d6;display:flex;align-items:center;justify-content:center;font-weight:800;font-family:'Space Grotesk',sans-serif;">MC</div><div style="flex:1;"><div style="font-weight:700;font-size:15px;">Maya Chen</div><div style="font-size:12px;color:#8a8496;font-family:'Space Mono',monospace;">Chase ••4021 · ACH</div></div></div>
+                </div>
+                <div style="background:#2B1E3E; border-radius:20px; padding:18px; color:#fff; text-align:center;">
+                  <div style="font-size:12px; color:#b3aac6; margin-bottom:6px;">Amount</div>
+                  <div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:42px; letter-spacing:-1.5px;">$1,200.00</div>
+                </div>
+                <div style="display:flex; gap:8px; background:#eceae6; border-radius:14px; padding:5px;">
+                  <div class="tap" onClick="{{ setInstant }}" style="flex:1; text-align:center; background:{{ instBg }}; color:{{ instFg }}; font-weight:800; font-size:13px; padding:11px; border-radius:10px;">Instant</div>
+                  <div class="tap" onClick="{{ setAch }}" style="flex:1; text-align:center; background:{{ achBg }}; color:{{ achFg }}; font-weight:700; font-size:13px; padding:11px; border-radius:10px;">Standard ACH</div>
+                </div>
+                <div style="background:#fff; border-radius:16px; padding:4px 16px; box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+                  <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f0edea; font-size:14px;"><span style="color:#8a8496;">Arrives</span><span style="font-weight:700;">{{ arriveStr }}</span></div>
+                  <div style="display:flex; justify-content:space-between; padding:12px 0; font-size:14px;"><span style="color:#8a8496;">Fee</span><span style="font-weight:700;">$0.00</span></div>
+                </div>
+                <div class="tap" onClick="{{ doSend }}" style="background:{{ sendCtaBg }}; color:{{ sendCtaFg }}; font-weight:800; border-radius:16px; padding:16px; text-align:center; font-size:16px; box-shadow:0 8px 20px rgba(242,193,78,0.3); display:flex; align-items:center; justify-content:center; gap:9px;">
+                  <sc-if value="{{ sendBusy }}" hint-placeholder-val="{{ false }}"><span style="width:16px;height:16px;border:2px solid #11131855;border-top-color:#111318;border-radius:50%;display:inline-block;animation:spin .7s linear infinite;"></span></sc-if>
+                  {{ sendCtaLabel }}
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- ---------- RECEIVE ---------- -->
+            <sc-if value="{{ isReceive }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="background:#2B1E3E; border-radius:22px; padding:22px; color:#fff; text-align:center;">
+                  <div style="font-size:13px; color:#b3aac6; margin-bottom:14px;">Scan to send Bitcoin</div>
+                  <div style="background:#fff; width:150px; height:150px; border-radius:16px; margin:0 auto; display:flex; align-items:center; justify-content:center;">
+                    <svg width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" fill="#fff"/><path fill="#111318" d="M8 8h32v32H8zM48 8h8v8h-8zM64 8h8v16h-8zM80 8h32v32H80zM48 24h16v8h-16zM8 48h16v8H8zM40 48h8v16h-8zM56 48h8v8h-8zM72 48h16v8h-16zM96 48h16v8h-16zM48 64h8v8h-8zM80 64h16v8h-16zM8 80h32v32H8zM48 80h24v8h-24zM88 80h24v8h-24zM56 96h8v16h-8zM80 96h8v16h-8zM96 96h16v16h-16z"/><rect x="50" y="50" width="20" height="20" rx="3" fill="none" stroke="#7B4DFF" stroke-width="3"/></svg>
+                  </div>
+                  <div style="margin-top:14px; background:#ffffff10; border-radius:12px; padding:11px 14px; display:flex; align-items:center; gap:10px;"><span style="flex:1; font-family:'Space Mono',monospace; font-size:12px; color:#e9e4f2; text-align:left;">cora@cipherbank.id</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F2C14E" stroke-width="2.2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:11px; background:#2B1E3E; border-radius:16px; padding:10px 13px 10px 10px;">
+                  <div style="width:40px; height:40px; flex-shrink:0;"><image-slot id="proto-cora3" shape="circle" placeholder="Cora" style="width:40px;height:40px; --isl-bg:#4a3d63;"></image-slot></div>
+                  <div style="font-size:13px; color:#e9e4f2;">They see the handle. Not you.</div>
+                </div>
+              </div>
+            </sc-if>
+
+          </div>
+
+          <!-- ===== TOAST ===== -->
+          <sc-if value="{{ toastShow }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; left:16px; right:16px; bottom:96px; background:{{ toastBg }}; color:#fff; border-radius:14px; padding:13px 16px; display:flex; align-items:center; gap:11px; box-shadow:0 12px 30px rgba(0,0,0,0.35); animation:toastin .25s ease;">
+              <span style="width:22px;height:22px;border-radius:50%;background:{{ toastIcon }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ toastGlyph }}</span>
+              <div style="flex:1;"><div style="font-weight:700; font-size:13px;">{{ toastTitle }}</div><div style="font-size:11px; color:#ffffffcc;">{{ toastSub }}</div></div>
+            </div>
+          </sc-if>
+
+          <!-- ===== TAB BAR ===== -->
+          <div style="position:absolute; left:0; right:0; bottom:0; height:78px; padding:10px 20px 26px; background:rgba(247,245,242,0.94); backdrop-filter:blur(14px); border-top:1px solid #ececec; display:flex; justify-content:space-between;">
+            <div class="tap" onClick="{{ goHome }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; color:{{ tabHome }};"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span style="font-size:10px; font-weight:700;">Home</span></div>
+            <div class="tap" onClick="{{ goConvert }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; color:{{ tabConvert }};"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M7 4L4 7M7 4l3 3M17 20V7M17 20l3-3M17 20l-3-3"/></svg><span style="font-size:10px; font-weight:600;">Convert</span></div>
+            <div class="tap" onClick="{{ goPay }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; color:{{ tabPay }};"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg><span style="font-size:10px; font-weight:600;">Pay</span></div>
+            <div class="tap" onClick="{{ goSend }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; color:{{ tabSend }};"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span style="font-size:10px; font-weight:600;">Send</span></div>
+            <div class="tap" onClick="{{ goReceive }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; color:{{ tabReceive }};"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M12 19l-6-6M12 19l6-6"/></svg><span style="font-size:10px; font-weight:600;">Receive</span></div>
+          </div>
+
+        </div>
+      </x-import>
+    </div>
+
+    <!-- INTERACTION LEGEND -->
+    <div style="flex:1; max-width:520px; padding-top:8px;">
+      <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#8a8496; text-transform:uppercase; margin-bottom:16px;">What the prototype demonstrates</div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div style="background:#ffffff08; border:1px solid #ffffff12; border-radius:14px; padding:16px 18px;">
+          <div style="display:flex; align-items:center; gap:9px; margin-bottom:7px;"><span style="width:22px;height:22px;border-radius:7px;background:#7B4DFF22;color:#b79dff;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;">1</span><span style="font-weight:700; font-size:15px;">Time-of-flight loading</span></div>
+          <div style="font-size:13px; color:#c8c2d2; line-height:1.5;">Home boots into <strong>shimmer skeletons</strong> while the portfolio hydrates asynchronously (~1.4s), then swaps to real balances. The shell, tab bar and Cora render instantly — the UI never blocks on the database.</div>
+        </div>
+        <div style="background:#ffffff08; border:1px solid #ffffff12; border-radius:14px; padding:16px 18px;">
+          <div style="display:flex; align-items:center; gap:9px; margin-bottom:7px;"><span style="width:22px;height:22px;border-radius:7px;background:#F2C14E22;color:#F2C14E;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;">2</span><span style="font-weight:700; font-size:15px;">Live rate-lock countdown</span></div>
+          <div style="font-size:13px; color:#c8c2d2; line-height:1.5;">Open <strong>Convert</strong>: the quote locks for 12s with a ticking timer, flips to <strong>“Rate expired”</strong>, then auto re-locks a fresh quote — a streamed value that can’t exist at page-load, driven by a client timer over a server quote.</div>
+        </div>
+        <div style="background:#ffffff08; border:1px solid #ffffff12; border-radius:14px; padding:16px 18px;">
+          <div style="display:flex; align-items:center; gap:9px; margin-bottom:7px;"><span style="width:22px;height:22px;border-radius:7px;background:#3FA46A22;color:#7fe0a8;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;">3</span><span style="font-weight:700; font-size:15px;">Optimistic settlement</span></div>
+          <div style="font-size:13px; color:#c8c2d2; line-height:1.5;">Tap <strong>Convert instantly</strong> or <strong>Send</strong>: the button spins into a <strong>pending</strong> state immediately, a toast confirms, and balances update on settle (~1.6s) — the interaction feels instant while the backend settles out of band. Send toggles Instant vs ACH arrival copy.</div>
+        </div>
+        <div style="font-size:12px; color:#8a8496; line-height:1.5; padding:2px 4px;">Every value here is faked client-side purely to show the <em>interaction contract</em>. The mapping to real endpoints, cache, and websocket streams is documented in <span style="font-family:'Space Mono',monospace; color:#F2C14E;">ARCHITECTURE.md</span>.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    tab: 'home',
+    loading: true,
+    assets: [],
+    total: 0,
+    lockLeft: 12,
+    rate: 63204.18,
+    busy: false,
+    sendBusy: false,
+    sendSpeed: 'instant',
+    toast: null,
+    online: true,
+  };
+
+  ASSETS = [
+    { name:'Bitcoin', glyph:'₿', held:'1.204 BTC', usd:'$76,104.22', change:'+1.8%', up:true, tint:'#F2C14E1f', fg:'#B8860B' },
+    { name:'Ethereum', glyph:'Ξ', held:'8.51 ETH', usd:'$28,340.10', change:'+0.9%', up:true, tint:'#7B4DFF18', fg:'#7B4DFF' },
+    { name:'Dogecoin', glyph:'Ð', held:'42,000 DOGE', usd:'$6,720.00', change:'+5.2%', up:true, tint:'#C9971F1a', fg:'#B8860B' },
+    { name:'US Dollar', glyph:'$', held:'USD · instant ACH', usd:'$8,204.00', change:'', up:true, tint:'#3FA46A18', fg:'#2E7D51' },
+  ];
+
+  componentDidMount() {
+    // Time-of-flight: hydrate portfolio async, then reveal.
+    this._load = setTimeout(() => {
+      this.setState({ loading: false, assets: this.ASSETS, total: 128432.19 });
+    }, 1400);
+    // Rate-lock ticker.
+    this._tick = setInterval(() => {
+      this.setState(s => {
+        if (s.tab !== 'convert') return s;
+        if (s.lockLeft <= 1) {
+          // expire, then re-lock a fresh quote next tick
+          return { lockLeft: 0 };
+        }
+        return { lockLeft: s.lockLeft - 1 };
+      });
+    }, 1000);
+    // Re-lock loop: when expired, fetch a "new" quote after a beat.
+    this._relock = setInterval(() => {
+      this.setState(s => {
+        if (s.tab === 'convert' && s.lockLeft === 0) {
+          const jitter = (Math.random() * 120 - 60);
+          return { lockLeft: 12, rate: +(63204.18 + jitter).toFixed(2) };
+        }
+        return s;
+      });
+    }, 1400);
+  }
+  componentWillUnmount() {
+    clearTimeout(this._load); clearInterval(this._tick); clearInterval(this._relock); clearTimeout(this._toastT);
+  }
+
+  go(tab) {
+    // Re-arm the lock when entering Convert.
+    this.setState(s => tab === 'convert' ? { tab, lockLeft: 12 } : { tab });
+  }
+
+  showToast(t) {
+    this.setState({ toast: t });
+    clearTimeout(this._toastT);
+    this._toastT = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+
+  doConvert() {
+    if (this.state.busy) return;
+    this.setState({ busy: true });                       // optimistic pending
+    this.showToast({ kind:'pending', title:'Converting 0.5 BTC → USD', sub:'Locking settlement on the network…' });
+    setTimeout(() => {                                    // backend settles out of band
+      this.setState({ busy: false });
+      this.showToast({ kind:'ok', title:'Converted · $31,570.44', sub:'Settled in 1.2s · fee $0.00' });
+    }, 1600);
+  }
+
+  doSend() {
+    if (this.state.sendBusy) return;
+    this.setState({ sendBusy: true });
+    this.showToast({ kind:'pending', title:'Sending $1,200.00', sub:'Submitting to the Cipherbank rail…' });
+    setTimeout(() => {
+      this.setState({ sendBusy: false });
+      const instant = this.state.sendSpeed === 'instant';
+      this.showToast({ kind:'ok', title: instant ? 'Sent · arrived instantly' : 'Send queued · ACH', sub: instant ? 'Maya received it · fee $0.00' : 'Arrives in 1–2 business days' });
+    }, 1600);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const gold = '#F2C14E', ink = '#111318', mute = '#a29caf', act = '#C9971F';
+    const expired = s.tab === 'convert' && s.lockLeft === 0;
+
+    return {
+      // nav / titles
+      screenTitle: { home:'cipherbank', convert:'Convert', send:'Send', pay:'Pay', receive:'Receive' }[s.tab] || 'cipherbank',
+      isHome: s.tab === 'home', isConvert: s.tab === 'convert', isSend: s.tab === 'send',
+      isReceive: s.tab === 'receive', isPay: s.tab === 'pay',
+      goHome: () => this.go('home'), goConvert: () => this.go('convert'),
+      goSend: () => this.go('send'), goPay: () => this.go('convert'), goReceive: () => this.go('receive'),
+      tabHome: s.tab==='home'?act:mute, tabConvert: s.tab==='convert'?act:mute,
+      tabPay: mute, tabSend: s.tab==='send'?act:mute, tabReceive: s.tab==='receive'?act:mute,
+
+      // connection chip
+      connDot: s.online ? '#3FA46A' : '#C0574B',
+      connText: s.online ? 'live' : 'offline',
+
+      // home data / loading
+      loading: s.loading, loaded: !s.loading,
+      coraLine: s.loading ? 'Pulling your balances. One sec — doing it properly.' : "Rates move all day. Your privacy doesn't.",
+      totalStr: '$' + s.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),
+      changeStr: '▲ +$3,012.40 · 2.4% today',
+      assets: s.assets.map(a => ({ ...a, chColor: a.up ? '#3FA46A' : '#C0574B' })),
+      skeletonRows: [1,2,3,4],
+
+      // convert
+      fromAmt: '0.5000', toAmt: (0.5 * s.rate).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),
+      rateStr: '1 BTC = $' + s.rate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),
+      lockLabel: expired ? '● Rate expired — re-locking' : '● Rate locked · ' + s.lockLeft + 's',
+      lockBg: expired ? '#C0574B14' : '#F2C14E1a',
+      lockBorder: expired ? '#C0574B44' : '#F2C14E44',
+      lockFg: expired ? '#C0574B' : '#B8860B',
+      lockPill: expired ? '#C0574B22' : '#F2C14E33',
+      busy: s.busy,
+      ctaBg: s.busy ? '#f0d894' : gold, ctaFg: ink,
+      ctaLabel: s.busy ? 'Settling…' : 'Convert instantly',
+      convertHint: 'Funds land instantly — ready for ACH, payments, or withdrawal.',
+      doConvert: () => this.doConvert(),
+
+      // send
+      sendSpeed: s.sendSpeed,
+      setInstant: () => this.setState({ sendSpeed:'instant' }),
+      setAch: () => this.setState({ sendSpeed:'ach' }),
+      instBg: s.sendSpeed==='instant' ? gold : 'transparent', instFg: s.sendSpeed==='instant' ? ink : '#8a8496',
+      achBg: s.sendSpeed==='ach' ? gold : 'transparent', achFg: s.sendSpeed==='ach' ? ink : '#8a8496',
+      arriveStr: s.sendSpeed==='instant' ? 'Instantly · Cipherbank rail' : '1–2 business days · ACH',
+      sendBusy: s.sendBusy,
+      sendCtaBg: s.sendBusy ? '#f0d894' : gold, sendCtaFg: ink,
+      sendCtaLabel: s.sendBusy ? 'Submitting…' : 'Send $1,200.00',
+      doSend: () => this.doSend(),
+
+      // toast
+      toastShow: !!s.toast,
+      toastTitle: s.toast ? s.toast.title : '',
+      toastSub: s.toast ? s.toast.sub : '',
+      toastBg: s.toast && s.toast.kind === 'ok' ? '#1f6b45' : '#2B1E3E',
+      toastIcon: s.toast && s.toast.kind === 'ok' ? '#3FA46A' : '#7B4DFF',
+      toastGlyph: s.toast && s.toast.kind === 'ok'
+        ? React.createElement('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none',stroke:'#fff','strokeWidth':3},React.createElement('path',{d:'M20 6L9 17l-5-5'}))
+        : React.createElement('span',{style:{width:8,height:8,border:'2px solid #ffffff88',borderTopColor:'#fff',borderRadius:'50%',display:'inline-block',animation:'spin .7s linear infinite'}}),
+    };
+  }
+}
+</script>
+</body>
+</html>

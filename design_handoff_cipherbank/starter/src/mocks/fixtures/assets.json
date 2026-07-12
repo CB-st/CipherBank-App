@@ -1,0 +1,13 @@
+{
+  "assets": [
+    { "symbol": "BTC", "name": "Bitcoin", "glyph": "₿", "type": "crypto", "decimals": 8, "enabled": true },
+    { "symbol": "ETH", "name": "Ethereum", "glyph": "Ξ", "type": "crypto", "decimals": 18, "enabled": true },
+    { "symbol": "DOGE", "name": "Dogecoin", "glyph": "Ð", "type": "crypto", "decimals": 8, "enabled": true },
+    { "symbol": "XMR", "name": "Monero", "glyph": "ɱ", "type": "crypto", "decimals": 12, "enabled": true, "note": "shielded" },
+    { "symbol": "LTC", "name": "Litecoin", "glyph": "Ł", "type": "crypto", "decimals": 8, "enabled": true },
+    { "symbol": "USD", "name": "US Dollar", "glyph": "$", "type": "fiat", "decimals": 2, "enabled": true, "note": "instant ACH" },
+    { "symbol": "EUR", "name": "Euro", "glyph": "€", "type": "fiat", "decimals": 2, "enabled": true },
+    { "symbol": "JPY", "name": "Japanese Yen", "glyph": "¥", "type": "fiat", "decimals": 0, "enabled": true },
+    { "symbol": "AAPL", "name": "Apple", "glyph": "◆", "type": "security", "decimals": 4, "enabled": false, "badge": "NEW" }
+  ]
+}

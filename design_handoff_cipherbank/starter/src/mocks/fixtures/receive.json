@@ -1,0 +1,26 @@
+{
+  "BTC": {
+    "handle": "cora@cipherbank.id",
+    "address": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+    "uri": "bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+    "qr": "bitcoin:bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
+  },
+  "ETH": {
+    "handle": "cora@cipherbank.id",
+    "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+    "uri": "ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+    "qr": "ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0"
+  },
+  "USD": {
+    "handle": "cora@cipherbank.id",
+    "address": "ACH-CORA-USD",
+    "uri": "cipherbank:receive/USD?handle=cora@cipherbank.id",
+    "qr": "cipherbank:receive/USD?handle=cora@cipherbank.id"
+  },
+  "DOGE": {
+    "handle": "cora@cipherbank.id",
+    "address": "D7Y55L4V8tKqG8nFq1vX2mP3sR4uT5wY6z",
+    "uri": "dogecoin:D7Y55L4V8tKqG8nFq1vX2mP3sR4uT5wY6z",
+    "qr": "dogecoin:D7Y55L4V8tKqG8nFq1vX2mP3sR4uT5wY6z"
+  }
+}

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { -webkit-font-smoothing: antialiased; box-sizing:border-box; }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background:#3a2f4d; border-radius:4px; }
+  .copyable { cursor:pointer; transition:background .15s; }
+  .copyable:hover { background:#ffffff14 !important; }
+</style>
+</helmet>
+
+<div style="min-height:100vh; background:radial-gradient(1100px 640px at 22% -8%, #241a34 0%, #111318 58%); font-family:'Manrope',sans-serif; color:#F7F5F2; padding:48px 56px 90px;">
+
+  <!-- header -->
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:32px; flex-wrap:wrap; margin-bottom:8px;">
+    <div style="display:flex; align-items:center; gap:16px;">
+      <svg width="42" height="42" viewBox="0 0 46 46" fill="none"><rect x="10" y="10" width="26" height="26" rx="6" transform="rotate(45 23 23)" fill="none" stroke="#F2C14E" stroke-width="2.8"/><rect x="16.5" y="16.5" width="13" height="13" rx="3" transform="rotate(45 23 23)" fill="#7B4DFF"/></svg>
+      <div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:26px; letter-spacing:-0.8px;">Design package</div>
+        <div style="font-size:13px; color:#9d97a8;">cipherbank · v{{ version }} · load assets for app building</div>
+      </div>
+    </div>
+    <div style="font-family:'Space Mono',monospace; font-size:12px; color:#F2C14E; background:#F2C14E14; border:1px solid #F2C14E33; padding:8px 14px; border-radius:10px;">{{ copyHint }}</div>
+  </div>
+  <div style="font-size:14px; color:#c8c2d2; max-width:620px; margin:4px 0 40px;">Everything the app is built from, in one place. Click any path or hex to copy it. Machine-readable index at <span style="font-family:'Space Mono',monospace; color:#F2C14E;">assets/manifest.json</span>.</div>
+
+  <!-- TOKENS -->
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#8a8496; text-transform:uppercase; margin-bottom:18px;">Color tokens</div>
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:44px;">
+    <sc-for list="{{ colors }}" as="c" hint-placeholder-count="8">
+      <div class="copyable" onClick="{{ c.copy }}" style="background:#ffffff08; border:1px solid #ffffff12; border-radius:14px; overflow:hidden;">
+        <div style="height:70px; background:{{ c.swatch }};"></div>
+        <div style="padding:12px 14px;">
+          <div style="font-weight:700; font-size:14px; text-transform:capitalize;">{{ c.key }}</div>
+          <div style="font-family:'Space Mono',monospace; font-size:12px; color:#F2C14E; margin:2px 0 4px;">{{ c.hex }}</div>
+          <div style="font-size:11px; color:#9d97a8; line-height:1.4;">{{ c.role }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- LOGOS -->
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#8a8496; text-transform:uppercase; margin-bottom:18px;">Logos &amp; marks</div>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:44px;">
+    <sc-for list="{{ logos }}" as="l">
+      <div class="copyable" onClick="{{ l.copy }}" style="background:#ffffff08; border:1px solid #ffffff12; border-radius:16px; overflow:hidden;">
+        <div style="height:120px; background:{{ l.bg }}; display:flex; align-items:center; justify-content:center; padding:16px;">
+          {{ l.img }}
+        </div>
+        <div style="padding:13px 16px; border-top:1px solid #ffffff10;">
+          <div style="font-weight:700; font-size:13px; margin-bottom:3px;">{{ l.desc }}</div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:#9d97a8;">{{ l.file }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- CURRENCY ICONS -->
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#8a8496; text-transform:uppercase; margin-bottom:18px;">Currency glyphs</div>
+  <div style="display:grid; grid-template-columns:repeat(8,1fr); gap:12px; margin-bottom:44px;">
+    <sc-for list="{{ currencyIcons }}" as="i">
+      <div class="copyable" onClick="{{ i.copy }}" style="background:#ffffff08; border:1px solid #ffffff12; border-radius:14px; padding:16px 10px; text-align:center;">
+        {{ i.img }}
+        <div style="font-family:'Space Mono',monospace; font-size:12px; font-weight:700;">{{ i.sym }}</div>
+        <div style="font-size:10px; color:#9d97a8; margin-top:2px;">{{ i.desc }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- UI ICONS -->
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#8a8496; text-transform:uppercase; margin-bottom:18px;">UI icons</div>
+  <div style="display:grid; grid-template-columns:repeat(8,1fr); gap:12px; margin-bottom:44px;">
+    <sc-for list="{{ uiIcons }}" as="i">
+      <div class="copyable" onClick="{{ i.copy }}" style="background:#F7F5F2; border-radius:14px; padding:16px 10px; text-align:center;">
+        {{ i.img }}
+        <div style="font-size:11px; font-weight:700; color:#2B1E3E;">{{ i.short }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- DESIGNS -->
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#8a8496; text-transform:uppercase; margin-bottom:18px;">Design files</div>
+  <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+    <sc-for list="{{ designs }}" as="d" hint-placeholder-count="4">
+      <a href="{{ d.file }}" style="text-decoration:none;">
+        <div class="copyable" style="background:#2B1E3E; border:1px solid #4a3d63; border-radius:16px; padding:22px; display:flex; align-items:center; gap:18px;">
+          <div style="width:48px; height:48px; border-radius:12px; background:#F2C14E1a; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F2C14E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div>
+          <div style="flex:1;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17px; color:#F7F5F2;">{{ d.name }}</div>
+            <div style="font-size:13px; color:#b3aac6; margin-top:3px; line-height:1.4;">{{ d.desc }}</div>
+            <div style="font-family:'Space Mono',monospace; font-size:11px; color:#8a8496; margin-top:6px;">{{ d.file }}</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2C14E" stroke-width="2.4"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+        </div>
+      </a>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { m: null, toast: "click to copy" };
+
+  componentDidMount() {
+    fetch('./assets/manifest.json')
+      .then(r => r.json())
+      .then(m => this.setState({ m }))
+      .catch(() => this.setState({ m: false }));
+  }
+
+  copy(text) {
+    try { navigator.clipboard.writeText(text); } catch (e) {}
+    this.setState({ toast: "copied: " + text });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: "click to copy" }), 1600);
+  }
+
+  renderVals() {
+    const m = this.state.m;
+    const mk = t => () => this.copy(t);
+    if (!m) return { version: "1.0.0", copyHint: this.state.toast, colors: [], logos: [], currencyIcons: [], uiIcons: [], designs: [] };
+
+    const colors = Object.entries(m.tokens.color).map(([key, v]) => ({
+      key, hex: v.hex, role: v.role, swatch: v.hex, copy: mk(v.hex)
+    }));
+
+    const img = (src, style) => React.createElement('img', { src, style, alt: '' });
+
+    const logoBg = f => f.includes('light') ? '#F7F5F2' : (f.includes('app-icon') ? '#3a2f4d' : '#111318');
+    const logos = m.logos.map(l => ({ ...l, bg: logoBg(l.file), copy: mk(l.file),
+      img: img(l.file, { maxWidth: '100%', maxHeight: '100%' }) }));
+
+    const symOf = f => (f.match(/asset-(\w+)\.svg/) || [,''])[1].toUpperCase();
+    const currencyIcons = m.icons.filter(i => i.group === 'currency')
+      .map(i => ({ ...i, sym: symOf(i.name), copy: mk(i.file),
+        img: img(i.file, { width: 44, height: 44, margin: '0 auto 10px' }) }));
+
+    const shortOf = f => (f.match(/ui-(\w+)\.svg/) || [,''])[1];
+    const uiIcons = m.icons.filter(i => i.group === 'ui')
+      .map(i => ({ ...i, short: shortOf(i.name), copy: mk(i.file),
+        img: img(i.file, { width: 26, height: 26, margin: '0 auto 10px' }) }));
+
+    return {
+      version: m.version,
+      copyHint: this.state.toast,
+      colors, logos, currencyIcons, uiIcons,
+      designs: m.designs
+    };
+  }
+}
+</script>
+</body>
+</html>

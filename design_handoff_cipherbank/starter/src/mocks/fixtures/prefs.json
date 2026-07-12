@@ -1,0 +1,14 @@
+{
+  "homeOrder": ["cora", "balance", "quickActions", "performance", "assets"],
+  "homeVisible": {
+    "cora": true,
+    "balance": true,
+    "quickActions": true,
+    "performance": true,
+    "assets": true
+  },
+  "valuesHiddenOnLaunch": false,
+  "coraEnabled": true,
+  "defaultSendSpeed": "instant",
+  "appearance": "dark"
+}

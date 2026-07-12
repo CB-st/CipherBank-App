@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  doc-page:not(:defined){visibility:hidden}
+  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; }
+  body,p,li,td,th{ font-family:'Manrope',sans-serif; }
+  code,.mono{ font-family:'Space Mono',monospace; }
+  .swatch{ break-inside:avoid; }
+  table{ border-collapse:collapse; width:100%; }
+  .step{ break-inside:avoid; }
+</style>
+</helmet>
+
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.7in" hint-size="820px,1060px">
+
+  <!-- COVER -->
+  <div style="display:flex; align-items:center; gap:16px; margin-bottom:6px;">
+    <svg width="44" height="44" viewBox="0 0 46 46" fill="none"><rect x="10" y="10" width="26" height="26" rx="6" transform="rotate(45 23 23)" fill="none" stroke="#C9971F" stroke-width="3"/><rect x="16.5" y="16.5" width="13" height="13" rx="3" transform="rotate(45 23 23)" fill="#7B4DFF"/></svg>
+    <span style="font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:26px; letter-spacing:-1px; color:#111318;">cipher<span style="color:#C9971F;">bank</span></span>
+  </div>
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:2px; color:#7B4DFF; text-transform:uppercase; margin-bottom:6px;">Design &amp; Build Spec · v1</div>
+  <h1 style="font-size:38px; letter-spacing:-1.5px; margin:0 0 10px; color:#111318;">Product system + application operations</h1>
+  <p style="font-size:15px; line-height:1.6; color:#5a5563; margin:0 0 4px; max-width:640px;">A working reference for building out the Cipherbank app: brand tokens, the asset library, and every user-facing operation written as a step-by-step flow. Companion files: <code>Cipherbank App.dc.html</code>, <code>Cipherbank Landing.dc.html</code>, and the <code>assets/</code> SVG package.</p>
+  <hr style="border:none; border-top:2px solid #111318; margin:22px 0;">
+
+  <!-- BRAND TOKENS -->
+  <h2 style="font-size:24px; letter-spacing:-0.8px; margin:0 0 4px; color:#111318;">1 · Brand tokens</h2>
+  <p style="font-size:14px; color:#5a5563; margin:0 0 16px;">The full palette. Purple carries structure and trust; gold is the single action/accent color; off-white and near-black anchor the two surface modes.</p>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px;">
+    <div class="swatch" style="border:1px solid #e6e3de; border-radius:12px; overflow:hidden;"><div style="height:64px; background:#F2C14E;"></div><div style="padding:10px 12px;"><div style="font-weight:700; font-size:13px;">Gold / Action</div><div class="mono" style="font-size:12px; color:#8a8496;">#F2C14E</div></div></div>
+    <div class="swatch" style="border:1px solid #e6e3de; border-radius:12px; overflow:hidden;"><div style="height:64px; background:#7B4DFF;"></div><div style="padding:10px 12px;"><div style="font-weight:700; font-size:13px;">Violet / Interactive</div><div class="mono" style="font-size:12px; color:#8a8496;">#7B4DFF</div></div></div>
+    <div class="swatch" style="border:1px solid #e6e3de; border-radius:12px; overflow:hidden;"><div style="height:64px; background:#2B1E3E;"></div><div style="padding:10px 12px;"><div style="font-weight:700; font-size:13px;">Deep Purple / Surface</div><div class="mono" style="font-size:12px; color:#8a8496;">#2B1E3E</div></div></div>
+    <div class="swatch" style="border:1px solid #e6e3de; border-radius:12px; overflow:hidden;"><div style="height:64px; background:#111318;"></div><div style="padding:10px 12px;"><div style="font-weight:700; font-size:13px;">Near-black / Ink</div><div class="mono" style="font-size:12px; color:#8a8496;">#111318</div></div></div>
+    <div class="swatch" style="border:1px solid #e6e3de; border-radius:12px; overflow:hidden;"><div style="height:64px; background:#F7F5F2;"></div><div style="padding:10px 12px;"><div style="font-weight:700; font-size:13px;">Off-white / Canvas</div><div class="mono" style="font-size:12px; color:#8a8496;">#F7F5F2</div></div></div>
+    <div class="swatch" style="border:1px solid #e6e3de; border-radius:12px; overflow:hidden;"><div style="height:64px; background:#3FA46A;"></div><div style="padding:10px 12px;"><div style="font-weight:700; font-size:13px;">Green / Positive</div><div class="mono" style="font-size:12px; color:#8a8496;">#3FA46A</div></div></div>
+  </div>
+  <table style="font-size:13px; margin-bottom:8px;">
+    <thead><tr style="border-bottom:2px solid #111318; text-align:left;"><th style="padding:8px 6px;">Role</th><th style="padding:8px 6px;">Token</th><th style="padding:8px 6px;">Usage</th></tr></thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:8px 6px; font-weight:700;">Display font</td><td class="mono" style="padding:8px 6px;">Space Grotesk 700/800</td><td style="padding:8px 6px; color:#5a5563;">Headings, balances, logo wordmark. Tight letter-spacing (−0.5 to −2.5px).</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:8px 6px; font-weight:700;">Body font</td><td class="mono" style="padding:8px 6px;">Manrope 400–800</td><td style="padding:8px 6px; color:#5a5563;">All UI copy, labels, buttons, paragraphs.</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:8px 6px; font-weight:700;">Mono font</td><td class="mono" style="padding:8px 6px;">Space Mono 400/700</td><td style="padding:8px 6px; color:#5a5563;">Ticker labels, amounts, code, metadata, timers.</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:8px 6px; font-weight:700;">Radius</td><td class="mono" style="padding:8px 6px;">10 / 14 / 18 / 22px</td><td style="padding:8px 6px; color:#5a5563;">Chips · buttons · cards · hero panels respectively.</td></tr>
+      <tr><td style="padding:8px 6px; font-weight:700;">Card shadow</td><td class="mono" style="padding:8px 6px;">0 2px 10–14px rgba(0,0,0,.05)</td><td style="padding:8px 6px; color:#5a5563;">Light surfaces. Gold buttons use a colored 0 8px 20px glow.</td></tr>
+    </tbody>
+  </table>
+  <div style="background:#F7F5F2; border-left:3px solid #F2C14E; border-radius:6px; padding:12px 16px; margin:12px 0 26px;"><span style="font-family:'Space Mono',monospace; font-size:11px; color:#B8860B; letter-spacing:1px;">RULE</span><p style="margin:4px 0 0; font-size:13px; color:#5a5563;">Gold is the <strong>only</strong> primary-action color — one gold button per view. Violet is for secondary/interactive text and links. Never use gold for body text on white.</p></div>
+
+  <!-- LOGO -->
+  <h2 style="font-size:24px; letter-spacing:-0.8px; margin:0 0 4px; color:#111318;">2 · Logo &amp; mark</h2>
+  <p style="font-size:14px; color:#5a5563; margin:0 0 14px;">The CB mark is a gold rotated-square outline (the "cipher" frame) enclosing a violet square (the "bank" core). Exported files live in <code>assets/logo/</code>.</p>
+  <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:10px;">
+    <div class="swatch" style="flex:1; min-width:150px; background:#111318; border-radius:12px; padding:22px; display:flex; align-items:center; justify-content:center; gap:12px;"><svg width="34" height="34" viewBox="0 0 46 46" fill="none"><rect x="10" y="10" width="26" height="26" rx="6" transform="rotate(45 23 23)" fill="none" stroke="#F2C14E" stroke-width="2.8"/><rect x="16.5" y="16.5" width="13" height="13" rx="3" transform="rotate(45 23 23)" fill="#7B4DFF"/></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:19px; color:#F7F5F2;">cipher<span style="color:#F2C14E;">bank</span></span></div>
+    <div class="swatch" style="flex:1; min-width:150px; background:#F7F5F2; border:1px solid #e6e3de; border-radius:12px; padding:22px; display:flex; align-items:center; justify-content:center; gap:12px;"><svg width="34" height="34" viewBox="0 0 46 46" fill="none"><rect x="10" y="10" width="26" height="26" rx="6" transform="rotate(45 23 23)" fill="none" stroke="#C9971F" stroke-width="2.8"/><rect x="16.5" y="16.5" width="13" height="13" rx="3" transform="rotate(45 23 23)" fill="#7B4DFF"/></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:19px; color:#111318;">cipher<span style="color:#C9971F;">bank</span></span></div>
+    <div class="swatch" style="width:90px; background:#2B1E3E; border-radius:12px; padding:18px; display:flex; align-items:center; justify-content:center;"><svg width="40" height="40" viewBox="0 0 64 64" fill="none"><rect x="14" y="14" width="36" height="36" rx="8" transform="rotate(45 32 32)" fill="none" stroke="#F2C14E" stroke-width="3.4"/><rect x="23" y="23" width="18" height="18" rx="4" transform="rotate(45 32 32)" fill="#7B4DFF"/></svg></div>
+  </div>
+  <table style="font-size:13px; margin-bottom:24px;">
+    <thead><tr style="border-bottom:2px solid #111318; text-align:left;"><th style="padding:8px 6px;">File</th><th style="padding:8px 6px;">Use</th></tr></thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #eceae6;"><td class="mono" style="padding:7px 6px;">cipherbank-logo-dark.svg</td><td style="padding:7px 6px; color:#5a5563;">Wordmark lockup on dark surfaces (gold accent on "bank").</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td class="mono" style="padding:7px 6px;">cipherbank-logo-light.svg</td><td style="padding:7px 6px; color:#5a5563;">Wordmark lockup on light surfaces (darker #C9971F gold for contrast).</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td class="mono" style="padding:7px 6px;">cipherbank-mark.svg</td><td style="padding:7px 6px; color:#5a5563;">Standalone CB diamond — avatars, loaders, watermarks.</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td class="mono" style="padding:7px 6px;">cipherbank-app-icon.svg</td><td style="padding:7px 6px; color:#5a5563;">180px rounded-square home-screen icon (gradient purple fill).</td></tr>
+      <tr><td class="mono" style="padding:7px 6px;">cipherbank-favicon.svg</td><td style="padding:7px 6px; color:#5a5563;">32px browser/tab mark.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ASSET LIBRARY -->
+  <h2 style="font-size:24px; letter-spacing:-0.8px; margin:0 0 4px; color:#111318;">3 · Asset &amp; currency library</h2>
+  <p style="font-size:14px; color:#5a5563; margin:0 0 14px;">Each supported currency ships as a 44px tinted glyph chip in <code>assets/icons/</code> (<code>asset-*.svg</code>). Tint = 14% of the brand hue; glyph = a stronger shade of the same. UI action icons are <code>ui-*.svg</code> (24px stroke).</p>
+  <table style="font-size:13px; margin-bottom:8px;">
+    <thead><tr style="border-bottom:2px solid #111318; text-align:left;"><th style="padding:8px 6px;">Asset</th><th style="padding:8px 6px;">Symbol</th><th style="padding:8px 6px;">Glyph</th><th style="padding:8px 6px;">Type</th><th style="padding:8px 6px;">Notes</th></tr></thead>
+    <tbody>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:7px 6px; font-weight:700;">Bitcoin</td><td class="mono" style="padding:7px 6px;">BTC</td><td class="mono" style="padding:7px 6px;">₿</td><td style="padding:7px 6px; color:#5a5563;">Crypto</td><td style="padding:7px 6px; color:#5a5563;">—</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:7px 6px; font-weight:700;">Ethereum</td><td class="mono" style="padding:7px 6px;">ETH</td><td class="mono" style="padding:7px 6px;">Ξ</td><td style="padding:7px 6px; color:#5a5563;">Crypto</td><td style="padding:7px 6px; color:#5a5563;">—</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:7px 6px; font-weight:700;">Dogecoin</td><td class="mono" style="padding:7px 6px;">DOGE</td><td class="mono" style="padding:7px 6px;">Ð</td><td style="padding:7px 6px; color:#5a5563;">Crypto</td><td style="padding:7px 6px; color:#5a5563;">—</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:7px 6px; font-weight:700;">Monero</td><td class="mono" style="padding:7px 6px;">XMR</td><td class="mono" style="padding:7px 6px;">ɱ</td><td style="padding:7px 6px; color:#5a5563;">Crypto</td><td style="padding:7px 6px; color:#5a5563;">Always shown "shielded".</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:7px 6px; font-weight:700;">Litecoin</td><td class="mono" style="padding:7px 6px;">LTC</td><td class="mono" style="padding:7px 6px;">Ł</td><td style="padding:7px 6px; color:#5a5563;">Crypto</td><td style="padding:7px 6px; color:#5a5563;">—</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:7px 6px; font-weight:700;">US Dollar</td><td class="mono" style="padding:7px 6px;">USD</td><td class="mono" style="padding:7px 6px;">$</td><td style="padding:7px 6px; color:#5a5563;">Fiat</td><td style="padding:7px 6px; color:#5a5563;">Instant ACH rail.</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:7px 6px; font-weight:700;">Euro</td><td class="mono" style="padding:7px 6px;">EUR</td><td class="mono" style="padding:7px 6px;">€</td><td style="padding:7px 6px; color:#5a5563;">Fiat</td><td style="padding:7px 6px; color:#5a5563;">—</td></tr>
+      <tr style="border-bottom:1px solid #eceae6;"><td style="padding:7px 6px; font-weight:700;">Japanese Yen</td><td class="mono" style="padding:7px 6px;">JPY</td><td class="mono" style="padding:7px 6px;">¥</td><td style="padding:7px 6px; color:#5a5563;">Fiat</td><td style="padding:7px 6px; color:#5a5563;">—</td></tr>
+      <tr><td style="padding:7px 6px; font-weight:700;">Securities</td><td class="mono" style="padding:7px 6px;">◆</td><td class="mono" style="padding:7px 6px;">◆</td><td style="padding:7px 6px; color:#5a5563;">Coming</td><td style="padding:7px 6px; color:#5a5563;">Stocks/ETFs — tag "NEW" until GA.</td></tr>
+    </tbody>
+  </table>
+  <div style="background:#F7F5F2; border-left:3px solid #7B4DFF; border-radius:6px; padding:12px 16px; margin:12px 0 26px;"><span style="font-family:'Space Mono',monospace; font-size:11px; color:#5b34d6; letter-spacing:1px;">CORA</span><p style="margin:4px 0 0; font-size:13px; color:#5a5563;">Cora Byte appears as a circular avatar + one dry line on each screen. She's the digital teller — serious about money, dry about everything else. Her artwork drops into the <code>image-slot</code> placeholders marked "Cora." Keep her to one sentence; never let her explain a fee twice.</p></div>
+
+  <!-- APP OPERATIONS -->
+  <h2 style="font-size:24px; letter-spacing:-0.8px; margin:20px 0 4px; color:#111318; break-before:page;">4 · Application operations (step-by-step)</h2>
+  <p style="font-size:14px; color:#5a5563; margin:0 0 20px;">Every user-facing flow, written so it can be built screen-by-screen. Each operation lists its entry point, the ordered steps, and the states to design for.</p>
+
+  <div class="step" style="border:1px solid #e6e3de; border-radius:14px; padding:18px 20px; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="background:#F2C14E; color:#111318; font-family:'Space Mono',monospace; font-weight:700; font-size:12px; padding:3px 9px; border-radius:7px;">OP-01</span><h3 style="font-size:18px; margin:0; letter-spacing:-0.4px;">Instant convert (crypto ⇄ fiat)</h3></div>
+    <p style="font-size:12px; color:#8a8496; margin:0 0 10px;" class="mono">ENTRY: Home → Convert · Tab bar → Convert</p>
+    <ol style="font-size:13px; line-height:1.7; color:#3a3542; margin:0; padding-left:20px;">
+      <li>Pick the <strong>from</strong> asset and enter an amount; live fiat estimate updates beneath.</li>
+      <li>Pick the <strong>to</strong> asset. The rate locks with a visible countdown (e.g. 12s) — re-lock on expiry.</li>
+      <li>Show the breakdown: rate, network fee ($0 — "we cover it"), privacy mode, settlement = instant.</li>
+      <li>Confirm → success state: new balances, "ready for ACH, payments, or withdrawal."</li>
+    </ol>
+    <p style="font-size:12px; color:#8a8496; margin:10px 0 0;">States: empty · rate-locked · rate-expired · insufficient balance · success.</p>
+  </div>
+
+  <div class="step" style="border:1px solid #e6e3de; border-radius:14px; padding:18px 20px; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="background:#7B4DFF; color:#fff; font-family:'Space Mono',monospace; font-weight:700; font-size:12px; padding:3px 9px; border-radius:7px;">OP-02</span><h3 style="font-size:18px; margin:0; letter-spacing:-0.4px;">Pay with a mix</h3></div>
+    <p style="font-size:12px; color:#8a8496; margin:0 0 10px;" class="mono">ENTRY: Tab bar → Pay · Bill/recipient deep-link</p>
+    <ol style="font-size:13px; line-height:1.7; color:#3a3542; margin:0; padding-left:20px;">
+      <li>Select recipient and amount (or pull from a bill, e.g. "Rent · due Jul 1").</li>
+      <li>Build the <strong>funding mix</strong>: add sources (crypto, cash, securities), each with a value; a stacked bar shows composition and must total 100%.</li>
+      <li>Explain mediation: "We exchange in real time — the recipient receives clean USD, never the mix."</li>
+      <li>Confirm → settlement receipt with per-source breakdown.</li>
+    </ol>
+    <p style="font-size:12px; color:#8a8496; margin:10px 0 0;">States: under-funded (&lt;100%) · over-funded · single-source · multi-source · success.</p>
+  </div>
+
+  <div class="step" style="border:1px solid #e6e3de; border-radius:14px; padding:18px 20px; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="background:#2B1E3E; color:#F2C14E; font-family:'Space Mono',monospace; font-weight:700; font-size:12px; padding:3px 9px; border-radius:7px;">OP-03</span><h3 style="font-size:18px; margin:0; letter-spacing:-0.4px;">Send / ACH transfer</h3></div>
+    <p style="font-size:12px; color:#8a8496; margin:0 0 10px;" class="mono">ENTRY: Home → Send · Tab bar → Send</p>
+    <ol style="font-size:13px; line-height:1.7; color:#3a3542; margin:0; padding-left:20px;">
+      <li>Choose recipient (handle or linked bank ••••, ACH).</li>
+      <li>Enter amount and source balance (auto-converts from crypto if needed).</li>
+      <li>Toggle speed: <strong>Instant</strong> (Cipherbank rail) vs <strong>Standard ACH</strong>.</li>
+      <li>Review: arrival, $0 fee, privacy ("they see a handle, not you") → send → confirmation.</li>
+    </ol>
+    <p style="font-size:12px; color:#8a8496; margin:10px 0 0;">States: instant · standard · cross-asset (converts first) · pending · settled.</p>
+  </div>
+
+  <div class="step" style="border:1px solid #e6e3de; border-radius:14px; padding:18px 20px; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="background:#3FA46A; color:#fff; font-family:'Space Mono',monospace; font-weight:700; font-size:12px; padding:3px 9px; border-radius:7px;">OP-04</span><h3 style="font-size:18px; margin:0; letter-spacing:-0.4px;">Accounts &amp; balances (home)</h3></div>
+    <p style="font-size:12px; color:#8a8496; margin:0 0 10px;" class="mono">ENTRY: App launch · Tab bar → Home</p>
+    <ol style="font-size:13px; line-height:1.7; color:#3a3542; margin:0; padding-left:20px;">
+      <li>Cora guide bar at top with a rotating one-liner.</li>
+      <li>Total balance hero: aggregate USD value, today's change, asset/currency counts, "self-custodied" tag.</li>
+      <li>Quick actions row: Convert · Send · Pay · Receive.</li>
+      <li>Asset list: every holding with balance, USD value, 24h change; "Securities coming soon" teaser at the end.</li>
+    </ol>
+    <p style="font-size:12px; color:#8a8496; margin:10px 0 0;">States: funded · new/empty account · value hidden (privacy toggle) · loading.</p>
+  </div>
+
+  <div class="step" style="border:1px solid #e6e3de; border-radius:14px; padding:18px 20px; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="background:#C9971F; color:#fff; font-family:'Space Mono',monospace; font-weight:700; font-size:12px; padding:3px 9px; border-radius:7px;">OP-05</span><h3 style="font-size:18px; margin:0; letter-spacing:-0.4px;">Receive</h3></div>
+    <p style="font-size:12px; color:#8a8496; margin:0 0 10px;" class="mono">ENTRY: Home → Receive · Tab bar → Home</p>
+    <ol style="font-size:13px; line-height:1.7; color:#3a3542; margin:0; padding-left:20px;">
+      <li>Pick which asset/currency to receive into.</li>
+      <li>Show your handle + QR; optionally request a specific amount.</li>
+      <li>Share sheet (copy handle, share QR). Note privacy: sender sees only the handle.</li>
+    </ol>
+    <p style="font-size:12px; color:#8a8496; margin:10px 0 0;">States: default · amount requested · received/success toast.</p>
+  </div>
+
+  <div class="step" style="border:1px solid #e6e3de; border-radius:14px; padding:18px 20px; margin-bottom:26px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><span style="background:#111318; color:#F2C14E; font-family:'Space Mono',monospace; font-weight:700; font-size:12px; padding:3px 9px; border-radius:7px;">OP-06</span><h3 style="font-size:18px; margin:0; letter-spacing:-0.4px;">Onboarding &amp; key custody</h3></div>
+    <p style="font-size:12px; color:#8a8496; margin:0 0 10px;" class="mono">ENTRY: First launch</p>
+    <ol style="font-size:13px; line-height:1.7; color:#3a3542; margin:0; padding-left:20px;">
+      <li>Welcome + value prop (Cora introduces herself, dryly).</li>
+      <li>Create self-custodied wallet: generate keys, confirm recovery phrase, biometric lock.</li>
+      <li>Link a bank for ACH (optional, can skip).</li>
+      <li>Fund: buy, deposit crypto, or transfer in → land on Home.</li>
+    </ol>
+    <p style="font-size:12px; color:#8a8496; margin:10px 0 0;">States: welcome · key-gen · recovery confirm · bank link · funded · skipped.</p>
+  </div>
+
+  <!-- BUILD ORDER -->
+  <h2 style="font-size:24px; letter-spacing:-0.8px; margin:0 0 4px; color:#111318;">5 · Suggested build order</h2>
+  <ol style="font-size:14px; line-height:1.8; color:#3a3542; margin:0 0 8px; padding-left:22px;">
+    <li><strong>Foundations</strong> — tokens, fonts, logo, asset-glyph + UI-icon components.</li>
+    <li><strong>Home (OP-04)</strong> — the shell everything returns to.</li>
+    <li><strong>Convert (OP-01)</strong> — the core promise; reused by Send &amp; Pay.</li>
+    <li><strong>Send (OP-03)</strong> &amp; <strong>Receive (OP-05)</strong> — money in/out.</li>
+    <li><strong>Pay with a mix (OP-02)</strong> — the differentiator; depends on Convert.</li>
+    <li><strong>Onboarding (OP-06)</strong> — wrap once flows exist to land in.</li>
+    <li><strong>Securities</strong> — extend the asset model; unlock "pay/invest with anything."</li>
+  </ol>
+
+</x-import>
+</x-dc>
+</body>
+</html>

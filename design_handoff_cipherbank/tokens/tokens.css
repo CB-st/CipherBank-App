@@ -1,0 +1,50 @@
+/* Cipherbank design tokens — v1.0.0
+   Drop into :root and reference via var(--cb-...) */
+:root {
+  /* Color */
+  --cb-gold:        #F2C14E; /* primary action / accent */
+  --cb-gold-dark:   #C9971F; /* gold on light surfaces */
+  --cb-violet:      #7B4DFF; /* interactive / links */
+  --cb-deep-purple: #2B1E3E; /* dark surface */
+  --cb-ink:         #111318; /* near-black text / bg */
+  --cb-ink-deep:    #0C0D11; /* footer / deepest bg */
+  --cb-canvas:      #F7F5F2; /* off-white app canvas */
+  --cb-green:       #3FA46A; /* positive / gains */
+  --cb-red:         #C0574B; /* negative / loss */
+
+  /* Text on light */
+  --cb-text:        #111318;
+  --cb-text-muted:  #5A5563;
+  --cb-text-subtle: #8A8496;
+  --cb-hairline:    #F0EDEA;
+
+  /* Text on dark */
+  --cb-on-dark:         #F7F5F2;
+  --cb-on-dark-muted:   #C8C2D2;
+  --cb-on-dark-subtle:  #B3AAC6;
+
+  /* Typography */
+  --cb-font-display: 'Space Grotesk', sans-serif;
+  --cb-font-body:    'Manrope', sans-serif;
+  --cb-font-mono:    'Space Mono', monospace;
+
+  /* Radius */
+  --cb-radius-chip:   10px;
+  --cb-radius-button: 14px;
+  --cb-radius-card:   18px;
+  --cb-radius-panel:  22px;
+  --cb-radius-pill:   30px;
+
+  /* Shadow */
+  --cb-shadow-card:  0 2px 10px rgba(0,0,0,0.05);
+  --cb-shadow-gold:  0 8px 20px rgba(242,193,78,0.35);
+  --cb-shadow-float: 0 14px 34px rgba(0,0,0,0.4);
+
+  /* Spacing scale (px) */
+  --cb-space-1: 4px;
+  --cb-space-2: 8px;
+  --cb-space-3: 14px;
+  --cb-space-4: 18px;
+  --cb-space-5: 22px;
+  --cb-space-6: 30px;
+}

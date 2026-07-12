@@ -1,0 +1,33 @@
+{
+  "cards": [
+    {
+      "id": "card_tok_nfc_bench_4242",
+      "brand": "Visa",
+      "last4": "4242",
+      "expMonth": 12,
+      "expYear": 2028,
+      "processorToken": "tok_mock_nfc_bench_4242",
+      "hardwareTest": true,
+      "label": "NFC bench Visa ·••• 4242",
+      "createdAt": 1720640800000
+    },
+    {
+      "id": "card_tok_visa_4242",
+      "brand": "Visa",
+      "last4": "4242",
+      "expMonth": 12,
+      "expYear": 2028,
+      "processorToken": "tok_mock_visa_4242",
+      "createdAt": 1720640800000
+    },
+    {
+      "id": "card_tok_mc_4444",
+      "brand": "Mastercard",
+      "last4": "4444",
+      "expMonth": 6,
+      "expYear": 2027,
+      "processorToken": "tok_mock_mc_4444",
+      "createdAt": 1720554400000
+    }
+  ]
+}

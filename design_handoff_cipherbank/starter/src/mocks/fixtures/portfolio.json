@@ -1,0 +1,151 @@
+{
+  "total": 128432.19,
+  "change24h": { "amount": 3012.4, "pct": 2.4 },
+  "holdings": [
+    {
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "glyph": "₿",
+      "type": "crypto",
+      "amount": "1.204",
+      "usdValue": 76104.22,
+      "change24h": 1.8,
+      "wallets": [
+        {
+          "id": "wal_btc_primary",
+          "label": "Primary",
+          "amount": "1.004",
+          "usdValue": 63420.18,
+          "address": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+          "derivationPath": "m/84'/0'/0'/0/0",
+          "source": "local"
+        },
+        {
+          "id": "wal_btc_trading",
+          "label": "Trading",
+          "amount": "0.200",
+          "usdValue": 12684.04,
+          "address": "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
+          "derivationPath": "m/84'/0'/0'/0/1",
+          "source": "local"
+        }
+      ]
+    },
+    {
+      "symbol": "ETH",
+      "name": "Ethereum",
+      "glyph": "Ξ",
+      "type": "crypto",
+      "amount": "12.40",
+      "usdValue": 31248.0,
+      "change24h": 0.9,
+      "wallets": [
+        {
+          "id": "wal_eth_primary",
+          "label": "Primary",
+          "amount": "10.00",
+          "usdValue": 25200.0,
+          "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0",
+          "derivationPath": "m/44'/60'/0'/0/0",
+          "source": "local"
+        },
+        {
+          "id": "wal_eth_watch",
+          "label": "Watch",
+          "amount": "2.40",
+          "usdValue": 6048.0,
+          "address": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+          "source": "watch"
+        }
+      ]
+    },
+    {
+      "symbol": "USD",
+      "name": "US Dollar",
+      "glyph": "$",
+      "type": "fiat",
+      "amount": "8204.00",
+      "usdValue": 8204.0,
+      "change24h": 0,
+      "note": "instant ACH"
+    },
+    {
+      "symbol": "DOGE",
+      "name": "Dogecoin",
+      "glyph": "Ð",
+      "type": "crypto",
+      "amount": "48200",
+      "usdValue": 4820.0,
+      "change24h": -1.2,
+      "wallets": [
+        {
+          "id": "wal_doge_primary",
+          "label": "Primary",
+          "amount": "48200",
+          "usdValue": 4820.0,
+          "address": "D7Y55L4V8tKqG8nFq1vX2mP3sR4uT5wY6z",
+          "derivationPath": "m/44'/3'/0'/0/0",
+          "source": "local"
+        }
+      ]
+    },
+    {
+      "symbol": "XMR",
+      "name": "Monero",
+      "glyph": "ɱ",
+      "type": "crypto",
+      "amount": "18.50",
+      "usdValue": 2960.0,
+      "change24h": 0.4,
+      "note": "shielded",
+      "wallets": [
+        {
+          "id": "wal_xmr_primary",
+          "label": "Primary",
+          "amount": "18.50",
+          "usdValue": 2960.0,
+          "source": "local",
+          "derivationPath": "m/44'/128'/0'/0/0"
+        }
+      ]
+    },
+    {
+      "symbol": "LTC",
+      "name": "Litecoin",
+      "glyph": "Ł",
+      "type": "crypto",
+      "amount": "42.0",
+      "usdValue": 3360.0,
+      "change24h": -0.3,
+      "wallets": [
+        {
+          "id": "wal_ltc_primary",
+          "label": "Primary",
+          "amount": "42.0",
+          "usdValue": 3360.0,
+          "address": "ltc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh",
+          "derivationPath": "m/84'/2'/0'/0/0",
+          "source": "local"
+        }
+      ]
+    },
+    {
+      "symbol": "EUR",
+      "name": "Euro",
+      "glyph": "€",
+      "type": "fiat",
+      "amount": "1200.00",
+      "usdValue": 1296.0,
+      "change24h": 0.1
+    },
+    {
+      "symbol": "JPY",
+      "name": "Japanese Yen",
+      "glyph": "¥",
+      "type": "fiat",
+      "amount": "68000",
+      "usdValue": 439.97,
+      "change24h": 0
+    }
+  ]
+}

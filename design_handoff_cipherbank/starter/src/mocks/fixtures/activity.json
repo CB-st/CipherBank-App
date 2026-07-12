@@ -1,0 +1,45 @@
+{
+  "items": [
+    {
+      "id": "tx_1",
+      "kind": "convert",
+      "status": "settled",
+      "title": "Converted BTC → USD",
+      "amount": "31570.44",
+      "asset": "USD",
+      "counterpart": null,
+      "createdAt": 1720900000000
+    },
+    {
+      "id": "tx_2",
+      "kind": "transfer",
+      "status": "settled",
+      "title": "Sent to Maya Chen",
+      "amount": "1200.00",
+      "asset": "USD",
+      "counterpart": "maya@cipherbank.id",
+      "createdAt": 1720813600000
+    },
+    {
+      "id": "tx_3",
+      "kind": "payment",
+      "status": "settled",
+      "title": "Paid Sunset Property Mgmt",
+      "amount": "2400.00",
+      "asset": "USD",
+      "counterpart": "sunset@property.pay",
+      "createdAt": 1720727200000
+    },
+    {
+      "id": "tx_4",
+      "kind": "receive",
+      "status": "settled",
+      "title": "Received BTC",
+      "amount": "0.015",
+      "asset": "BTC",
+      "counterpart": "anon@cipherbank.id",
+      "createdAt": 1720640800000
+    }
+  ],
+  "nextCursor": null
+}

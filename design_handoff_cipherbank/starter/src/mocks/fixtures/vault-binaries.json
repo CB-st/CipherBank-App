@@ -1,0 +1,18 @@
+{
+  "binaries": [
+    {
+      "id": "bin_primary",
+      "label": "Primary wallet binary",
+      "kind": "server_shard",
+      "status": "active",
+      "createdAt": 1720900000000
+    },
+    {
+      "id": "bin_backup",
+      "label": "Recovery assist binary",
+      "kind": "server_shard",
+      "status": "active",
+      "createdAt": 1720813600000
+    }
+  ]
+}
