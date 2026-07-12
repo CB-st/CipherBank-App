@@ -44,3 +44,5 @@ Defaults (`EXPO_PUBLIC_USE_MOCK=true`) serve fixture JSON from `src/mocks/`.
 - [`AGENTS.md`](AGENTS.md) — build rules and layering
 - [`API.md`](API.md) — live `/v1` contract
 - [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — UI↔backend async patterns
+
+- [`docs/NEXT_PHASE.md`](docs/NEXT_PHASE.md) — storage security & next build phase
