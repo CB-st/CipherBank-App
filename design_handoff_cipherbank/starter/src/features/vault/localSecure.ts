@@ -4,10 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Platform-safe secret storage.
- * iOS/Android: Keychain / Keystore via expo-secure-store.
- * Web: SecureStore when available; otherwise AsyncStorage (weaker — never log values).
+ * iOS/Android: Keychain / Keystore via expo-secure-store (WHEN_UNLOCKED_THIS_DEVICE_ONLY).
+ * Web: SecureStore when available; otherwise AsyncStorage — weaker, never for production seed.
  */
 const WEB_PREFIX = 'cb_secure_web:';
+
+const NATIVE_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+};
 
 async function webGet(key: string): Promise<string | null> {
   return AsyncStorage.getItem(WEB_PREFIX + key);
@@ -28,9 +32,13 @@ export async function localSecureGet(key: string): Promise<string | null> {
     }
   }
   try {
-    return await SecureStore.getItemAsync(key);
+    return await SecureStore.getItemAsync(key, NATIVE_OPTIONS);
   } catch {
-    return null;
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -44,7 +52,11 @@ export async function localSecureSet(key: string, value: string): Promise<void> 
       return;
     }
   }
-  await SecureStore.setItemAsync(key, value);
+  try {
+    await SecureStore.setItemAsync(key, value, NATIVE_OPTIONS);
+  } catch {
+    await SecureStore.setItemAsync(key, value);
+  }
 }
 
 export async function localSecureDelete(key: string): Promise<void> {
@@ -58,8 +70,12 @@ export async function localSecureDelete(key: string): Promise<void> {
     return;
   }
   try {
-    await SecureStore.deleteItemAsync(key);
+    await SecureStore.deleteItemAsync(key, NATIVE_OPTIONS);
   } catch {
-    /* ignore */
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {
+      /* ignore */
+    }
   }
 }

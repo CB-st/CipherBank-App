@@ -64,11 +64,22 @@ Companion to the CoraDesignOverhaul PR. Phase 1 (this PR) ships a **mock-first E
 ## Suggested sequencing (next 2–4 sprints)
 
 ```
-Sprint A  SecureStore + real BIP39 + PIN/biometrics gate + backup quiz
-Sprint B  BTC/ETH derivation + receive/send by walletId + portfolio read adapter
+Sprint A  SecureStore + real BIP39 + PIN/biometrics gate + backup quiz   ✅ in progress / this PR
+Sprint B  BTC/ETH derivation + receive/send by walletId + portfolio read adapter  ✅ address derive (balances still mock)
 Sprint C  Staging API cutover (session, portfolio, prefs) + stream rates
 Sprint D  POS: HCE spike on Android device + processor sandbox token
 ```
+
+### Sprint A/B checklist (Phase 2 slice)
+
+- [x] Real BIP39 12-word generate (`@scure/bip39` + `expo-crypto` entropy)
+- [x] SecureStore hardening (`WHEN_UNLOCKED_THIS_DEVICE_ONLY`) + AES-GCM blob `cb_custody_v2`
+- [x] PIN hash + lockout; biometrics gate; in-memory unlock session
+- [x] Backup write-down + 3-word verify quiz → Set PIN
+- [x] BTC BIP84 + ETH BIP44 derive; `ensureDerivedWallets`; Add-wallet “Derive next”
+- [x] Receive / Home prefer derived addresses; `docs/CUSTODY.md`
+- [ ] Sprint C: `EXPO_PUBLIC_USE_MOCK=false` staging cutover
+- [ ] Sprint D: HCE / VTS-MDES
 
 ## Doc map (keep updated)
 
@@ -80,4 +91,5 @@ Sprint D  POS: HCE spike on Android device + processor sandbox token
 | `starter/docs/DIGITAL_CARDS_NFC.md` | Visa VTS / MDES mapping |
 | `starter/docs/ANDROID_SETUP.md` | Emulator + APK scripts |
 | `starter/docs/TESTING.md` | Web / Android / EAS matrix |
+| `starter/docs/CUSTODY.md` | On-device custody threat model |
 | This file | Phase roadmap + storage security |

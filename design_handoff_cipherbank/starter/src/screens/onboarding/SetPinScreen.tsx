@@ -1,0 +1,110 @@
+import React, { useState } from 'react';
+import { View, Text, TextInput, ScrollView } from 'react-native';
+import { color, radius, shadow, font } from '@/theme';
+import { Header } from '@/components/chrome/Header';
+import { Button } from '@/components/primitives/Button';
+import { useToast } from '@/components/primitives/Toast';
+import { useSession } from '@/features/session/useSession';
+import { sealPendingCustody } from '@/features/vault/custody';
+import { ensureDerivedWallets } from '@/features/wallets/localWallets';
+
+export function SetPinScreen({ navigation }: any) {
+  const toast = useToast();
+  const { finishCustodySetup } = useSession();
+  const [pin, setPin] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const onSave = async () => {
+    if (!/^\d{6}$/.test(pin)) {
+      toast({ kind: 'error', title: 'Use a 6-digit PIN', sub: '' });
+      return;
+    }
+    if (pin !== confirm) {
+      toast({ kind: 'error', title: 'PINs do not match', sub: 'Re-enter confirmation.' });
+      return;
+    }
+    setBusy(true);
+    try {
+      await sealPendingCustody(pin);
+      await ensureDerivedWallets();
+      await finishCustodySetup();
+      toast({ kind: 'ok', title: 'Vault secured', sub: 'PIN + on-device encryption enabled.' });
+    } catch {
+      toast({ kind: 'error', title: 'Could not seal keys', sub: 'Try again from Secure keys.' });
+      navigation.navigate('Keys');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: color.canvas }}>
+      <Header title="Set PIN" onBack={() => navigation.goBack?.()} />
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 22, paddingBottom: 40, gap: 16 }}>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: color.gold }} />
+          ))}
+        </View>
+
+        <Text style={{ fontFamily: font.display, fontWeight: '700', fontSize: 24, letterSpacing: -0.6, color: color.text }}>
+          Protect this device
+        </Text>
+        <Text style={{ fontSize: 15, color: color.textMuted, lineHeight: 22, fontFamily: font.body }}>
+          Your recovery phrase is encrypted on-device. Use this PIN when biometrics are unavailable. CipherBank never
+          receives your PIN or phrase.
+        </Text>
+
+        <View style={[{ backgroundColor: color.surface, borderRadius: radius.card, padding: 16, gap: 14 }, shadow.card]}>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: font.body, fontWeight: '700', fontSize: 13, color: color.text }}>PIN</Text>
+            <TextInput
+              value={pin}
+              onChangeText={(t) => setPin(t.replace(/\D/g, '').slice(0, 6))}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+              placeholder="6 digits"
+              placeholderTextColor={color.textSubtle}
+              style={{
+                backgroundColor: color.track,
+                borderRadius: radius.button,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                color: color.text,
+                fontFamily: font.mono,
+                fontSize: 18,
+                letterSpacing: 8,
+              }}
+            />
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={{ fontFamily: font.body, fontWeight: '700', fontSize: 13, color: color.text }}>Confirm PIN</Text>
+            <TextInput
+              value={confirm}
+              onChangeText={(t) => setConfirm(t.replace(/\D/g, '').slice(0, 6))}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={6}
+              placeholder="6 digits"
+              placeholderTextColor={color.textSubtle}
+              style={{
+                backgroundColor: color.track,
+                borderRadius: radius.button,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                color: color.text,
+                fontFamily: font.mono,
+                fontSize: 18,
+                letterSpacing: 8,
+              }}
+            />
+          </View>
+        </View>
+
+        <Button label="Finish setup" busy={busy} onPress={onSave} />
+      </ScrollView>
+    </View>
+  );
+}

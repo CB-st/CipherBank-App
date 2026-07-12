@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Holding, Portfolio, WalletAccount } from '@/features/portfolio/portfolio.types';
-import { addLocalWallet, loadLocalWallets, removeLocalWallet } from './localWallets';
+import {
+  addLocalWallet,
+  deriveNextWallet,
+  loadLocalWallets,
+  removeLocalWallet,
+} from './localWallets';
 
 const QK = ['localWallets'] as const;
 
@@ -11,19 +16,56 @@ export function mergeLocalWallets(portfolio: Portfolio, drafts: Awaited<ReturnTy
     const extras = drafts.filter((d) => d.symbol === h.symbol);
     if (!extras.length) return h;
     const existing = h.wallets ?? defaultWallet(h);
-    const ids = new Set(existing.map((w) => w.id));
-    const added: WalletAccount[] = extras
-      .filter((d) => !ids.has(d.id))
-      .map((d) => ({
-        id: d.id,
-        label: d.label,
-        amount: '0',
-        usdValue: 0,
-        address: d.address,
-        source: d.source,
-      }));
-    if (!added.length) return h;
-    return { ...h, wallets: [...existing, ...added] };
+    const byId = new Map(existing.map((w) => [w.id, w]));
+    // Prefer derived draft metadata onto matching primary slots by label/index
+    for (const d of extras) {
+      const match =
+        byId.get(d.id) ??
+        existing.find(
+          (w) =>
+            w.source === 'local' &&
+            !w.address &&
+            (w.label === 'Primary' || w.label === d.label) &&
+            d.accountIndex === 0,
+        );
+      if (match && (d.address || d.derivationPath)) {
+        byId.set(match.id, {
+          ...match,
+          id: d.id.startsWith('wal_local_') ? match.id : match.id,
+          label: d.label || match.label,
+          address: d.address ?? match.address,
+          derivationPath: d.derivationPath ?? match.derivationPath,
+          source: d.source,
+        });
+        continue;
+      }
+      if (!byId.has(d.id)) {
+        byId.set(d.id, {
+          id: d.id,
+          label: d.label,
+          amount: '0',
+          usdValue: 0,
+          address: d.address,
+          derivationPath: d.derivationPath,
+          source: d.source,
+        });
+      }
+    }
+    // Also patch fixture wallets missing address when we have a derived Primary
+    const primaryDraft = extras.find((d) => d.accountIndex === 0 && d.address);
+    if (primaryDraft) {
+      for (const [id, w] of byId) {
+        if (w.label === 'Primary' && !w.address) {
+          byId.set(id, {
+            ...w,
+            address: primaryDraft.address,
+            derivationPath: primaryDraft.derivationPath,
+            source: 'local',
+          });
+        }
+      }
+    }
+    return { ...h, wallets: Array.from(byId.values()) };
   });
   return { ...portfolio, holdings };
 }
@@ -49,10 +91,15 @@ export function useLocalWallets() {
     onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
   });
 
+  const deriveNext = useMutation({
+    mutationFn: (input: { symbol: string; label?: string }) => deriveNextWallet(input.symbol, input.label),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
+  });
+
   const remove = useMutation({
     mutationFn: removeLocalWallet,
     onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
   });
 
-  return { drafts: q.data ?? [], ready: q.isSuccess, add, remove };
+  return { drafts: q.data ?? [], ready: q.isSuccess, add, deriveNext, remove };
 }

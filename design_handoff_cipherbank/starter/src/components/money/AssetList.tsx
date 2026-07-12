@@ -6,36 +6,40 @@ import { Skeleton } from '../primitives/Skeleton';
 import { PressableScale } from '../primitives/PressableScale';
 import { Button } from '../primitives/Button';
 import { useLocalWallets } from '@/features/wallets/useLocalWallets';
+import { isDerivableSymbol } from '@/features/wallets/derive';
 import { useToast } from '../primitives/Toast';
 import type { Holding } from '@/features/portfolio/portfolio.types';
 
 export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: boolean }) {
-  const { add } = useLocalWallets();
+  const { add, deriveNext } = useLocalWallets();
   const toast = useToast();
   const [target, setTarget] = useState<Holding | null>(null);
   const [label, setLabel] = useState('');
   const [address, setAddress] = useState('');
+  const [mode, setMode] = useState<'derive' | 'watch'>('derive');
 
   const openAdd = (h: Holding) => {
     setTarget(h);
     setLabel('');
     setAddress('');
+    setMode(isDerivableSymbol(h.symbol) ? 'derive' : 'watch');
   };
 
-  const submit = () => {
+  const submitWatch = () => {
     if (!target) return;
     add.mutate(
       {
         symbol: target.symbol,
         label: label || `Wallet ${(target.wallets?.length ?? 0) + 1}`,
         address: address || undefined,
+        source: address ? 'watch' : 'local',
       },
       {
         onSuccess: () => {
           toast({
             kind: 'ok',
             title: 'Wallet added',
-            sub: address ? 'Watch address saved locally' : 'Slot ready for local derivation',
+            sub: address ? 'Watch address saved locally' : 'Slot saved locally',
           });
           setTarget(null);
         },
@@ -43,6 +47,31 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
       },
     );
   };
+
+  const submitDerive = () => {
+    if (!target) return;
+    deriveNext.mutate(
+      { symbol: target.symbol, label: label || undefined },
+      {
+        onSuccess: (w) => {
+          toast({
+            kind: 'ok',
+            title: 'Derived wallet',
+            sub: w.address ? w.address.slice(0, 12) + '…' : w.derivationPath ?? 'Saved',
+          });
+          setTarget(null);
+        },
+        onError: () =>
+          toast({
+            kind: 'error',
+            title: 'Derive failed',
+            sub: 'Unlock custody (biometrics/PIN) and try again.',
+          }),
+      },
+    );
+  };
+
+  const canDerive = target ? isDerivableSymbol(target.symbol) : false;
 
   return (
     <>
@@ -78,8 +107,58 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
               Add {target?.symbol} wallet
             </Text>
             <Text style={{ fontSize: 13, color: color.textMuted, fontFamily: font.body }}>
-              Creates a local slot for derivation or a watch-only address. Balances sync once chain read is wired.
+              {canDerive
+                ? 'Derive the next account from your on-device seed, or paste a watch-only address.'
+                : 'Paste a watch-only address. Full derivation for this asset arrives in a later sprint.'}
             </Text>
+
+            {canDerive ? (
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <PressableScale
+                  onPress={() => setMode('derive')}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: radius.button,
+                    backgroundColor: mode === 'derive' ? color.deepPurple : color.track,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: font.body,
+                      fontWeight: '700',
+                      fontSize: 13,
+                      color: mode === 'derive' ? color.gold : color.textMuted,
+                    }}
+                  >
+                    Derive next
+                  </Text>
+                </PressableScale>
+                <PressableScale
+                  onPress={() => setMode('watch')}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: radius.button,
+                    backgroundColor: mode === 'watch' ? color.deepPurple : color.track,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: font.body,
+                      fontWeight: '700',
+                      fontSize: 13,
+                      color: mode === 'watch' ? color.gold : color.textMuted,
+                    }}
+                  >
+                    Watch address
+                  </Text>
+                </PressableScale>
+              </View>
+            ) : null}
+
             <TextInput
               value={label}
               onChangeText={setLabel}
@@ -95,24 +174,30 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
                 fontSize: 14,
               }}
             />
-            <TextInput
-              value={address}
-              onChangeText={setAddress}
-              placeholder="Watch address (optional)"
-              placeholderTextColor={color.textSubtle}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={{
-                backgroundColor: color.track,
-                borderRadius: radius.button,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                color: color.text,
-                fontFamily: font.mono,
-                fontSize: 13,
-              }}
+            {mode === 'watch' || !canDerive ? (
+              <TextInput
+                value={address}
+                onChangeText={setAddress}
+                placeholder="Watch address"
+                placeholderTextColor={color.textSubtle}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={{
+                  backgroundColor: color.track,
+                  borderRadius: radius.button,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  color: color.text,
+                  fontFamily: font.mono,
+                  fontSize: 13,
+                }}
+              />
+            ) : null}
+            <Button
+              label={mode === 'derive' && canDerive ? 'Derive next account' : 'Add wallet'}
+              busy={add.isPending || deriveNext.isPending}
+              onPress={mode === 'derive' && canDerive ? submitDerive : submitWatch}
             />
-            <Button label="Add wallet" busy={add.isPending} onPress={submit} />
             <PressableScale onPress={() => setTarget(null)} style={{ alignItems: 'center', paddingVertical: 8 }}>
               <Text style={{ color: color.textSubtle, fontWeight: '600', fontFamily: font.body }}>Cancel</Text>
             </PressableScale>

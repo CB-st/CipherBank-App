@@ -7,7 +7,7 @@ import {
   registerBinary,
   removeCardToken,
 } from './serverVault.api';
-import { createLocalCustody, hasLocalCustody } from './custody';
+import { hasLocalCustody } from './custody';
 
 /** Hybrid vault: local custody flags + server binaries/cards. */
 export function useVault() {
@@ -20,6 +20,10 @@ export function useVault() {
       setHasLocal(v);
       setLocalReady(true);
     });
+    const t = setInterval(() => {
+      hasLocalCustody().then(setHasLocal);
+    }, 2000);
+    return () => clearInterval(t);
   }, []);
 
   const binaries = useQuery({
@@ -34,10 +38,9 @@ export function useVault() {
     staleTime: 30_000,
   });
 
-  const ensureLocal = useMutation({
-    mutationFn: createLocalCustody,
-    onSuccess: () => setHasLocal(true),
-  });
+  const refreshLocal = () => {
+    hasLocalCustody().then(setHasLocal);
+  };
 
   const addBinary = useMutation({
     mutationFn: registerBinary,
@@ -61,13 +64,14 @@ export function useVault() {
     cards: cards.data?.cards ?? [],
     binariesLoading: binaries.isLoading,
     cardsLoading: cards.isLoading,
-    ensureLocal,
+    refreshLocal,
     addBinary,
     addCard,
     removeCard,
     refetchVault: () => {
       binaries.refetch();
       cards.refetch();
+      refreshLocal();
     },
   };
 }

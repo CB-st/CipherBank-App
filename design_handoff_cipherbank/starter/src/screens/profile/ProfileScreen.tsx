@@ -309,13 +309,7 @@ export function ProfileScreen({ navigation }: any) {
               {!vault.hasLocal ? (
                 <Button
                   label="Create local keys"
-                  busy={vault.ensureLocal.isPending}
-                  onPress={() =>
-                    vault.ensureLocal.mutate(undefined, {
-                      onSuccess: () =>
-                        toast({ kind: 'ok', title: 'Local custody ready', sub: 'Mnemonic stored on-device only.' }),
-                    })
-                  }
+                  onPress={() => navigation.navigate('Keys')}
                 />
               ) : (
                 <Button

@@ -45,6 +45,8 @@ export interface LocalWalletDraft {
   symbol: string;
   label: string;
   address?: string;
+  derivationPath?: string;
+  accountIndex?: number;
   source: WalletSource;
   createdAt: number;
 }
