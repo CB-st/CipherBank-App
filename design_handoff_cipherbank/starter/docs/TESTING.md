@@ -10,21 +10,26 @@ From `design_handoff_cipherbank/starter`:
 npm run demo          # typecheck + print API/fixture inventory
 npm run demo:web      # typecheck + contract dump + Expo web
 npm run demo:android  # same → Android emulator/device
+npm run android:setup # full SDK/AVD/native install + Metro (see ANDROID_SETUP.md)
+npm run android:apk   # compile debug APK into dist/
 npm run contract      # fixture + endpoint inventory only
 ```
 
-Or: `./scripts/demo.sh web`
+Or: `./scripts/demo.sh web` · Full Android guide: [`ANDROID_SETUP.md`](./ANDROID_SETUP.md).
 
 ## Quick matrix
 
 | Target | Command | NFC |
 |--------|---------|-----|
-| Web | `npm run web` | Mock POS only (Simulate tap) |
-| Android emulator | `npm run android:emu` after AVD + dev client | Emulator NFC is limited; use **Simulate tap** or a physical device |
-| Android device | EAS `development` APK or `npm run prebuild && npx expo run:android` | Real NFC via `react-native-nfc-manager` |
-| iOS | On **Mac**: `npm run eas:build:ios` or `npx expo run:ios` | Core NFC reader strings reserved; **no consumer HCE** — Apple Tap to Pay is a different merchant program |
+| Web | `npm run web` | **Simulate exchange** (EMV-shaped stages) |
+| Android emulator | `npm run demo:android` after AVD | Emulator RF limited — use **Simulate exchange** |
+| Android device | EAS `development` APK or `npx expo run:android` | Real NFC via `react-native-nfc-manager`; HCE APDUs later |
+| iOS | On **Mac**: `npm run eas:build:ios` | Stub only |
 
-NFC **does not work in stock Expo Go**. Use a **dev client** (`expo-dev-client`) or EAS development build.
+NFC **does not work in stock Expo Go**. Use a **dev client** (`expo-dev-client`) or EAS development build for RF. Emulator/web always use the staged lab exchange.
+
+Digital card / Visa VTS / Mastercard MDES mapping: [`DIGITAL_CARDS_NFC.md`](./DIGITAL_CARDS_NFC.md).
+
 
 ## Web (this Linux box)
 
@@ -38,20 +43,34 @@ Open the Metro URL; use **Profile → Tap to pay lab** for the full mock POS flo
 
 ## Android emulator (Linux)
 
-1. Install [Android Studio](https://developer.android.com/studio) or cmdline tools; create an AVD (API 34+ recommended).
-2. Start the emulator (`emulator -avd <name>` or from Android Studio).
-3. Prefer a **development client** for NFC hooks:
+SDK path used in this workspace: `$HOME/Android/Sdk` (cmdline-tools + API 34 Google APIs image). JDK: `$HOME/.local/jdk-17`.
 
 ```bash
-npm run eas:build:android
-# or local native:
-npm run prebuild
-npx expo run:android
+export JAVA_HOME=$HOME/.local/jdk-17
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$JAVA_HOME/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH
+
+# AVD name from setup: CipherBank_API34
+emulator -avd CipherBank_API34 &
+adb wait-for-device
+
+cd design_handoff_cipherbank/starter
+npm run demo:android
+# or: npx expo start --android
+adb reverse tcp:8081 tcp:8081   # if Metro not reachable
 ```
 
-4. Or for JS-only UI (no native NFC): `npm run android:emu` with Expo Go — POS lab still works via **Simulate tap**.
+In the app: **Profile → Tap to pay lab → Authorize → Simulate exchange**.
 
-Ensure the emulator can reach Metro (`adb reverse tcp:8081 tcp:8081` if needed).
+Prefer a **development client** for native NFC hooks (required — Expo Go will not load this project):
+
+```bash
+npx expo prebuild --platform android
+npx expo run:android          # builds APK + installs on emulator/device
+npx expo start --dev-client   # Metro for the installed app
+```
+
+Or: `npm run android:native` after the first prebuild.
 
 ## EAS Build
 

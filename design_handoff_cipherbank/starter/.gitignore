@@ -12,4 +12,8 @@ web-build/
 npm-debug.*
 *.log
 .DS_Store
+
+# Native prebuild (local)
+android/
+ios/
 .env

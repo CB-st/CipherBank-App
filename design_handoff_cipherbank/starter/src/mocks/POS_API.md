@@ -110,6 +110,8 @@ Returns current `PosSession` including `presentment` when authorized.
 
 No PAN. Full EMV/HCE APDU mapping is processor-specific and outside this contract.
 
+Lab UI **Simulate exchange** walks EMV-shaped stages (PPSE → AID → GPO → GENERATE AC → outcome) while only ever transporting `{ sessionId, tokenRef }`. See [`docs/DIGITAL_CARDS_NFC.md`](../../docs/DIGITAL_CARDS_NFC.md) for Visa VTS / Mastercard MDES mapping.
+
 ## Security rules
 
 1. Recovery mnemonic stays on-device forever.

@@ -30,7 +30,7 @@ export const DEFAULT_PREFS: UserPrefs = {
 };
 
 export const HOME_SECTION_LABELS: Record<HomeSection, string> = {
-  cora: 'Cora bar',
+  cora: 'Cora footer line',
   balance: 'Balance hero',
   quickActions: 'Quick actions',
   performance: 'Performance chart',

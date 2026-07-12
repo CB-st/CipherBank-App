@@ -17,11 +17,16 @@ npm run demo:web       # one-line: launch web demo
 | `npm run demo` | Typecheck + dump fixtures/endpoints |
 | `npm run demo:web` | Web demo (mock API) |
 | `npm run demo:android` | Android via Expo |
+| `npm run android:setup` | **Full emulator setup** (SDK/AVD/native app/Metro) |
+| `npm run android:apk` | Build debug APK → `dist/` |
+| `npm run android:apk:release` | Build release APK → `dist/` |
 | `npm start` | Expo bundler |
 | `npm run web` | Web only |
 | `npm run ios` / `android` | Native targets |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run contract` | Fixture inventory |
+
+**Android (emulator + APK):** see [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md).
 
 Defaults (`EXPO_PUBLIC_USE_MOCK=true`) serve fixture JSON from `src/mocks/`.  
 **API shapes for backend:** [`src/mocks/API_CONTRACT.md`](src/mocks/API_CONTRACT.md) · POS: [`src/mocks/POS_API.md`](src/mocks/POS_API.md) · Devices: [`docs/TESTING.md`](docs/TESTING.md).

@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
 import { authorizePos, confirmPos, createPosSession } from './pos.api';
 import { mockTap, nfcIsSupported, nfcPresent } from './nfc';
+import { runSimulatedExchange, type ExchangeStage } from './nfcExchange';
 import { unlockLocalCustody } from '@/features/vault/custody';
 import type { NfcPresentPayload, PosAuthorizeResult, PosSession } from './pos.types';
 import { requireTestCard, type HardwareCard, isHardwareTestCard } from './hardwareCards';
 
-type Phase = 'idle' | 'unlocking' | 'authorizing' | 'presenting' | 'done' | 'error';
+type Phase = 'idle' | 'unlocking' | 'authorizing' | 'presenting' | 'exchanging' | 'done' | 'error';
 
 export function usePosPay() {
   const [phase, setPhase] = useState<Phase>('idle');
@@ -13,6 +14,7 @@ export function usePosPay() {
   const [auth, setAuth] = useState<PosAuthorizeResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastTap, setLastTap] = useState<NfcPresentPayload | null>(null);
+  const [exchangeStages, setExchangeStages] = useState<ExchangeStage[]>([]);
 
   const reset = useCallback(() => {
     setPhase('idle');
@@ -20,6 +22,7 @@ export function usePosPay() {
     setAuth(null);
     setError(null);
     setLastTap(null);
+    setExchangeStages([]);
   }, []);
 
   const startAndAuthorize = useCallback(
@@ -32,6 +35,7 @@ export function usePosPay() {
       card: HardwareCard;
     }) => {
       setError(null);
+      setExchangeStages([]);
       if (requireTestCard() && !isHardwareTestCard(opts.card)) {
         setPhase('error');
         setError('test_card_required: select a hardware-test card for the POS lab.');
@@ -85,10 +89,16 @@ export function usePosPay() {
       tokenRef: auth.presentment.tokenRef,
       merchantId: session.merchantId,
     };
-    const res = mockTap(payload);
-    setLastTap(res.payload);
+    setPhase('exchanging');
+    const exchange = await runSimulatedExchange({
+      payload,
+      brand: auth.presentment.brand,
+      onUpdate: setExchangeStages,
+    });
+    mockTap(payload);
+    setLastTap(exchange.payload);
     setPhase('done');
-    return res;
+    return exchange;
   }, [auth, session]);
 
   const presentNfc = useCallback(async () => {
@@ -100,15 +110,30 @@ export function usePosPay() {
     };
     const support = await nfcIsSupported();
     if (!support.supported) {
-      setError(support.reason ?? 'nfc_not_supported');
-      return { ok: false as const, mode: 'stub' as const, detail: support.reason };
+      setPhase('exchanging');
+      const exchange = await runSimulatedExchange({
+        payload,
+        brand: auth.presentment.brand,
+        onUpdate: setExchangeStages,
+      });
+      setLastTap(exchange.payload);
+      setPhase('done');
+      return { ok: true as const, mode: 'stub' as const, detail: support.reason, exchange };
     }
+    setPhase('exchanging');
     const res = await nfcPresent(payload);
     if (res.ok) {
       setLastTap(payload);
+      await runSimulatedExchange({
+        payload,
+        brand: auth.presentment.brand,
+        stepMs: 80,
+        onUpdate: setExchangeStages,
+      });
       setPhase('done');
     } else {
       setError(res.detail ?? 'NFC failed');
+      setPhase('presenting');
     }
     return res;
   }, [auth, session]);
@@ -119,6 +144,7 @@ export function usePosPay() {
     auth,
     error,
     lastTap,
+    exchangeStages,
     reset,
     startAndAuthorize,
     presentMock,

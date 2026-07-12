@@ -30,10 +30,13 @@ export function FadeIn({ children, delay = 0, style }: Props) {
     );
   }, [delay, opacity, y]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: y.value }],
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      opacity: opacity.value,
+      transform: [{ translateY: y.value }],
+    };
+  });
 
   return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
 }

@@ -19,7 +19,7 @@ import { SessionProvider } from '@/features/session/useSession';
 import { PrefsProvider } from '@/features/prefs/usePrefs';
 import { CoraProvider } from '@/features/cora/useCora';
 import { ToastProvider } from '@/components/primitives/Toast';
-import { RootNavigator } from '@/app/RootNavigator';
+import { RootNavigator } from '@/navigation/RootNavigator';
 import { ThemeProvider, color, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});

@@ -2,7 +2,6 @@ import React, { useState, useEffect, type ReactNode } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { color, shadow, font } from '@/theme';
 import { Header } from '@/components/chrome/Header';
-import { CoraBar } from '@/components/cora/CoraBar';
 import { CoraAssistant } from '@/components/cora/CoraAssistant';
 import { BalanceHero } from '@/components/money/BalanceHero';
 import { AssetList } from '@/components/money/AssetList';
@@ -43,12 +42,14 @@ export function HomeScreen({ navigation }: any) {
   const up = (data?.change24h.pct ?? 0) >= 0;
   const assetCount = data?.holdings.length ?? 0;
   const currencyCount = new Set(data?.holdings.map((h) => h.symbol) ?? []).size;
+  const showCoraFooter = coraOn && prefs.homeVisible.cora;
 
   const section = (id: HomeSection): ReactNode => {
     if (!prefs.homeVisible[id]) return null;
     switch (id) {
       case 'cora':
-        return coraOn ? <CoraBar line={isLoading ? lineFor('homeLoad') : lineFor('home')} /> : null;
+        // Line moved to quiet footer — no hero-height Cora box on Home.
+        return null;
       case 'balance':
         return isLoading ? (
           <BalanceHero.Skeleton />
@@ -76,7 +77,15 @@ export function HomeScreen({ navigation }: any) {
         );
       case 'quickActions':
         return (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              paddingHorizontal: 2,
+              marginVertical: 10,
+              paddingVertical: 8,
+            }}
+          >
             {QUICK.map((q) => (
               <PressableScale
                 key={q.label}
@@ -140,22 +149,43 @@ export function HomeScreen({ navigation }: any) {
       <Header brand online rightIcon="bell" />
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 110, gap: 13 }} showsVerticalScrollIndicator={false}>
         <FadeIn>
-          {prefs.homeOrder.map((id) => (
-            <View key={id} style={{ gap: 13 }}>
-              {section(id)}
-            </View>
-          ))}
-          <Text
-            style={{
-              textAlign: 'center',
-              fontSize: 11,
-              color: color.textSubtle,
-              fontFamily: font.mono,
-              paddingTop: 2,
-            }}
-          >
-            Securities coming soon — pay with stock.
-          </Text>
+          {prefs.homeOrder.map((id) => {
+            const node = section(id);
+            if (!node) return null;
+            return (
+              <View key={id} style={{ gap: 13 }}>
+                {node}
+              </View>
+            );
+          })}
+          <View style={{ paddingTop: 18, gap: 6, alignItems: 'center' }}>
+            {showCoraFooter ? (
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: 11,
+                  lineHeight: 16,
+                  color: color.textSubtle,
+                  fontFamily: font.body,
+                  opacity: 0.55,
+                  maxWidth: 280,
+                }}
+              >
+                {isLoading ? lineFor('homeLoad') : lineFor('home')}
+              </Text>
+            ) : null}
+            <Text
+              style={{
+                textAlign: 'center',
+                fontSize: 10,
+                color: color.textSubtle,
+                fontFamily: font.mono,
+                opacity: 0.45,
+              }}
+            >
+              Securities coming soon — pay with stock.
+            </Text>
+          </View>
         </FadeIn>
       </ScrollView>
       <CoraAssistant screen="home" />

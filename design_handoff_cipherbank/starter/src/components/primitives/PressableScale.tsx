@@ -6,8 +6,6 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 type Props = {
   children: React.ReactNode;
   onPress?: () => void;
@@ -17,7 +15,11 @@ type Props = {
   hitSlop?: number;
 };
 
-/** Spring scale + opacity press feedback for CTAs and tiles. */
+/**
+ * Spring scale + opacity press feedback.
+ * Pressable wraps Animated.View so shared values stay inside useAnimatedStyle
+ * (avoids Reanimated inline-style .value warnings).
+ */
 export function PressableScale({
   children,
   onPress,
@@ -29,13 +31,16 @@ export function PressableScale({
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: opacity.value,
+    };
+  });
 
   return (
-    <AnimatedPressable
+    <Pressable
       hitSlop={hitSlop}
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
@@ -48,9 +53,8 @@ export function PressableScale({
         scale.value = withSpring(1, { damping: 14, stiffness: 280 });
         opacity.value = withSpring(1, { damping: 14, stiffness: 280 });
       }}
-      style={[style, animatedStyle]}
     >
-      {children}
-    </AnimatedPressable>
+      <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>
+    </Pressable>
   );
 }

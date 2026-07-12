@@ -18,6 +18,57 @@ import {
 import { useVault } from '@/features/vault/useVault';
 import { useToast } from '@/components/primitives/Toast';
 import { formatUSD } from '@/lib/money';
+import type { ExchangeStage } from '@/features/pos/nfcExchange';
+
+function stageColor(s: ExchangeStage['status']) {
+  if (s === 'ok') return color.green;
+  if (s === 'active') return color.gold;
+  if (s === 'fail') return color.red;
+  return color.textSubtle;
+}
+
+function ExchangeTimeline({ stages }: { stages: ExchangeStage[] }) {
+  if (!stages.length) return null;
+  return (
+    <View style={{ alignSelf: 'stretch', gap: 8, marginTop: 4 }}>
+      <Text style={{ color: color.gold, fontFamily: font.mono, fontSize: 11, letterSpacing: 1 }}>
+        NFC EXCHANGE (LAB)
+      </Text>
+      {stages.map((st) => (
+        <View
+          key={st.id}
+          style={{
+            flexDirection: 'row',
+            gap: 10,
+            alignItems: 'flex-start',
+            opacity: st.status === 'pending' ? 0.45 : 1,
+          }}
+        >
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              marginTop: 5,
+              backgroundColor: stageColor(st.status),
+            }}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: color.onDark, fontWeight: '700', fontSize: 13, fontFamily: font.body }}>
+              {st.label}
+            </Text>
+            <Text style={{ color: color.onDarkSubtle, fontSize: 11, fontFamily: font.body, marginTop: 2 }}>
+              {st.detail}
+            </Text>
+            <Text style={{ color: color.onDarkMuted, fontSize: 10, fontFamily: font.mono, marginTop: 2 }}>
+              {st.apduHint}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export function MockPosScreen({ navigation }: any) {
   const vault = useVault();
@@ -39,13 +90,13 @@ export function MockPosScreen({ navigation }: any) {
       setNfcHint(
         s.supported && s.enabled
           ? 'NFC ready on this device'
-          : s.reason ?? 'NFC unavailable — use Simulate tap',
+          : s.reason ?? 'NFC unavailable — use Simulate exchange',
       );
     });
   }, []);
 
   useEffect(() => {
-    if (!pos.auth || pos.phase !== 'presenting') {
+    if (!pos.auth || (pos.phase !== 'presenting' && pos.phase !== 'exchanging')) {
       setTtlLeft(0);
       return;
     }
@@ -84,13 +135,17 @@ export function MockPosScreen({ navigation }: any) {
 
   const onMockTap = async () => {
     await pos.presentMock();
-    toast({ kind: 'ok', title: 'Mock tap recorded', sub: 'tokenRef presented to lab POS' });
+    toast({ kind: 'ok', title: 'Exchange complete', sub: 'EMV-shaped lab stages + tokenRef settled' });
   };
 
   const onNfc = async () => {
     const res = await pos.presentNfc();
     if (res && 'ok' in res && res.ok) {
-      toast({ kind: 'ok', title: 'NFC presentment', sub: 'Hold near reader completed' });
+      toast({
+        kind: 'ok',
+        title: res.mode === 'nfc' ? 'NFC presentment' : 'Simulated NFC',
+        sub: res.mode === 'nfc' ? 'Hold near reader completed' : 'Emulator/lab path — staged exchange',
+      });
     } else {
       toast({
         kind: 'error',
@@ -105,16 +160,20 @@ export function MockPosScreen({ navigation }: any) {
       <Header title="Tap to pay lab" onBack={() => navigation.goBack?.()} />
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 48, gap: 14 }} keyboardShouldPersistTaps="handled">
         <FadeIn>
-          <Text style={{ fontFamily: font.display, fontWeight: '700', fontSize: 22 }}>Mock POS terminal</Text>
+          <Text style={{ fontFamily: font.display, fontWeight: '700', fontSize: 22, color: color.text }}>
+            Mock POS terminal
+          </Text>
           <Text style={{ fontSize: 13, color: color.textMuted, marginTop: 6, fontFamily: font.body, lineHeight: 19 }}>
-            Authorize crypto against a vault card, then present an ephemeral token via Simulate tap or Android NFC.
-            Payload is sessionId + tokenRef only — never a PAN.
+            Authorize crypto against a vault card, then run a Visa/MC-shaped contactless exchange. Payload is
+            sessionId + tokenRef only — never a PAN. See docs/DIGITAL_CARDS_NFC.md.
           </Text>
         </FadeIn>
 
         <FadeIn delay={40}>
           <Card>
-            <Text style={{ fontWeight: '800', fontSize: 13, fontFamily: font.body, marginBottom: 10 }}>Merchant request</Text>
+            <Text style={{ fontWeight: '800', fontSize: 13, fontFamily: font.body, marginBottom: 10, color: color.text }}>
+              Merchant request
+            </Text>
             <Text style={{ fontSize: 12, color: color.textSubtle, marginBottom: 4 }}>Amount (USD)</Text>
             <TextInput
               value={amount}
@@ -136,7 +195,8 @@ export function MockPosScreen({ navigation }: any) {
               style={{
                 fontFamily: font.body,
                 fontSize: 15,
-                backgroundColor: color.canvas,
+                color: color.text,
+                backgroundColor: color.track,
                 borderRadius: radius.chip,
                 paddingHorizontal: 12,
                 paddingVertical: 10,
@@ -153,10 +213,10 @@ export function MockPosScreen({ navigation }: any) {
                     paddingHorizontal: 14,
                     paddingVertical: 8,
                     borderRadius: radius.pill,
-                    backgroundColor: asset === a ? color.gold : color.canvas,
+                    backgroundColor: asset === a ? color.gold : color.track,
                   }}
                 >
-                  <Text style={{ fontWeight: '800', fontFamily: font.mono, fontSize: 12 }}>{a}</Text>
+                  <Text style={{ fontWeight: '800', fontFamily: font.mono, fontSize: 12, color: color.text }}>{a}</Text>
                 </PressableScale>
               ))}
             </View>
@@ -165,7 +225,16 @@ export function MockPosScreen({ navigation }: any) {
 
         <FadeIn delay={80}>
           <Card style={{ paddingVertical: 4 }}>
-            <Text style={{ fontWeight: '800', fontSize: 13, fontFamily: font.body, paddingTop: 8, marginBottom: 4 }}>
+            <Text
+              style={{
+                fontWeight: '800',
+                fontSize: 13,
+                fontFamily: font.body,
+                paddingTop: 8,
+                marginBottom: 4,
+                color: color.text,
+              }}
+            >
               Presentment card
             </Text>
             {cards.map((c, i) => (
@@ -180,7 +249,7 @@ export function MockPosScreen({ navigation }: any) {
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ flex: 1, fontWeight: '700', fontFamily: font.body }}>
+                  <Text style={{ flex: 1, fontWeight: '700', fontFamily: font.body, color: color.text }}>
                     {c.label ?? c.brand + ' ·••• ' + c.last4}
                   </Text>
                   {isHardwareTestCard(c) ? <Pill label="HW TEST" gold /> : null}
@@ -209,7 +278,7 @@ export function MockPosScreen({ navigation }: any) {
           />
         </FadeIn>
 
-        {(pos.phase === 'presenting' || pos.phase === 'done') && pos.auth ? (
+        {(pos.phase === 'presenting' || pos.phase === 'exchanging' || pos.phase === 'done') && pos.auth ? (
           <FadeIn>
             <View
               style={[
@@ -226,23 +295,36 @@ export function MockPosScreen({ navigation }: any) {
               <Text style={{ color: color.gold, fontFamily: font.mono, fontSize: 11, letterSpacing: 1 }}>
                 PRESENT CARD
               </Text>
-              <Text style={{ color: '#fff', fontFamily: font.display, fontSize: 28, fontWeight: '700' }}>
+              <Text style={{ color: color.onDark, fontFamily: font.display, fontSize: 28, fontWeight: '700' }}>
                 {pos.auth.presentment.brand} ·••• {pos.auth.presentment.last4}
               </Text>
               <Text style={{ color: color.onDarkMuted, fontFamily: font.mono, fontSize: 12 }}>
                 TTL {ttlLeft}s · {pos.auth.presentment.tokenRef.slice(0, 16)}…
               </Text>
+
+              <ExchangeTimeline stages={pos.exchangeStages} />
+
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, alignSelf: 'stretch' }}>
                 <View style={{ flex: 1 }}>
-                  <Button label="Simulate tap" onPress={onMockTap} />
+                  <Button
+                    label={pos.phase === 'exchanging' ? 'Exchanging…' : 'Simulate exchange'}
+                    busy={pos.phase === 'exchanging'}
+                    onPress={onMockTap}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Button label="Start NFC" variant="ghost" onPress={onNfc} style={{ borderColor: color.gold }} />
+                  <Button
+                    label="Start NFC"
+                    variant="ghost"
+                    onPress={onNfc}
+                    style={{ borderColor: color.gold }}
+                    busy={pos.phase === 'exchanging'}
+                  />
                 </View>
               </View>
               {pos.lastTap ? (
                 <Text style={{ color: color.onDarkSubtle, fontSize: 11, fontFamily: font.mono, marginTop: 6 }}>
-                  Last tap · {pos.lastTap.sessionId.slice(0, 12)}…
+                  Last tap · {pos.lastTap.sessionId.slice(0, 12)}… · tokenRef ok
                 </Text>
               ) : null}
               <PressableScale onPress={pos.reset} style={{ marginTop: 8 }}>

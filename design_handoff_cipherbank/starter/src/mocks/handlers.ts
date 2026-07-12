@@ -13,14 +13,18 @@ import type { UserPrefs } from '@/features/prefs/prefs.types';
 
 type Opts = { idempotencyKey?: string; signal?: AbortSignal };
 
+function deepClone<T>(v: T): T {
+  return JSON.parse(JSON.stringify(v)) as T;
+}
+
 const idempotencyStore = new Map<string, unknown>();
 let quoteSeq = 0;
 let txSeq = 0;
 
 /** Mutable mock state for prefs / vault writes during a session. */
-let prefsState: UserPrefs = structuredClone(prefsFixture) as UserPrefs;
-let binariesState = structuredClone(vaultBinaries.binaries);
-let cardsState = structuredClone(vaultCards.cards) as any[];
+let prefsState: UserPrefs = deepClone(prefsFixture) as UserPrefs;
+let binariesState = deepClone(vaultBinaries.binaries);
+let cardsState = deepClone(vaultCards.cards) as any[];
 const posSessions = new Map<string, any>();
 
 const requireTestCard =
@@ -77,14 +81,14 @@ function buildSeries(range: string, start: number, drift: number, vol: number) {
 async function handleGet(path: string): Promise<unknown> {
   const { pathname, query } = parsePath(path);
 
-  if (pathname === '/portfolio') return structuredClone(portfolio);
-  if (pathname === '/assets') return structuredClone(assets);
-  if (pathname === '/rates') return structuredClone(rates);
-  if (pathname === '/recipients') return structuredClone(recipients);
-  if (pathname === '/activity') return structuredClone(activity);
-  if (pathname === '/prefs') return structuredClone(prefsState);
-  if (pathname === '/vault/binaries') return { binaries: structuredClone(binariesState) };
-  if (pathname === '/vault/cards') return { cards: structuredClone(cardsState) };
+  if (pathname === '/portfolio') return deepClone(portfolio);
+  if (pathname === '/assets') return deepClone(assets);
+  if (pathname === '/rates') return deepClone(rates);
+  if (pathname === '/recipients') return deepClone(recipients);
+  if (pathname === '/activity') return deepClone(activity);
+  if (pathname === '/prefs') return deepClone(prefsState);
+  if (pathname === '/vault/binaries') return { binaries: deepClone(binariesState) };
+  if (pathname === '/vault/cards') return { cards: deepClone(cardsState) };
 
   if (pathname.startsWith('/pos/sessions/')) {
     const sid = pathname.slice('/pos/sessions/'.length);
@@ -93,7 +97,7 @@ async function handleGet(path: string): Promise<unknown> {
     if (sess.expiresAt < Date.now() && sess.status !== 'settled') {
       sess.status = 'expired';
     }
-    return structuredClone(sess);
+    return deepClone(sess);
   }
 
   if (pathname.startsWith('/receive/')) {
@@ -104,7 +108,7 @@ async function handleGet(path: string): Promise<unknown> {
       uri: `cipherbank:receive/${asset}`,
       qr: `cipherbank:receive/${asset}`,
     };
-    return structuredClone(info);
+    return deepClone(info);
   }
 
   if (pathname === '/history') {
@@ -265,7 +269,7 @@ async function handlePost(path: string, body?: unknown): Promise<unknown> {
       expiresAt: Date.now() + 120_000,
     };
     posSessions.set(sessionId, sess);
-    return structuredClone(sess);
+    return deepClone(sess);
   }
 
   if (pathname === '/pos/authorize') {
@@ -333,7 +337,7 @@ async function handlePut(path: string, body?: unknown): Promise<unknown> {
   const { pathname } = parsePath(path);
   if (pathname === '/prefs') {
     prefsState = { ...prefsState, ...(body as UserPrefs) };
-    return structuredClone(prefsState);
+    return deepClone(prefsState);
   }
   throw new MockApiError(404, 'not_found', `No mock handler for PUT ${pathname}`);
 }
