@@ -8,6 +8,7 @@ A **starter scaffold** for the Cipherbank mobile app: Expo + React Native + Type
 - **Design source of truth:** `../designs/*.dc.html` (open in a browser) + `../README.md` (per-screen specs) + `../tokens/` + `../assets/`.
 - **Interaction contract:** `../ARCHITECTURE.md` (how UI talks to the backend).
 - **Server contract:** `src/mocks/API_CONTRACT.md` + `src/mocks/POS_API.md` (canonical `/v1` shapes). Custody / XMR link: `docs/CUSTODY.md`, `docs/MONERO_LINK.md`.
+- **Backend build task list:** `docs/API_BUILD_PLAN.md` — phased P0–P8 checklist (session → portfolio → market → prefs/bootstrap → money → wallets → vault → POS).
 - **Prototype inventory / persistence:** `docs/PROTOTYPE_MAP.md` · `docs/PERSISTENCE.md` · `docs/USER_CONFIG.md` (base currency, enabled currencies, stale UX).
 - **Upstream C++ backend:** CipherBank-src (`MoneroRPC_ExternalAPIAdapter`, PriceCache, HTTP `/quote` · `/iquote` · `/currencies`). The app does **not** call wallet-rpc directly.
 

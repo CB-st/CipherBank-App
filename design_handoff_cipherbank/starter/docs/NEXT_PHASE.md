@@ -15,6 +15,10 @@ Companion to the CoraDesignOverhaul PR. Phase 1 (this PR) ships a **mock-first E
 | Android emulator setup + APK scripts | `android:setup`, `android:apk` |
 | `/v1` + POS JSON contracts | `API_CONTRACT.md`, `POS_API.md` |
 
+## Backend API workstream
+
+Full endpoint-by-endpoint task lists (session, portfolio, market, prefs/bootstrap, money movement, wallets, vault, POS): [`API_BUILD_PLAN.md`](./API_BUILD_PLAN.md).
+
 ## Phase 2 — storage security & wallet setup (priority)
 
 ### 2.1 Local custody (device)
