@@ -45,6 +45,22 @@ const MODULES: Record<string, WalletModule> = {
     usesServerWallets: true,
     notes: 'Hybrid: managed wallet-rpc or unmanaged view-key sync — see docs/MONERO_LINK.md',
   },
+  LTC: {
+    symbol: 'LTC',
+    addModes: ['derive', 'watch'],
+    canDerive: true,
+    sourceFor: (m) => (m === 'watch' ? 'watch' : 'local'),
+    usesServerWallets: false,
+    notes: 'BIP84 native segwit m/84\'/2\'/0\'/0/i from on-device BIP39',
+  },
+  DOGE: {
+    symbol: 'DOGE',
+    addModes: ['derive', 'watch'],
+    canDerive: true,
+    sourceFor: (m) => (m === 'watch' ? 'watch' : 'local'),
+    usesServerWallets: false,
+    notes: 'BIP44 m/44\'/3\'/0\'/0/i P2PKH from on-device BIP39',
+  },
 };
 
 /** Default for coins not yet registered: watch-only until a module is added. */

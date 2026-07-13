@@ -9,12 +9,24 @@ import { useLocalWallets } from '@/features/wallets/useLocalWallets';
 import { useCreateServerWallet } from '@/features/wallets/useXmrWallets';
 import { fingerprintViewKey } from '@/features/wallets/xmr.api';
 import { getWalletModule, type WalletUiMode } from '@/features/wallets/registry';
+import { validateWatchAddress } from '@/features/wallets/addressValidate';
+import { shortenAddress } from '@/features/wallets/paymentUri';
+import { QrCode } from '../primitives/QrCode';
+import { buildPaymentUri } from '@/features/wallets/paymentUri';
 import { useToast } from '../primitives/Toast';
-import type { Holding } from '@/features/portfolio/portfolio.types';
+import type { Holding, LocalWalletDraft } from '@/features/portfolio/portfolio.types';
 
 type AddMode = WalletUiMode;
 
-export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: boolean }) {
+export function AssetList({
+  holdings,
+  hiddenHoldings = [],
+  hidden,
+}: {
+  holdings: Holding[];
+  hiddenHoldings?: Holding[];
+  hidden?: boolean;
+}) {
   const { add, deriveNext } = useLocalWallets();
   const createServer = useCreateServerWallet();
   const toast = useToast();
@@ -23,6 +35,8 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
   const [address, setAddress] = useState('');
   const [viewKey, setViewKey] = useState('');
   const [mode, setMode] = useState<AddMode>('watch');
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [created, setCreated] = useState<LocalWalletDraft | null>(null);
 
   const mod = target ? getWalletModule(target.symbol) : null;
   const canDerive = mod?.canDerive ?? false;
@@ -30,16 +44,27 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
   const openAdd = (h: Holding) => {
     const m = getWalletModule(h.symbol);
     setTarget(h);
+    setCreated(null);
     setLabel('');
     setAddress('');
     setViewKey('');
     setMode(m.addModes[0] ?? 'watch');
   };
 
-  const close = () => setTarget(null);
+  const close = () => {
+    setTarget(null);
+    setCreated(null);
+  };
 
   const submitWatch = () => {
     if (!target) return;
+    if (address.trim()) {
+      const check = validateWatchAddress(target.symbol, address);
+      if (!check.ok) {
+        toast({ kind: 'error', title: 'Invalid address', sub: check.reason ?? '' });
+        return;
+      }
+    }
     add.mutate(
       {
         symbol: target.symbol,
@@ -49,13 +74,14 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
         mode: 'watch',
       },
       {
-        onSuccess: () => {
+        onSuccess: (w) => {
           toast({
             kind: 'ok',
             title: 'Wallet added',
             sub: address ? 'Watch address saved locally' : 'Slot saved locally',
           });
-          close();
+          if (w.address) setCreated(w);
+          else close();
         },
         onError: () => toast({ kind: 'error', title: 'Could not add wallet', sub: 'Try again.' }),
       },
@@ -70,10 +96,10 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
         onSuccess: (w) => {
           toast({
             kind: 'ok',
-            title: 'Derived wallet',
-            sub: w.address ? w.address.slice(0, 12) + '…' : w.derivationPath ?? 'Saved',
+            title: 'Address generated',
+            sub: w.address ? shortenAddress(w.address) : w.derivationPath ?? 'Saved',
           });
-          close();
+          setCreated(w);
         },
         onError: () =>
           toast({
@@ -122,7 +148,19 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
             sub: res.address ? res.address.slice(0, 14) + '…' : 'Sync pending',
           });
           setViewKey('');
-          close();
+          if (res.address) {
+            setCreated({
+              id: res.walletId,
+              symbol: target.symbol,
+              label: res.label,
+              address: res.address,
+              source: mod.sourceFor(walletMode),
+              mode: walletMode,
+              sync: res.sync,
+              viewKeyFingerprint: res.viewKeyFingerprint ?? (viewKey ? fingerprintViewKey(viewKey) : undefined),
+              createdAt: Date.now(),
+            });
+          } else close();
         },
         onError: () => toast({ kind: 'error', title: 'Could not create wallet', sub: 'Try again.' }),
       },
@@ -171,11 +209,44 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
           <AssetRow
             key={h.symbol}
             h={h}
-            last={i === holdings.length - 1}
+            last={i === holdings.length - 1 && hiddenHoldings.length === 0}
             hidden={hidden}
             onAddWallet={h.type === 'crypto' ? () => openAdd(h) : undefined}
           />
         ))}
+        {hiddenHoldings.length > 0 ? (
+          <>
+            <PressableScale
+              onPress={() => setOtherOpen((o) => !o)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingVertical: 14,
+                borderTopWidth: holdings.length ? 1 : 0,
+                borderTopColor: color.hairline,
+              }}
+            >
+              <Text style={{ fontWeight: '700', fontSize: 13, fontFamily: font.body, color: color.textMuted }}>
+                Other assets ({hiddenHoldings.length})
+              </Text>
+              <Text style={{ fontFamily: font.mono, fontSize: 11, color: color.textSubtle }}>
+                {otherOpen ? '▲' : '▼'}
+              </Text>
+            </PressableScale>
+            {otherOpen
+              ? hiddenHoldings.map((h, i) => (
+                  <AssetRow
+                    key={'hidden-' + h.symbol}
+                    h={h}
+                    last={i === hiddenHoldings.length - 1}
+                    hidden={hidden}
+                    onAddWallet={h.type === 'crypto' ? () => openAdd(h) : undefined}
+                  />
+                ))
+              : null}
+          </>
+        ) : null}
       </View>
 
       <Modal visible={!!target} transparent animationType="fade" onRequestClose={close}>
@@ -193,6 +264,32 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
             }}
           >
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 12 }}>
+              {created?.address ? (
+                <>
+                  <Text style={{ fontFamily: font.display, fontWeight: '700', fontSize: 20, color: color.text }}>
+                    {created.label} ready
+                  </Text>
+                  <Text style={{ fontSize: 13, color: color.textMuted, fontFamily: font.body }}>
+                    Scan or copy this {created.symbol} address. It is saved on this device only.
+                  </Text>
+                  <View style={{ alignItems: 'center', paddingVertical: 8 }}>
+                    <QrCode value={buildPaymentUri(created.symbol, created.address)} size={180} />
+                  </View>
+                  <Text
+                    selectable
+                    style={{ fontFamily: font.mono, fontSize: 12, color: color.text, textAlign: 'center' }}
+                  >
+                    {created.address}
+                  </Text>
+                  {created.derivationPath ? (
+                    <Text style={{ fontFamily: font.mono, fontSize: 11, color: color.textSubtle, textAlign: 'center' }}>
+                      {created.derivationPath}
+                    </Text>
+                  ) : null}
+                  <Button label="Done" onPress={close} />
+                </>
+              ) : (
+                <>
               <Text style={{ fontFamily: font.display, fontWeight: '700', fontSize: 20, color: color.text }}>
                 Add {target?.symbol} wallet
               </Text>
@@ -306,6 +403,8 @@ export function AssetList({ holdings, hidden }: { holdings: Holding[]; hidden?: 
               <PressableScale onPress={close} style={{ alignItems: 'center', paddingVertical: 8 }}>
                 <Text style={{ color: color.textSubtle, fontWeight: '600', fontFamily: font.body }}>Cancel</Text>
               </PressableScale>
+                </>
+              )}
             </ScrollView>
           </Pressable>
         </Pressable>

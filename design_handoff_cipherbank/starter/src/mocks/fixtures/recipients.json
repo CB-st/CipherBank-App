@@ -4,7 +4,13 @@
       "id": "maya",
       "name": "Maya Chen",
       "handle": "maya@cipherbank.id",
-      "bank": { "label": "Chase", "last4": "4021", "rail": "ACH" },
+      "bank": {
+        "label": "Chase",
+        "last4": "4021",
+        "rail": "ACH",
+        "routingNumber": "021000021",
+        "accountType": "checking"
+      },
       "initials": "MC"
     },
     {
@@ -12,7 +18,26 @@
       "name": "Sunset Property Mgmt",
       "handle": "sunset@property.pay",
       "memo": "Rent · due Jul 1",
+      "bank": {
+        "label": "Wells Fargo",
+        "last4": "5544",
+        "rail": "ACH",
+        "routingNumber": "121000248",
+        "accountType": "checking"
+      },
       "initials": "SP"
+    },
+    {
+      "id": "jordan",
+      "name": "Jordan Lee",
+      "bank": {
+        "label": "Bank of America",
+        "last4": "4455",
+        "rail": "ACH",
+        "routingNumber": "026009593",
+        "accountType": "savings"
+      },
+      "initials": "JL"
     }
   ]
 }

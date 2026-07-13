@@ -1,6 +1,7 @@
 import { mockLatency } from './latency';
 import { scheduleSettlement } from './stream';
-import portfolio from './fixtures/portfolio.json';
+import portfolioEmpty from './fixtures/portfolio.json';
+import portfolioDemo from './fixtures/portfolio.demo.json';
 import assets from './fixtures/assets.json';
 import rates from './fixtures/rates.json';
 import recipients from './fixtures/recipients.json';
@@ -10,13 +11,17 @@ import prefsFixture from './fixtures/prefs.json';
 import vaultBinaries from './fixtures/vault-binaries.json';
 import vaultCards from './fixtures/vault-cards.json';
 import walletsFixture from './fixtures/wallets.json';
+import accountBootstrap from './fixtures/account-bootstrap.json';
 import type { UserPrefs } from '@/features/prefs/prefs.types';
+import { isSeedDemo } from '@/lib/runtimeFlags';
 
 type Opts = { idempotencyKey?: string; signal?: AbortSignal };
 
 function deepClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v)) as T;
 }
+
+const portfolio = isSeedDemo() ? portfolioDemo : portfolioEmpty;
 
 const idempotencyStore = new Map<string, unknown>();
 let quoteSeq = 0;
@@ -138,6 +143,7 @@ async function handleGet(path: string): Promise<unknown> {
     };
   }
   if (pathname === '/recipients') return deepClone(recipients);
+  if (pathname === '/account/bootstrap') return deepClone(accountBootstrap);
   if (pathname === '/activity') return deepClone(activity);
   if (pathname === '/prefs') return deepClone(prefsState);
   if (pathname === '/vault/binaries') return { binaries: deepClone(binariesState) };

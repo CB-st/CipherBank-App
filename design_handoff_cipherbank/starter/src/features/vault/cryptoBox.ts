@@ -2,6 +2,7 @@ import { pbkdf2 } from '@noble/hashes/pbkdf2.js';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex, hexToBytes, utf8ToBytes, randomBytes } from '@noble/hashes/utils.js';
 import { gcm } from '@noble/ciphers/aes.js';
+import { isMockApi, isSeedDemo } from '@/lib/runtimeFlags';
 
 export type CustodyBlobV2 = {
   version: 2;
@@ -12,13 +13,23 @@ export type CustodyBlobV2 = {
   kdf: 'device';
 };
 
+/** Prod-ish cost; mock/lab uses a lighter stretch so boot isn't multi-minute on Hermes. */
+const PBKDF2_ITERS = isSeedDemo() || isMockApi() ? 8_000 : 80_000;
+
 function bytesToUtf8(b: Uint8Array): string {
-  return new TextDecoder().decode(b);
+  // Hermes lacks TextDecoder; avoid depending on a polyfill package for this hot path.
+  let out = '';
+  for (let i = 0; i < b.length; i++) out += String.fromCharCode(b[i]!);
+  try {
+    return decodeURIComponent(escape(out));
+  } catch {
+    return out;
+  }
 }
 
 export function deriveKeyFromDeviceSecret(deviceSecret: string, saltHex: string): Uint8Array {
   const salt = hexToBytes(saltHex);
-  return pbkdf2(sha256, utf8ToBytes(deviceSecret), salt, { c: 80_000, dkLen: 32 });
+  return pbkdf2(sha256, utf8ToBytes(deviceSecret), salt, { c: PBKDF2_ITERS, dkLen: 32 });
 }
 
 export function encryptMnemonic(plaintext: string, key: Uint8Array): { ciphertext: string; iv: string } {

@@ -8,7 +8,19 @@ A **starter scaffold** for the Cipherbank mobile app: Expo + React Native + Type
 - **Design source of truth:** `../designs/*.dc.html` (open in a browser) + `../README.md` (per-screen specs) + `../tokens/` + `../assets/`.
 - **Interaction contract:** `../ARCHITECTURE.md` (how UI talks to the backend).
 - **Server contract:** `src/mocks/API_CONTRACT.md` + `src/mocks/POS_API.md` (canonical `/v1` shapes). Custody / XMR link: `docs/CUSTODY.md`, `docs/MONERO_LINK.md`.
+- **Prototype inventory / persistence:** `docs/PROTOTYPE_MAP.md` · `docs/PERSISTENCE.md` · `docs/USER_CONFIG.md` (base currency, enabled currencies, stale UX).
 - **Upstream C++ backend:** CipherBank-src (`MoneroRPC_ExternalAPIAdapter`, PriceCache, HTTP `/quote` · `/iquote` · `/currencies`). The app does **not** call wallet-rpc directly.
+
+### Precedence loading (RAM discipline)
+
+| Level | Trigger | In RAM |
+|-------|---------|--------|
+| **P0** | NFC / POS / spend unlock | Active wallet meta + custody unlock session |
+| **P1** | Chart / Convert / Receive | Requested OHLC window; on-screen rate pair |
+| **P2** | Home / cold start | Prefs; wallet **index**; rates for **held** symbols only |
+| **P3** | Idle **and** charging | SQLite writer path only (chunked; concurrency ≤2; one job per symbol) |
+
+Secrets stay in SecureStore. Public meta / market snapshots live in `expo-sqlite` (`features/persist`). Bootstrap: `features/bootstrap`.
 
 ## Golden rules
 1. **Shell renders synchronously; data streams in; actions are optimistic.** Never block a tap on the network. (Full rationale in `ARCHITECTURE.md §1`.)
@@ -26,6 +38,8 @@ Everything funnels through **`src/lib/apiClient.ts`** (HTTP) and **`src/lib/sock
 
 **Mock-first (default):** set `EXPO_PUBLIC_USE_MOCK=true` in `.env`. Requests hit `src/mocks/` fixtures/handlers — see `src/mocks/README.md` and `API_CONTRACT.md`. This is the contract lab: shape the JSON here, then make the real API compliant.
 
+**Clean OOTB vs lab seed:** `EXPO_PUBLIC_SEED_DEMO=false` (default) → Welcome create/returning, empty portfolio, no ACH seed. `EXPO_PUBLIC_SEED_DEMO=true` (or legacy `MOCK_HAS_WALLET=true`) → demo custody + rich portfolio + seeded payees. Wipe device data with `adb shell pm clear com.cipherbank.app`.
+
 ### Connection map (app `/v1` → expectations)
 
 | App surface | Client entry | Mock / contract | Live CipherBank-src today | As light wallets land |
@@ -34,7 +48,7 @@ Everything funnels through **`src/lib/apiClient.ts`** (HTTP) and **`src/lib/sock
 | Live prices (Convert) | `features/market/ratesCache` | `GET /rates` (+ `ttlMs`) | PriceCache → `/quote` · `/iquote` | Same; alias `XMR`↔`MONERO` |
 | Locked quote | `features/quotes` | `POST /quotes` | PriceCache quotes | Keep short TTL; prefer rates cache for display |
 | Bulk history / charts | `features/history` | `GET /history?range&granularity&symbols&from&to` | **Absent** (needs OHLC feeder) | Bulk blocks only — not tick-by-tick |
-| BTC/ETH local derive | `features/wallets/derive` | local SecureStore + AsyncStorage meta | N/A (client-side) | Extend module registry; server may later index public addresses |
+| BTC/ETH local derive | `features/wallets/derive` | local SecureStore + SQLite wallet index | N/A (client-side) | Extend module registry; server may later index public addresses |
 | XMR hybrid wallets | `features/wallets/xmr.*` | `GET/POST /wallets`, `…/refresh` | Adapter exists **internal only** | Gateway wraps `create_wallet` / `generate_from_keys` / `get_balance` |
 | Receive | `features/receive` | `GET /receive/:asset` | — | Prefer wallet `address` from drafts / `/wallets` over fixtures |
 | Vault (non-seed) | `features/vault` | `/vault/binaries`, `/vault/cards` | Server vault | Still never seed/PAN |
@@ -58,7 +72,7 @@ features/wallets/
   registry.ts          # symbol → WalletModule
   derive.ts            # BTC BIP84, ETH BIP44 (active)
   xmr.api.ts / xmr.types.ts   # XMR product API (active)
-  localWallets.ts      # public metadata only (AsyncStorage)
+  localWallets.ts      # public metadata only (SQLite via persist/)
   <coin>/…             # future: LTC, DOGE, etc.
 ```
 
@@ -77,7 +91,7 @@ features/wallets/
 
 1. Register a module in `features/wallets/registry.ts` (`symbol`, `modes`, `canDerive`, `sourceFor`, `usesServerWallets`).
 2. Extend Add-wallet UI via mode chips from the module (prefer `getWalletModule(symbol).addModes` over hardcoding coins).
-3. Persist only **public** metadata in AsyncStorage (`address`, `path`, `mode`, `source`, sync fingerprint).
+3. Persist only **public** metadata in SQLite (`address`, `path`, `mode`, `source`, sync fingerprint) via `features/persist`.
 4. Mock `/wallets` or derive fixtures first; document link map in `docs/` (pattern: `MONERO_LINK.md`).
 5. Prefer module addresses over portfolio fixtures when merging (`mergeLocalWallets`).
 6. Convert/Home rates: ensure symbol exists in `GET /rates` + `assetConfig`.

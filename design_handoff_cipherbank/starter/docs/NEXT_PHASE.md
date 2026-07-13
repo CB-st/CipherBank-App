@@ -9,7 +9,7 @@ Companion to the CoraDesignOverhaul PR. Phase 1 (this PR) ships a **mock-first E
 | Design tokens, assets, HTML designs | In `design_handoff_cipherbank/` |
 | Expo app (Home, Convert, Send, Pay, Receive, Profile, Onboarding) | Mock-first UI |
 | Dark-default theme + light toggle | Prefs `appearance` |
-| Multi-wallet-per-crypto + local draft slots | Portfolio + AsyncStorage |
+| Multi-wallet-per-crypto + local draft slots | Portfolio + SQLite (`features/persist`) |
 | Hybrid vault UI (local mnemonic flag + server binaries/cards) | SecureStore stub + mock APIs |
 | POS / NFC lab + EMV-shaped simulate exchange | Mock POS + Android NDEF |
 | Android emulator setup + APK scripts | `android:setup`, `android:apk` |
@@ -80,9 +80,21 @@ Sprint D  POS: HCE spike on Android device + processor sandbox token
 - [x] Receive / Home prefer derived addresses; `docs/CUSTODY.md`
 - [x] XMR hybrid wallets contract + mocks (managed / unmanaged / watch); `docs/MONERO_LINK.md`
 - [x] Bulk `/history` (granularity + symbols + from/to); live `/rates` cache for Convert
+- [x] Device SQLite + P0–P3 bootstrap (`docs/PERSISTENCE.md`); prototype map (`docs/PROTOTYPE_MAP.md`)
+- [x] User config: base currency (locale-aware USD/BTC/EUR/JPY), enabled currencies, Other assets — `docs/USER_CONFIG.md`
 - [ ] Sprint C: `EXPO_PUBLIC_USE_MOCK=false` staging cutover
 - [ ] Sprint D: HCE / VTS-MDES
 - [ ] CipherBank-src: expose `/v1/wallets*` over HTTP + history OHLC feeder
+- [ ] Optional: OS background fetch via `expo-task-manager` (beyond in-process idle+charging)
+
+### Local DB / bootstrap checklist
+
+- [x] `expo-sqlite` schema: wallets, prefs, rates_snapshot, market_ohlc, sync_meta
+- [x] Migrate `cb_local_wallets_v1` / `cb_user_prefs_v1` from AsyncStorage → SQLite
+- [x] Cold start runs **P2 only** (wallet index + prefs + held rates)
+- [x] Chart / Convert declare P1; POS declares P0
+- [x] JobQueue: single-flight per symbol; global concurrency 2
+- [x] P3 only when idle + charging; pause when active/unplugged
 
 ## Doc map (keep updated)
 
@@ -96,4 +108,7 @@ Sprint D  POS: HCE spike on Android device + processor sandbox token
 | `starter/docs/TESTING.md` | Web / Android / EAS matrix |
 | `starter/docs/CUSTODY.md` | On-device custody threat model |
 | `starter/docs/MONERO_LINK.md` | XMR hybrid wallets ↔ MoneroRPC / PriceCache |
+| `starter/docs/PROTOTYPE_MAP.md` | Prototype inventory + placement + build-out |
+| `starter/docs/PERSISTENCE.md` | SQLite schema + precedence + charging policy |
+| `starter/docs/USER_CONFIG.md` | Base currency, enabled currencies, wallet manifest |
 | This file | Phase roadmap + storage security |

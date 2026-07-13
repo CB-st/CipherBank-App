@@ -1,0 +1,34 @@
+{
+  "prefs": {
+    "defaultSendSpeed": "instant",
+    "coraEnabled": true
+  },
+  "recipients": [
+    {
+      "id": "maya",
+      "displayName": "Maya Chen",
+      "accountHolderName": "Maya Chen",
+      "bankName": "Chase",
+      "accountLast4": "4021",
+      "accountType": "checking",
+      "routingNumber": "021000021",
+      "rail": "ACH",
+      "handle": "maya@cipherbank.id",
+      "initials": "MC"
+    },
+    {
+      "id": "sunset",
+      "displayName": "Sunset Property Mgmt",
+      "accountHolderName": "Sunset Property Management LLC",
+      "bankName": "Wells Fargo",
+      "accountLast4": "5544",
+      "accountType": "checking",
+      "routingNumber": "121000248",
+      "rail": "ACH",
+      "handle": "sunset@property.pay",
+      "memo": "Rent",
+      "initials": "SP"
+    }
+  ],
+  "syncedAt": 1720900000000
+}

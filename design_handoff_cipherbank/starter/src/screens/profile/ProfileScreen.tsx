@@ -8,9 +8,12 @@ import { PressableScale } from '@/components/primitives/PressableScale';
 import { FadeIn } from '@/components/primitives/FadeIn';
 import { Icon } from '@/components/primitives/Icon';
 import { usePrefs } from '@/features/prefs/usePrefs';
-import { HOME_SECTION_LABELS, type HomeSection } from '@/features/prefs/prefs.types';
+import { HOME_SECTION_LABELS, BASE_CURRENCY_OPTIONS, type HomeSection } from '@/features/prefs/prefs.types';
+import { baseCurrencyLabel } from '@/features/prefs/localeCurrency';
+import { listAssets } from '@/features/assets/assetConfig';
 import { useVault } from '@/features/vault/useVault';
 import { exportMnemonic } from '@/features/vault/custody';
+import { useSession } from '@/features/session/useSession';
 import { useToast } from '@/components/primitives/Toast';
 import { useCora } from '@/features/cora/useCora';
 import { CoraAssistant } from '@/components/cora/CoraAssistant';
@@ -68,8 +71,12 @@ export function ProfileScreen({ navigation }: any) {
     setValuesHiddenOnLaunch,
     setDefaultSendSpeed,
     setAppearance,
+    setBaseCurrency,
+    toggleEnabledCurrency,
+    setPref,
   } = usePrefs();
   const { setEnabled: setCoraEnabled } = useCora();
+  const { lock } = useSession();
   const vault = useVault();
   const toast = useToast();
   const [posCardId, setPosCardId] = useState<string | null>(null);
@@ -79,9 +86,10 @@ export function ProfileScreen({ navigation }: any) {
   }, []);
 
   const revealPhrase = async () => {
+    // exportMnemonic always force-prompts OS biometrics / PIN before returning the phrase.
     const phrase = await exportMnemonic();
     if (!phrase) {
-      toast({ kind: 'error', title: 'Unlock cancelled', sub: 'Biometrics required on device.' });
+      toast({ kind: 'error', title: 'Unlock cancelled', sub: 'Biometrics or PIN required.' });
       return;
     }
     toast({ kind: 'ok', title: 'Phrase unlocked locally', sub: 'Never shared with CipherBank servers.' });
@@ -157,6 +165,72 @@ export function ProfileScreen({ navigation }: any) {
           </Card>
         </FadeIn>
 
+        <FadeIn delay={30}>
+          <Card style={{ paddingVertical: 4 }}>
+            <Text style={{ fontWeight: '800', fontSize: 13, fontFamily: font.body, paddingTop: 8, color: color.text }}>
+              Money display
+            </Text>
+            <Text style={{ fontSize: 12, color: color.textSubtle, fontFamily: font.body, marginBottom: 10 }}>
+              Portfolio total and hero chart use this unit.{' '}
+              {prefs.localeInferredBase && prefs.localeInferredBase === prefs.baseCurrency
+                ? 'Defaulted from your device locale.'
+                : ''}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+              {BASE_CURRENCY_OPTIONS.map((v) => (
+                <PressableScale
+                  key={v}
+                  onPress={() => setBaseCurrency(v)}
+                  style={{
+                    flexGrow: 1,
+                    minWidth: '45%',
+                    alignItems: 'center',
+                    paddingVertical: 11,
+                    borderRadius: 10,
+                    backgroundColor: prefs.baseCurrency === v ? color.gold : color.track,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontWeight: '800',
+                      fontSize: 13,
+                      fontFamily: font.body,
+                      color: prefs.baseCurrency === v ? color.ink : color.textSubtle,
+                    }}
+                  >
+                    {baseCurrencyLabel(v)}
+                  </Text>
+                </PressableScale>
+              ))}
+            </View>
+          </Card>
+        </FadeIn>
+
+        <FadeIn delay={35}>
+          <Card style={{ paddingVertical: 4 }}>
+            <Text style={{ fontWeight: '800', fontSize: 13, fontFamily: font.body, paddingTop: 8, color: color.text }}>
+              Currencies on Home
+            </Text>
+            <Text style={{ fontSize: 12, color: color.textSubtle, fontFamily: font.body, marginBottom: 6 }}>
+              Turn off to hide an asset from the main list. Hidden wallets stay on-device under Other assets.
+            </Text>
+            {listAssets({ enabledOnly: true })
+              .filter((a) => a.type !== 'security')
+              .map((a, i, arr) => {
+                const on = prefs.enabledCurrencies.includes(a.symbol);
+                return (
+                  <RowSwitch
+                    key={a.symbol}
+                    label={a.name + ' (' + a.symbol + ')'}
+                    sub={a.note}
+                    value={on}
+                    onChange={() => toggleEnabledCurrency(a.symbol)}
+                  />
+                );
+              })}
+          </Card>
+        </FadeIn>
+
         <FadeIn delay={40}>
           <Card style={{ paddingVertical: 4 }}>
             <Text style={{ fontWeight: '800', fontSize: 13, fontFamily: font.body, marginBottom: 4, paddingTop: 8, color: color.text }}>
@@ -206,7 +280,7 @@ export function ProfileScreen({ navigation }: any) {
 
         <FadeIn delay={80}>
           <Card style={{ paddingVertical: 4 }}>
-            <Text style={{ fontWeight: '800', fontSize: 13, fontFamily: font.body, paddingTop: 8 }}>Privacy</Text>
+            <Text style={{ fontWeight: '800', fontSize: 13, fontFamily: font.body, paddingTop: 8 }}>Privacy & lock</Text>
             <RowSwitch
               label="Hide balances on launch"
               sub="Start with values masked until you reveal them"
@@ -219,6 +293,42 @@ export function ProfileScreen({ navigation }: any) {
               value={prefs.coraEnabled}
               onChange={setCoraEnabled}
             />
+            <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: color.hairline }}>
+              <Text style={{ fontWeight: '700', fontSize: 14, fontFamily: font.body, marginBottom: 8, color: color.text }}>
+                Auto-lock after idle
+              </Text>
+              <Text style={{ fontSize: 12, color: color.textSubtle, fontFamily: font.body, marginBottom: 10 }}>
+                Locks the whole app (and clears the unlock session). Background always locks immediately.
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {([30, 60, 120, 300] as const).map((sec) => (
+                  <PressableScale
+                    key={sec}
+                    onPress={() => setPref('appLockIdleSec', sec)}
+                    style={{
+                      paddingVertical: 10,
+                      paddingHorizontal: 14,
+                      borderRadius: 10,
+                      backgroundColor: prefs.appLockIdleSec === sec ? color.gold : color.track,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontWeight: '800',
+                        fontSize: 12,
+                        fontFamily: font.body,
+                        color: prefs.appLockIdleSec === sec ? color.ink : color.textSubtle,
+                      }}
+                    >
+                      {sec < 60 ? sec + 's' : sec / 60 + 'm'}
+                    </Text>
+                  </PressableScale>
+                ))}
+              </View>
+            </View>
+            <View style={{ paddingVertical: 12 }}>
+              <Button label="Lock now" variant="ghost" onPress={() => lock()} />
+            </View>
             <View style={{ paddingVertical: 12 }}>
               <Text style={{ fontWeight: '700', fontSize: 14, fontFamily: font.body, marginBottom: 8 }}>
                 Default send speed

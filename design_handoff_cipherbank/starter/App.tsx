@@ -15,7 +15,9 @@ import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/spac
 import * as SplashScreen from 'expo-splash-screen';
 import { queryClient } from '@/lib/queryClient';
 import { connectStream } from '@/lib/socket';
+import { BootstrapProvider } from '@/features/bootstrap';
 import { SessionProvider } from '@/features/session/useSession';
+import { AppLockIdleSync } from '@/features/session/AppLockIdleSync';
 import { PrefsProvider } from '@/features/prefs/usePrefs';
 import { CoraProvider } from '@/features/cora/useCora';
 import { ToastProvider } from '@/components/primitives/Toast';
@@ -69,17 +71,20 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayout}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <SessionProvider>
-            <PrefsProvider>
-              <ThemeProvider>
-                <CoraProvider>
-                  <ToastProvider>
-                    <ThemedNavigation />
-                  </ToastProvider>
-                </CoraProvider>
-              </ThemeProvider>
-            </PrefsProvider>
-          </SessionProvider>
+          <BootstrapProvider>
+            <SessionProvider>
+              <PrefsProvider>
+                <AppLockIdleSync />
+                <ThemeProvider>
+                  <CoraProvider>
+                    <ToastProvider>
+                      <ThemedNavigation />
+                    </ToastProvider>
+                  </CoraProvider>
+                </ThemeProvider>
+              </PrefsProvider>
+            </SessionProvider>
+          </BootstrapProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

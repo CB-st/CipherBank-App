@@ -1,76 +1,64 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isMockApi, isSeedDemo } from '@/lib/runtimeFlags';
 
 /**
  * Platform-safe secret storage.
- * iOS/Android: Keychain / Keystore via expo-secure-store (WHEN_UNLOCKED_THIS_DEVICE_ONLY).
- * Web: SecureStore when available; otherwise AsyncStorage — weaker, never for production seed.
+ * Mock/emulator: AsyncStorage only (SecureStore round-trips are unreliable on AVD
+ * and caused empty vault / Incorrect PIN after seal).
+ * Production native: SecureStore with AsyncStorage mirror for resilience.
+ * AsyncStorage path is not production-grade for seed material.
  */
-const WEB_PREFIX = 'cb_secure_web:';
-
+const FALLBACK_PREFIX = 'cb_secure_fallback:';
+const MOCK = isMockApi() || isSeedDemo();
 const NATIVE_OPTIONS: SecureStore.SecureStoreOptions = {
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
 };
 
-async function webGet(key: string): Promise<string | null> {
-  return AsyncStorage.getItem(WEB_PREFIX + key);
+async function fallbackGet(key: string): Promise<string | null> {
+  return AsyncStorage.getItem(FALLBACK_PREFIX + key);
 }
-async function webSet(key: string, value: string): Promise<void> {
-  await AsyncStorage.setItem(WEB_PREFIX + key, value);
+async function fallbackSet(key: string, value: string): Promise<void> {
+  await AsyncStorage.setItem(FALLBACK_PREFIX + key, value);
 }
-async function webDel(key: string): Promise<void> {
-  await AsyncStorage.removeItem(WEB_PREFIX + key);
+async function fallbackDel(key: string): Promise<void> {
+  await AsyncStorage.removeItem(FALLBACK_PREFIX + key);
 }
 
-export async function localSecureGet(key: string): Promise<string | null> {
-  if (Platform.OS === 'web') {
-    try {
-      return (await SecureStore.getItemAsync(key)) ?? (await webGet(key));
-    } catch {
-      return webGet(key);
-    }
+async function secureGet(key: string): Promise<string | null> {
+  try {
+    const v = await SecureStore.getItemAsync(key, Platform.OS === 'ios' ? NATIVE_OPTIONS : undefined);
+    if (v != null && v !== '') return v;
+  } catch {
+    /* try without options */
   }
   try {
-    return await SecureStore.getItemAsync(key, NATIVE_OPTIONS);
+    const v = await SecureStore.getItemAsync(key);
+    if (v != null && v !== '') return v;
   } catch {
-    try {
-      return await SecureStore.getItemAsync(key);
-    } catch {
-      return null;
-    }
+    /* ignore */
   }
+  return null;
 }
 
-export async function localSecureSet(key: string, value: string): Promise<void> {
-  if (Platform.OS === 'web') {
+async function secureSet(key: string, value: string): Promise<boolean> {
+  try {
+    await SecureStore.setItemAsync(key, value, Platform.OS === 'ios' ? NATIVE_OPTIONS : undefined);
+    return true;
+  } catch {
     try {
       await SecureStore.setItemAsync(key, value);
-      return;
+      return true;
     } catch {
-      await webSet(key, value);
-      return;
+      return false;
     }
-  }
-  try {
-    await SecureStore.setItemAsync(key, value, NATIVE_OPTIONS);
-  } catch {
-    await SecureStore.setItemAsync(key, value);
   }
 }
 
-export async function localSecureDelete(key: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    try {
-      await SecureStore.deleteItemAsync(key);
-    } catch {
-      /* fall through */
-    }
-    await webDel(key);
-    return;
-  }
+async function secureDel(key: string): Promise<void> {
   try {
-    await SecureStore.deleteItemAsync(key, NATIVE_OPTIONS);
+    await SecureStore.deleteItemAsync(key, Platform.OS === 'ios' ? NATIVE_OPTIONS : undefined);
   } catch {
     try {
       await SecureStore.deleteItemAsync(key);
@@ -78,4 +66,27 @@ export async function localSecureDelete(key: string): Promise<void> {
       /* ignore */
     }
   }
+}
+
+export async function localSecureGet(key: string): Promise<string | null> {
+  if (MOCK) return fallbackGet(key);
+  return (await secureGet(key)) ?? fallbackGet(key);
+}
+
+export async function localSecureSet(key: string, value: string): Promise<void> {
+  if (MOCK) {
+    await fallbackSet(key, value);
+    return;
+  }
+  const wroteSecure = await secureSet(key, value);
+  try {
+    await fallbackSet(key, value);
+  } catch (e) {
+    if (!wroteSecure) throw e;
+  }
+}
+
+export async function localSecureDelete(key: string): Promise<void> {
+  if (!MOCK) await secureDel(key);
+  await fallbackDel(key);
 }

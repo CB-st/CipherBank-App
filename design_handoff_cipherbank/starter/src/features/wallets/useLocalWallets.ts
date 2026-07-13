@@ -3,13 +3,14 @@ import type { Holding, Portfolio, WalletAccount } from '@/features/portfolio/por
 import {
   addLocalWallet,
   deriveNextWallet,
+  ensurePrimaryWallet,
   loadLocalWallets,
   removeLocalWallet,
 } from './localWallets';
 
 const QK = ['localWallets'] as const;
 
-/** Merge AsyncStorage drafts into portfolio holdings (zero-balance slots until chain read). */
+/** Merge SQLite drafts into portfolio holdings (zero-balance slots until chain read). */
 export function mergeLocalWallets(portfolio: Portfolio, drafts: Awaited<ReturnType<typeof loadLocalWallets>>): Portfolio {
   if (!drafts.length) return portfolio;
   const holdings = portfolio.holdings.map((h) => {
@@ -85,10 +86,15 @@ export function useLocalWallets() {
     onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
   });
 
+  const ensurePrimary = useMutation({
+    mutationFn: (input: { symbol: string }) => ensurePrimaryWallet(input.symbol),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
+  });
+
   const remove = useMutation({
     mutationFn: removeLocalWallet,
     onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
   });
 
-  return { drafts: q.data ?? [], ready: q.isSuccess, add, deriveNext, remove };
+  return { drafts: q.data ?? [], ready: q.isSuccess, add, deriveNext, ensurePrimary, remove };
 }

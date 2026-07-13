@@ -2,22 +2,24 @@ import React, { useState } from 'react';
 import { View, Text, LayoutChangeEvent } from 'react-native';
 import { color, radius, font } from '@/theme';
 import { Skeleton } from '../primitives/Skeleton';
+import { StaleBadge } from '../primitives/StaleBadge';
 import { LineChart } from '../chart/LineChart';
-import { formatUSD } from '@/lib/money';
 import type { Point } from '../chart/chartMath';
 
 export function BalanceHero({
-  total,
+  totalLabel,
   change,
   series,
   up = true,
   hidden,
+  stale,
 }: {
-  total: number;
+  totalLabel: string;
   change: string;
   series?: Point[];
   up?: boolean;
   hidden?: boolean;
+  stale?: boolean;
 }) {
   const [chartW, setChartW] = useState(0);
 
@@ -31,6 +33,7 @@ export function BalanceHero({
       onLayout={onLayout}
       style={{ backgroundColor: color.deepPurple, borderRadius: radius.panel, padding: 20, overflow: 'hidden' }}
     >
+      <StaleBadge visible={stale && !hidden} />
       <Text style={{ color: color.onDarkSubtle, fontSize: 12, fontFamily: font.body }}>Total balance</Text>
       <Text
         style={{
@@ -42,7 +45,7 @@ export function BalanceHero({
           marginVertical: 6,
         }}
       >
-        {hidden ? '••••••' : formatUSD(total)}
+        {hidden ? '••••••' : totalLabel}
       </Text>
       <View
         style={{

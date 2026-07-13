@@ -2,10 +2,12 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import {
   DEFAULT_PREFS,
   type AppearancePref,
+  type BaseCurrency,
   type HomeSection,
   type SendSpeedPref,
   type UserPrefs,
 } from './prefs.types';
+import { normalizePrefs } from './localeCurrency';
 import { fetchRemotePrefs, loadLocalPrefs, pushRemotePrefs, saveLocalPrefs } from './prefs.store';
 
 interface PrefsCtx {
@@ -18,6 +20,8 @@ interface PrefsCtx {
   setValuesHiddenOnLaunch: (v: boolean) => void;
   setDefaultSendSpeed: (v: SendSpeedPref) => void;
   setAppearance: (v: AppearancePref) => void;
+  setBaseCurrency: (v: BaseCurrency) => void;
+  toggleEnabledCurrency: (symbol: string) => void;
 }
 
 const Ctx = createContext<PrefsCtx>({
@@ -30,6 +34,8 @@ const Ctx = createContext<PrefsCtx>({
   setValuesHiddenOnLaunch: () => {},
   setDefaultSendSpeed: () => {},
   setAppearance: () => {},
+  setBaseCurrency: () => {},
+  toggleEnabledCurrency: () => {},
 });
 
 export const usePrefs = () => useContext(Ctx);
@@ -47,12 +53,16 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
       setPrefs(local);
       try {
         const remote = await fetchRemotePrefs();
-        const merged = {
+        const merged = normalizePrefs({
           ...local,
           ...remote,
           homeOrder: remote.homeOrder?.length ? remote.homeOrder : local.homeOrder,
           homeVisible: { ...local.homeVisible, ...remote.homeVisible },
-        };
+          baseCurrency: remote.baseCurrency ?? local.baseCurrency,
+          enabledCurrencies: remote.enabledCurrencies?.length
+            ? remote.enabledCurrencies
+            : local.enabledCurrencies,
+        });
         setPrefs(merged);
         await saveLocalPrefs(merged);
       } catch {
@@ -106,6 +116,23 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
     [persist],
   );
 
+  const setBaseCurrency = useCallback(
+    (v: BaseCurrency) => setPref('baseCurrency', v),
+    [setPref],
+  );
+
+  const toggleEnabledCurrency = useCallback(
+    (symbol: string) => {
+      const sym = symbol.toUpperCase();
+      const cur = prefsRef.current;
+      const set = new Set(cur.enabledCurrencies.map((s) => s.toUpperCase()));
+      if (set.has(sym)) set.delete(sym);
+      else set.add(sym);
+      persist({ ...cur, enabledCurrencies: Array.from(set).sort() });
+    },
+    [persist],
+  );
+
   const value = useMemo<PrefsCtx>(
     () => ({
       prefs,
@@ -117,8 +144,10 @@ export function PrefsProvider({ children }: { children: React.ReactNode }) {
       setValuesHiddenOnLaunch: (v) => setPref('valuesHiddenOnLaunch', v),
       setDefaultSendSpeed: (v) => setPref('defaultSendSpeed', v),
       setAppearance: (v) => setPref('appearance', v),
+      setBaseCurrency,
+      toggleEnabledCurrency,
     }),
-    [prefs, ready, setPref, toggleSection, moveSection],
+    [prefs, ready, setPref, toggleSection, moveSection, setBaseCurrency, toggleEnabledCurrency],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

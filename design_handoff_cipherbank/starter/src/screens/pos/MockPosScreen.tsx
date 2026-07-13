@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TextInput } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { color, radius, font, shadow } from '@/theme';
 import { Header } from '@/components/chrome/Header';
 import { Card } from '@/components/primitives/Card';
@@ -16,6 +17,7 @@ import {
   type HardwareCard,
 } from '@/features/pos/hardwareCards';
 import { useVault } from '@/features/vault/useVault';
+import { useActivation } from '@/features/bootstrap';
 import { useToast } from '@/components/primitives/Toast';
 import { formatUSD } from '@/lib/money';
 import type { ExchangeStage } from '@/features/pos/nfcExchange';
@@ -74,12 +76,20 @@ export function MockPosScreen({ navigation }: any) {
   const vault = useVault();
   const toast = useToast();
   const pos = usePosPay();
+  const { setActivation } = useActivation();
   const [amount, setAmount] = useState('24.00');
   const [label, setLabel] = useState('Lab purchase');
   const [asset, setAsset] = useState('USD');
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [nfcHint, setNfcHint] = useState<string>('');
   const [ttlLeft, setTtlLeft] = useState(0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setActivation('nfc_pos');
+      return () => setActivation('shell');
+    }, [setActivation]),
+  );
 
   const cards = vault.cards as HardwareCard[];
   const labCard = useMemo(() => pickLabCard(cards, activeCardId), [cards, activeCardId]);

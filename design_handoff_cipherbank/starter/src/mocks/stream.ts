@@ -1,6 +1,10 @@
 import { queryClient } from '@/lib/queryClient';
 import type { Portfolio } from '@/features/portfolio/portfolio.types';
-import portfolioFixture from './fixtures/portfolio.json';
+import portfolioEmpty from './fixtures/portfolio.json';
+import portfolioDemo from './fixtures/portfolio.demo.json';
+import { isSeedDemo } from '@/lib/runtimeFlags';
+
+const portfolioFixture = (isSeedDemo() ? portfolioDemo : portfolioEmpty) as Portfolio;
 
 type StreamMsg =
   | { type: 'balance.update'; payload: Portfolio }
@@ -51,7 +55,7 @@ export function scheduleSettlement(
       });
     }
     // Push a refreshed portfolio snapshot after settle
-    emit({ type: 'balance.update', payload: portfolioFixture as Portfolio });
+    emit({ type: 'balance.update', payload: portfolioFixture });
   }, 1200);
 }
 

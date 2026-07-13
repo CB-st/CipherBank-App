@@ -19,6 +19,7 @@ Canonical shapes the **live API must return** so the Expo app can switch off moc
 | GET | `/assets` | `fixtures/assets.json` |
 | GET | `/rates` | `fixtures/rates.json` |
 | GET | `/recipients` | `fixtures/recipients.json` |
+| GET | `/account/bootstrap` | `fixtures/account-bootstrap.json` |
 | GET | `/activity` | `fixtures/activity.json` |
 | GET/PUT | `/prefs` | `fixtures/prefs.json` |
 | GET | `/vault/binaries` | `fixtures/vault-binaries.json` |
@@ -191,6 +192,10 @@ Documented only. Managed: server builds transfer. Unmanaged: client-side sign (o
 
 ## 4 · Recipients — `GET /recipients`
 
+Saved payees for Send / Pay. ACH bank rails include the fields an ODFI needs to originate a credit
+(name, routing, account type). Full account numbers stay on-device in SQLite `ach_recipients` — the
+API fixture only exposes `last4`.
+
 ```json
 {
   "recipients": [
@@ -198,17 +203,46 @@ Documented only. Managed: server builds transfer. Unmanaged: client-side sign (o
       "id": "maya",
       "name": "Maya Chen",
       "handle": "maya@cipherbank.id",
-      "bank": { "label": "Chase", "last4": "4021", "rail": "ACH" },
+      "bank": {
+        "label": "Chase",
+        "last4": "4021",
+        "rail": "ACH",
+        "routingNumber": "021000021",
+        "accountType": "checking"
+      },
       "initials": "MC"
-    },
-    {
-      "id": "sunset",
-      "name": "Sunset Property Mgmt",
-      "handle": "sunset@property.pay",
-      "memo": "Rent · due Jul 1",
-      "initials": "SP"
     }
   ]
+}
+```
+
+On-device table `ach_recipients`: `display_name`, `account_holder_name`, `routing_number`,
+`account_number`, `account_type` (`checking`|`savings`), `bank_name`, `account_last4`, `rail`,
+`handle`, `memo`, `initials`, timestamps.
+
+## 4b · Account bootstrap — `GET /account/bootstrap`
+
+Returning-user / new-install metadata pull. **Never** returns seed, PIN, or full account numbers
+(last4 + routing only). Client upserts into `ach_recipients` and merges prefs.
+
+```json
+{
+  "prefs": { "defaultSendSpeed": "instant", "coraEnabled": true },
+  "recipients": [
+    {
+      "id": "maya",
+      "displayName": "Maya Chen",
+      "accountHolderName": "Maya Chen",
+      "bankName": "Chase",
+      "accountLast4": "4021",
+      "accountType": "checking",
+      "routingNumber": "021000021",
+      "rail": "ACH",
+      "handle": "maya@cipherbank.id",
+      "initials": "MC"
+    }
+  ],
+  "syncedAt": 1720900000000
 }
 ```
 
@@ -253,11 +287,19 @@ Documented only. Managed: server builds transfer. Unmanaged: client-side sign (o
   "valuesHiddenOnLaunch": false,
   "coraEnabled": true,
   "defaultSendSpeed": "instant",
-  "appearance": "dark"
+  "appearance": "dark",
+  "baseCurrency": "USD",
+  "enabledCurrencies": ["BTC", "ETH", "USD"],
+  "localeInferredBase": "USD",
+  "appLockIdleSec": 60
 }
 ```
 
-`defaultSendSpeed`: `instant` | `ach`. `appearance`: `dark` (default) | `light`. Local AsyncStorage mirrors; `PUT` syncs cross-device.
+`defaultSendSpeed`: `instant` | `ach`. `appearance`: `dark` (default) | `light`.  
+`baseCurrency`: `USD` | `BTC` | `EUR` | `JPY` — portfolio display unit. On first device hydrate, infer from `expo-localization` when supported; user overrides in Profile.  
+`enabledCurrencies`: uppercase symbols visible on Home; disabled symbols move to **Other assets** (wallets remain on device).  
+`appLockIdleSec`: seconds of inactivity before the app shell locks (min 15). Background always locks immediately.  
+Local SQLite mirrors; `PUT` syncs cross-device.
 
 ---
 

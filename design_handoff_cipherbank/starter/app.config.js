@@ -24,7 +24,7 @@ export default ({ config }) => ({
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/icon.png',
+      foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#2B1E3E',
     },
     package: 'com.cipherbank.app',

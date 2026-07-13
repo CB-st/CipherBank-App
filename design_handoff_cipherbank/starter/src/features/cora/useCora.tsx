@@ -5,6 +5,13 @@ import { usePrefs } from '@/features/prefs/usePrefs';
 export const CORA_LINES: Record<string, string> = {
   home: "Rates move all day. Your privacy doesn't.",
   homeLoad: 'Pulling your balances. One sec — doing it properly.',
+  homeSetup: 'Fresh device. Want contacts from CipherBank, or add an ACH payee yourself?',
+  welcomeNew: "I'm Cora. Crypto, cash, and — soon — stocks as one balance. Let's set up this device.",
+  welcomeReturning:
+    'Same CipherBank account, new phone. Secure keys here first — then I pull your contacts and prefs. Seed stays on-device.',
+  setupAch: 'Bank ACH needs a name, routing number, and account. I store it only on this device.',
+  bootstrapPull: 'Pulling your CipherBank contacts and preferences. Never your seed.',
+  setupDone: 'Setup parked. Open Send whenever you are ready to add a payee.',
   convert: 'Locked-in rate. No spread games.',
   pay: 'Rent, paid partly in Dogecoin. Bold. Also completely fine.',
   send: "Instant. As it should've been all along.",

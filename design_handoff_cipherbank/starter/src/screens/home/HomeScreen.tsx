@@ -1,5 +1,6 @@
 import React, { useState, useEffect, type ReactNode } from 'react';
 import { View, Text, ScrollView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { color, shadow, font } from '@/theme';
 import { Header } from '@/components/chrome/Header';
 import { CoraAssistant } from '@/components/cora/CoraAssistant';
@@ -12,13 +13,16 @@ import { Icon, IconName } from '@/components/primitives/Icon';
 import { PressableScale } from '@/components/primitives/PressableScale';
 import { FadeIn } from '@/components/primitives/FadeIn';
 import { usePortfolio } from '@/features/portfolio/usePortfolio';
+import { useVisibleHoldings } from '@/features/portfolio/useVisibleHoldings';
 import { useHistory } from '@/features/history/useHistory';
+import { useHeldSymbols } from '@/features/wallets/useHeldSymbols';
+import { useActivation } from '@/features/bootstrap';
 import { useCora } from '@/features/cora/useCora';
 import { usePrefs } from '@/features/prefs/usePrefs';
-import { formatUSD } from '@/lib/money';
+import { useBaseCurrency } from '@/features/prefs/useBaseCurrency';
 import type { Range } from '@/components/chart/RangeToggle';
 import type { HomeSection } from '@/features/prefs/prefs.types';
-
+import { HomeSetupPrompt } from '@/components/home/HomeSetupPrompt';
 const QUICK: { label: string; icon: IconName; route: string; gold?: boolean }[] = [
   { label: 'Convert', icon: 'convert', route: 'Convert', gold: true },
   { label: 'Send', icon: 'send', route: 'Send' },
@@ -29,19 +33,40 @@ const QUICK: { label: string; icon: IconName; route: string; gold?: boolean }[] 
 export function HomeScreen({ navigation }: any) {
   const { data, isLoading, isError, refetch } = usePortfolio();
   const [range, setRange] = useState<Range>('1M');
-  const hist = useHistory(range, ['BTC', 'ETH']);
+  const heldSymbols = useHeldSymbols();
+  const hist = useHistory(range, heldSymbols);
+  const { setActivation } = useActivation();
   const { lineFor, enabled: coraOn } = useCora();
   const { prefs, ready } = usePrefs();
+  const base = useBaseCurrency();
   const [hidden, setHidden] = useState(false);
+
+  const { visible: visibleHoldings, hidden: hiddenHoldings } = useVisibleHoldings(
+    data?.holdings,
+    prefs.enabledCurrencies,
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setActivation('shell');
+      return () => {};
+    }, [setActivation]),
+  );
 
   useEffect(() => {
     if (ready) setHidden(prefs.valuesHiddenOnLaunch);
   }, [ready, prefs.valuesHiddenOnLaunch]);
 
-  const walletSeries = hist.data?.series.find((s) => s.symbol === 'WALLET')?.points;
+  const onRangeChange = (r: Range) => {
+    setActivation('chart');
+    setRange(r);
+  };
+
+  const walletSeries = base.convertSeries(hist.data?.series.find((s) => s.symbol === 'WALLET')?.points);
   const up = (data?.change24h.pct ?? 0) >= 0;
-  const assetCount = data?.holdings.length ?? 0;
-  const currencyCount = new Set(data?.holdings.map((h) => h.symbol) ?? []).size;
+  const assetCount = visibleHoldings.length + hiddenHoldings.length;
+  const currencyCount = new Set([...visibleHoldings, ...hiddenHoldings].map((h) => h.symbol)).size;
+  const chartStale = (hist.isFetching && !!hist.data) || base.ratesStale;
   const showCoraFooter = coraOn && prefs.homeVisible.cora;
 
   const section = (id: HomeSection): ReactNode => {
@@ -58,14 +83,15 @@ export function HomeScreen({ navigation }: any) {
         ) : (
           <>
             <BalanceHero
-              total={hidden ? 0 : data!.total}
+              totalLabel={base.formatTotal(data!.total)}
               hidden={hidden}
               up={up}
               series={walletSeries}
+              stale={chartStale}
               change={
                 hidden
                   ? '••••'
-                  : '▲ +' + formatUSD(data!.change24h.amount) + ' · ' + data!.change24h.pct + '% today'
+                  : base.formatChange(data!.change24h.amount, data!.change24h.pct)
               }
             />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: -4 }}>
@@ -118,9 +144,10 @@ export function HomeScreen({ navigation }: any) {
         return (
           <PerformanceCard
             series={(hist.data?.series ?? []).map((s) => ({ label: s.label, points: s.points }))}
-            loading={hist.isLoading}
+            loading={hist.isLoading && !hist.data}
             range={range}
-            onRange={setRange}
+            onRange={onRangeChange}
+            stale={chartStale}
           />
         );
       case 'assets':
@@ -135,7 +162,11 @@ export function HomeScreen({ navigation }: any) {
             {isLoading ? (
               <AssetList.Skeleton rows={4} />
             ) : isError ? null : (
-              <AssetList holdings={data!.holdings} hidden={hidden} />
+              <AssetList
+                holdings={visibleHoldings}
+                hiddenHoldings={hiddenHoldings}
+                hidden={hidden}
+              />
             )}
           </>
         );
@@ -149,6 +180,7 @@ export function HomeScreen({ navigation }: any) {
       <Header brand online rightIcon="bell" />
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 110, gap: 13 }} showsVerticalScrollIndicator={false}>
         <FadeIn>
+          <HomeSetupPrompt onNavigateSend={() => navigation.navigate('Send')} />
           {prefs.homeOrder.map((id) => {
             const node = section(id);
             if (!node) return null;

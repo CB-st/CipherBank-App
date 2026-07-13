@@ -11,6 +11,7 @@ import { Icon } from '@/components/primitives/Icon';
 import { AssetGlyph } from '@/components/money/AssetGlyph';
 import { FundingMixBar, MixSource } from '@/components/money/FundingMixBar';
 import { usePayMix } from '@/features/transfers/usePayMix';
+import { requireAuth } from '@/features/vault/requireAuth';
 import { useToast } from '@/components/primitives/Toast';
 import { useCora } from '@/features/cora/useCora';
 import { formatUSD } from '@/lib/money';
@@ -31,8 +32,13 @@ export function PayScreen({ navigation }: any) {
   const covered = useMemo(() => SOURCES.reduce((s, x) => s + x.value, 0), []);
   const ok = covered >= TOTAL;
 
-  const onPay = () => {
+  const onPay = async () => {
     if (!ok) return;
+    const authed = await requireAuth({ reason: 'payment', force: true });
+    if (!authed) {
+      toast({ kind: 'error', title: 'Payment locked', sub: 'Unlock cancelled — nothing moved.' });
+      return;
+    }
     toast({ kind: 'pending', title: 'Paying ' + formatUSD(TOTAL), sub: 'Mediating the exchange…' });
     pay.mutate(
       {

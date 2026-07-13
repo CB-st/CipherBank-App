@@ -12,6 +12,7 @@ import {
 } from './cryptoBox';
 import { clearPin, hasPin, setPin, verifyPin } from './pinStore';
 import { localSecureDelete, localSecureGet, localSecureSet } from './localSecure';
+import { isMockApi, isSeedDemo } from '@/lib/runtimeFlags';
 
 const BLOB_KEY = 'cb_custody_v2';
 const LEGACY_MNEMONIC_KEY = 'cb_custody_mnemonic';
@@ -28,11 +29,23 @@ let sessionExpiresAt = 0;
 let pendingMnemonic: string | null = null;
 
 let appStateSub: { remove: () => void } | null = null;
+/** True while LocalAuthentication / PIN gate is showing — OS UI flips AppState to inactive. */
+let authInProgress = 0;
+
+export function beginAuthGate(): void {
+  authInProgress += 1;
+}
+
+export function endAuthGate(): void {
+  authInProgress = Math.max(0, authInProgress - 1);
+}
 
 function ensureAppStateWatch() {
   if (appStateSub) return;
+  // Lock only on true background. `inactive` fires for biometric / device-PIN sheets
+  // and would clear the session mid-unlock.
   appStateSub = AppState.addEventListener('change', (state) => {
-    if (state !== 'active') lockLocalCustody();
+    if (state === 'background' && authInProgress === 0) lockLocalCustody();
   });
 }
 
@@ -42,9 +55,39 @@ function touchSession(mnemonic: string) {
   sessionExpiresAt = Date.now() + SESSION_TTL_MS;
 }
 
+export type UnlockOpts = {
+  pin?: string;
+  /** Skip biometric prompt (e.g. after PIN entry screen). */
+  skipBiometrics?: boolean;
+  /** Always re-prompt even if a session is live (payments, key export, POS present). */
+  force?: boolean;
+  /** Shown in the OS biometric dialog. */
+  promptMessage?: string;
+};
+
+type LockListener = () => void;
+const lockListeners = new Set<LockListener>();
+
+/** Session / UI layers subscribe so app shell locks when custody clears. */
+export function subscribeCustodyLock(listener: LockListener): () => void {
+  lockListeners.add(listener);
+  return () => lockListeners.delete(listener);
+}
+
+function notifyLocked() {
+  lockListeners.forEach((l) => {
+    try {
+      l();
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
 export function lockLocalCustody(): void {
   sessionMnemonic = null;
   sessionExpiresAt = 0;
+  notifyLocked();
 }
 
 export function getSessionMnemonic(): string | null {
@@ -54,6 +97,110 @@ export function getSessionMnemonic(): string | null {
     return null;
   }
   return sessionMnemonic;
+}
+
+async function authenticateDeviceOwner(promptMessage?: string): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  beginAuthGate();
+  try {
+    // SECRET = device PIN/pattern/password; BIOMETRIC_* = fingerprint/face.
+    // Do not require biometric enrollment — Android's BiometricPrompt with
+    // DEVICE_CREDENTIAL shows the system keypad when fingerprint isn't available.
+    const level = await LocalAuthentication.getEnrolledLevelAsync();
+    if (level < LocalAuthentication.SecurityLevel.SECRET) return false;
+
+    const res = await LocalAuthentication.authenticateAsync({
+      promptMessage: promptMessage ?? 'Unlock CipherBank',
+      cancelLabel: 'Cancel',
+      disableDeviceFallback: false,
+      fallbackLabel: 'Use device passcode',
+      requireConfirmation: false,
+      biometricsSecurityLevel: 'strong',
+    });
+    return res.success;
+  } catch {
+    return false;
+  } finally {
+    endAuthGate();
+  }
+}
+
+/** True when the OS can show fingerprint and/or the built-in device PIN/pattern UI. */
+export async function canUseDeviceOwnerAuth(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
+  try {
+    const level = await LocalAuthentication.getEnrolledLevelAsync();
+    return level >= LocalAuthentication.SecurityLevel.SECRET;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Unlock: OS fingerprint / device PIN first, else CipherBank app PIN.
+ * Decrypts into a short-lived session. Returns false if cancelled / wrong PIN.
+ */
+export async function unlockLocalCustody(opts: UnlockOpts = {}): Promise<boolean> {
+  if (opts.force) {
+    // Clear without notifying app-shell lock (we're mid step-up).
+    sessionMnemonic = null;
+    sessionExpiresAt = 0;
+  } else {
+    const existing = getSessionMnemonic();
+    if (existing) return true;
+  }
+
+  await migrateLegacyIfNeeded();
+  if (!(await hasLocalCustody())) return false;
+
+  let gateOk = false;
+  const prompt = opts.promptMessage ?? 'Unlock CipherBank';
+
+  if (!opts.skipBiometrics) {
+    const osOk = await authenticateDeviceOwner(prompt);
+    if (osOk) gateOk = true;
+  }
+
+  if (!gateOk) {
+    if (opts.pin) {
+      const pinSet = await hasPin();
+      if (!pinSet) {
+        gateOk = true;
+      } else {
+        const v = await verifyPin(opts.pin);
+        if (!v.ok) return false;
+        gateOk = true;
+      }
+    } else if (Platform.OS === 'web' || isMockApi()) {
+      const pinSet = await hasPin();
+      if (pinSet && !opts.pin) return false;
+      gateOk = !pinSet;
+    } else {
+      const pinSet = await hasPin();
+      if (!pinSet) {
+        gateOk = true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  if (!gateOk) return false;
+
+  const mnemonic = await readAndDecrypt();
+  if (!mnemonic) return false;
+  touchSession(mnemonic);
+  return true;
+}
+
+/** Force OS/biometric (or PIN) re-auth before exposing the phrase. */
+export async function exportMnemonic(): Promise<string | null> {
+  const ok = await unlockLocalCustody({
+    force: true,
+    promptMessage: 'Unlock to view recovery phrase',
+  });
+  if (!ok) return null;
+  return getSessionMnemonic();
 }
 
 export function setPendingMnemonic(phrase: string): void {
@@ -106,7 +253,8 @@ async function readAndDecrypt(): Promise<string | null> {
   if (!deviceSecret) return null;
   try {
     return decryptMnemonic(blob, deriveKeyFromDeviceSecret(deviceSecret, blob.salt));
-  } catch {
+  } catch (e) {
+    console.warn('[custody] decryptMnemonic failed', e);
     return null;
   }
 }
@@ -150,91 +298,6 @@ export async function sealPendingCustody(pin: string): Promise<void> {
   await createLocalCustody({ mnemonic, pin });
 }
 
-async function authenticateBiometrics(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
-  try {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    if (!hasHardware || !enrolled) return false;
-    const res = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Unlock CipherBank custody',
-      cancelLabel: 'Cancel',
-      disableDeviceFallback: false,
-    });
-    return res.success;
-  } catch {
-    return false;
-  }
-}
-
-export type UnlockOpts = {
-  pin?: string;
-  /** Skip biometric prompt (e.g. after PIN entry screen). */
-  skipBiometrics?: boolean;
-};
-
-/**
- * Unlock: biometrics first (when enrolled), else PIN.
- * Decrypts into a short-lived session. Returns false if cancelled / wrong PIN.
- */
-export async function unlockLocalCustody(opts: UnlockOpts = {}): Promise<boolean> {
-  const existing = getSessionMnemonic();
-  if (existing) return true;
-
-  await migrateLegacyIfNeeded();
-  if (!(await hasLocalCustody())) return false;
-
-  let gateOk = false;
-
-  if (!opts.skipBiometrics) {
-    const bio = await authenticateBiometrics();
-    if (bio) gateOk = true;
-  }
-
-  if (!gateOk) {
-    if (opts.pin) {
-      const pinSet = await hasPin();
-      if (!pinSet) {
-        gateOk = true;
-      } else {
-        const v = await verifyPin(opts.pin);
-        if (!v.ok) return false;
-        gateOk = true;
-      }
-    } else if (Platform.OS === 'web' || process.env.EXPO_PUBLIC_USE_MOCK === 'true') {
-      // Web / mock: allow unlock without PIN when no bio — still requires custody present.
-      // If a PIN is set, require it (caller must pass pin).
-      const pinSet = await hasPin();
-      if (pinSet && !opts.pin) return false;
-      gateOk = !pinSet;
-    } else {
-      // Native without bio: need PIN
-      const pinSet = await hasPin();
-      if (!pinSet) {
-        // No PIN and no bio — still allow decrypt (device-bound SecureStore only)
-        gateOk = true;
-      } else {
-        return false;
-      }
-    }
-  }
-
-  if (!gateOk) return false;
-
-  const mnemonic = await readAndDecrypt();
-  if (!mnemonic) return false;
-  touchSession(mnemonic);
-  return true;
-}
-
-export async function exportMnemonic(): Promise<string | null> {
-  const session = getSessionMnemonic();
-  if (session) return session;
-  const ok = await unlockLocalCustody();
-  if (!ok) return null;
-  return getSessionMnemonic();
-}
-
 export async function clearLocalCustody(): Promise<void> {
   lockLocalCustody();
   clearPendingMnemonic();
@@ -244,4 +307,43 @@ export async function clearLocalCustody(): Promise<void> {
   await localSecureDelete(DEVICE_KEY_LEGACY);
   await localSecureDelete(WALLET_FLAG);
   await clearPin();
+}
+
+/**
+ * Mock / emulator bootstrap: heal incomplete first-run state.
+ * Only runs when `isSeedDemo()` (lab). Clean installs never auto-create custody.
+ */
+export async function ensureDemoCustody(): Promise<void> {
+  if (!isSeedDemo()) return;
+
+  try {
+    await migrateLegacyIfNeeded();
+  } catch {
+    /* recreate below */
+  }
+
+  const existing = await readAndDecrypt();
+  lockLocalCustody();
+  if (existing && (await hasPin())) {
+    return;
+  }
+
+  // Incomplete first-run / Hermes polyfill failures left flag-only or undecryptable vaults.
+  await clearLocalCustody();
+  await createLocalCustody({ pin: '000000' });
+  lockLocalCustody();
+
+  if (!(await hasPin())) {
+    throw new Error('Demo custody failed to persist PIN');
+  }
+  const raw = await localSecureGet(BLOB_KEY);
+  const secret = await localSecureGet(DEVICE_SECRET_KEY);
+  if (!raw || !secret) {
+    throw new Error(`Demo custody missing sealed material (blob=${!!raw} secret=${!!secret})`);
+  }
+  const mnemonic = await readAndDecrypt();
+  lockLocalCustody();
+  if (!mnemonic) {
+    throw new Error('Demo custody decrypt returned empty');
+  }
 }

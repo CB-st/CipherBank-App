@@ -9,18 +9,31 @@ CipherBank Digital Teller keeps **self-custody keys on the device**. Server vaul
 | BIP39 mnemonic (ciphertext) | SecureStore `cb_custody_v2` | AES-256-GCM; `{ ciphertext, iv, salt, version, kdf }` |
 | Device secret (AES key material) | SecureStore `cb_device_secret_v2` | Random 32-byte secret; PBKDF2 → AES key with blob salt |
 | PIN | SecureStore `cb_pin_meta_v1` | Salted SHA-256 hash only; never plaintext |
-| Unlock session mnemonic | Process memory only | Cleared on background, explicit lock, or ~5 min TTL |
+| Unlock session mnemonic | Process memory only | Cleared on **background**, explicit lock, or ~5 min TTL. `inactive` (biometric sheets) does not clear. |
 | Wallet metadata (label, path, address, source, mode) | AsyncStorage `cb_local_wallets_v1` | Public data only — safe to back up / inspect |
 | Server binaries / card tokens | CipherBank API | Hybrid vault; unrelated to seed |
+
+### Emulator / mock notes
+
+- Hermes needs `crypto.getRandomValues` + `TextDecoder` polyfills (`index.js`).
+- Mock builds seal with a lighter PBKDF2 cost and store secrets in an AsyncStorage mirror (SecureStore round-trips on AVDs were unreliable).
+- Demo CipherBank PIN after heal: `000000` (fallback only — prefer Android fingerprint / device PIN).
 
 **Web fallback:** if SecureStore is unavailable, secrets may land in AsyncStorage under `cb_secure_web:*`. That path is **not production-grade** — treat web as demo only.
 
 ## Unlock model
 
-1. Biometrics (when hardware + enrollment exist), else PIN.
-2. Gate success → decrypt blob with device-secret-derived key → short-lived `sessionMnemonic`.
-3. Derivation (BIP84 BTC / BIP44 ETH) runs only while session is live.
-4. Lockout: 5 failed PIN attempts → exponential backoff stored with PIN meta.
+1. **App shell lock** — after onboarding, `RootNavigator` shows `UnlockScreen` until `session.unlocked`. Idle timeout (default 60s, Profile-configurable) and **`background` AppState** lock the shell and clear the mnemonic session. `inactive` is ignored (biometric / device-PIN sheets would otherwise re-lock mid-auth). An `authInProgress` counter also skips custody clear during OS prompts.
+2. **OS unlock first** — `LocalAuthentication.authenticateAsync` with device-credential fallback. Fingerprint/face when enrolled; otherwise Android’s built-in PIN/pattern/password keypad. CipherBank’s in-app 6-digit PIN is last-resort (web / no device lock / explicit fallback).
+3. Gate success → decrypt blob with device-secret-derived key → short-lived `sessionMnemonic` (~5 min TTL, cleared on lock).
+4. **Step-up (`requireAuth`)** — always re-prompt for:
+   - Payment / convert confirm
+   - POS authorize
+   - POS presentment (token handoff — anti-skimming)
+   - Reveal / export recovery phrase
+5. Lockout: 5 failed CipherBank PIN attempts → exponential backoff stored with PIN meta.
+
+See also `features/vault/requireAuth.ts`.
 
 ## Derivation (Sprint B)
 

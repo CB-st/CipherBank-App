@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { authorizePos, confirmPos, createPosSession } from './pos.api';
 import { mockTap, nfcIsSupported, nfcPresent } from './nfc';
 import { runSimulatedExchange, type ExchangeStage } from './nfcExchange';
-import { unlockLocalCustody } from '@/features/vault/custody';
+import { requireAuth } from '@/features/vault/requireAuth';
 import type { NfcPresentPayload, PosAuthorizeResult, PosSession } from './pos.types';
 import { requireTestCard, type HardwareCard, isHardwareTestCard } from './hardwareCards';
 
@@ -43,7 +43,7 @@ export function usePosPay() {
       }
 
       setPhase('unlocking');
-      const unlocked = await unlockLocalCustody();
+      const unlocked = await requireAuth({ reason: 'pos_authorize', force: true });
       if (!unlocked) {
         setPhase('error');
         setError('wallet_locked: unlock cancelled.');
@@ -84,6 +84,14 @@ export function usePosPay() {
 
   const presentMock = useCallback(async () => {
     if (!auth || !session) return;
+    // Anti-skimming: re-auth immediately before token leaves the device.
+    setPhase('unlocking');
+    const ok = await requireAuth({ reason: 'pos_present', force: true });
+    if (!ok) {
+      setPhase('presenting');
+      setError('presentment_locked: unlock cancelled before terminal handoff.');
+      return;
+    }
     const payload: NfcPresentPayload = {
       sessionId: session.sessionId,
       tokenRef: auth.presentment.tokenRef,
@@ -103,6 +111,13 @@ export function usePosPay() {
 
   const presentNfc = useCallback(async () => {
     if (!auth || !session) return;
+    setPhase('unlocking');
+    const ok = await requireAuth({ reason: 'pos_present', force: true });
+    if (!ok) {
+      setPhase('presenting');
+      setError('presentment_locked: unlock cancelled before NFC handoff.');
+      return;
+    }
     const payload: NfcPresentPayload = {
       sessionId: session.sessionId,
       tokenRef: auth.presentment.tokenRef,

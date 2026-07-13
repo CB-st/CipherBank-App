@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, Pressable } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { color, radius, shadow, font } from '@/theme';
 import { Header } from '@/components/chrome/Header';
 import { CoraBar } from '@/components/cora/CoraBar';
@@ -13,20 +14,33 @@ import { Icon } from '@/components/primitives/Icon';
 import { useQuoteLock } from '@/features/quotes/useQuoteLock';
 import { useConvert } from '@/features/convert/useConvert';
 import { useRatesCache, rateUsd } from '@/features/market/ratesCache';
+import { useActivation } from '@/features/bootstrap';
+import { usePrefs } from '@/features/prefs/usePrefs';
+import { requireAuth } from '@/features/vault/requireAuth';
 import { useToast } from '@/components/primitives/Toast';
 import { useCora } from '@/features/cora/useCora';
 import { formatUSD } from '@/lib/money';
 
 export function ConvertScreen({ navigation }: any) {
+  const { prefs } = usePrefs();
+  const defaultTo = prefs.baseCurrency === 'BTC' ? 'BTC' : prefs.baseCurrency;
   const [from, setFrom] = useState('BTC');
-  const [to, setTo] = useState('USD');
+  const [to, setTo] = useState(defaultTo);
   const [amount, setAmount] = useState('0.5');
   const [pick, setPick] = useState<null | 'from' | 'to'>(null);
   const rates = useRatesCache();
+  const { setActivation } = useActivation();
   const { quote, secondsLeft, expired } = useQuoteLock(from, to, amount);
   const convert = useConvert();
   const toast = useToast();
   const { lineFor } = useCora();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setActivation('convert');
+      return () => setActivation('shell');
+    }, [setActivation]),
+  );
 
   const cachedFrom = rateUsd(rates.data, from);
   const cachedTo = rateUsd(rates.data, to);
@@ -54,8 +68,13 @@ export function ConvertScreen({ navigation }: any) {
     setTo(from);
   };
 
-  const onConvert = () => {
+  const onConvert = async () => {
     if (!quote || expired) return;
+    const authed = await requireAuth({ reason: 'convert', force: true });
+    if (!authed) {
+      toast({ kind: 'error', title: 'Convert locked', sub: 'Unlock cancelled — nothing moved.' });
+      return;
+    }
     toast({
       kind: 'pending',
       title: 'Converting ' + amount + ' ' + from + ' → ' + to,

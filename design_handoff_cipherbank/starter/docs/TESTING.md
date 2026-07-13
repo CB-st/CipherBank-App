@@ -105,6 +105,24 @@ EXPO_PUBLIC_POS_REQUIRE_TEST_CARD=true
 - Host Card Emulation for arbitrary schemes is **not** available like Android; document product choice before investing in Apple Tap to Pay / Wallet
 - Build: `eas build -p ios --profile development` on Mac with credentials
 
+## Clean install vs lab seed
+
+| Mode | Env | Expect |
+|------|-----|--------|
+| **Clean OOTB** | `EXPO_PUBLIC_SEED_DEMO=false`, `EXPO_PUBLIC_MOCK_HAS_WALLET=false` | Welcome (Create / Set up this device); empty portfolio; no Maya/Jordan until setup or bootstrap |
+| **Lab seed** | `EXPO_PUBLIC_SEED_DEMO=true` (or legacy `MOCK_HAS_WALLET=true`) | Demo custody PIN `000000`, seeded ACH, rich `portfolio.demo.json` |
+
+`EXPO_PUBLIC_USE_MOCK=true` is fine either way (API stubs without fabricating a filled account in clean mode).
+
+Wipe SecureStore + SQLite on the emulator before verifying clean:
+
+```bash
+adb shell pm clear com.cipherbank.app
+# restart Metro after .env changes, then relaunch the app
+```
+
+After clear + clean env: land on Welcome → Create → empty Home with Cora setup prompt (Pull / Add ACH / Skip). Returning path: Welcome → Set up this device → after PIN, bootstrap pulls fixture contacts.
+
 ## POS API contract
 
 See [`src/mocks/POS_API.md`](../src/mocks/POS_API.md) for POS checklist.  

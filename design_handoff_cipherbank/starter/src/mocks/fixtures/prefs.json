@@ -10,5 +10,8 @@
   "valuesHiddenOnLaunch": false,
   "coraEnabled": true,
   "defaultSendSpeed": "instant",
-  "appearance": "dark"
+  "appearance": "dark",
+  "baseCurrency": "USD",
+  "enabledCurrencies": ["BTC", "ETH", "USD"],
+  "appLockIdleSec": 60
 }

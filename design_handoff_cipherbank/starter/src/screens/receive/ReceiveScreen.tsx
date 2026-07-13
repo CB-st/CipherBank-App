@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, Pressable, ScrollView, Share } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
+import { View, Text, Pressable, ScrollView, Share, TextInput } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { color, radius, font, shadow } from '@/theme';
 import { Header } from '@/components/chrome/Header';
 import { CoraBar } from '@/components/cora/CoraBar';
@@ -8,50 +8,119 @@ import { CoraAssistant } from '@/components/cora/CoraAssistant';
 import { AssetGlyph } from '@/components/money/AssetGlyph';
 import { Icon } from '@/components/primitives/Icon';
 import { PressableScale } from '@/components/primitives/PressableScale';
+import { Button } from '@/components/primitives/Button';
+import { QrCode } from '@/components/primitives/QrCode';
 import { useReceive } from '@/features/receive/useReceive';
 import { usePortfolio } from '@/features/portfolio/usePortfolio';
+import { useLocalWallets } from '@/features/wallets/useLocalWallets';
+import { usePrefs } from '@/features/prefs/usePrefs';
+import { buildPaymentUri, shortenAddress } from '@/features/wallets/paymentUri';
+import { canGenerateAddress } from '@/features/wallets/addressValidate';
 import { useCora } from '@/features/cora/useCora';
 import { useToast } from '@/components/primitives/Toast';
 import { listAssets } from '@/features/assets/assetConfig';
+import { useActivation } from '@/features/bootstrap';
+import { useFocusEffect } from '@react-navigation/native';
 
 export function ReceiveScreen({ navigation }: any) {
-  const [asset, setAsset] = useState('BTC');
+  const { prefs } = usePrefs();
+  const enabled = prefs.enabledCurrencies;
+  const catalog = listAssets().filter((a) => a.type !== 'security');
+  const primary = catalog.filter((a) => ['BTC', 'ETH', 'USD'].includes(a.symbol));
+  const more = catalog.filter((a) => !['BTC', 'ETH', 'USD'].includes(a.symbol));
+
+  const [asset, setAsset] = useState(enabled.includes('BTC') ? 'BTC' : enabled[0] ?? 'BTC');
   const [walletId, setWalletId] = useState<string | null>(null);
+  const [amount, setAmount] = useState('');
   const { data, isLoading } = useReceive(asset);
   const portfolio = usePortfolio();
+  const { drafts, deriveNext, ensurePrimary } = useLocalWallets();
+  const { setActivation } = useActivation();
   const { lineFor } = useCora();
   const toast = useToast();
-  const primary = listAssets().filter((a) => ['BTC', 'ETH', 'USD'].includes(a.symbol));
-  const more = listAssets().filter((a) => !['BTC', 'ETH', 'USD'].includes(a.symbol) && a.type !== 'security');
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setActivation('convert'); // P1 interactive — receive needs address/QR
+      return () => setActivation('shell');
+    }, [setActivation]),
+  );
 
   const wallets = useMemo(() => {
     const h = portfolio.data?.holdings.find((x) => x.symbol === asset);
-    return h?.wallets ?? [];
-  }, [portfolio.data, asset]);
+    const fromPortfolio = h?.wallets ?? [];
+    const fromDrafts = drafts.filter((d) => d.symbol === asset);
+    // Prefer drafts with addresses merged via portfolio; surface draft-only too
+    if (fromPortfolio.length) return fromPortfolio;
+    return fromDrafts.map((d) => ({
+      id: d.id,
+      label: d.label,
+      amount: '0',
+      usdValue: 0,
+      address: d.address,
+      derivationPath: d.derivationPath,
+      source: d.source,
+    }));
+  }, [portfolio.data, asset, drafts]);
 
   useEffect(() => {
     setWalletId(wallets[0]?.id ?? null);
   }, [asset, wallets]);
 
   const selected = wallets.find((w) => w.id === walletId) ?? wallets[0];
-  const handle = data?.handle ?? 'cora@cipherbank.id';
-  const address = selected?.address ?? data?.address ?? '';
-  const display =
-    selected?.label && address
-      ? selected.label + ' · ' + address.slice(0, 8) + '…'
-      : asset === 'BTC' && address
-        ? 'bc1q · ' + handle
-        : handle;
+  const address = (selected?.address ?? data?.address ?? '').trim();
+  const qrPayload = address
+    ? buildPaymentUri(asset, address, amount.trim() ? { amount: amount.trim() } : {})
+    : data?.uri ?? '';
+  const display = address ? shortenAddress(address, 12, 8) : data?.handle ?? '—';
+  const canDerive = canGenerateAddress(asset);
 
-  const onCopy = () => {
-    toast({ kind: 'ok', title: 'Copied', sub: address || display });
+  const onCopy = async () => {
+    const text = address || qrPayload || data?.handle || '';
+    if (!text) {
+      toast({ kind: 'error', title: 'Nothing to copy', sub: 'Generate or select a wallet first.' });
+      return;
+    }
+    await Clipboard.setStringAsync(text);
+    toast({ kind: 'ok', title: 'Copied', sub: shortenAddress(text, 14, 8) });
   };
 
   const onShare = async () => {
     try {
-      await Share.share({ message: address || data?.uri || handle });
+      await Share.share({ message: qrPayload || address || data?.uri || '' });
     } catch {
       toast({ kind: 'error', title: 'Share cancelled', sub: '' });
+    }
+  };
+
+  const onCreateWallet = () => {
+    if (!canDerive) {
+      toast({
+        kind: 'error',
+        title: 'Cannot derive here',
+        sub: asset === 'XMR' ? 'Use Home → Add wallet for Monero modes.' : 'Watch-only or fiat — paste on Home.',
+      });
+      return;
+    }
+    const hasLocal = drafts.some((d) => d.symbol === asset && d.source === 'local');
+    const onOk = (w: { id: string; address?: string; derivationPath?: string }) => {
+      setWalletId(w.id);
+      toast({
+        kind: 'ok',
+        title: 'Address ready',
+        sub: w.address ? shortenAddress(w.address) : w.derivationPath ?? 'Saved',
+      });
+    };
+    const onErr = () =>
+      toast({
+        kind: 'error',
+        title: 'Could not create wallet',
+        sub: 'Unlock custody (PIN / biometrics) and try again.',
+      });
+    if (hasLocal) {
+      deriveNext.mutate({ symbol: asset }, { onSuccess: onOk, onError: onErr });
+    } else {
+      ensurePrimary.mutate({ symbol: asset }, { onSuccess: onOk, onError: onErr });
     }
   };
 
@@ -166,26 +235,43 @@ export function ReceiveScreen({ navigation }: any) {
 
         <View style={{ backgroundColor: color.deepPurple, borderRadius: radius.panel, padding: 22, alignItems: 'center' }}>
           <Text style={{ color: color.onDarkSubtle, fontSize: 13, marginBottom: 14, fontFamily: font.body }}>
-            {isLoading ? 'Loading…' : 'Scan to send ' + asset + (selected ? ' · ' + selected.label : '')}
+            {isLoading && !address
+              ? 'Loading…'
+              : address
+                ? 'Scan to send ' + asset + (selected ? ' · ' + selected.label : '')
+                : 'No receive address yet'}
           </Text>
-          <View
-            style={{
-              backgroundColor: '#fff',
-              width: 172,
-              height: 172,
-              borderRadius: 18,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Svg width={132} height={132} viewBox="0 0 132 132">
-              <Rect width={132} height={132} fill="#fff" />
-              <Rect x={8} y={8} width={36} height={36} fill="none" stroke={color.ink} strokeWidth={8} />
-              <Rect x={88} y={8} width={36} height={36} fill="none" stroke={color.ink} strokeWidth={8} />
-              <Rect x={8} y={88} width={36} height={36} fill="none" stroke={color.ink} strokeWidth={8} />
-              <Rect x={56} y={56} width={20} height={20} rx={4} fill="none" stroke={color.violet} strokeWidth={4} />
-            </Svg>
-          </View>
+
+          {address ? (
+            <QrCode value={qrPayload} size={172} />
+          ) : (
+            <View
+              style={{
+                width: 172,
+                height: 172,
+                borderRadius: 18,
+                backgroundColor: '#fff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 16,
+                gap: 10,
+              }}
+            >
+              <Text style={{ textAlign: 'center', fontSize: 12, color: color.textMuted, fontFamily: font.body }}>
+                {canDerive
+                  ? 'Derive a new address from your on-device seed to show a QR.'
+                  : 'Add a wallet on Home, or use your CipherBank handle for fiat.'}
+              </Text>
+              {canDerive ? (
+                <Button
+                  label="Create address"
+                  busy={deriveNext.isPending || ensurePrimary.isPending}
+                  onPress={onCreateWallet}
+                />
+              ) : null}
+            </View>
+          )}
+
           <Pressable
             onPress={onCopy}
             style={{
@@ -200,30 +286,84 @@ export function ReceiveScreen({ navigation }: any) {
               alignSelf: 'stretch',
             }}
           >
-            <Text style={{ flex: 1, fontFamily: font.mono, fontSize: 12, color: '#E9E4F2' }} numberOfLines={1}>
-              {display}
+            <Text style={{ flex: 1, fontFamily: font.mono, fontSize: 12, color: '#E9E4F2' }} numberOfLines={2}>
+              {address || display}
             </Text>
             <Icon name="copy" size={16} color={color.gold} strokeWidth={2.2} />
           </Pressable>
+
+          {selected?.derivationPath ? (
+            <Text style={{ marginTop: 8, fontFamily: font.mono, fontSize: 10, color: color.onDarkMuted }}>
+              {selected.derivationPath}
+            </Text>
+          ) : null}
         </View>
 
+        {address && asset !== 'USD' && asset !== 'EUR' && asset !== 'JPY' ? (
+          <View style={[{ backgroundColor: color.surface, borderRadius: radius.card, padding: 14, gap: 8 }, shadow.card]}>
+            <Text style={{ fontWeight: '700', fontSize: 13, fontFamily: font.body, color: color.text }}>
+              Request amount (optional)
+            </Text>
+            <TextInput
+              value={amount}
+              onChangeText={setAmount}
+              placeholder={'Amount in ' + asset}
+              placeholderTextColor={color.textSubtle}
+              keyboardType="decimal-pad"
+              style={{
+                backgroundColor: color.track,
+                borderRadius: radius.button,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                color: color.text,
+                fontFamily: font.mono,
+                fontSize: 14,
+              }}
+            />
+            <Text style={{ fontSize: 11, color: color.textSubtle, fontFamily: font.body }}>
+              Updates the QR to a payment URI. Leave blank for address-only.
+            </Text>
+          </View>
+        ) : null}
+
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Pressable
-            style={{
-              flex: 1,
-              backgroundColor: color.surface,
-              borderRadius: radius.button,
-              paddingVertical: 13,
-              alignItems: 'center',
-              flexDirection: 'row',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-            onPress={() => toast({ kind: 'pending', title: 'Request amount', sub: 'Coming in a follow-up polish pass' })}
-          >
-            <Icon name="request" size={16} color={color.text} />
-            <Text style={{ fontWeight: '700', fontSize: 14, fontFamily: font.body, color: color.text }}>Request amount</Text>
-          </Pressable>
+          {canDerive ? (
+            <Pressable
+              style={{
+                flex: 1,
+                backgroundColor: color.surface,
+                borderRadius: radius.button,
+                paddingVertical: 13,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+              onPress={onCreateWallet}
+            >
+              <Icon name="plus" size={16} color={color.text} />
+              <Text style={{ fontWeight: '700', fontSize: 14, fontFamily: font.body, color: color.text }}>
+                New address
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={{
+                flex: 1,
+                backgroundColor: color.surface,
+                borderRadius: radius.button,
+                paddingVertical: 13,
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+              onPress={() => toast({ kind: 'pending', title: 'Request amount', sub: 'Set amount above for crypto QR.' })}
+            >
+              <Icon name="request" size={16} color={color.text} />
+              <Text style={{ fontWeight: '700', fontSize: 14, fontFamily: font.body, color: color.text }}>Request</Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={onShare}
             style={{

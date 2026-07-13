@@ -1,12 +1,24 @@
 import React from 'react';
-import { View, Text, Image, ScrollView } from 'react-native';
+import { View, Text, Image, ScrollView, Pressable } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { color, font } from '@/theme';
 import { Button } from '@/components/primitives/Button';
 import { useCora } from '@/features/cora/useCora';
+import { beginSetupPath } from '@/features/account/setupState';
 
 export function WelcomeScreen({ navigation }: any) {
-  const { source } = useCora();
+  const { source, lineFor } = useCora();
+
+  const startNew = async () => {
+    await beginSetupPath('new');
+    navigation.navigate('Keys');
+  };
+
+  const startReturning = async () => {
+    await beginSetupPath('returning');
+    navigation.navigate('Keys');
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: color.deepPurple }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 26, paddingTop: 70, paddingBottom: 40 }}>
@@ -82,8 +94,7 @@ export function WelcomeScreen({ navigation }: any) {
           Money in any form.{'\n'}Yours to keep.
         </Text>
         <Text style={{ fontSize: 15, color: color.onDarkMuted, lineHeight: 23, marginVertical: 12, fontFamily: font.body }}>
-          I'm Cora. I move your crypto, cash, and — soon — stocks as one balance. Serious about your money. Dry about
-          most other things.
+          {lineFor('welcomeNew')}
         </Text>
 
         <View style={{ flexDirection: 'row', gap: 6, marginBottom: 20 }}>
@@ -94,10 +105,26 @@ export function WelcomeScreen({ navigation }: any) {
             />
           ))}
         </View>
-        <Button label="Create my account" onPress={() => navigation.navigate('Keys')} />
-        <Text style={{ textAlign: 'center', fontSize: 13, color: color.onDarkSubtle, marginTop: 14, fontFamily: font.body }}>
-          Already have one? <Text style={{ color: color.gold, fontWeight: '700' }}>Sign in</Text>
-        </Text>
+        <Button label="Create my account" onPress={startNew} />
+        <Pressable onPress={startReturning} style={{ marginTop: 16, paddingVertical: 8 }}>
+          <Text style={{ textAlign: 'center', fontSize: 13, color: color.onDarkSubtle, fontFamily: font.body }}>
+            Already use CipherBank?{' '}
+            <Text style={{ color: color.gold, fontWeight: '700' }}>Set up this device</Text>
+          </Text>
+          <Text
+            style={{
+              textAlign: 'center',
+              fontSize: 12,
+              color: color.onDarkSubtle,
+              fontFamily: font.body,
+              marginTop: 6,
+              lineHeight: 17,
+              paddingHorizontal: 12,
+            }}
+          >
+            {lineFor('welcomeReturning')}
+          </Text>
+        </Pressable>
       </ScrollView>
     </View>
   );

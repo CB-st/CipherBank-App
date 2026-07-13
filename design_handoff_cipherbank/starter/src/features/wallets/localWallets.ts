@@ -1,22 +1,23 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  deleteWallet,
+  listWallets,
+  replaceAllWallets,
+  upsertWallet,
+} from '@/features/persist/walletsRepo';
 import type { LocalWalletDraft, WalletMode, WalletSource, WalletSyncStatus } from '@/features/portfolio/portfolio.types';
 import { deriveAddress, isDerivableSymbol } from './derive';
 import { getSessionMnemonic, unlockLocalCustody } from '@/features/vault/custody';
 
-const KEY = 'cb_local_wallets_v1';
-
 export async function loadLocalWallets(): Promise<LocalWalletDraft[]> {
   try {
-    const raw = await AsyncStorage.getItem(KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as LocalWalletDraft[];
+    return await listWallets();
   } catch {
     return [];
   }
 }
 
 export async function saveLocalWallets(list: LocalWalletDraft[]): Promise<void> {
-  await AsyncStorage.setItem(KEY, JSON.stringify(list));
+  await replaceAllWallets(list);
 }
 
 export async function addLocalWallet(input: {
@@ -31,7 +32,6 @@ export async function addLocalWallet(input: {
   viewKeyFingerprint?: string;
   id?: string;
 }): Promise<LocalWalletDraft> {
-  const list = await loadLocalWallets();
   const draft: LocalWalletDraft = {
     id: input.id ?? 'wal_local_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
     symbol: input.symbol.toUpperCase(),
@@ -45,14 +45,12 @@ export async function addLocalWallet(input: {
     viewKeyFingerprint: input.viewKeyFingerprint,
     createdAt: Date.now(),
   };
-  list.push(draft);
-  await saveLocalWallets(list);
+  await upsertWallet(draft);
   return draft;
 }
 
 export async function removeLocalWallet(id: string): Promise<void> {
-  const list = await loadLocalWallets();
-  await saveLocalWallets(list.filter((w) => w.id !== id));
+  await deleteWallet(id);
 }
 
 async function requireMnemonic(): Promise<string> {
@@ -66,17 +64,20 @@ async function requireMnemonic(): Promise<string> {
   return m;
 }
 
-/** Ensure Primary (index 0) BTC + ETH derived metadata exist. */
+/** Ensure Primary (index 0) wallets exist for core derivable coins. */
 export async function ensureDerivedWallets(mnemonic?: string): Promise<LocalWalletDraft[]> {
   const phrase = mnemonic ?? (await requireMnemonic());
   const list = await loadLocalWallets();
   const created: LocalWalletDraft[] = [];
 
-  for (const symbol of ['BTC', 'ETH'] as const) {
+  for (const symbol of ['BTC', 'ETH', 'LTC', 'DOGE'] as const) {
+    if (!isDerivableSymbol(symbol)) continue;
     const hasPrimary = list.some(
       (w) => w.symbol === symbol && w.source === 'local' && (w.accountIndex === 0 || w.derivationPath?.endsWith('/0')),
     );
     if (hasPrimary) continue;
+    // Only auto-create BTC/ETH on first unlock; LTC/DOGE on explicit ensure via symbol list
+    if (symbol === 'LTC' || symbol === 'DOGE') continue;
     const derived = deriveAddress(symbol, phrase, 0);
     if (!derived) continue;
     const draft = await addLocalWallet({
@@ -91,6 +92,28 @@ export async function ensureDerivedWallets(mnemonic?: string): Promise<LocalWall
     list.push(draft);
   }
   return created;
+}
+
+/** Create or return Primary (index 0) for a single derivable symbol. */
+export async function ensurePrimaryWallet(symbol: string, mnemonic?: string): Promise<LocalWalletDraft> {
+  if (!isDerivableSymbol(symbol)) throw new Error('Symbol not supported for derivation');
+  const phrase = mnemonic ?? (await requireMnemonic());
+  const list = await loadLocalWallets();
+  const sym = symbol.toUpperCase();
+  const existing = list.find(
+    (w) => w.symbol === sym && w.source === 'local' && (w.accountIndex === 0 || w.derivationPath?.endsWith('/0')),
+  );
+  if (existing?.address) return existing;
+  const derived = deriveAddress(sym, phrase, 0);
+  if (!derived) throw new Error('Derive failed');
+  return addLocalWallet({
+    symbol: sym,
+    label: 'Primary',
+    address: derived.address,
+    derivationPath: derived.path,
+    accountIndex: derived.accountIndex,
+    source: 'local',
+  });
 }
 
 /** Derive next account index for BTC/ETH and persist public metadata. */

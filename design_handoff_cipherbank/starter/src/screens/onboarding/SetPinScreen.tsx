@@ -7,6 +7,9 @@ import { useToast } from '@/components/primitives/Toast';
 import { useSession } from '@/features/session/useSession';
 import { sealPendingCustody } from '@/features/vault/custody';
 import { ensureDerivedWallets } from '@/features/wallets/localWallets';
+import { getSetupPath } from '@/features/account/setupState';
+import { pullAccountBootstrap } from '@/features/account/bootstrapAccount';
+import { beginSetupPath } from '@/features/account/setupState';
 
 export function SetPinScreen({ navigation }: any) {
   const toast = useToast();
@@ -28,8 +31,39 @@ export function SetPinScreen({ navigation }: any) {
     try {
       await sealPendingCustody(pin);
       await ensureDerivedWallets();
+
+      let path = await getSetupPath();
+      if (!path) {
+        await beginSetupPath('new');
+        path = 'new';
+      }
+
+      if (path === 'returning') {
+        toast({
+          kind: 'pending',
+          title: 'Pulling CipherBank account…',
+          sub: 'Contacts and preferences — never your seed.',
+        });
+        try {
+          const boot = await pullAccountBootstrap();
+          const n = boot.recipients?.length ?? 0;
+          toast({
+            kind: 'ok',
+            title: n ? `Restored ${n} contacts` : 'Vault secured',
+            sub: n ? 'Account metadata synced to this device.' : 'No cloud contacts yet — add them from Home.',
+          });
+        } catch {
+          toast({
+            kind: 'ok',
+            title: 'Vault secured',
+            sub: 'Could not reach CipherBank yet — pull contacts from Home when online.',
+          });
+        }
+      } else {
+        toast({ kind: 'ok', title: 'Vault secured', sub: 'PIN + on-device encryption enabled.' });
+      }
+
       await finishCustodySetup();
-      toast({ kind: 'ok', title: 'Vault secured', sub: 'PIN + on-device encryption enabled.' });
     } catch {
       toast({ kind: 'error', title: 'Could not seal keys', sub: 'Try again from Secure keys.' });
       navigation.navigate('Keys');
