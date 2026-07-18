@@ -98,7 +98,7 @@
                                                    Margin="0,10,0,0" />
                                             <Label Grid.Row="2"
                                                    Text="{Binding FormattedBalance}"
-                                                   FontFamily="InterMedium"
+                                                   FontFamily="ManropeSemiBold"
                                                    FontSize="13"
                                                    TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
 
@@ -111,7 +111,7 @@
                                                 </VerticalStackLayout>
                                                 <Label Grid.Column="1"
                                                        Text="{Binding FormattedPercentChange}"
-                                                       FontFamily="InterSemiBold"
+                                                       FontFamily="ManropeSemiBold"
                                                        FontSize="13"
                                                        VerticalOptions="End"
                                                        TextColor="{Binding IsPriceUp, Converter={StaticResource PriceChangeColorConverter}}" />
@@ -223,7 +223,7 @@
                                                                  VerticalOptions="Center"
                                                                  Spacing="2">
                                                 <Label Text="{Binding TypeDescription}"
-                                                       FontFamily="InterMedium"
+                                                       FontFamily="ManropeSemiBold"
                                                        FontSize="14" />
                                                 <Label Text="{Binding Timestamp, StringFormat='{0:MMM dd, yyyy HH:mm}'}"
                                                        FontSize="11"

@@ -21,9 +21,9 @@ public partial class HomeViewModel : ObservableObject
 {
     private static readonly Color[] SeriesColors =
     {
-        Color.FromArgb("#2B59FF"),
-        Color.FromArgb("#22C55E"),
-        Color.FromArgb("#F59E0B"),
+        Color.FromArgb("#F2C14E"),
+        Color.FromArgb("#7B4DFF"),
+        Color.FromArgb("#3FA46A"),
     };
 
     private readonly IProductApi _api;

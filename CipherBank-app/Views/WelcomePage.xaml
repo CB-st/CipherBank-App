@@ -3,14 +3,56 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CipherBank_app.Views.WelcomePage"
              Title="Welcome"
-             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource DeepPurple}">
   <ScrollView>
-    <VerticalStackLayout Padding="20" Spacing="14">
+    <VerticalStackLayout Padding="24,48,24,32" Spacing="18">
 
-      <Label Text="CipherBank" FontFamily="SpaceGroteskBold" FontSize="32" TextColor="{AppThemeBinding Light=#111827, Dark=#F8FAFC}" />
-      <Label Text="{Binding CoraLine}" FontFamily="InterRegular" FontSize="15" TextColor="{AppThemeBinding Light=#4B5563, Dark=#94A3B8}" />
-      <Button Text="Create wallet" Command="{Binding CreateWalletCommand}" AutomationId="WelcomeCreateWalletButton" />
-      <Button Text="I already have a wallet" Command="{Binding ReturningCommand}" AutomationId="WelcomeReturningButton" />
+      <Label FontFamily="SpaceGroteskBold" FontSize="28" HorizontalOptions="Start">
+        <Label.FormattedText>
+          <FormattedString>
+            <Span Text="cipher" FontFamily="SpaceGroteskBold" TextColor="{StaticResource OnDark}" />
+            <Span Text="bank" FontFamily="SpaceGroteskBold" TextColor="{StaticResource Gold}" />
+          </FormattedString>
+        </Label.FormattedText>
+      </Label>
+
+      <Border BackgroundColor="{StaticResource WelcomeFrame}"
+              StrokeThickness="0"
+              StrokeShape="RoundRectangle 24"
+              HeightRequest="220"
+              Margin="0,8,0,0">
+        <Label Text="CORA"
+               FontFamily="SpaceGroteskBold"
+               FontSize="48"
+               TextColor="{StaticResource WelcomePlaceholder}"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"
+               Opacity="0.55" />
+      </Border>
+
+      <Label Style="{StaticResource CoraEyebrowGold}"
+             Text="CORA BYTE · YOUR DIGITAL TELLER"
+             Margin="0,8,0,0" />
+
+      <Label Text="Banking that feels like a conversation."
+             FontFamily="SpaceGroteskBold"
+             FontSize="30"
+             TextColor="{StaticResource OnDark}"
+             LineBreakMode="WordWrap" />
+
+      <Label Text="{Binding CoraLine}"
+             Style="{StaticResource CoraMuted}"
+             TextColor="{StaticResource OnDarkMuted}" />
+
+      <Button Text="Create wallet"
+              Command="{Binding CreateWalletCommand}"
+              AutomationId="WelcomeCreateWalletButton"
+              Margin="0,12,0,0" />
+      <Button Text="I already have a wallet"
+              Command="{Binding ReturningCommand}"
+              Style="{StaticResource GhostButton}"
+              AutomationId="WelcomeReturningButton" />
 
     </VerticalStackLayout>
   </ScrollView>

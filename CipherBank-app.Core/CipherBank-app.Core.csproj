@@ -9,8 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
-    <!-- Override transitive 2.1.11 (NU1903 / GHSA-2m69-gcr7-jv3q) -->
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
+    <!-- Android-native override (NU1903 on 2.1.11); do not reference desktop SQLitePCLRaw.lib.e_sqlite3 -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.12" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
     <PackageReference Include="NBitcoin" Version="8.0.13" />

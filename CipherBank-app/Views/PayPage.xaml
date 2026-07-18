@@ -4,10 +4,10 @@
              xmlns:controls="clr-namespace:CipherBank_app.Controls"
              x:Class="CipherBank_app.Views.PayPage"
              Title="Pay"
-             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
   <ScrollView>
     <VerticalStackLayout Padding="20" Spacing="14">
-      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
       <controls:GlassCard>
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="10">
@@ -15,7 +15,7 @@
             <Entry Text="{Binding UsdShare}" Placeholder="USD %" Keyboard="Numeric" />
             <Entry Text="{Binding CryptoShare}" Placeholder="Crypto %" Keyboard="Numeric" />
             <Entry Text="{Binding CryptoSymbol}" Placeholder="Crypto symbol" />
-            <Label Text="{Binding MixError}" TextColor="IndianRed" />
+            <Label Text="{Binding MixError}" TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
             <controls:FundingMixBar x:Name="MixBar" Total="{Binding MixTotal}" />
             <Button Text="Pay" Command="{Binding PayCommand}" />
           </VerticalStackLayout>

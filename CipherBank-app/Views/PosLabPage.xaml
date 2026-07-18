@@ -4,10 +4,10 @@
              xmlns:controls="clr-namespace:CipherBank_app.Controls"
              x:Class="CipherBank_app.Views.PosLabPage"
              Title="POS Lab"
-             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
   <ScrollView>
     <VerticalStackLayout Padding="20" Spacing="14">
-      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
 
       <controls:GlassCard>
         <controls:GlassCard.Body>
@@ -22,8 +22,8 @@
               <Label Text="{Binding Last4, StringFormat='•••• {0}'}" />
               <Label Text="{Binding TtlText}" />
             </HorizontalStackLayout>
-            <Label Text="{Binding PlatformHint}" FontSize="12" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
-            <Label Text="{Binding PresentError}" TextColor="IndianRed" />
+            <Label Text="{Binding PlatformHint}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+            <Label Text="{Binding PresentError}" TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
             <Button Text="Start session" Command="{Binding StartSessionCommand}" AutomationId="PosStartSessionButton" />
             <Button Text="Present NFC" Command="{Binding PresentNfcCommand}" IsEnabled="{Binding NfcSupported}" AutomationId="PosPresentNfcButton" />
             <Button Text="Simulate exchange" Command="{Binding SimulateCommand}" AutomationId="PosSimulateButton" />
@@ -39,7 +39,7 @@
               <CollectionView.ItemTemplate>
                 <DataTemplate>
                   <Border StrokeThickness="1" Padding="10,8" Margin="0,4"
-                          Stroke="{AppThemeBinding Light=#CBD5E1, Dark=#334155}">
+                          Stroke="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}">
                     <Grid ColumnDefinitions="*,Auto">
                       <Label Text="{Binding Text}" />
                       <Label Grid.Column="1" Text="{Binding StatusLabel}" FontSize="11" />

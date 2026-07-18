@@ -4,7 +4,7 @@
              xmlns:controls="clr-namespace:CipherBank_app.Controls"
              x:Class="CipherBank_app.Views.AddWalletPage"
              Title="Add wallet"
-             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
   <ScrollView>
     <VerticalStackLayout Padding="20" Spacing="14">
       <controls:GlassCard>

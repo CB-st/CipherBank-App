@@ -12,7 +12,7 @@ public sealed class SparklineDrawable : IDrawable
 {
     public IReadOnlyList<ChartPoint> Series { get; set; } = Array.Empty<ChartPoint>();
 
-    public Color Stroke { get; set; } = Colors.DodgerBlue;
+    public Color Stroke { get; set; } = Color.FromArgb("#F2C14E");
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {

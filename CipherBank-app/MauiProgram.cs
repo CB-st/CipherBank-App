@@ -34,9 +34,16 @@ public static class MauiProgram
                 fonts.AddFont("SpaceGrotesk-Medium.ttf", "SpaceGroteskMedium");
                 fonts.AddFont("SpaceGrotesk-SemiBold.ttf", "SpaceGroteskSemiBold");
                 fonts.AddFont("SpaceGrotesk-Bold.ttf", "SpaceGroteskBold");
-                fonts.AddFont("Inter-Regular.ttf", "InterRegular");
-                fonts.AddFont("Inter-Medium.ttf", "InterMedium");
-                fonts.AddFont("Inter-SemiBold.ttf", "InterSemiBold");
+                fonts.AddFont("Manrope-Regular.ttf", "ManropeRegular");
+                fonts.AddFont("Manrope-SemiBold.ttf", "ManropeSemiBold");
+                fonts.AddFont("Manrope-Bold.ttf", "ManropeBold");
+                fonts.AddFont("Manrope-ExtraBold.ttf", "ManropeExtraBold");
+                fonts.AddFont("SpaceMono-Regular.ttf", "SpaceMonoRegular");
+                fonts.AddFont("SpaceMono-Bold.ttf", "SpaceMonoBold");
+                // Legacy aliases (Inter → Manrope) so older XAML keeps resolving
+                fonts.AddFont("Manrope-Regular.ttf", "InterRegular");
+                fonts.AddFont("Manrope-SemiBold.ttf", "InterMedium");
+                fonts.AddFont("Manrope-SemiBold.ttf", "InterSemiBold");
             })
             .ConfigureMauiHandlers(handlers =>
             {

@@ -27,4 +27,7 @@ public static class Routes
     public const string Wallet = "//WalletPage";
     public const string Purchase = "//PurchasePage";
     public const string Settings = "//SettingsPage";
+
+    public static string PurchaseWithSymbol(string symbol)
+        => $"{Purchase}?symbol={Uri.EscapeDataString(symbol)}";
 }

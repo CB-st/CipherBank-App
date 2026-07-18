@@ -143,7 +143,7 @@ public sealed class HttpProductApi : IProductApi
 
         using var refreshReq = new HttpRequestMessage(HttpMethod.Post, SessionRefreshPath)
         {
-            Content = JsonContent.Create(new { REFRESH_TOKEN = stored.Value.Refresh }),
+            Content = JsonContent.Create(new { REFRESH_TOKEN = stored.Refresh }),
         };
         using var refreshResp = await _http.SendAsync(refreshReq, ct).ConfigureAwait(false);
         refreshResp.EnsureSuccessStatusCode();

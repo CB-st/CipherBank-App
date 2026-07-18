@@ -3,13 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CipherBank_app.Views.KeysPage"
              Title="Recovery phrase"
-             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
   <ScrollView>
     <VerticalStackLayout Padding="20" Spacing="14">
 
       <Label Text="Write these words down. They never leave this device." />
-      <Border StrokeThickness="1" Padding="16" Stroke="{AppThemeBinding Light=#CBD5E1, Dark=#334155}">
-        <Label Text="{Binding Mnemonic}" FontFamily="InterSemiBold" FontSize="18" LineBreakMode="WordWrap" />
+      <Border StrokeThickness="1" Padding="16" Stroke="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}">
+        <Label Text="{Binding Mnemonic}" FontFamily="ManropeSemiBold" FontSize="18" LineBreakMode="WordWrap" />
       </Border>
       <Button Text="Copy" Command="{Binding CopyCommand}" />
       <Button Text="I wrote them down" Command="{Binding ContinueCommand}" />

@@ -14,7 +14,7 @@ public sealed class ChartSeries
 
     public IReadOnlyList<ChartPoint> Points { get; set; } = Array.Empty<ChartPoint>();
 
-    public Color Stroke { get; set; } = Colors.DodgerBlue;
+    public Color Stroke { get; set; } = Color.FromArgb("#F2C14E");
 }
 
 /// <summary>Multi-series % change overlay (Cora CompareChart).</summary>
@@ -22,10 +22,10 @@ public sealed class CompareChartDrawable : IDrawable
 {
     private static readonly Color[] DefaultColors =
     {
-        Color.FromArgb("#2B59FF"),
-        Color.FromArgb("#22C55E"),
-        Color.FromArgb("#F59E0B"),
-        Color.FromArgb("#EC4899"),
+        Color.FromArgb("#F2C14E"),
+        Color.FromArgb("#7B4DFF"),
+        Color.FromArgb("#3FA46A"),
+        Color.FromArgb("#C0574B"),
     };
 
     public IReadOnlyList<ChartSeries> Series { get; set; } = Array.Empty<ChartSeries>();

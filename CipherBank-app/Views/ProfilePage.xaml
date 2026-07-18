@@ -4,10 +4,10 @@
              xmlns:controls="clr-namespace:CipherBank_app.Controls"
              x:Class="CipherBank_app.Views.ProfilePage"
              Title="Profile"
-             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
   <ScrollView>
     <VerticalStackLayout Padding="20" Spacing="14">
-      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
 
       <controls:GlassCard>
         <controls:GlassCard.Body>
@@ -56,7 +56,7 @@
             </CollectionView>
             <Entry Text="{Binding RevealPin}" IsPassword="True" Keyboard="Numeric" Placeholder="PIN to reveal mnemonic" />
             <Button Text="Reveal mnemonic" Command="{Binding RevealMnemonicCommand}" />
-            <Label Text="{Binding MnemonicReveal}" LineBreakMode="WordWrap" FontFamily="InterMedium" />
+            <Label Text="{Binding MnemonicReveal}" LineBreakMode="WordWrap" FontFamily="ManropeSemiBold" />
           </VerticalStackLayout>
         </controls:GlassCard.Body>
       </controls:GlassCard>

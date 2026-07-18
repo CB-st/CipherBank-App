@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug-friendly defaults: trust system CAs; allow local cleartext for lab API. -->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">localhost</domain>
+    <domain includeSubdomains="true">10.0.2.2</domain>
+  </domain-config>
+
+  <domain-config>
+    <domain includeSubdomains="true">api.sandbox.cipherbank.money</domain>
+    <domain includeSubdomains="true">api.cipherbank.money</domain>
+    <domain includeSubdomains="true">api.dev.cipherbank.money</domain>
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </domain-config>
+</network-security-config>
