@@ -17,7 +17,3 @@ npm-debug.*
 android/
 ios/
 .env
-
-.*.sw?
-*.swp
-*.swo

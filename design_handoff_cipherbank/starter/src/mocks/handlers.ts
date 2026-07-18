@@ -58,9 +58,41 @@ function parsePath(path: string): { pathname: string; query: URLSearchParams } {
   return { pathname, query: new URLSearchParams(qs ?? '') };
 }
 
+/** Resolve USD price from fixture using app ticker or public currency code. */
 function rateFor(symbol: string): number {
-  const row = rates.rates.find((r) => r.symbol === symbol);
+  const u = String(symbol ?? '').toUpperCase();
+  const aliases: Record<string, string> = {
+    BITCOIN: 'BTC',
+    MONERO: 'XMR',
+    ETHEREUM: 'ETH',
+    LITECOIN: 'LTC',
+    DOGECOIN: 'DOGE',
+  };
+  const ticker = aliases[u] ?? u;
+  const row = rates.rates.find((r) => r.symbol === ticker);
   return row?.usd ?? 1;
+}
+
+function publicCurrenciesFromFixture(): string[] {
+  const aliases: Record<string, string> = {
+    BTC: 'BITCOIN',
+    XMR: 'MONERO',
+    ETH: 'ETHEREUM',
+    LTC: 'LITECOIN',
+    DOGE: 'DOGECOIN',
+    USD: 'USD',
+    EUR: 'EUR',
+    JPY: 'JPY',
+  };
+  return rates.rates.map((r) => aliases[r.symbol] ?? r.symbol);
+}
+
+function requireJsonBodyFields(b: Record<string, unknown>, fields: string[]) {
+  for (const f of fields) {
+    if (b[f] === undefined || b[f] === null) {
+      throw new MockApiError(417, 'invalid_request', `Missing or invalid field: ${f}`);
+    }
+  }
 }
 
 function rejectMnemonicLeak(body?: unknown) {
@@ -223,6 +255,53 @@ async function handlePost(path: string, body?: unknown): Promise<unknown> {
   const { pathname } = parsePath(path);
   const b = (body ?? {}) as Record<string, any>;
 
+  // ── CipherBank public API (CB_InitialAPIRef.html) — SCREAMING_SNAKE ──
+  if (pathname === '/test') {
+    return {};
+  }
+
+  if (pathname === '/currencies') {
+    return { CURRENCIES: publicCurrenciesFromFixture() };
+  }
+
+  if (pathname === '/iquote') {
+    requireJsonBodyFields(b, ['INPUT_AMOUNT', 'INPUT_CURRENCY', 'OUTPUT_CURRENCY']);
+    const inputAmount = Number(b.INPUT_AMOUNT);
+    const inputCur = String(b.INPUT_CURRENCY).toUpperCase();
+    const outputCur = String(b.OUTPUT_CURRENCY).toUpperCase();
+    if (!Number.isFinite(inputAmount)) {
+      throw new MockApiError(417, 'invalid_request', 'INPUT_AMOUNT must be a number');
+    }
+    const fromUsd = rateFor(inputCur);
+    const toUsd = rateFor(outputCur);
+    const outputAmount = toUsd === 0 ? 0 : (inputAmount * fromUsd) / toUsd;
+    return {
+      INPUT_AMOUNT: inputAmount,
+      INPUT_CURRENCY: inputCur,
+      OUTPUT_AMOUNT: outputAmount,
+      OUTPUT_CURRENCY: outputCur,
+    };
+  }
+
+  if (pathname === '/quote') {
+    requireJsonBodyFields(b, ['INPUT_CURRENCY', 'OUTPUT_AMOUNT', 'OUTPUT_CURRENCY']);
+    const outputAmount = Number(b.OUTPUT_AMOUNT);
+    const inputCur = String(b.INPUT_CURRENCY).toUpperCase();
+    const outputCur = String(b.OUTPUT_CURRENCY).toUpperCase();
+    if (!Number.isFinite(outputAmount)) {
+      throw new MockApiError(417, 'invalid_request', 'OUTPUT_AMOUNT must be a number');
+    }
+    const fromUsd = rateFor(inputCur);
+    const toUsd = rateFor(outputCur);
+    const inputAmount = fromUsd === 0 ? 0 : (outputAmount * toUsd) / fromUsd;
+    return {
+      INPUT_AMOUNT: inputAmount,
+      INPUT_CURRENCY: inputCur,
+      OUTPUT_AMOUNT: outputAmount,
+      OUTPUT_CURRENCY: outputCur,
+    };
+  }
+
   if (pathname === '/session') {
     return {
       token: 'mock_token_' + Date.now(),
@@ -240,15 +319,19 @@ async function handlePost(path: string, body?: unknown): Promise<unknown> {
     };
   }
 
+  /**
+   * Legacy product `/quotes` — prefer public POST `/iquote`.
+   * Still accepted for older callers; same PriceCache math.
+   */
   if (pathname === '/quotes') {
     quoteSeq += 1;
-    const from = String(b.from ?? 'BTC');
-    const to = String(b.to ?? 'USD');
-    const amount = String(b.amount ?? '0');
+    const from = String(b.from ?? b.INPUT_CURRENCY ?? 'BTC');
+    const to = String(b.to ?? b.OUTPUT_CURRENCY ?? 'USD');
+    const amount = Number(b.amount ?? b.INPUT_AMOUNT ?? 0);
     const fromUsd = rateFor(from);
     const toUsd = rateFor(to);
     const rate = toUsd === 0 ? 0 : fromUsd / toUsd;
-    const amountOut = String(Number(amount) * rate);
+    const amountOut = String(amount * rate);
     return {
       quoteId: `q_${Date.now()}_${quoteSeq}`,
       from,

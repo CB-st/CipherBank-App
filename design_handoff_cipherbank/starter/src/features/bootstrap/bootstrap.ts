@@ -4,8 +4,8 @@ import { listWallets, heldSymbolsFromWallets } from '@/features/persist/walletsR
 import { loadPrefs } from '@/features/persist/prefsRepo';
 import { getRatesSnapshot, upsertRatesSnapshot, setSyncMeta } from '@/features/persist/marketRepo';
 import { seedAchRecipientsIfEmpty } from '@/features/persist/recipientsRepo';
-import { RATES_QUERY_KEY, type RatesSnapshot } from '@/features/market/ratesCache';
-import { api } from '@/lib/apiClient';
+import { RATES_QUERY_KEY } from '@/features/market/ratesCache';
+import { fetchRatesViaPublicApi } from '@/features/market/publicMarket.api';
 
 export type BootstrapResult = {
   walletCount: number;
@@ -34,7 +34,7 @@ export async function runP2Bootstrap(): Promise<BootstrapResult> {
   let rates = await getRatesSnapshot(held.length ? held : undefined);
   if (!rates.length && held.length) {
     try {
-      const snap = await api.get<RatesSnapshot>('/rates');
+      const snap = await fetchRatesViaPublicApi();
       const filtered = snap.rates.filter((r) => held.includes(r.symbol.toUpperCase()));
       if (filtered.length) {
         await upsertRatesSnapshot(filtered);

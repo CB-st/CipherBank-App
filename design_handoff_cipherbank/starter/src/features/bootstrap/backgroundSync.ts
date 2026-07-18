@@ -9,8 +9,7 @@ import {
   setSyncMeta,
   getSyncMeta,
 } from '@/features/persist/marketRepo';
-import { api } from '@/lib/apiClient';
-import type { RatesSnapshot } from '@/features/market/ratesCache';
+import { fetchRatesViaPublicApi } from '@/features/market/publicMarket.api';
 import { getHistoryBulk, type HistoryResponse } from '@/features/history/history.api';
 
 /** Quiet period after last P0/P1 before P3 may run. */
@@ -56,7 +55,7 @@ function enqueueP3Jobs() {
     priority: 3,
     run: async () => {
       const held = await heldSymbolsFromWallets();
-      const snap = await api.get<RatesSnapshot>('/rates');
+      const snap = await fetchRatesViaPublicApi();
       const rows = held.length
         ? snap.rates.filter((r) => held.includes(r.symbol.toUpperCase()))
         : snap.rates.slice(0, 8);

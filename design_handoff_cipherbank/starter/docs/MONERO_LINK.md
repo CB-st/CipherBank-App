@@ -47,16 +47,20 @@ Transport notes (CipherBank-src `agents/adapters/monero_rpc.md`): JSON-RPC POST 
 
 ## Market data
 
-| App | CipherBank-src |
-|-----|----------------|
-| `GET /rates` (live cache) | PriceCache → HTTP `/quote` · `/iquote` |
-| `POST /quotes` | Same; normalize `XMR` ↔ `MONERO`, `USD` ↔ `USD` |
-| `GET /history` bulk | **Not implemented** in CipherBank-src — needs OHLC feeder or exchange history adapter |
+Authoritative public wire format: [`PUBLIC_API.md`](./PUBLIC_API.md) · [`CB_InitialAPIRef.html`](./CB_InitialAPIRef.html).
+
+| App | CipherBank public API |
+|-----|------------------------|
+| Rates cache / P2–P3 | `POST /currencies` + `POST /iquote` (1 → USD) |
+| Convert input amount | `POST /iquote` `{ INPUT_AMOUNT, INPUT_CURRENCY, OUTPUT_CURRENCY }` |
+| Convert reverse | `POST /quote` `{ INPUT_CURRENCY, OUTPUT_AMOUNT, OUTPUT_CURRENCY }` |
+| `GET /history` bulk | **Not implemented** in CipherBank-src — needs OHLC feeder |
+| ~~`GET /rates`~~ / ~~`POST /quotes`~~ | Deprecated app conveniences |
 
 ## Currency code alias
 
-| App symbol | Backend `Currency` / exchange |
-|------------|-------------------------------|
+| App symbol | Public API / backend `Currency` |
+|------------|----------------------------------|
 | `XMR` | `MONERO` · Coinbase `XMR` · Kraken `XXMRZ` |
 | `BTC` | `BITCOIN` |
 | `USD` | `USD` |

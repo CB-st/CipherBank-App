@@ -1,21 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/apiClient';
+import {
+  fetchRatesViaPublicApi,
+  type RateRow,
+  type RatesSnapshot,
+} from '@/features/market/publicMarket.api';
 
-export type RateRow = { symbol: string; usd: number; change24h: number };
-
-export type RatesSnapshot = {
-  rates: RateRow[];
-  generatedAt?: number;
-  ttlMs?: number;
-};
+export type { RateRow, RatesSnapshot };
 
 export const RATES_QUERY_KEY = ['rates'] as const;
 
-/** Live price cache — Convert / Home should prefer this over ad-hoc fixtures. */
+/**
+ * Live price cache from CipherBank public API
+ * (POST /currencies + POST /iquote → USD), not legacy GET /rates.
+ */
 export function useRatesCache() {
   return useQuery({
     queryKey: RATES_QUERY_KEY,
-    queryFn: () => api.get<RatesSnapshot>('/rates'),
+    queryFn: () => fetchRatesViaPublicApi(),
     staleTime: 10_000,
     refetchInterval: 15_000,
   });

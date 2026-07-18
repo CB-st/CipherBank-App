@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>CipherBank Public API</title>
+	<style>
+		:root {
+			color-scheme: light dark;
+			--paper: #F7F5F2;
+			--ink: #111318;
+			--plum: #2B1E3E;
+			--gold: #F2C14E;
+			--violet: #7B4DFF;
+			--muted: #5d5965;
+			--line: #d8d2dc;
+			--panel: #ffffff;
+		}
+		* { box-sizing: border-box; }
+		html { scroll-behavior: smooth; }
+		body {
+			margin: 0;
+			background: var(--paper);
+			color: var(--ink);
+			font: 1rem/1.6 ui-sans-serif, system-ui, sans-serif;
+		}
+		a { color: #5b2ed1; text-underline-offset: .18em; }
+		a:focus-visible { outline: .2rem solid var(--gold); outline-offset: .2rem; }
+		header {
+			background: var(--plum);
+			color: #F7F5F2;
+			padding: 3rem max(1.25rem, calc((100% - 72rem) / 2));
+		}
+		header p { max-width: 48rem; }
+		header a { color: var(--gold); }
+		.layout {
+			display: grid;
+			grid-template-columns: minmax(13rem, 18rem) minmax(0, 1fr);
+			gap: 2rem;
+			max-width: 72rem;
+			margin: 0 auto;
+			padding: 2rem 1.25rem 4rem;
+		}
+		nav {
+			align-self: start;
+			position: sticky;
+			top: 1rem;
+			border-left: .3rem solid var(--violet);
+			padding: .5rem 1rem;
+		}
+		nav ul { list-style: none; margin: 0; padding: 0; }
+		nav li + li { margin-top: .45rem; }
+		main { min-width: 0; }
+		.endpoint {
+			background: var(--panel);
+			border: 1px solid var(--line);
+			border-radius: .65rem;
+			box-shadow: 0 .2rem 1rem rgb(43 30 62 / 8%);
+			margin-bottom: 1.5rem;
+			padding: 1.5rem;
+		}
+		.endpoint:target { outline: .2rem solid var(--gold); outline-offset: .2rem; }
+		.representation-grid {
+			display: grid;
+			gap: 1rem;
+			grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+		}
+		.representation-card {
+			border: 1px solid var(--line);
+			border-radius: .5rem;
+			padding: 1rem;
+		}
+		.representation-card h3 { margin-top: 0; }
+		.representation-card dl {
+			display: grid;
+			gap: .35rem .75rem;
+			grid-template-columns: max-content minmax(0, 1fr);
+			margin-bottom: 0;
+		}
+		.representation-card dt { color: var(--muted); font-weight: 700; }
+		.representation-card dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+		.route {
+			align-items: center;
+			display: flex;
+			flex-wrap: wrap;
+			gap: .65rem;
+		}
+		.method {
+			background: var(--violet);
+			border-radius: .3rem;
+			color: #fff;
+			font-size: .78rem;
+			font-weight: 800;
+			letter-spacing: .06em;
+			padding: .2rem .55rem;
+		}
+		code {
+			background: #ece7f1;
+			border-radius: .25rem;
+			color: var(--plum);
+			padding: .08rem .3rem;
+		}
+		pre {
+			background: #2B1E3E;
+			border-radius: .4rem;
+			color: #F7F5F2;
+			overflow-x: auto;
+			padding: 1rem;
+		}
+		pre code { background: transparent; color: inherit; padding: 0; }
+		table { border-collapse: collapse; width: 100%; }
+		th, td { border-bottom: 1px solid var(--line); padding: .55rem; text-align: left; }
+		th { color: var(--plum); }
+		.type { color: var(--muted); white-space: nowrap; }
+		.empty { color: var(--muted); font-style: italic; }
+		footer { border-top: 1px solid var(--line); padding: 1.5rem; text-align: center; }
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--paper: #111318;
+				--ink: #F7F5F2;
+				--plum: #21172f;
+				--muted: #c4bdca;
+				--line: #51475d;
+				--panel: #1a1c22;
+			}
+			a { color: #a98cff; }
+			code { background: #2B1E3E; color: #F7F5F2; }
+			th, .representation-card h3 { color: var(--gold); }
+		}
+		@media (max-width: 44rem) {
+			.layout { display: block; }
+			nav { position: static; margin-bottom: 2rem; }
+			.endpoint { padding: 1rem; }
+		}
+		@media print {
+			:root { --paper: #fff; --ink: #000; --panel: #fff; --line: #aaa; }
+			body { font-size: 10pt; }
+			header { background: none; color: #000; padding: 0 0 1rem; }
+			header a, a { color: #000; }
+			.layout { display: block; max-width: none; padding: 0; }
+			nav { display: none; }
+			.endpoint { break-inside: avoid; box-shadow: none; }
+			.method { border: 1px solid #000; color: #000; background: none; }
+			footer { display: none; }
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<h1>CipherBank Public API</h1>
+		<p>HTTP 1.1 JSON endpoints generated directly from the runtime route and payload contracts.</p>
+		<p><a href="/docs/openapi.json">Download the raw OpenAPI specification</a></p>
+	</header>
+	<div class="layout">
+		<nav aria-label="Endpoint navigation">
+			<h2>Endpoints</h2>
+			<ul>
+				<li><a href="#json-runtime">JSON runtime</a></li>
+			
+				<li><a href="#postCurrencies"><span aria-hidden="true">POST</span> /currencies</a></li>
+			
+				<li><a href="#postIquote"><span aria-hidden="true">POST</span> /iquote</a></li>
+			
+				<li><a href="#postQuote"><span aria-hidden="true">POST</span> /quote</a></li>
+			
+				<li><a href="#postTest"><span aria-hidden="true">POST</span> /test</a></li>
+			
+			</ul>
+		</nav>
+		<main id="main">
+			<section class="endpoint" id="json-runtime" aria-labelledby="json-runtime-title">
+				<h2 id="json-runtime-title">JSON value representations</h2>
+				<p>Field types below use these JSON representations and limits.</p>
+				<div class="representation-grid">
+					<section class="representation-card" aria-labelledby="representation-int64">
+						<h3 id="representation-int64">integer (int64)</h3>
+						<dl>
+							<dt>Minimum</dt><dd><code>-9223372036854775808</code></dd>
+							<dt>Maximum</dt><dd><code>9223372036854775807</code></dd>
+						</dl>
+					</section>
+					<section class="representation-card" aria-labelledby="representation-uint64">
+						<h3 id="representation-uint64">integer (uint64)</h3>
+						<dl>
+							<dt>Minimum</dt><dd><code>0</code></dd>
+							<dt>Maximum</dt><dd><code>18446744073709551615</code></dd>
+						</dl>
+					</section>
+					<section class="representation-card" aria-labelledby="representation-double">
+						<h3 id="representation-double">number (double)</h3>
+						<dl>
+							<dt>Minimum</dt><dd><code>-1.7976931348623157e+308</code></dd>
+							<dt>Maximum</dt><dd><code>1.7976931348623157e+308</code></dd>
+							<dt>Precision</dt><dd>15 decimal digits; 17 for round trips</dd>
+						</dl>
+					</section>
+					<section class="representation-card" aria-labelledby="representation-string">
+						<h3 id="representation-string">string (UTF-8)</h3>
+						<dl>
+							<dt>Encoding</dt><dd>UTF-8 Unicode</dd>
+							<dt>Code unit</dt><dd>8 bits</dd>
+							<dt>Maximum length</dt><dd><code>9223372036854775807</code> bytes</dd>
+						</dl>
+					</section>
+					<section class="representation-card" aria-labelledby="representation-boolean">
+						<h3 id="representation-boolean">boolean</h3>
+						<dl>
+							<dt>Values</dt><dd><code>true</code> or <code>false</code></dd>
+						</dl>
+					</section>
+				</div>
+			</section>
+		
+			<article class="endpoint" id="postCurrencies">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/currencies</code></h2>
+				</div>
+				<p>Returns the currencies currently supported by CipherBank.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.money</code> · <strong>HTTP:</strong> 1.1</p>
+
+				<section aria-labelledby="postCurrencies-request">
+					<h3 id="postCurrencies-request">Request JSON</h3>
+					
+					
+					<p class="empty">No JSON request body is required.</p>
+					
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="postCurrencies-response">
+					<h3 id="postCurrencies-response">Successful response JSON</h3>
+					<p>The supported currency list.</p>
+					
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+						
+							<tr>
+								<th scope="row"><code>CURRENCIES</code></th>
+								<td class="type">array</td>
+								<td>Ordered currency codes currently available to public API customers.</td>
+							</tr>
+						
+						</tbody>
+					</table>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  "CURRENCIES": [
+    "BITCOIN",
+    "MONERO",
+    "USD"
+  ]
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postCurrencies-statuses">
+					<h3 id="postCurrencies-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+						
+							<tr><th scope="row"><code>200</code></th><td>The supported currency list was returned.</td></tr>
+						
+							<tr><th scope="row"><code>422</code></th><td>The wallet service returned an invalid result.</td></tr>
+						
+							<tr><th scope="row"><code>424</code></th><td>The wallet dependency was unavailable.</td></tr>
+						
+						</tbody>
+					</table>
+				</section>
+			</article>
+		
+			<article class="endpoint" id="postIquote">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/iquote</code></h2>
+				</div>
+				<p>Calculates the output amount produced by a requested input amount.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.money</code> · <strong>HTTP:</strong> 1.1</p>
+
+				<section aria-labelledby="postIquote-request">
+					<h3 id="postIquote-request">Request JSON</h3>
+					
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+						
+							<tr>
+								<th scope="row"><code>INPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the input currency the customer will provide.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency the customer will provide.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency in which to calculate the result.</td>
+							</tr>
+						
+						</tbody>
+					</table>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  "INPUT_AMOUNT": 0.0015,
+  "INPUT_CURRENCY": "BITCOIN",
+  "OUTPUT_CURRENCY": "USD"
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postIquote-response">
+					<h3 id="postIquote-response">Successful response JSON</h3>
+					<p>A calculated currency conversion quote.</p>
+					
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+						
+							<tr>
+								<th scope="row"><code>INPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the input currency required or supplied.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency supplied by the customer.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>OUTPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the output currency requested or calculated.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency returned to the customer.</td>
+							</tr>
+						
+						</tbody>
+					</table>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  "INPUT_AMOUNT": 0.0015,
+  "INPUT_CURRENCY": "BITCOIN",
+  "OUTPUT_AMOUNT": 100.0,
+  "OUTPUT_CURRENCY": "USD"
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postIquote-statuses">
+					<h3 id="postIquote-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+						
+							<tr><th scope="row"><code>200</code></th><td>A quote was calculated.</td></tr>
+						
+							<tr><th scope="row"><code>406</code></th><td>The Accept header does not permit JSON.</td></tr>
+						
+							<tr><th scope="row"><code>415</code></th><td>A non-empty body was not sent as application/json.</td></tr>
+						
+							<tr><th scope="row"><code>417</code></th><td>The JSON body could not be parsed or did not match the field types.</td></tr>
+						
+							<tr><th scope="row"><code>422</code></th><td>The inverse quote request or downstream quote result was invalid.</td></tr>
+						
+							<tr><th scope="row"><code>424</code></th><td>The price-cache dependency was unavailable.</td></tr>
+						
+						</tbody>
+					</table>
+				</section>
+			</article>
+		
+			<article class="endpoint" id="postQuote">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/quote</code></h2>
+				</div>
+				<p>Calculates the input amount required to produce a requested output amount.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.money</code> · <strong>HTTP:</strong> 1.1</p>
+
+				<section aria-labelledby="postQuote-request">
+					<h3 id="postQuote-request">Request JSON</h3>
+					
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+						
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency the customer will provide.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>OUTPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the requested output currency to receive.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency the customer wants to receive.</td>
+							</tr>
+						
+						</tbody>
+					</table>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  "INPUT_CURRENCY": "BITCOIN",
+  "OUTPUT_AMOUNT": 100.0,
+  "OUTPUT_CURRENCY": "USD"
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postQuote-response">
+					<h3 id="postQuote-response">Successful response JSON</h3>
+					<p>A calculated currency conversion quote.</p>
+					
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+						
+							<tr>
+								<th scope="row"><code>INPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the input currency required or supplied.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency supplied by the customer.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>OUTPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the output currency requested or calculated.</td>
+							</tr>
+						
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency returned to the customer.</td>
+							</tr>
+						
+						</tbody>
+					</table>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  "INPUT_AMOUNT": 0.0015,
+  "INPUT_CURRENCY": "BITCOIN",
+  "OUTPUT_AMOUNT": 100.0,
+  "OUTPUT_CURRENCY": "USD"
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postQuote-statuses">
+					<h3 id="postQuote-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+						
+							<tr><th scope="row"><code>200</code></th><td>A quote was calculated.</td></tr>
+						
+							<tr><th scope="row"><code>406</code></th><td>The Accept header does not permit JSON.</td></tr>
+						
+							<tr><th scope="row"><code>415</code></th><td>A non-empty body was not sent as application/json.</td></tr>
+						
+							<tr><th scope="row"><code>417</code></th><td>The JSON body could not be parsed or did not match the field types.</td></tr>
+						
+							<tr><th scope="row"><code>422</code></th><td>The quote request or downstream quote result was invalid.</td></tr>
+						
+							<tr><th scope="row"><code>424</code></th><td>The price-cache dependency was unavailable.</td></tr>
+						
+						</tbody>
+					</table>
+				</section>
+			</article>
+		
+			<article class="endpoint" id="postTest">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/test</code></h2>
+				</div>
+				<p>Confirms that the public HTTP API can accept and return a request.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.money</code> · <strong>HTTP:</strong> 1.1</p>
+
+				<section aria-labelledby="postTest-request">
+					<h3 id="postTest-request">Request JSON</h3>
+					
+					
+					<p class="empty">No JSON request body is required.</p>
+					
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="postTest-response">
+					<h3 id="postTest-response">Successful response JSON</h3>
+					<p>A successful API connectivity response.</p>
+					
+					
+					<p class="empty">The successful response has an empty JSON object body.</p>
+					
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="postTest-statuses">
+					<h3 id="postTest-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+						
+							<tr><th scope="row"><code>200</code></th><td>The API accepted the connectivity test.</td></tr>
+						
+						</tbody>
+					</table>
+				</section>
+			</article>
+		
+		</main>
+	</div>
+	<footer>Generated from CipherBank's public runtime contracts.</footer>
+</body>
+</html>

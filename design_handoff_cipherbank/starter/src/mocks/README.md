@@ -7,9 +7,11 @@ When `EXPO_PUBLIC_USE_MOCK=true`, [`apiClient`](../lib/apiClient.ts) routes all 
 | Env | Behavior |
 |-----|----------|
 | `EXPO_PUBLIC_USE_MOCK=true` | In-process handlers + artificial latency + mock stream |
-| `EXPO_PUBLIC_USE_MOCK=false` | Live `EXPO_PUBLIC_API_BASE` / `EXPO_PUBLIC_WSS` |
+| `EXPO_PUBLIC_USE_MOCK=false` | Live `EXPO_PUBLIC_API_BASE` / `EXPO_PUBLIC_WSS` + `EXPO_PUBLIC_PUBLIC_API_BASE` for PriceCache |
 
-Also: `EXPO_PUBLIC_MOCK_HAS_WALLET=true` skips onboarding so UI work lands on the tab shell.
+Public market wire format: [`docs/PUBLIC_API.md`](../docs/PUBLIC_API.md) · [`CB_InitialAPIRef.html`](../docs/CB_InitialAPIRef.html).
+
+Also: `EXPO_PUBLIC_SEED_DEMO=true` (or legacy `MOCK_HAS_WALLET`) for lab seed.
 
 ## Fixture → endpoint map
 
@@ -17,7 +19,7 @@ Also: `EXPO_PUBLIC_MOCK_HAS_WALLET=true` skips onboarding so UI work lands on th
 |-------------------|--------|------|-------|
 | `fixtures/portfolio.json` | GET | `/portfolio` | Holdings, total, 24h change |
 | `fixtures/assets.json` | GET | `/assets` | Catalog; securities `enabled:false`, `badge:"NEW"` |
-| `fixtures/rates.json` | GET | `/rates` | Reference USD prices |
+| `fixtures/rates.json` | POST | `/currencies` · `/iquote` · `/quote` | Public PriceCache (also deprecated GET `/rates`) |
 | `fixtures/recipients.json` | GET | `/recipients` | Saved people / bills |
 | `fixtures/activity.json` | GET | `/activity` | Unified history page |
 | `fixtures/receive.json` | GET | `/receive/:asset` | handle, address, uri, qr |
@@ -32,7 +34,8 @@ Also: `EXPO_PUBLIC_MOCK_HAS_WALLET=true` skips onboarding so UI work lands on th
 | — | POST | `/pos/confirm` | ready_to_present |
 | — | GET | `/pos/sessions/:id` | Session status |
 | computed in `handlers.ts` | GET | `/history?range=&compare=` | Chart series (WALLET + compare) |
-| computed | POST | `/quotes` | `{ quoteId, rate, amountOut, expiresAt, fee }` · TTL 15s |
+| computed | POST | `/iquote` · `/quote` | Public SCREAMING_SNAKE quotes (preferred) |
+| computed | POST | `/quotes` | **Deprecated** product shim |
 | computed | POST | `/convert` | `202 { txId, status:"accepted" }` → stream `convert.settled` |
 | computed | POST | `/transfers` | accepted → `transfer.settled` |
 | computed | POST | `/payments` | validates mix coverage; `mix_undercovered` if under |

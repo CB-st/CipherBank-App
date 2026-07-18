@@ -1,13 +1,16 @@
 # CipherBank `/v1` API Contract (App ↔ Backend)
 
-Canonical shapes the **live API must return** so the Expo app can switch off mocks (`EXPO_PUBLIC_USE_MOCK=false`). Fixture sources live in [`fixtures/`](./fixtures/). POS detail: [`POS_API.md`](./POS_API.md). Original sketch: [`../API.md`](../API.md).
+Canonical shapes the **live product API** must return so the Expo app can switch off mocks (`EXPO_PUBLIC_USE_MOCK=false`). Fixture sources live in [`fixtures/`](./fixtures/). POS detail: [`POS_API.md`](./POS_API.md). Original sketch: [`../API.md`](../API.md).
 
-**Conventions**
+**Public PriceCache API** (authoritative wire format for market data) is separate — see [`docs/PUBLIC_API.md`](../docs/PUBLIC_API.md) and [`docs/CB_InitialAPIRef.html`](../docs/CB_InitialAPIRef.html): host `api.cipherbank.money`, SCREAMING_SNAKE fields, `POST /currencies` · `/iquote` · `/quote` · `/test`.
+
+**Conventions (product `/v1`)**
 - Base: `https://api.cipherbank.dev/v1` · Stream: `wss://api.cipherbank.dev/v1/stream`
 - Auth: `Authorization: Bearer <token>` (except `POST /session`)
-- Amounts in asset units are **strings**; USD display fields may be numbers
+- Amounts in asset units are **strings** on product money rails; **public market** amounts are JSON **number (double)**
 - Mutations accept `Idempotency-Key`; errors: `{ "code", "message", "detail"? }`
 - **Never** accept mnemonic / PAN / CVV from the client
+- **New** CipherBank-src HTTP routes should follow public API naming (SCREAMING_SNAKE + status codes 406/415/417/422/424)
 
 ---
 
@@ -17,7 +20,8 @@ Canonical shapes the **live API must return** so the Expo app can switch off moc
 |--------|------|--------|
 | GET | `/portfolio` | `fixtures/portfolio.json` |
 | GET | `/assets` | `fixtures/assets.json` |
-| GET | `/rates` | `fixtures/rates.json` |
+| GET | `/rates` | **Deprecated** — use public `POST /currencies` + `/iquote` |
+| POST | `/currencies` · `/iquote` · `/quote` · `/test` | Public API (see `docs/PUBLIC_API.md`) |
 | GET | `/recipients` | `fixtures/recipients.json` |
 | GET | `/account/bootstrap` | `fixtures/account-bootstrap.json` |
 | GET | `/activity` | `fixtures/activity.json` |
@@ -107,20 +111,24 @@ Canonical shapes the **live API must return** so the Expo app can switch off moc
 
 ---
 
-## 3 · Rates — `GET /rates`
+## 3 · Market data — public API (authoritative)
 
-Live **price cache snapshot** for Convert and Home (short TTL; clients should use `staleTime` ~5–15s). Maps to CipherBank-src PriceCache / HTTP `/quote` · `/iquote` when live (currency codes: app `XMR` ↔ backend `MONERO`).
+Host: `api.cipherbank.money` (env `EXPO_PUBLIC_PUBLIC_API_BASE`). Full field tables: [`CB_InitialAPIRef.html`](../docs/CB_InitialAPIRef.html).
 
-```json
-{
-  "rates": [
-    { "symbol": "BTC", "usd": 63204.18, "change24h": 1.8 },
-    { "symbol": "XMR", "usd": 160.0, "change24h": 0.4 }
-  ],
-  "generatedAt": 1720900000000,
-  "ttlMs": 10000
-}
-```
+| Method | Path | Notes |
+|--------|------|--------|
+| POST | `/currencies` | Body `{}` → `{ "CURRENCIES": ["BITCOIN","MONERO","USD"] }` |
+| POST | `/iquote` | `{ INPUT_AMOUNT, INPUT_CURRENCY, OUTPUT_CURRENCY }` → quote with `OUTPUT_AMOUNT` |
+| POST | `/quote` | `{ INPUT_CURRENCY, OUTPUT_AMOUNT, OUTPUT_CURRENCY }` → quote with `INPUT_AMOUNT` |
+| POST | `/test` | Connectivity → `{}` |
+
+Currency codes: `BITCOIN` / `MONERO` / `USD` (app maps `BTC`↔`BITCOIN`, `XMR`↔`MONERO` via `publicCurrency.ts`).
+
+App rates cache builds a local snapshot by calling `/currencies` then `/iquote` (1 unit → USD) per code. Convert lock uses `/iquote` directly.
+
+### Deprecated — `GET /rates`
+
+Still mocked for one release. Do not use for new work.
 
 ---
 
@@ -408,19 +416,9 @@ Custody keys stay on-device; session proves device/user only.
 
 ## 12 · Quotes / Convert / Transfers / Payments
 
-### `POST /quotes` `{ from, to, amount }`
+### Convert pricing — prefer `POST /iquote` (public)
 
-```json
-{
-  "quoteId": "q_…",
-  "from": "BTC",
-  "to": "USD",
-  "rate": 63204.18,
-  "amountOut": "31602.09",
-  "expiresAt": 1720900015000,
-  "fee": "0.00"
-}
-```
+App `requestQuote` calls public `/iquote` and attaches client-side `quoteId` / `expiresAt` for settle UX. Legacy product `POST /quotes` `{ from, to, amount }` remains mocked but deprecated.
 
 ### `POST /convert` `{ quoteId, amount }` + Idempotency-Key
 
@@ -484,8 +482,8 @@ Errors: `pos_expired`, `insufficient_funds`, `wallet_locked`, `test_card_require
 
 | Screen | Endpoints |
 |--------|-----------|
-| Home | `GET /portfolio`, `GET /history`, `GET /rates` |
-| Convert | `GET /rates` (cache), `POST /quotes`, `POST /convert` + stream |
+| Home | `GET /portfolio`, `GET /history`, public `POST /currencies`+`/iquote` |
+| Convert | public `POST /iquote`, `POST /convert` + stream |
 | Send | `POST /transfers`, recipients |
 | Pay | `POST /payments` |
 | Receive | `GET /receive/:asset` |

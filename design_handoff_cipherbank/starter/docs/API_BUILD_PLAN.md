@@ -143,21 +143,22 @@ Resolve and record answers in `API_CONTRACT.md` / `ARCHITECTURE.md`:
 
 ## P2 · Market data — rates, history, ticks
 
-**Why:** Convert, charts, P2/P3 bootstrap. Upstream: CipherBank-src PriceCache (`/quote`, `/iquote`, currencies).
+**Why:** Convert, charts, P2/P3 bootstrap. Upstream: CipherBank-src **public** PriceCache — wire format locked by [`PUBLIC_API.md`](./PUBLIC_API.md) / `CB_InitialAPIRef.html`.
 
 | Method | Path / event | App | Priority |
 |--------|--------------|-----|----------|
-| GET | `/rates` | Wired (`useRatesCache`, bootstrap) | P2 |
+| POST | `/currencies` · `/iquote` · `/quote` | Wired (public host) | P2 |
 | GET | `/history?...` | Wired (`useHistory`, P3 OHLC) | P2 |
 | WSS | `rate.tick` | Wired (ticker RQ only) | P2 |
+| GET | `/rates` · POST `/quotes` | Deprecated shims | — |
 | GET | `/assets` | Mock-only (UI uses `assetConfig`) | P2 optional |
 
-### Tasks — rates
+### Tasks — rates (public API)
 
-- [ ] Map CipherBank-src symbols (`MONERO` ↔ `XMR`) into `/v1/rates` shape `{ rates[{symbol,usd,change24h}], generatedAt, ttlMs }`.
-- [ ] Support `?symbols=BTC,ETH,XMR` filter (contract/`API.md`).
-- [ ] TTL + stale behavior documented for client cache.
-- [ ] Emit `rate.tick` for held pairs (not only BTC/USD); decide whether ticks also patch `/rates` cache client-side.
+- [x] App client uses SCREAMING_SNAKE `POST /currencies` + `/iquote` (mock + `publicApiClient`).
+- [ ] Staging `api.cipherbank.money` against golden examples in `CB_InitialAPIRef.html`.
+- [ ] Honor public status codes `406` / `415` / `417` / `422` / `424` on the client.
+- [ ] Emit `rate.tick` for held pairs (not only BTC/USD); optional stream still product `/v1`.
 
 ### Tasks — history / OHLC
 
