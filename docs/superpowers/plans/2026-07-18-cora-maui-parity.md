@@ -325,27 +325,39 @@ git commit -m "feat: pay privacy callout for Cora parity"
 
 ## Phase F4 — Live data & sync (2 days)
 
+> **Execution plan (tightened 2026-07-18):** Implement after F3 push. Order is **strict**: F4.1 → F4.2 → F4.3 (bootstrap needs prefs API + unlocked session). Use Opus/Fable for F4.1 stream wiring and a security pass on F4.3 (bootstrap must never touch mnemonic / seed).
+
+### Preconditions
+- F1–F3 merged on `feat/cora-maui-port`
+- Unit suite green; Android TFM still builds
+- Live DI already prefers product session (`HttpProductApi` / `UseMockServices`)
+
 ### Task F4.1: Stream hub → Home + Convert
 
+**Goal:** One process-wide fan-out of `IStreamService` events; Home soft-refreshes portfolio; Convert refreshes quote policy on ticks when lock expired.
+
 **Files:**
-- Create: `CipherBank-app/Services/IStreamHub.cs`, `StreamHub.cs` (subscribe once at start)
-- Modify: `MauiProgram.cs`, `HomeViewModel`, `ConvertViewModel`
-- Modify: `MockStreamService` to occasionally emit richer types if useful
+- Create: `CipherBank-app/Services/IStreamHub.cs`, `StreamHub.cs`
+- Modify: `MauiProgram.cs` (singleton Start on app start / after unlock), `HomeViewModel`, `ConvertViewModel`
+- Modify: `MockStreamService` — emit `RATE.TICK` periodically + optional `balance.update`
+- Tests: Core-level debounce helper if extracted; otherwise manual verify + mock stream smoke
 
 **Interfaces:**
 ```csharp
 public interface IStreamHub
 {
     event EventHandler<StreamEvent>? EventReceived;
+    bool IsRunning { get; }
     void Start();
     void Stop();
 }
 ```
 
-- [ ] **Step 1: StreamHub wraps `IStreamService.EventReceived` singleton fan-out**
-- [ ] **Step 2: Home on `RATE.TICK` / `balance.update` → soft refresh portfolio (debounce 1s)**
-- [ ] **Step 3: Convert on `RATE.TICK` → refresh quote if unlocked lock expired policy matches Expo**
-- [ ] **Step 4: Commit**
+**Acceptance:**
+1. Hub subscribes once; multiple VMs do not re-subscribe to websocket
+2. Home on `RATE.TICK` / `balance.update` → debounce ≤1s → `AppearingAsync` soft refresh (keep stale totals)
+3. Convert on `RATE.TICK` → if quote expired or missing, refresh rate text without auto-locking a new TTL unless user taps Lock
+4. Stop hub on lock / logout
 
 ```bash
 git commit -m "feat: wire product stream events into home and convert"
@@ -353,15 +365,19 @@ git commit -m "feat: wire product stream events into home and convert"
 
 ### Task F4.2: Prefs API sync
 
-**Files:**
-- Modify: `V1/IProductApi.cs` (+ `GetPrefsAsync` / `PutPrefsAsync` if missing)
-- Modify: `MockProductApi`, `HttpProductApi`, `PrefsStore` or `ProfileViewModel`
-- Spec: Expo `prefs.store.ts`, fixtures `prefs.json`
+**Goal:** Local SQLite remains source of truth offline; when live, GET merge on boot and PUT after Profile save.
 
-- [ ] **Step 1: Add DTOs + mock round-trip tests**
-- [ ] **Step 2: On Profile save: local SQLite then PUT when live**
-- [ ] **Step 3: On boot after session: GET merge into local**
-- [ ] **Step 4: Commit**
+**Files:**
+- Extend: `IProductApi` + `MockProductApi` + `HttpProductApi` with `GetPrefsAsync` / `PutPrefsAsync`
+- DTOs map SCREAMING_SNAKE wire ↔ `UserPrefs` (homeOrder, homeVisible, assetsLayout, valuesHiddenOnLaunch, …)
+- Create: `PrefsSyncService` (or methods on `PrefsStore`) — merge policy: remote wins unknown keys; local wins `AssetsLayout` if remote lacks it
+- Modify: `ProfileViewModel.SavePrefsAsync`, `AppSession.Unlock*` / boot after session
+
+**Acceptance:**
+1. Mock round-trip unit test
+2. Save prefs → PUT when `!UseMockServices`; never throw away local write if PUT fails (toast + keep SQLite)
+3. After unlock → GET merge once (idempotent)
+4. Never POST seed/PIN/mnemonic via prefs
 
 ```bash
 git commit -m "feat: sync prefs with GET/PUT /prefs when live"
@@ -369,18 +385,27 @@ git commit -m "feat: sync prefs with GET/PUT /prefs when live"
 
 ### Task F4.3: Account bootstrap (returning user)
 
-**Files:**
-- Create: `Services/AccountBootstrapService.cs`
-- Modify: `AppSession.FinishCustodySetupAsync` / Unlock path for returning
-- Spec: Expo `bootstrapAccount.ts`, fixture `account-bootstrap.json`
+**Goal:** After first unlock for returning users, pull contacts → recipients and soft prefs merge. **Never** write mnemonic/seed from network.
 
-- [ ] **Step 1: `IProductApi.GetAccountBootstrapAsync` + mock**
-- [ ] **Step 2: Import contacts → recipients; prefs merge; never touch mnemonic**
-- [ ] **Step 3: Commit**
+**Files:**
+- Create: `Services/AccountBootstrapService.cs` + `IAccountBootstrapService`
+- Extend: `IProductApi.GetAccountBootstrapAsync` + mock fixture shaped like Expo `account-bootstrap.json`
+- Call from: `AppSession` after successful unlock / `FinishCustodySetupAsync` (returning path only if wallet already existed)
+
+**Acceptance:**
+1. Recipients upserted with ACH fields when provided; skip blank routing
+2. Prefs merge reuses F4.2 helper
+3. Unit test: bootstrap with contacts does not call custody Seal/Open
+4. Security review: response model has no seed/mnemonic fields
 
 ```bash
 git commit -m "feat: account bootstrap pull for returning users"
 ```
+
+### F4 non-goals
+- Live chain indexers, Activity tab, securities
+- Replacing local prefs with server-only store
+- Streaming private keys or balance proofs beyond product `/v1/stream` events
 
 ---
 

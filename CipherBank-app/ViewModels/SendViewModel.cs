@@ -13,7 +13,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace CipherBank_app.ViewModels;
 
-/// <summary>Send / transfer with ACH recipients.</summary>
+/// <summary>Send / transfer with full ACH recipient form.</summary>
 public partial class SendViewModel : ObservableObject
 {
     private readonly IProductApi _api;
@@ -39,6 +39,8 @@ public partial class SendViewModel : ObservableObject
 
     public ObservableCollection<AchRecipientRow> Recipients { get; } = new();
 
+    public ObservableCollection<string> AccountTypes { get; } = new() { "checking", "savings" };
+
     [ObservableProperty]
     private AchRecipientRow? selectedRecipient;
 
@@ -56,6 +58,24 @@ public partial class SendViewModel : ObservableObject
 
     [ObservableProperty]
     private string newRecipientName = string.Empty;
+
+    [ObservableProperty]
+    private string newHolder = string.Empty;
+
+    [ObservableProperty]
+    private string newBank = string.Empty;
+
+    [ObservableProperty]
+    private string newRouting = string.Empty;
+
+    [ObservableProperty]
+    private string newAccount = string.Empty;
+
+    [ObservableProperty]
+    private string newAccountType = "checking";
+
+    [ObservableProperty]
+    private string newMemo = string.Empty;
 
     [ObservableProperty]
     private bool isBusy;
@@ -86,23 +106,44 @@ public partial class SendViewModel : ObservableObject
     [RelayCommand]
     private async Task AddRecipientAsync()
     {
-        if (string.IsNullOrWhiteSpace(NewRecipientName))
+        string? error = AchRecipientValidation.Validate(
+            NewRecipientName,
+            NewHolder,
+            NewBank,
+            NewRouting,
+            NewAccount,
+            NewAccountType,
+            NewMemo);
+        if (error is not null)
         {
-            await _dialogs.ShowAlertAsync("Recipient", "Enter a name.");
+            await _dialogs.ShowAlertAsync("Recipient", error);
             return;
         }
 
+        string routing = new string(NewRouting.Where(char.IsDigit).ToArray());
+        string account = NewAccount.Trim();
         var row = new AchRecipientRow(
             Guid.NewGuid().ToString("N"),
             NewRecipientName.Trim(),
-            "•••• new",
-            null,
-            null,
+            NewHolder.Trim(),
+            NewBank.Trim(),
+            routing,
+            account,
+            NewAccountType.Trim().ToLowerInvariant(),
+            string.IsNullOrWhiteSpace(NewMemo) ? null : NewMemo.Trim(),
+            AchRecipientValidation.MaskAccount(account),
+            AchRecipientValidation.MaskRouting(routing),
             DateTimeOffset.UtcNow);
         await _recipients.UpsertAsync(row);
         Recipients.Add(row);
         SelectedRecipient = row;
         NewRecipientName = string.Empty;
+        NewHolder = string.Empty;
+        NewBank = string.Empty;
+        NewRouting = string.Empty;
+        NewAccount = string.Empty;
+        NewAccountType = "checking";
+        NewMemo = string.Empty;
     }
 
     [RelayCommand]

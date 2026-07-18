@@ -8,9 +8,25 @@
   <ScrollView>
     <VerticalStackLayout Padding="20" Spacing="14">
       <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+
+      <controls:GlassCard UseDeepPurple="True" CornerRadius="18">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="6">
+            <Label Text="Privacy" FontFamily="ManropeSemiBold" FontSize="12"
+                   TextColor="{StaticResource Violet}" />
+            <Label Text="Payments stay private by default. Funding mix never exposes card PAN — token refs only."
+                   FontFamily="ManropeRegular"
+                   FontSize="14"
+                   TextColor="{StaticResource OnDark}"
+                   LineBreakMode="WordWrap" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
       <controls:GlassCard>
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="10">
+            <Label Text="{Binding RecipientLabel}" FontFamily="ManropeSemiBold" />
             <Entry Text="{Binding Amount}" Placeholder="Bill amount" Keyboard="Numeric" />
             <Entry Text="{Binding UsdShare}" Placeholder="USD %" Keyboard="Numeric" />
             <Entry Text="{Binding CryptoShare}" Placeholder="Crypto %" Keyboard="Numeric" />

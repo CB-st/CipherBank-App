@@ -2,17 +2,19 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Collections.ObjectModel;
 using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
 using CipherBank_app.V1;
+using CipherBank_app.Wallets;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace CipherBank_app.ViewModels;
 
-/// <summary>FX convert with client-side quote lock (Phase C ready).</summary>
+/// <summary>FX convert with asset pickers, swap, and quote countdown.</summary>
 public partial class ConvertViewModel : ObservableObject
 {
     private readonly IProductApi _api;
@@ -20,6 +22,7 @@ public partial class ConvertViewModel : ObservableObject
     private readonly IAppSession _session;
     private readonly IStepUpAuth _stepUp;
     private QuoteDto? _lockedQuote;
+    private CancellationTokenSource? _tickCts;
 
     public ConvertViewModel(IProductApi api, IDialogService dialogs, IAppSession session, IStepUpAuth stepUp)
     {
@@ -28,7 +31,13 @@ public partial class ConvertViewModel : ObservableObject
         _session = session;
         _stepUp = stepUp;
         CoraLine = CoraLines.For("convert");
+        foreach (string symbol in BuildAssetList())
+        {
+            Assets.Add(symbol);
+        }
     }
+
+    public ObservableCollection<string> Assets { get; } = new();
 
     [ObservableProperty]
     private string fromAsset = "BTC";
@@ -57,9 +66,53 @@ public partial class ConvertViewModel : ObservableObject
     [ObservableProperty]
     private bool isBusy;
 
+    [ObservableProperty]
+    private string feeText = "$0.00 we cover it";
+
+    [ObservableProperty]
+    private string privacyText = "Private by default";
+
+    [ObservableProperty]
+    private string settlementText = "Instant";
+
+    partial void OnFromAssetChanged(string value) => RefreshInfoRows();
+
+    partial void OnToAssetChanged(string value) => RefreshInfoRows();
+
+    private static List<string> BuildAssetList()
+    {
+        var list = WalletRegistry.All().Select(m => m.Symbol).ToList();
+        if (!list.Contains("USD", StringComparer.OrdinalIgnoreCase))
+        {
+            list.Insert(0, "USD");
+        }
+
+        return list.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s).ToList();
+    }
+
+    private void RefreshInfoRows()
+    {
+        bool xmr = FromAsset.Equals("XMR", StringComparison.OrdinalIgnoreCase)
+                   || ToAsset.Equals("XMR", StringComparison.OrdinalIgnoreCase);
+        PrivacyText = xmr ? "Shielded swap" : "Private by default";
+        FeeText = "$0.00 we cover it";
+        SettlementText = "Instant";
+    }
+
     private bool IsQuoteFresh()
         => _lockedQuote is not null
            && _lockedQuote.ExpiresAt > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+    [RelayCommand]
+    private void SwapAssets()
+    {
+        (FromAsset, ToAsset) = (ToAsset, FromAsset);
+        HasValidLock = false;
+        _lockedQuote = null;
+        LockCountdown = null;
+        RateText = null;
+        _tickCts?.Cancel();
+    }
 
     [RelayCommand]
     private async Task LockQuoteAsync()
@@ -69,14 +122,68 @@ public partial class ConvertViewModel : ObservableObject
         try
         {
             _lockedQuote = await _api.GetQuoteAsync(FromAsset, ToAsset);
-            long remainingMs = _lockedQuote.ExpiresAt - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            HasValidLock = remainingMs > 0;
             RateText = $"1 {_lockedQuote.From} = {_lockedQuote.Rate} {_lockedQuote.To}";
-            LockCountdown = HasValidLock ? $"{remainingMs / 1000}s remaining" : "Expired";
+            RefreshInfoRows();
+            StartCountdown();
         }
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private void StartCountdown()
+    {
+        _tickCts?.Cancel();
+        _tickCts = new CancellationTokenSource();
+        CancellationToken ct = _tickCts.Token;
+        TickOnce();
+        _ = TickLoopAsync(ct);
+    }
+
+    private void TickOnce()
+    {
+        if (_lockedQuote is null)
+        {
+            HasValidLock = false;
+            LockCountdown = null;
+            return;
+        }
+
+        long remainingMs = _lockedQuote.ExpiresAt - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        HasValidLock = remainingMs > 0;
+        LockCountdown = HasValidLock ? $"{remainingMs / 1000}s remaining" : "Expired";
+        if (!HasValidLock)
+        {
+            _lockedQuote = null;
+        }
+    }
+
+    private async Task TickLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(1000, ct).ConfigureAwait(false);
+                if (MainThread.IsMainThread)
+                {
+                    TickOnce();
+                }
+                else
+                {
+                    await MainThread.InvokeOnMainThreadAsync(TickOnce);
+                }
+
+                if (!HasValidLock)
+                {
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when locking a new quote or leaving.
         }
     }
 
@@ -115,6 +222,8 @@ public partial class ConvertViewModel : ObservableObject
             await _dialogs.ShowAlertAsync("Convert", Status);
             HasValidLock = false;
             _lockedQuote = null;
+            _tickCts?.Cancel();
+            LockCountdown = null;
         }
         finally
         {

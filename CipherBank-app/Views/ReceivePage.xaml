@@ -11,11 +11,23 @@
       <controls:GlassCard>
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="10">
-            <Entry Text="{Binding Asset}" Placeholder="Asset" />
+            <Label Text="Asset" FontFamily="ManropeSemiBold" />
+            <HorizontalStackLayout Spacing="8">
+              <Button Text="BTC" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="BTC" />
+              <Button Text="ETH" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="ETH" />
+              <Button Text="USD" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="USD" />
+              <Button Text="LTC" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="LTC" />
+              <Button Text="XMR" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="XMR" />
+            </HorizontalStackLayout>
+            <Label Text="{Binding Asset, StringFormat='Selected: {0}'}" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
             <Entry Text="{Binding Amount}" Placeholder="Amount (optional)" Keyboard="Numeric" />
             <Button Text="Refresh QR" Command="{Binding LoadCommand}" AutomationId="ReceiveRefreshButton" />
             <Image Source="{Binding QrImage}" HeightRequest="220" WidthRequest="220" HorizontalOptions="Center" AutomationId="ReceiveQrImage" />
             <Label Text="{Binding Address}" FontFamily="ManropeSemiBold" LineBreakMode="CharacterWrap" AutomationId="ReceiveAddressLabel" />
+            <Label Text="{Binding DerivationPath}" FontFamily="SpaceMonoRegular" FontSize="12"
+                   IsVisible="{Binding HasDerivationPath}"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
             <Label Text="{Binding UriText}" FontSize="12" LineBreakMode="CharacterWrap" />
             <Button Text="Copy" Command="{Binding CopyCommand}" />
             <Button Text="Share" Command="{Binding ShareCommand}" />

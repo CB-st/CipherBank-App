@@ -11,14 +11,43 @@
       <controls:GlassCard>
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="10">
-            <Entry Text="{Binding FromAsset}" Placeholder="From" />
-            <Entry Text="{Binding ToAsset}" Placeholder="To" />
+            <Label Text="From" FontFamily="ManropeSemiBold" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Picker Title="From asset" ItemsSource="{Binding Assets}" SelectedItem="{Binding FromAsset}"
+                    AutomationId="ConvertFromPicker" />
+            <Button Text="Swap" Style="{StaticResource SecondaryButton}" Command="{Binding SwapAssetsCommand}"
+                    Shadow="{x:Null}" />
+            <Label Text="To" FontFamily="ManropeSemiBold" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Picker Title="To asset" ItemsSource="{Binding Assets}" SelectedItem="{Binding ToAsset}"
+                    AutomationId="ConvertToPicker" />
             <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" />
             <Label Text="{Binding RateText}" FontFamily="ManropeSemiBold" />
-            <Label Text="{Binding LockCountdown}" FontSize="12" />
+            <Label Text="{Binding LockCountdown}" FontSize="12" TextColor="{StaticResource Gold}" />
             <Button Text="Lock quote" Command="{Binding LockQuoteCommand}" AutomationId="ConvertLockQuoteButton" />
-            <Button Text="Convert" Command="{Binding ConvertCommand}" IsEnabled="{Binding HasValidLock}" AutomationId="ConvertSubmitButton" />
+            <Button Text="Convert instantly" Command="{Binding ConvertCommand}" IsEnabled="{Binding HasValidLock}" AutomationId="ConvertSubmitButton" />
             <Label Text="{Binding Status}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="0">
+            <Grid Padding="0,12" ColumnDefinitions="*,Auto">
+              <Label Text="Network fee" TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+              <Label Grid.Column="1" Text="{Binding FeeText}" FontFamily="ManropeBold" />
+            </Grid>
+            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+            <Grid Padding="0,12" ColumnDefinitions="*,Auto">
+              <Label Text="Privacy" TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+              <Label Grid.Column="1" Text="{Binding PrivacyText}" FontFamily="ManropeBold" />
+            </Grid>
+            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+            <Grid Padding="0,12" ColumnDefinitions="*,Auto">
+              <Label Text="Settlement" TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+              <Label Grid.Column="1" Text="{Binding SettlementText}" FontFamily="ManropeBold" />
+            </Grid>
           </VerticalStackLayout>
         </controls:GlassCard.Body>
       </controls:GlassCard>

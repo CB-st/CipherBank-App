@@ -58,6 +58,9 @@ public partial class PayViewModel : ObservableObject
     [ObservableProperty]
     private bool isBusy;
 
+    [ObservableProperty]
+    private string recipientLabel = "Recipient · Corner Cafe";
+
     partial void OnAmountChanged(string value) => RebuildMix();
 
     partial void OnUsdShareChanged(string value) => RebuildMix();

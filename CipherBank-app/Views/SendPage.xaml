@@ -16,8 +16,17 @@
                     ItemDisplayBinding="{Binding Name}"
                     SelectedItem="{Binding SelectedRecipient}" />
             <Entry Text="{Binding Recipient}" Placeholder="Or type recipient" />
-            <Entry Text="{Binding NewRecipientName}" Placeholder="New payee name" />
+
+            <Label Text="Add ACH payee" FontAttributes="Bold" Margin="0,8,0,0" />
+            <Entry Text="{Binding NewRecipientName}" Placeholder="Payee name" />
+            <Entry Text="{Binding NewHolder}" Placeholder="Account holder" />
+            <Entry Text="{Binding NewBank}" Placeholder="Bank name" />
+            <Entry Text="{Binding NewRouting}" Placeholder="Routing (9 digits)" Keyboard="Numeric" MaxLength="9" />
+            <Entry Text="{Binding NewAccount}" Placeholder="Account number" Keyboard="Numeric" />
+            <Picker Title="Account type" ItemsSource="{Binding AccountTypes}" SelectedItem="{Binding NewAccountType}" />
+            <Entry Text="{Binding NewMemo}" Placeholder="Memo (optional)" />
             <Button Text="Save payee" Command="{Binding AddRecipientCommand}" />
+
             <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" />
             <Picker Title="Speed" SelectedItem="{Binding Speed}">
               <Picker.Items>
