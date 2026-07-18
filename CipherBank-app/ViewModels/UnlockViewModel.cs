@@ -12,7 +12,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace CipherBank_app.ViewModels;
 
-/// <summary>Unlock sealed wallet with PIN (optional biometrics gate).</summary>
+/// <summary>Unlock sealed wallet with PIN or OS biometrics (device-secret path).</summary>
 public partial class UnlockViewModel : ObservableObject
 {
     private readonly INavigationService _nav;
@@ -20,6 +20,7 @@ public partial class UnlockViewModel : ObservableObject
     private readonly IPinService _pin;
     private readonly IBiometricService _biometrics;
     private readonly ISettingsService _settings;
+    private bool _autoPrompted;
 
     public UnlockViewModel(
         INavigationService nav,
@@ -54,7 +55,15 @@ public partial class UnlockViewModel : ObservableObject
     [RelayCommand]
     private async Task AppearingAsync()
     {
-        BiometricsAvailable = _settings.BiometricAuthEnabled && await _biometrics.IsAvailableAsync();
+        BiometricsAvailable = _settings.BiometricAuthEnabled
+            && await _session.CanUnlockWithDeviceOwnerAsync()
+            && await _biometrics.IsAvailableAsync();
+
+        if (BiometricsAvailable && !_autoPrompted)
+        {
+            _autoPrompted = true;
+            await UnlockWithBiometricsAsync();
+        }
     }
 
     [RelayCommand]
@@ -88,20 +97,26 @@ public partial class UnlockViewModel : ObservableObject
     private async Task UnlockWithBiometricsAsync()
     {
         Error = null;
-        if (!await _biometrics.AuthenticateAsync("Unlock CipherBank"))
+        IsBusy = true;
+        try
         {
-            Error = "Biometric authentication failed.";
-            return;
-        }
+            if (!await _biometrics.AuthenticateAsync("Unlock CipherBank"))
+            {
+                Error = "Biometric authentication failed.";
+                return;
+            }
 
-        // Biometrics only gate the UI; PIN still required to open AES-GCM blob.
-        // Prefer prompting for PIN after successful biometric check.
-        if (string.IsNullOrEmpty(Pin))
+            if (!await _session.UnlockWithDeviceOwnerAsync())
+            {
+                Error = "Could not open the sealed wallet. Enter your PIN.";
+                return;
+            }
+
+            await _nav.GoToAsync(Routes.Home);
+        }
+        finally
         {
-            Error = "Enter your PIN after biometrics to open the sealed wallet.";
-            return;
+            IsBusy = false;
         }
-
-        await UnlockAsync();
     }
 }

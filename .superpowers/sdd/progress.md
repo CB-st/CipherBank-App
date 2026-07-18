@@ -2,13 +2,20 @@
 
 Branch: `feat/cora-maui-port`
 Plan: `docs/superpowers/plans/2026-07-18-cora-maui-parity.md`
-Started: 2026-07-18
+Workspace: scoped under Digital Teller R2/`CipherBank-App/` (root stay put)
 
 ## Complete
 
-(none yet)
+- **F0.1** Plan + PR tracking
+- **F1.1** Device-secret biometrics unlock (Expo parity)
+- **F1.2** Step-up auth gates (Pay/Convert/POS/Reveal)
+- **F1.3** Three-word backup quiz
+- **F2.1** Home sections `holdings`/`localWallets` + green/gold + `AssetsLayout`
+- **F2.2** Hide balances + values-hidden-on-launch
+- **F2.3** Chart ranges 1D/1W/1M/1Y
+- **F2.4** Stale/Updating indicator
 
 ## Notes
 
-- Advanced models: opus/fable for F1 biometrics+step-up, F4 stream/bootstrap, final security review
-- Fast/sonnet for mechanical UI tasks (F2/F3/F5)
+- Trust model: logical gate + SecureStorage device secret (same as Expo), not TEE-bound bio key release
+- Tests: 187 passed; Android net10.0 build 0 errors

@@ -4,6 +4,7 @@
 
 using System.Collections.ObjectModel;
 using CipherBank_app.Cora;
+using CipherBank_app.Custody;
 using CipherBank_app.Pos;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
@@ -39,17 +40,20 @@ public partial class PosLabViewModel : ObservableObject
     private readonly IAppSession _session;
     private readonly INfcPresentmentService _nfc;
     private readonly IDialogService _dialogs;
+    private readonly IStepUpAuth _stepUp;
 
     public PosLabViewModel(
         IProductApi api,
         IAppSession session,
         INfcPresentmentService nfc,
-        IDialogService dialogs)
+        IDialogService dialogs,
+        IStepUpAuth stepUp)
     {
         _api = api;
         _session = session;
         _nfc = nfc;
         _dialogs = dialogs;
+        _stepUp = stepUp;
         CoraLine = CoraLines.For("pos");
         NfcSupported = _nfc.IsSupported;
         PlatformHint = _nfc.IsSupported
@@ -112,6 +116,11 @@ public partial class PosLabViewModel : ObservableObject
         if (!_session.IsUnlocked)
         {
             await _dialogs.ShowAlertAsync("Locked", "Unlock custody first.");
+            return;
+        }
+
+        if (!await _stepUp.RequireAsync(AuthReason.PosAuthorize))
+        {
             return;
         }
 
@@ -188,6 +197,11 @@ public partial class PosLabViewModel : ObservableObject
         {
             PresentError = _nfc.LastError ?? "NFC unavailable — use Simulate exchange.";
             await _dialogs.ShowAlertAsync("NFC", PresentError);
+            return;
+        }
+
+        if (!await _stepUp.RequireAsync(AuthReason.PosPresent))
+        {
             return;
         }
 

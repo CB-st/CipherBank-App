@@ -28,6 +28,11 @@ public interface IAppSession
 
     Task<bool> UnlockAsync(string pin);
 
+    /// <summary>Unlock after successful OS biometrics (device-secret path).</summary>
+    Task<bool> UnlockWithDeviceOwnerAsync();
+
+    Task<bool> CanUnlockWithDeviceOwnerAsync();
+
     void Touch();
 
     void Lock();
@@ -102,14 +107,32 @@ public sealed class AppSession : IAppSession
             return false;
         }
 
+        return await CompleteUnlockAsync().ConfigureAwait(false);
+    }
+
+    public Task<bool> CanUnlockWithDeviceOwnerAsync()
+        => _custody.CanUnlockWithDeviceOwnerAsync();
+
+    public async Task<bool> UnlockWithDeviceOwnerAsync()
+    {
+        if (!await _custody.UnlockWithDeviceSecretAsync().ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        return await CompleteUnlockAsync().ConfigureAwait(false);
+    }
+
+    public void Touch() => _lastTouch = DateTimeOffset.UtcNow;
+
+    private async Task<bool> CompleteUnlockAsync()
+    {
         var session = await _api.CreateSessionAsync().ConfigureAwait(false);
         AccessToken = session.AccessToken;
         await _stream.ConnectAsync().ConfigureAwait(false);
         Touch();
         return true;
     }
-
-    public void Touch() => _lastTouch = DateTimeOffset.UtcNow;
 
     public void Lock()
     {

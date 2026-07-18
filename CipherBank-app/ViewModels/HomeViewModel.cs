@@ -16,9 +16,12 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace CipherBank_app.ViewModels;
 
-/// <summary>Home portfolio shell — polished Phase C.</summary>
+/// <summary>Home portfolio shell — F2 section prefs + hide balances.</summary>
 public partial class HomeViewModel : ObservableObject
 {
+    private static readonly Color HoldingsAccent = Color.FromArgb("#3FA46A");
+    private static readonly Color LocalAccent = Color.FromArgb("#F2C14E");
+
     private static readonly Color[] SeriesColors =
     {
         Color.FromArgb("#F2C14E"),
@@ -31,6 +34,8 @@ public partial class HomeViewModel : ObservableObject
     private readonly IWalletRepository _wallets;
     private readonly INavigationService _nav;
     private readonly IAppSession _session;
+    private string _rawTotalUsd = "—";
+    private string _rawChange24H = "—";
 
     public HomeViewModel(
         IProductApi api,
@@ -49,7 +54,11 @@ public partial class HomeViewModel : ObservableObject
 
     public ObservableCollection<HoldingDto> Holdings { get; } = new();
 
+    public ObservableCollection<HoldingDisplayVm> HoldingRows { get; } = new();
+
     public ObservableCollection<LocalWalletRow> LocalWallets { get; } = new();
+
+    public ObservableCollection<AssetRowVm> CombinedAssets { get; } = new();
 
     public ObservableCollection<ChartPoint> Sparkline { get; } = new();
 
@@ -73,25 +82,87 @@ public partial class HomeViewModel : ObservableObject
     private bool isBusy;
 
     [ObservableProperty]
-    private string selectedRange = "30d";
+    private bool isStale;
+
+    [ObservableProperty]
+    private string selectedRange = "1m";
+
+    [ObservableProperty]
+    private bool balancesHidden;
+
+    public string HideToggleLabel => BalancesHidden ? "Show" : "Hide";
+
+    partial void OnBalancesHiddenChanged(bool value) => OnPropertyChanged(nameof(HideToggleLabel));
+
+    [ObservableProperty]
+    private bool showCora = true;
+
+    [ObservableProperty]
+    private bool showBalance = true;
+
+    [ObservableProperty]
+    private bool showQuickActions = true;
+
+    [ObservableProperty]
+    private bool showPerformance = true;
+
+    [ObservableProperty]
+    private bool showHoldings = true;
+
+    [ObservableProperty]
+    private bool showLocalWallets = true;
+
+    [ObservableProperty]
+    private bool showCombinedAssets;
+
+    [ObservableProperty]
+    private int coraRow;
+
+    [ObservableProperty]
+    private int balanceRow = 1;
+
+    [ObservableProperty]
+    private int quickActionsRow = 2;
+
+    [ObservableProperty]
+    private int performanceRow = 3;
+
+    [ObservableProperty]
+    private int holdingsRow = 4;
+
+    [ObservableProperty]
+    private int localWalletsRow = 5;
+
+    [ObservableProperty]
+    private int combinedAssetsRow = 4;
 
     [RelayCommand]
     private async Task AppearingAsync()
     {
         _session.Touch();
+        IsStale = Holdings.Count > 0 || !string.Equals(TotalUsd, "—", StringComparison.Ordinal);
         IsBusy = true;
         try
         {
             var prefs = await _prefs.LoadAsync();
-            CoraEnabled = prefs.CoraEnabled;
+            ApplySectionPrefs(prefs);
+            if (!IsStale)
+            {
+                BalancesHidden = prefs.ValuesHiddenOnLaunch;
+            }
+
             var portfolio = await _api.GetPortfolioAsync();
-            TotalUsd = "$" + portfolio.TotalUsd;
-            Change24H = portfolio.Change24HPct + "%";
+            _rawTotalUsd = "$" + portfolio.TotalUsd;
+            _rawChange24H = portfolio.Change24HPct + "%";
+            ApplyBalanceMask();
+
             Holdings.Clear();
             foreach (var h in portfolio.Holdings)
             {
                 Holdings.Add(h);
             }
+
+            RefreshHoldingRows();
 
             LocalWallets.Clear();
             foreach (var w in await _wallets.ListAsync())
@@ -99,19 +170,191 @@ public partial class HomeViewModel : ObservableObject
                 LocalWallets.Add(w);
             }
 
+            RebuildCombinedAssets();
             await ReloadChartsAsync();
         }
         finally
         {
             IsBusy = false;
+            IsStale = false;
         }
+    }
+
+    [RelayCommand]
+    private void ToggleBalancesHidden()
+    {
+        BalancesHidden = !BalancesHidden;
+        ApplyBalanceMask();
+        RefreshHoldingRows();
+        RebuildCombinedAssets();
     }
 
     [RelayCommand]
     private async Task SetRangeAsync(string range)
     {
         SelectedRange = range;
-        await ReloadChartsAsync();
+        IsStale = true;
+        try
+        {
+            await ReloadChartsAsync();
+        }
+        finally
+        {
+            IsStale = false;
+        }
+    }
+
+    private void ApplySectionPrefs(UserPrefs prefs)
+    {
+        CoraEnabled = prefs.CoraEnabled;
+        bool IsVis(string key) => prefs.HomeVisible.TryGetValue(key, out bool v) && v;
+        bool combined = prefs.AssetsLayout.Equals("combined", StringComparison.OrdinalIgnoreCase);
+
+        ShowCora = IsVis("cora") && prefs.CoraEnabled;
+        ShowBalance = IsVis("balance");
+        ShowQuickActions = IsVis("quickActions");
+        ShowPerformance = IsVis("performance");
+        ShowHoldings = !combined && IsVis("holdings");
+        ShowLocalWallets = !combined && IsVis("localWallets");
+        ShowCombinedAssets = combined && (IsVis("holdings") || IsVis("localWallets"));
+
+        var slots = new List<(string Key, bool Visible, Action<int> SetRow)>();
+        bool combinedPlaced = false;
+        foreach (string key in prefs.HomeOrder)
+        {
+            if (key is "holdings" or "localWallets" or "assets")
+            {
+                if (combined)
+                {
+                    if (!combinedPlaced)
+                    {
+                        slots.Add(("combined", ShowCombinedAssets, r => CombinedAssetsRow = r));
+                        combinedPlaced = true;
+                    }
+
+                    continue;
+                }
+
+                if (key == "holdings")
+                {
+                    slots.Add(("holdings", ShowHoldings, r => HoldingsRow = r));
+                }
+                else if (key == "localWallets")
+                {
+                    slots.Add(("localWallets", ShowLocalWallets, r => LocalWalletsRow = r));
+                }
+
+                continue;
+            }
+
+            switch (key)
+            {
+                case "cora":
+                    slots.Add((key, ShowCora, r => CoraRow = r));
+                    break;
+                case "balance":
+                    slots.Add((key, ShowBalance, r => BalanceRow = r));
+                    break;
+                case "quickActions":
+                    slots.Add((key, ShowQuickActions, r => QuickActionsRow = r));
+                    break;
+                case "performance":
+                    slots.Add((key, ShowPerformance, r => PerformanceRow = r));
+                    break;
+            }
+        }
+
+        if (!combined)
+        {
+            if (slots.All(s => s.Key != "holdings"))
+            {
+                slots.Add(("holdings", ShowHoldings, r => HoldingsRow = r));
+            }
+
+            if (slots.All(s => s.Key != "localWallets"))
+            {
+                slots.Add(("localWallets", ShowLocalWallets, r => LocalWalletsRow = r));
+            }
+
+            CombinedAssetsRow = 20;
+        }
+        else
+        {
+            HoldingsRow = 20;
+            LocalWalletsRow = 20;
+            if (!combinedPlaced)
+            {
+                slots.Add(("combined", ShowCombinedAssets, r => CombinedAssetsRow = r));
+            }
+        }
+
+        int row = 0;
+        foreach (var slot in slots)
+        {
+            if (!slot.Visible)
+            {
+                slot.SetRow(20);
+                continue;
+            }
+
+            slot.SetRow(row++);
+        }
+    }
+
+    private void ApplyBalanceMask()
+    {
+        if (BalancesHidden)
+        {
+            TotalUsd = "••••";
+            Change24H = "••••";
+        }
+        else
+        {
+            TotalUsd = _rawTotalUsd;
+            Change24H = _rawChange24H;
+        }
+    }
+
+    private void RefreshHoldingRows()
+    {
+        HoldingRows.Clear();
+        foreach (var h in Holdings)
+        {
+            HoldingRows.Add(new HoldingDisplayVm
+            {
+                Symbol = h.Symbol,
+                Balance = BalancesHidden ? "••••" : h.Balance,
+                UsdValue = BalancesHidden ? "••••" : h.UsdValue,
+            });
+        }
+    }
+
+    private void RebuildCombinedAssets()
+    {
+        CombinedAssets.Clear();
+        foreach (var h in Holdings)
+        {
+            CombinedAssets.Add(new AssetRowVm
+            {
+                Symbol = h.Symbol,
+                Detail = BalancesHidden ? "••••" : h.Balance,
+                Trailing = BalancesHidden ? "••••" : h.UsdValue,
+                Accent = HoldingsAccent,
+                KindLabel = "holding",
+            });
+        }
+
+        foreach (var w in LocalWallets)
+        {
+            CombinedAssets.Add(new AssetRowVm
+            {
+                Symbol = w.Symbol,
+                Detail = w.Label,
+                Trailing = w.Kind,
+                Accent = LocalAccent,
+                KindLabel = "local",
+            });
+        }
     }
 
     private async Task ReloadChartsAsync()
@@ -177,4 +420,28 @@ public partial class HomeViewModel : ObservableObject
         _session.Touch();
         return _nav.GoToAsync(Routes.AddWallet);
     }
+}
+
+/// <summary>Unified asset row for combined holdings+local layout.</summary>
+public sealed class AssetRowVm
+{
+    public string Symbol { get; set; } = string.Empty;
+
+    public string Detail { get; set; } = string.Empty;
+
+    public string Trailing { get; set; } = string.Empty;
+
+    public Color Accent { get; set; } = Colors.Gray;
+
+    public string KindLabel { get; set; } = string.Empty;
+}
+
+/// <summary>Holdings row with optional masked balances.</summary>
+public sealed class HoldingDisplayVm
+{
+    public string Symbol { get; set; } = string.Empty;
+
+    public string Balance { get; set; } = string.Empty;
+
+    public string UsdValue { get; set; } = string.Empty;
 }

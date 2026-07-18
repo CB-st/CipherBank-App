@@ -30,15 +30,29 @@ public sealed class MockProductApi : IProductApi
     public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct = default)
     {
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var pts = new List<HistoryPointDto>();
+        var (points, stepSeconds) = ResolveHistoryShape(range);
+        var pts = new List<HistoryPointDto>(points + 1);
         double v = 100;
-        for (int i = HistoryDayCount; i >= 0; i--)
+        for (int i = points; i >= 0; i--)
         {
             v += Math.Sin(i / 3.0) * 2 + 0.3;
-            pts.Add(new HistoryPointDto { T = now - (i * 86400), V = v });
+            pts.Add(new HistoryPointDto { T = now - (i * (long)stepSeconds), V = v });
         }
 
         return Task.FromResult<IReadOnlyList<HistoryPointDto>>(pts);
+    }
+
+    private static (int Points, int StepSeconds) ResolveHistoryShape(string range)
+    {
+        return range.Trim().ToLowerInvariant() switch
+        {
+            "1d" or "1D" => (24, 3600),
+            "1w" or "7d" => (7, 86400),
+            "1m" or "30d" => (30, 86400),
+            "90d" => (90, 86400),
+            "1y" or "all" => (52, 86400 * 7),
+            _ => (HistoryDayCount, 86400),
+        };
     }
 
     public Task<SessionDto> CreateSessionAsync(CancellationToken ct = default)

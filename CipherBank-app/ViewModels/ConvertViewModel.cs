@@ -3,6 +3,7 @@
 // </copyright>
 
 using CipherBank_app.Cora;
+using CipherBank_app.Custody;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
 using CipherBank_app.V1;
@@ -17,13 +18,15 @@ public partial class ConvertViewModel : ObservableObject
     private readonly IProductApi _api;
     private readonly IDialogService _dialogs;
     private readonly IAppSession _session;
+    private readonly IStepUpAuth _stepUp;
     private QuoteDto? _lockedQuote;
 
-    public ConvertViewModel(IProductApi api, IDialogService dialogs, IAppSession session)
+    public ConvertViewModel(IProductApi api, IDialogService dialogs, IAppSession session, IStepUpAuth stepUp)
     {
         _api = api;
         _dialogs = dialogs;
         _session = session;
+        _stepUp = stepUp;
         CoraLine = CoraLines.For("convert");
     }
 
@@ -84,6 +87,11 @@ public partial class ConvertViewModel : ObservableObject
         if (!_session.IsUnlocked)
         {
             await _dialogs.ShowAlertAsync("Locked", "Unlock custody before converting.");
+            return;
+        }
+
+        if (!await _stepUp.RequireAsync(AuthReason.Convert))
+        {
             return;
         }
 

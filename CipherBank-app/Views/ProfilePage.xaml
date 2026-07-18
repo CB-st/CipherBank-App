@@ -20,6 +20,14 @@
             <Entry Text="{Binding Appearance}" Placeholder="appearance: dark | light" />
             <Entry Text="{Binding BaseCurrency}" Placeholder="Base currency" />
             <Entry Text="{Binding LockIdleSeconds}" Placeholder="Lock idle seconds" Keyboard="Numeric" />
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Hide balances on launch" VerticalOptions="Center" />
+              <Switch Grid.Column="1" IsToggled="{Binding ValuesHiddenOnLaunch}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Combine holdings + local" VerticalOptions="Center" />
+              <Switch Grid.Column="1" IsToggled="{Binding CombineAssets}" />
+            </Grid>
             <Label Text="Home sections" FontAttributes="Bold" Margin="0,8,0,0" />
             <CollectionView ItemsSource="{Binding HomeSections}">
               <CollectionView.ItemTemplate>

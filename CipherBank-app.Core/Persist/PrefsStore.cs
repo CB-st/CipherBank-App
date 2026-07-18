@@ -9,7 +9,12 @@ namespace CipherBank_app.Persist;
 /// <summary>User preference model (Cora prefs).</summary>
 public sealed class UserPrefs
 {
-    public List<string> HomeOrder { get; set; } = new() { "cora", "balance", "quickActions", "performance", "assets" };
+    public static readonly string[] DefaultHomeOrder =
+    {
+        "cora", "balance", "quickActions", "performance", "holdings", "localWallets",
+    };
+
+    public List<string> HomeOrder { get; set; } = new(DefaultHomeOrder);
 
     public Dictionary<string, bool> HomeVisible { get; set; } = new()
     {
@@ -17,8 +22,12 @@ public sealed class UserPrefs
         ["balance"] = true,
         ["quickActions"] = true,
         ["performance"] = true,
-        ["assets"] = true,
+        ["holdings"] = true,
+        ["localWallets"] = true,
     };
+
+    /// <summary>separate (default) = two tables; combined = one table with green/gold row accents.</summary>
+    public string AssetsLayout { get; set; } = "separate";
 
     public bool ValuesHiddenOnLaunch { get; set; }
 
@@ -31,6 +40,47 @@ public sealed class UserPrefs
     public string BaseCurrency { get; set; } = "USD";
 
     public int LockIdleSeconds { get; set; } = 120;
+
+    /// <summary>Migrate legacy Expo-style <c>assets</c> key and ensure holdings/local keys exist.</summary>
+    public void NormalizeHomeSections()
+    {
+        if (HomeOrder.Contains("assets"))
+        {
+            int idx = HomeOrder.IndexOf("assets");
+            HomeOrder.RemoveAt(idx);
+            if (!HomeOrder.Contains("holdings"))
+            {
+                HomeOrder.Insert(idx, "holdings");
+                idx++;
+            }
+
+            if (!HomeOrder.Contains("localWallets"))
+            {
+                HomeOrder.Insert(idx, "localWallets");
+            }
+        }
+
+        foreach (string key in DefaultHomeOrder)
+        {
+            if (!HomeOrder.Contains(key))
+            {
+                HomeOrder.Add(key);
+            }
+
+            if (!HomeVisible.ContainsKey(key))
+            {
+                bool legacyAssets = HomeVisible.TryGetValue("assets", out bool assetsVisible) && assetsVisible;
+                HomeVisible[key] = key is "holdings" or "localWallets" ? (HomeVisible.ContainsKey("assets") ? legacyAssets : true) : true;
+            }
+        }
+
+        HomeVisible.Remove("assets");
+        if (string.IsNullOrWhiteSpace(AssetsLayout)
+            || (AssetsLayout is not "separate" and not "combined"))
+        {
+            AssetsLayout = "separate";
+        }
+    }
 }
 
 /// <summary>SQLite-backed prefs.</summary>
@@ -57,16 +107,23 @@ public sealed class PrefsStore : IPrefsStore
         cmd.CommandText = "SELECT value FROM prefs WHERE key=$k";
         cmd.Parameters.AddWithValue("$k", Key);
         object? val = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+        UserPrefs prefs;
         if (val is string json && !string.IsNullOrWhiteSpace(json))
         {
-            return JsonSerializer.Deserialize<UserPrefs>(json) ?? new UserPrefs();
+            prefs = JsonSerializer.Deserialize<UserPrefs>(json) ?? new UserPrefs();
+        }
+        else
+        {
+            prefs = new UserPrefs();
         }
 
-        return new UserPrefs();
+        prefs.NormalizeHomeSections();
+        return prefs;
     }
 
     public async Task SaveAsync(UserPrefs prefs)
     {
+        prefs.NormalizeHomeSections();
         string json = JsonSerializer.Serialize(prefs);
         await using var conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);

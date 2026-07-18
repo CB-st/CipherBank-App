@@ -7,8 +7,21 @@
   <ScrollView>
     <VerticalStackLayout Padding="20" Spacing="14">
 
-      <Label Text="{Binding Prompt}" FontSize="18" />
-      <Entry Text="{Binding Answer}" Placeholder="word" />
+      <Label Text="Confirm 3 words from your recovery phrase"
+             FontFamily="ManropeSemiBold"
+             FontSize="18" />
+
+      <CollectionView ItemsSource="{Binding Rows}">
+        <CollectionView.ItemTemplate>
+          <DataTemplate>
+            <VerticalStackLayout Spacing="6" Padding="0,0,0,10">
+              <Label Text="{Binding Prompt}" FontFamily="ManropeSemiBold" />
+              <Entry Text="{Binding Answer}" Placeholder="word" />
+            </VerticalStackLayout>
+          </DataTemplate>
+        </CollectionView.ItemTemplate>
+      </CollectionView>
+
       <Label Text="{Binding Error}" TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
       <Button Text="Verify" Command="{Binding VerifyCommand}" />
 

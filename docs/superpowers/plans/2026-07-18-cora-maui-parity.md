@@ -93,44 +93,35 @@ git commit -m "docs: add Cora↔MAUI behavioral parity plan"
 
 ### Task F1.1: Real biometrics behind `IBiometricService`
 
+**Decision (locked 2026-07-18):** Full Expo parity — successful OS auth unlocks custody **without** re-entering PIN. Never store PIN plaintext. Implement via **device-secret re-seal** (match Expo `custody.ts`: AES key from random per-install secret in SecureStorage; PIN remains a separate verify gate only).
+
+**Why not “just wire the plugin”:** MAUI today PBKDF2s the AES key **from the PIN** (`CryptoBox.DeriveKey` + `CustodyService.UnlockAsync`). Expo encrypts with a `deviceSecret` and treats PIN/biometrics as boolean gates. Parity requires a custody migration, not only `IBiometricService`.
+
+**Trust model (document in commit/PR):** Logical gate + OS keystore-backed SecureStorage (same as Expo), **not** TEE-bound biometric key release.
+
 **Files:**
-- Modify: `CipherBank-app/Services/BiometricService.cs`
+- Modify: `CipherBank-app.Core/Custody/CustodyService.cs`, `CryptoBox.cs` (reuse as-is; swap password input to device secret)
+- Modify: `CipherBank-app.Core/Session/AppSession.cs` — add `UnlockWithDeviceOwnerAsync()`
+- Modify / create: `CipherBank-app/Services/BiometricService.cs` (+ Android/iOS platform partials if Plugin.Maui.Biometric is not net10-ready)
 - Modify: `CipherBank-app/ViewModels/UnlockViewModel.cs`
-- Modify: `CipherBank-app/Platforms/Android/AndroidManifest.xml` (USE_BIOMETRIC if needed)
-- Test: `CipherBank-app.Tests/` (fake `IBiometricService` for Unlock VM if extracted)
+- Modify: `CipherBank-app/Platforms/Android/AndroidManifest.xml` (`USE_BIOMETRIC`)
+- SecureStorage key: e.g. `cb_device_secret_v1` via existing `ISecureStore` / `MauiSecureStore`
+- Test: `CipherBank-app.Tests/Session/BiometricUnlockContractTests.cs` (+ custody migration tests)
 
-**Interfaces:**
-- Consumes: `IBiometricService.IsAvailableAsync()`, `AuthenticateAsync(string reason)`
-- Produces: `Task<bool>` success; on success Unlock still needs PIN for AES blob **or** document “device owner unlock opens sealed blob via stored unlock token” — **keep current model: biometrics only gates UX, then PIN** unless Plugin supports silent SecureStorage unlock. Match Expo: OS auth can unlock custody when device credential succeeds (`unlockLocalCustody`). Prefer Expo behavior: successful OS auth unlocks without re-entering PIN when possible.
-
-Expo behavior to match (`design_handoff_cipherbank/starter/src/screens/lock/UnlockScreen.tsx` + `custody.ts`): successful `LocalAuthentication` unlocks the sealed wallet.
-
-- [ ] **Step 1: Write failing test for biometric unlock path on session**
-
-Add `CipherBank-app.Tests/Session/BiometricUnlockContractTests.cs` documenting expected `IBiometricService` contract with a fake that returns true → `AppSession` unlock path callable without PIN when a new optional API exists:
-
+**APIs:**
 ```csharp
-// Preferred API addition on IAppSession or ICustodyService:
-Task<bool> UnlockWithDeviceOwnerAsync(); // uses platform auth + existing sealed blob key material
+// ICustodyService / IAppSession
+Task<bool> UnlockWithDeviceOwnerAsync(); // after IBiometricService success → read device secret → Open blob
+// Migration: on next successful PIN unlock of a PIN-derived blob, re-Seal under device secret + persist secret
 ```
 
-If platform cannot unlock without PIN, document and implement Expo-lite: biometrics success then auto-submit last-used is **not** allowed. Then implement PIN sheet after biometric prompt only as fallback.
+Expo refs: `UnlockScreen.tsx`, `features/vault/custody.ts` (`unlockLocalCustody`, `deviceSecret`).
 
-- [ ] **Step 2: Implement Android/iOS `BiometricService` with Plugin.Maui.Biometric or Platform APIs**
-
-Replace stub `IsAvailableAsync => false`. Wire `USE_BIOMETRIC` permission.
-
-- [ ] **Step 3: Wire UnlockViewModel**
-
-On appear, if biometrics available + prefs enabled, prompt once (Expo auto-prompt).
-
-- [ ] **Step 4: Manual verify on emulator + unit tests green**
-
-```bash
-dotnet test CipherBank-app.Tests
-```
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 1: Failing tests** — fake biometric true → `UnlockWithDeviceOwnerAsync` unlocks; cancel/false stays locked; PIN path still works; optional: legacy PIN-blob migrates on one PIN unlock
+- [ ] **Step 2: Custody device-secret seal/unlock + migration**
+- [ ] **Step 3: Real `IBiometricService`** (plugin or platform BiometricPrompt / LAContext)
+- [ ] **Step 4: UnlockViewModel auto-prompt when biometrics available + prefs enabled; success → `UnlockWithDeviceOwnerAsync` → Home; failure/unavailable → PIN
+- [ ] **Step 5: `dotnet test CipherBank-app.Tests` + commit**
 
 ```bash
 git commit -m "feat: real biometrics for unlock parity with Cora"
@@ -190,16 +181,31 @@ git commit -m "feat: three-word backup quiz matching Cora"
 
 ## Phase F2 — Home fidelity (1–2 days)
 
-### Task F2.1: Apply `HomeOrder` / `HomeVisible`
+### Task F2.1: Apply `HomeOrder` / `HomeVisible` (+ holdings vs local)
+
+**Decision (locked 2026-07-18):** Holdings and Local wallets are **first-class home sections**, not a single opaque `assets` blob.
+
+| Concern | Rule |
+|--------|------|
+| Default layout | Two tables: `holdings` then `localWallets` (each own section / GlassCard) |
+| Color coding (always) | **Holdings** = green (`Success` / `#3FA46A`); **Local wallets** = gold (`Gold` / `#F2C14E`) — accent bar, section header tint, or leading rail so identity survives layout changes |
+| View option | Pref `AssetsLayout`: `separate` (default) \| `combined` — combined merges into one list/section **but keeps per-row color** so users can still tell local vs holdings |
+| Prefs keys | Replace Expo’s single `assets` with `holdings` + `localWallets` in `HomeOrder` / `HomeVisible` (migrate legacy `assets` → both visible at old position) |
 
 **Files:**
+- Modify: `Persist/PrefsStore.cs` (`UserPrefs` defaults + migrate `assets`)
 - Modify: `ViewModels/HomeViewModel.cs`, `Views/HomePage.xaml`
-- Spec: Expo `HomeScreen.tsx` sections `cora | balance | quickActions | performance | assets`
+- Modify: Profile home-layout toggles (if present) for the two keys + AssetsLayout
+- Colors: reuse `Success` / `Gold` from `Resources/Styles/Colors.xaml` (do not invent new greens)
 
-- [ ] **Step 1: HomeViewModel exposes ordered visible section keys from prefs**
-- [ ] **Step 2: HomePage uses `IsVisible` bindings / collection of section templates**
-- [ ] **Step 3: Toggle in Profile → navigate Home → section gone**
-- [ ] **Step 4: Commit**
+**Section keys (default order):**
+`cora | balance | quickActions | performance | holdings | localWallets`
+
+- [ ] **Step 1: Prefs defaults + legacy `assets` migration; add `AssetsLayout`**
+- [ ] **Step 2: HomeViewModel exposes ordered visible sections; separate tables by default**
+- [ ] **Step 3: Color rails — holdings green, local gold — on section chrome and on each row (esp. combined mode)**
+- [ ] **Step 4: Combined layout option groups rows into one table without dropping color**
+- [ ] **Step 5: Toggle/reorder in Profile → Home reflects; commit**
 
 ```bash
 git commit -m "feat: apply home section visibility and order from prefs"

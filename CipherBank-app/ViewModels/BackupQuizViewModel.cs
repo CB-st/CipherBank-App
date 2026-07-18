@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Collections.ObjectModel;
 using CipherBank_app.Constants;
 using CipherBank_app.Custody;
 using CipherBank_app.Services;
@@ -10,20 +11,34 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace CipherBank_app.ViewModels;
 
-/// <summary>Confirm mnemonic word recall.</summary>
-public partial class BackupQuizViewModel : ObservableObject, IQueryAttributable
+/// <summary>One quiz row for the 3-word backup confirmation.</summary>
+public partial class BackupQuizRow : ObservableObject
 {
-    private readonly INavigationService _nav;
-    private string[] _words = Array.Empty<string>();
-    private int _index;
+    public BackupQuizRow(int index, string expectedWord)
+    {
+        Index = index;
+        ExpectedWord = expectedWord;
+        Prompt = $"Word #{index + 1}";
+    }
 
-    public BackupQuizViewModel(INavigationService nav) => _nav = nav;
+    public int Index { get; }
 
-    [ObservableProperty]
-    private string prompt = string.Empty;
+    public string ExpectedWord { get; }
+
+    public string Prompt { get; }
 
     [ObservableProperty]
     private string answer = string.Empty;
+}
+
+/// <summary>Confirm mnemonic word recall (3 random words — Cora parity).</summary>
+public partial class BackupQuizViewModel : ObservableObject, IQueryAttributable
+{
+    private readonly INavigationService _nav;
+
+    public BackupQuizViewModel(INavigationService nav) => _nav = nav;
+
+    public ObservableCollection<BackupQuizRow> Rows { get; } = new();
 
     [ObservableProperty]
     private string? error;
@@ -36,9 +51,12 @@ public partial class BackupQuizViewModel : ObservableObject, IQueryAttributable
         if (query.TryGetValue("mnemonic", out object? m) && m is string s)
         {
             Mnemonic = Uri.UnescapeDataString(s);
-            _words = MnemonicHelper.Words(Mnemonic);
-            _index = Math.Min(2, _words.Length - 1);
-            Prompt = $"Enter word #{_index + 1}";
+            string[] words = MnemonicHelper.Words(Mnemonic);
+            Rows.Clear();
+            foreach (var (index, word) in BackupQuiz.PickRandom(words, 3, Random.Shared))
+            {
+                Rows.Add(new BackupQuizRow(index, word));
+            }
         }
     }
 
@@ -46,16 +64,19 @@ public partial class BackupQuizViewModel : ObservableObject, IQueryAttributable
     private async Task VerifyAsync()
     {
         Error = null;
-        if (_words.Length == 0)
+        if (Rows.Count == 0)
         {
             Error = "Missing mnemonic.";
             return;
         }
 
-        if (!string.Equals(Answer.Trim(), _words[_index], StringComparison.OrdinalIgnoreCase))
+        foreach (var row in Rows)
         {
-            Error = "That word doesn't match. Try again.";
-            return;
+            if (!string.Equals(row.Answer.Trim(), row.ExpectedWord, StringComparison.OrdinalIgnoreCase))
+            {
+                Error = "One or more words don't match. Try again.";
+                return;
+            }
         }
 
         await _nav.GoToAsync($"{Routes.SetPin}?mnemonic={Uri.EscapeDataString(Mnemonic)}");

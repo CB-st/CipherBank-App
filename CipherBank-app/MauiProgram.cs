@@ -119,6 +119,8 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IPinService, PinService>();
         mauiAppBuilder.Services.AddSingleton<ICustodyService, CustodyService>();
         mauiAppBuilder.Services.AddSingleton<IBiometricService, BiometricService>();
+        mauiAppBuilder.Services.AddSingleton<IStepUpChallenges, MauiStepUpChallenges>();
+        mauiAppBuilder.Services.AddSingleton<IStepUpAuth, StepUpAuthService>();
         mauiAppBuilder.Services.AddSingleton<ILocalDb>(sp =>
         {
             string path = Path.Combine(FileSystem.AppDataDirectory, "cipherbank.db");

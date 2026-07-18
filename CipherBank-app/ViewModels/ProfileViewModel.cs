@@ -42,7 +42,9 @@ public partial class ProfileViewModel : ObservableObject
         ["balance"] = "Balance hero",
         ["quickActions"] = "Quick actions",
         ["performance"] = "Performance",
-        ["assets"] = "Assets / wallets",
+        ["holdings"] = "Holdings",
+        ["localWallets"] = "Local wallets",
+        ["assets"] = "Assets (legacy)",
     };
 
     // --- Mnemonic reveal hygiene ---
@@ -56,6 +58,7 @@ public partial class ProfileViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly ISettingsService _settings;
     private readonly IAppSession _session;
+    private readonly IStepUpAuth _stepUp;
     private CancellationTokenSource? _mnemonicClearCts;
 
     public ProfileViewModel(
@@ -66,7 +69,8 @@ public partial class ProfileViewModel : ObservableObject
         INavigationService nav,
         IDialogService dialogs,
         ISettingsService settings,
-        IAppSession session)
+        IAppSession session,
+        IStepUpAuth stepUp)
     {
         _prefs = prefs;
         _custody = custody;
@@ -76,6 +80,7 @@ public partial class ProfileViewModel : ObservableObject
         _dialogs = dialogs;
         _settings = settings;
         _session = session;
+        _stepUp = stepUp;
         CoraLine = CoraLines.For("profile");
     }
 
@@ -116,6 +121,12 @@ public partial class ProfileViewModel : ObservableObject
     private bool useMockServices = true;
 
     [ObservableProperty]
+    private bool valuesHiddenOnLaunch;
+
+    [ObservableProperty]
+    private bool combineAssets;
+
+    [ObservableProperty]
     private string? activeCardId;
 
     [ObservableProperty]
@@ -133,6 +144,8 @@ public partial class ProfileViewModel : ObservableObject
         Appearance = prefs.Appearance;
         BaseCurrency = prefs.BaseCurrency;
         LockIdleSeconds = prefs.LockIdleSeconds;
+        ValuesHiddenOnLaunch = prefs.ValuesHiddenOnLaunch;
+        CombineAssets = prefs.AssetsLayout.Equals("combined", StringComparison.OrdinalIgnoreCase);
         ApiEndpoint = _settings.CipherBankEndpointBase;
 #if DEBUG
         UseMockServices = _settings.UseMockServices;
@@ -171,6 +184,8 @@ public partial class ProfileViewModel : ObservableObject
         prefs.Appearance = Appearance;
         prefs.BaseCurrency = BaseCurrency;
         prefs.LockIdleSeconds = Math.Clamp(LockIdleSeconds, 30, 3600);
+        prefs.ValuesHiddenOnLaunch = ValuesHiddenOnLaunch;
+        prefs.AssetsLayout = CombineAssets ? "combined" : "separate";
         foreach (var section in HomeSections)
         {
             prefs.HomeVisible[section.Key] = section.Visible;
@@ -194,9 +209,8 @@ public partial class ProfileViewModel : ObservableObject
             return;
         }
 
-        if (string.IsNullOrEmpty(RevealPin) || !await _pin.VerifyPinAsync(RevealPin))
+        if (!await _stepUp.RequireAsync(AuthReason.RevealKeys))
         {
-            await _dialogs.ShowAlertAsync("PIN", "Enter your PIN to reveal the recovery phrase.");
             return;
         }
 

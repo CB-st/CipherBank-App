@@ -5,6 +5,7 @@
 using System.Collections.ObjectModel;
 using CipherBank_app.Controls;
 using CipherBank_app.Cora;
+using CipherBank_app.Custody;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
 using CipherBank_app.V1;
@@ -19,12 +20,14 @@ public partial class PayViewModel : ObservableObject
     private readonly IProductApi _api;
     private readonly IDialogService _dialogs;
     private readonly IAppSession _session;
+    private readonly IStepUpAuth _stepUp;
 
-    public PayViewModel(IProductApi api, IDialogService dialogs, IAppSession session)
+    public PayViewModel(IProductApi api, IDialogService dialogs, IAppSession session, IStepUpAuth stepUp)
     {
         _api = api;
         _dialogs = dialogs;
         _session = session;
+        _stepUp = stepUp;
         CoraLine = CoraLines.For("pay");
         RebuildMix();
     }
@@ -101,6 +104,11 @@ public partial class PayViewModel : ObservableObject
         if (!_session.IsUnlocked)
         {
             await _dialogs.ShowAlertAsync("Locked", "Unlock custody before paying.");
+            return;
+        }
+
+        if (!await _stepUp.RequireAsync(AuthReason.Payment))
+        {
             return;
         }
 
