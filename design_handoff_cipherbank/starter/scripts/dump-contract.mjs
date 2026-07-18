@@ -67,5 +67,8 @@ for (const d of ['API_CONTRACT.md', 'POS_API.md', 'README.md']) {
   const p = path.join(root, 'src/mocks', d);
   console.log(fs.existsSync(p) ? `  ✓ src/mocks/${d}` : `  ✗ missing ${d}`);
 }
-console.log('  ✓ docs/TESTING.md');
+for (const d of ['CB_FullAPIRef.html', 'CB_InitialAPIRef.html', 'PUBLIC_API.md', 'TESTING.md']) {
+  const p = path.join(root, 'docs', d);
+  console.log(fs.existsSync(p) ? `  ✓ docs/${d}` : `  ✗ missing docs/${d}`);
+}
 console.log('');

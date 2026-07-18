@@ -1,34 +1,49 @@
 import { useMock, mockRequest } from '@/mocks';
+import { decodeResponseBody, encodeRequestBody } from '@/lib/wireFormat';
 
 const BASE = process.env.EXPO_PUBLIC_API_BASE ?? '';
 
 type Opts = { idempotencyKey?: string; signal?: AbortSignal };
 
 async function request<T>(method: string, path: string, body?: unknown, opts: Opts = {}): Promise<T> {
+  const wireBody = body === undefined ? undefined : encodeRequestBody(path, body);
+
   if (useMock()) {
-    return mockRequest<T>(method, path, body, opts);
+    const wireRes = await mockRequest<T>(method, path, wireBody, opts);
+    return decodeResponseBody(path, wireRes);
   }
 
   const res = await fetch(BASE + path, {
     method,
     headers: {
+      Accept: 'application/json',
       'Content-Type': 'application/json',
       // Authorization: 'Bearer ' + (await getToken()),
       ...(opts.idempotencyKey ? { 'Idempotency-Key': opts.idempotencyKey } : {}),
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: wireBody !== undefined ? JSON.stringify(wireBody) : undefined,
     signal: opts.signal,
   });
   if (!res.ok) throw await toApiError(res);
-  return res.status === 204 ? (undefined as T) : res.json();
+  if (res.status === 204) return undefined as T;
+  const json = (await res.json()) as T;
+  return decodeResponseBody(path, json);
 }
 
 async function toApiError(res: Response) {
-  let detail: any = null;
+  let detail: unknown = null;
   try {
     detail = await res.json();
-  } catch {}
-  return Object.assign(new Error(detail?.message ?? res.statusText), { status: res.status, detail });
+  } catch {
+    /* empty */
+  }
+  const message =
+    detail && typeof detail === 'object' && detail !== null && 'MESSAGE' in detail
+      ? String((detail as { MESSAGE: unknown }).MESSAGE)
+      : detail && typeof detail === 'object' && detail !== null && 'message' in detail
+        ? String((detail as { message: unknown }).message)
+        : res.statusText;
+  return Object.assign(new Error(message), { status: res.status, detail });
 }
 
 export const api = {

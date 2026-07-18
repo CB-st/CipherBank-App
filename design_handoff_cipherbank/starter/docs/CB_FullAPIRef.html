@@ -1,0 +1,2310 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>CipherBank Full API Reference</title>
+	<style>
+		:root {
+			color-scheme: light dark;
+			--paper: #F7F5F2;
+			--ink: #111318;
+			--plum: #2B1E3E;
+			--gold: #F2C14E;
+			--violet: #7B4DFF;
+			--muted: #5d5965;
+			--line: #d8d2dc;
+			--panel: #ffffff;
+		}
+		* { box-sizing: border-box; }
+		html { scroll-behavior: smooth; }
+		body {
+			margin: 0;
+			background: var(--paper);
+			color: var(--ink);
+			font: 1rem/1.6 ui-sans-serif, system-ui, sans-serif;
+		}
+		a { color: #5b2ed1; text-underline-offset: .18em; }
+		a:focus-visible { outline: .2rem solid var(--gold); outline-offset: .2rem; }
+		header {
+			background: var(--plum);
+			color: #F7F5F2;
+			padding: 3rem max(1.25rem, calc((100% - 72rem) / 2));
+		}
+		header p { max-width: 48rem; }
+		header a { color: var(--gold); }
+		.layout {
+			display: grid;
+			grid-template-columns: minmax(13rem, 18rem) minmax(0, 1fr);
+			gap: 2rem;
+			max-width: 72rem;
+			margin: 0 auto;
+			padding: 2rem 1.25rem 4rem;
+		}
+		nav {
+			align-self: start;
+			position: sticky;
+			top: 1rem;
+			border-left: .3rem solid var(--violet);
+			padding: .5rem 1rem;
+		}
+		nav ul { list-style: none; margin: 0; padding: 0; }
+		nav li + li { margin-top: .45rem; }
+		main { min-width: 0; }
+		.endpoint {
+			background: var(--panel);
+			border: 1px solid var(--line);
+			border-radius: .65rem;
+			box-shadow: 0 .2rem 1rem rgb(43 30 62 / 8%);
+			margin-bottom: 1.5rem;
+			padding: 1.5rem;
+		}
+		.endpoint:target { outline: .2rem solid var(--gold); outline-offset: .2rem; }
+		.representation-grid {
+			display: grid;
+			gap: 1rem;
+			grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+		}
+		.representation-card {
+			border: 1px solid var(--line);
+			border-radius: .5rem;
+			padding: 1rem;
+		}
+		.representation-card h3 { margin-top: 0; }
+		.representation-card dl {
+			display: grid;
+			gap: .35rem .75rem;
+			grid-template-columns: max-content minmax(0, 1fr);
+			margin-bottom: 0;
+		}
+		.representation-card dt { color: var(--muted); font-weight: 700; }
+		.representation-card dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+		.route {
+			align-items: center;
+			display: flex;
+			flex-wrap: wrap;
+			gap: .65rem;
+		}
+		.method {
+			background: var(--violet);
+			border-radius: .3rem;
+			color: #fff;
+			font-size: .78rem;
+			font-weight: 800;
+			letter-spacing: .06em;
+			padding: .2rem .55rem;
+		}
+		code {
+			background: #ece7f1;
+			border-radius: .25rem;
+			color: var(--plum);
+			padding: .08rem .3rem;
+		}
+		pre {
+			background: #2B1E3E;
+			border-radius: .4rem;
+			color: #F7F5F2;
+			overflow-x: auto;
+			padding: 1rem;
+		}
+		pre code { background: transparent; color: inherit; padding: 0; }
+		table { border-collapse: collapse; width: 100%; }
+		th, td { border-bottom: 1px solid var(--line); padding: .55rem; text-align: left; }
+		th { color: var(--plum); }
+		.type { color: var(--muted); white-space: nowrap; }
+		.empty { color: var(--muted); font-style: italic; }
+		footer { border-top: 1px solid var(--line); padding: 1.5rem; text-align: center; }
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--paper: #111318;
+				--ink: #F7F5F2;
+				--plum: #21172f;
+				--muted: #c4bdca;
+				--line: #51475d;
+				--panel: #1a1c22;
+			}
+			a { color: #a98cff; }
+			code { background: #2B1E3E; color: #F7F5F2; }
+			th, .representation-card h3 { color: var(--gold); }
+		}
+		@media (max-width: 44rem) {
+			.layout { display: block; }
+			nav { position: static; margin-bottom: 2rem; }
+			.endpoint { padding: 1rem; }
+		}
+		@media print {
+			:root { --paper: #fff; --ink: #000; --panel: #fff; --line: #aaa; }
+			body { font-size: 10pt; }
+			header { background: none; color: #000; padding: 0 0 1rem; }
+			header a, a { color: #000; }
+			.layout { display: block; max-width: none; padding: 0; }
+			nav { display: none; }
+			.endpoint { break-inside: avoid; box-shadow: none; }
+			.method { border: 1px solid #000; color: #000; background: none; }
+			footer { display: none; }
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<h1>CipherBank Full API Reference</h1>
+		<p>HTTP 1.1 JSON endpoints for the Cora Digital Teller app — public PriceCache plus product <code>/v1</code> — using the same SCREAMING_SNAKE_CASE wire standard as the initial public runtime contracts.</p>
+		<p>
+			<a href="./CB_InitialAPIRef.html">Initial public API (PriceCache)</a>
+			·
+			<a href="../src/mocks/API_CONTRACT.md">Markdown contract</a>
+			·
+			<a href="./PUBLIC_API.md">Public standards notes</a>
+		</p>
+	</header>
+	<div class="layout">
+		<nav aria-label="Endpoint navigation">
+			<h2>Endpoints</h2>
+			<ul>
+				<li><a href="#json-runtime">JSON runtime</a></li>
+				<li><a href="#standards">Wire standards</a></li>
+				<li><a href="#stream">WSS /stream</a></li>
+				<li><a href="#postTest"><span aria-hidden="true">POST</span> /test</a></li>
+				<li><a href="#postCurrencies"><span aria-hidden="true">POST</span> /currencies</a></li>
+				<li><a href="#postIquote"><span aria-hidden="true">POST</span> /iquote</a></li>
+				<li><a href="#postQuote"><span aria-hidden="true">POST</span> /quote</a></li>
+				<li><a href="#postSession"><span aria-hidden="true">POST</span> /session</a></li>
+				<li><a href="#postSessionRefresh"><span aria-hidden="true">POST</span> /session/refresh</a></li>
+				<li><a href="#getPortfolio"><span aria-hidden="true">GET</span> /portfolio</a></li>
+				<li><a href="#getAssets"><span aria-hidden="true">GET</span> /assets</a></li>
+				<li><a href="#getPrefs"><span aria-hidden="true">GET</span> /prefs</a></li>
+				<li><a href="#putPrefs"><span aria-hidden="true">PUT</span> /prefs</a></li>
+				<li><a href="#getAccountBootstrap"><span aria-hidden="true">GET</span> /account/bootstrap</a></li>
+				<li><a href="#getRecipients"><span aria-hidden="true">GET</span> /recipients</a></li>
+				<li><a href="#postRecipients"><span aria-hidden="true">POST</span> /recipients</a></li>
+				<li><a href="#postBanksLink"><span aria-hidden="true">POST</span> /banks/link</a></li>
+				<li><a href="#getHistory"><span aria-hidden="true">GET</span> /history</a></li>
+				<li><a href="#postConvert"><span aria-hidden="true">POST</span> /convert</a></li>
+				<li><a href="#postTransfers"><span aria-hidden="true">POST</span> /transfers</a></li>
+				<li><a href="#postPayments"><span aria-hidden="true">POST</span> /payments</a></li>
+				<li><a href="#getActivity"><span aria-hidden="true">GET</span> /activity</a></li>
+				<li><a href="#getWallets"><span aria-hidden="true">GET</span> /wallets</a></li>
+				<li><a href="#getWallet"><span aria-hidden="true">GET</span> /wallets/:id</a></li>
+				<li><a href="#postWallets"><span aria-hidden="true">POST</span> /wallets</a></li>
+				<li><a href="#postWalletRefresh"><span aria-hidden="true">POST</span> /wallets/:id/refresh</a></li>
+				<li><a href="#getReceive"><span aria-hidden="true">GET</span> /receive/:asset</a></li>
+				<li><a href="#postReceiveRequest"><span aria-hidden="true">POST</span> /receive/request</a></li>
+				<li><a href="#getVaultBinaries"><span aria-hidden="true">GET</span> /vault/binaries</a></li>
+				<li><a href="#postVaultBinaries"><span aria-hidden="true">POST</span> /vault/binaries</a></li>
+				<li><a href="#getVaultCards"><span aria-hidden="true">GET</span> /vault/cards</a></li>
+				<li><a href="#postVaultCards"><span aria-hidden="true">POST</span> /vault/cards</a></li>
+				<li><a href="#postVaultCardDelete"><span aria-hidden="true">POST</span> /vault/cards/:id/delete</a></li>
+				<li><a href="#postPosSessions"><span aria-hidden="true">POST</span> /pos/sessions</a></li>
+				<li><a href="#postPosAuthorize"><span aria-hidden="true">POST</span> /pos/authorize</a></li>
+				<li><a href="#postPosConfirm"><span aria-hidden="true">POST</span> /pos/confirm</a></li>
+				<li><a href="#getPosSession"><span aria-hidden="true">GET</span> /pos/sessions/:id</a></li>
+			</ul>
+		</nav>
+		<main id="main">
+			<section class="endpoint" id="json-runtime" aria-labelledby="json-runtime-title">
+				<h2 id="json-runtime-title">JSON value representations</h2>
+				<p>Field types below use these JSON representations and limits.</p>
+				<div class="representation-grid">
+					<section class="representation-card" aria-labelledby="representation-int64">
+						<h3 id="representation-int64">integer (int64)</h3>
+						<dl>
+							<dt>Minimum</dt><dd><code>-9223372036854775808</code></dd>
+							<dt>Maximum</dt><dd><code>9223372036854775807</code></dd>
+						</dl>
+					</section>
+					<section class="representation-card" aria-labelledby="representation-uint64">
+						<h3 id="representation-uint64">integer (uint64)</h3>
+						<dl>
+							<dt>Minimum</dt><dd><code>0</code></dd>
+							<dt>Maximum</dt><dd><code>18446744073709551615</code></dd>
+						</dl>
+					</section>
+					<section class="representation-card" aria-labelledby="representation-double">
+						<h3 id="representation-double">number (double)</h3>
+						<dl>
+							<dt>Minimum</dt><dd><code>-1.7976931348623157e+308</code></dd>
+							<dt>Maximum</dt><dd><code>1.7976931348623157e+308</code></dd>
+							<dt>Precision</dt><dd>15 decimal digits; 17 for round trips</dd>
+						</dl>
+					</section>
+					<section class="representation-card" aria-labelledby="representation-string">
+						<h3 id="representation-string">string (UTF-8)</h3>
+						<dl>
+							<dt>Encoding</dt><dd>UTF-8 Unicode</dd>
+							<dt>Code unit</dt><dd>8 bits</dd>
+						</dl>
+					</section>
+					<section class="representation-card" aria-labelledby="representation-boolean">
+						<h3 id="representation-boolean">boolean</h3>
+						<dl>
+							<dt>Values</dt><dd><code>true</code> or <code>false</code></dd>
+						</dl>
+					</section>
+				</div>
+			</section>
+
+			<section class="endpoint" id="standards" aria-labelledby="standards-title">
+				<h2 id="standards-title">Wire standards (all surfaces)</h2>
+				<table>
+					<thead><tr><th scope="col">Rule</th><th scope="col">Value</th></tr></thead>
+					<tbody>
+						<tr><th scope="row">Field names</th><td><code>SCREAMING_SNAKE_CASE</code></td></tr>
+						<tr><th scope="row">Public host</th><td><code>api.cipherbank.money</code> (no <code>/v1</code> prefix)</td></tr>
+						<tr><th scope="row">Product host</th><td><code>api.cipherbank.dev/v1</code> · stream <code>wss://api.cipherbank.dev/v1/stream</code></td></tr>
+						<tr><th scope="row">Auth</th><td><code>Authorization: Bearer</code> on product routes except <code>POST /session</code></td></tr>
+						<tr><th scope="row">Content</th><td><code>Accept</code> + <code>Content-Type: application/json</code></td></tr>
+						<tr><th scope="row">Money mutations</th><td><code>Idempotency-Key</code> header</td></tr>
+						<tr><th scope="row">Public amounts</th><td>JSON <code>number (double)</code></td></tr>
+						<tr><th scope="row">Product asset amounts</th><td>Decimal <code>string</code> where noted (AMOUNT legs)</td></tr>
+						<tr><th scope="row">Currency codes (public)</th><td><code>BITCOIN</code>, <code>MONERO</code>, <code>USD</code></td></tr>
+						<tr><th scope="row">Errors</th><td><code>{ "CODE", "MESSAGE", "DETAIL"? }</code></td></tr>
+						<tr><th scope="row">Status vocabulary</th><td><code>406</code> Accept · <code>415</code> Content-Type · <code>417</code> parse/type · <code>422</code> business · <code>424</code> dependency</td></tr>
+						<tr><th scope="row">Never on wire</th><td>Mnemonic, spend key, PIN, PAN/CVV, full ACH account number</td></tr>
+					</tbody>
+				</table>
+				<p>App UI may keep camelCase tickers (<code>BTC</code>/<code>XMR</code>); encoding to public currency codes and SCREAMING_SNAKE happens at the HTTP boundary (<code>wireFormat.ts</code>, <code>publicCurrency.ts</code>).</p>
+			</section>
+
+			<section class="endpoint" id="stream" aria-labelledby="stream-title">
+				<h2 id="stream-title">WebSocket <code>/v1/stream</code></h2>
+				<p><strong>Host:</strong> <code>wss://api.cipherbank.dev/v1/stream</code> · Authenticated connection.</p>
+				<p>Envelope:</p>
+				<pre><code>{
+  "TYPE": "BALANCE.UPDATE",
+  "PAYLOAD": { }
+}</code></pre>
+				<table>
+					<thead><tr><th scope="col">TYPE</th><th scope="col">PAYLOAD (summary)</th></tr></thead>
+					<tbody>
+						<tr><th scope="row"><code>BALANCE.UPDATE</code></th><td>Full portfolio document (SCREAMING_SNAKE).</td></tr>
+						<tr><th scope="row"><code>RATE.TICK</code></th><td><code>PAIR</code>, <code>RATE</code>, <code>TS</code>.</td></tr>
+						<tr><th scope="row"><code>CONVERT.SETTLED</code></th><td><code>TX_ID</code>, <code>AMOUNT_OUT</code>.</td></tr>
+						<tr><th scope="row"><code>TRANSFER.SETTLED</code></th><td><code>TX_ID</code>, <code>ARRIVED_AT</code>.</td></tr>
+						<tr><th scope="row"><code>PAYMENT.SETTLED</code></th><td><code>PAYMENT_ID</code>, <code>BREAKDOWN</code>.</td></tr>
+						<tr><th scope="row"><code>POS.SETTLED</code></th><td><code>SESSION_ID</code>, <code>RECEIPT_ID</code>, <code>AMOUNT</code>, <code>CURRENCY</code>.</td></tr>
+					</tbody>
+				</table>
+			</section>
+
+
+			<article class="endpoint" id="postTest">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/test</code></h2>
+				</div>
+				<p>Confirms that the public HTTP API can accept and return a request.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.money</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postTest-request">
+					<h3 id="postTest-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="postTest-response">
+					<h3 id="postTest-response">Successful response JSON</h3>
+					<p class="empty">The successful response has an empty JSON object body.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="postTest-statuses">
+					<h3 id="postTest-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>The API accepted the connectivity test.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postCurrencies">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/currencies</code></h2>
+				</div>
+				<p>Returns the currencies currently supported by CipherBank.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.money</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postCurrencies-request">
+					<h3 id="postCurrencies-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="postCurrencies-response">
+					<h3 id="postCurrencies-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>CURRENCIES</code></th>
+								<td class="type">array</td>
+								<td>Ordered currency codes currently available to public API customers.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;CURRENCIES&quot;: [
+    &quot;BITCOIN&quot;,
+    &quot;MONERO&quot;,
+    &quot;USD&quot;
+  ]
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postCurrencies-statuses">
+					<h3 id="postCurrencies-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>The supported currency list was returned.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>The wallet service returned an invalid result.</td></tr>
+							<tr><th scope="row"><code>424</code></th><td>The wallet dependency was unavailable.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postIquote">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/iquote</code></h2>
+				</div>
+				<p>Calculates the output amount produced by a requested input amount.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.money</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postIquote-request">
+					<h3 id="postIquote-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>INPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the input currency the customer will provide.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency the customer will provide.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency in which to calculate the result.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;INPUT_AMOUNT&quot;: 0.0015,
+  &quot;INPUT_CURRENCY&quot;: &quot;BITCOIN&quot;,
+  &quot;OUTPUT_CURRENCY&quot;: &quot;USD&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postIquote-response">
+					<h3 id="postIquote-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>INPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the input currency required or supplied.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency supplied by the customer.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>OUTPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the output currency requested or calculated.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency returned to the customer.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;INPUT_AMOUNT&quot;: 0.0015,
+  &quot;INPUT_CURRENCY&quot;: &quot;BITCOIN&quot;,
+  &quot;OUTPUT_AMOUNT&quot;: 100.0,
+  &quot;OUTPUT_CURRENCY&quot;: &quot;USD&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postIquote-statuses">
+					<h3 id="postIquote-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>A quote was calculated.</td></tr>
+							<tr><th scope="row"><code>406</code></th><td>The Accept header does not permit JSON.</td></tr>
+							<tr><th scope="row"><code>415</code></th><td>A non-empty body was not sent as application/json.</td></tr>
+							<tr><th scope="row"><code>417</code></th><td>The JSON body could not be parsed or did not match the field types.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>The inverse quote request or downstream quote result was invalid.</td></tr>
+							<tr><th scope="row"><code>424</code></th><td>The price-cache dependency was unavailable.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postQuote">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/quote</code></h2>
+				</div>
+				<p>Calculates the input amount required to produce a requested output amount.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.money</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postQuote-request">
+					<h3 id="postQuote-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency the customer will provide.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>OUTPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the requested output currency to receive.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency the customer wants to receive.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;INPUT_CURRENCY&quot;: &quot;BITCOIN&quot;,
+  &quot;OUTPUT_AMOUNT&quot;: 100.0,
+  &quot;OUTPUT_CURRENCY&quot;: &quot;USD&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postQuote-response">
+					<h3 id="postQuote-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>INPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the input currency required or supplied.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency supplied by the customer.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>OUTPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
+								<td>Amount of the output currency requested or calculated.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Currency returned to the customer.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;INPUT_AMOUNT&quot;: 0.0015,
+  &quot;INPUT_CURRENCY&quot;: &quot;BITCOIN&quot;,
+  &quot;OUTPUT_AMOUNT&quot;: 100.0,
+  &quot;OUTPUT_CURRENCY&quot;: &quot;USD&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postQuote-statuses">
+					<h3 id="postQuote-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>A quote was calculated.</td></tr>
+							<tr><th scope="row"><code>406</code></th><td>The Accept header does not permit JSON.</td></tr>
+							<tr><th scope="row"><code>415</code></th><td>A non-empty body was not sent as application/json.</td></tr>
+							<tr><th scope="row"><code>417</code></th><td>The JSON body could not be parsed or did not match the field types.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>The quote request or downstream quote result was invalid.</td></tr>
+							<tr><th scope="row"><code>424</code></th><td>The price-cache dependency was unavailable.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postSession">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/session</code></h2>
+				</div>
+				<p>Creates an authenticated device session. Custody keys never leave the device.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postSession-request">
+					<h3 id="postSession-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>DEVICE_BOUND</code></th>
+								<td class="type">boolean</td>
+								<td>True when the session is bound to this device attestation.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>DEVICE_ID</code></th>
+								<td class="type">string</td>
+								<td>Optional stable device identifier.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>DEVICE_ATTESTATION</code></th>
+								<td class="type">string</td>
+								<td>Optional OS attestation / CDCVM proof.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;DEVICE_BOUND&quot;: true,
+  &quot;DEVICE_ID&quot;: &quot;dev_android_lab_01&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postSession-response">
+					<h3 id="postSession-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>TOKEN</code></th>
+								<td class="type">string</td>
+								<td>Bearer access token.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>REFRESH_TOKEN</code></th>
+								<td class="type">string</td>
+								<td>Refresh token for rotation.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>EXPIRES_AT</code></th>
+								<td class="type">integer (int64)</td>
+								<td>Access token expiry epoch milliseconds.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>USER_ID</code></th>
+								<td class="type">string</td>
+								<td>CipherBank user identifier.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;TOKEN&quot;: &quot;eyJ…&quot;,
+  &quot;REFRESH_TOKEN&quot;: &quot;rt_…&quot;,
+  &quot;EXPIRES_AT&quot;: 1720903600000,
+  &quot;USER_ID&quot;: &quot;user_cora&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postSession-statuses">
+					<h3 id="postSession-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Session issued.</td></tr>
+							<tr><th scope="row"><code>417</code></th><td>Body parse/type failure.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>Attestation or device bind rejected.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postSessionRefresh">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/session/refresh</code></h2>
+				</div>
+				<p>Rotates access and refresh tokens.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postSessionRefresh-request">
+					<h3 id="postSessionRefresh-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>REFRESH_TOKEN</code></th>
+								<td class="type">string</td>
+								<td>Previously issued refresh token.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;REFRESH_TOKEN&quot;: &quot;rt_…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postSessionRefresh-response">
+					<h3 id="postSessionRefresh-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>TOKEN</code></th>
+								<td class="type">string</td>
+								<td>New access token.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>REFRESH_TOKEN</code></th>
+								<td class="type">string</td>
+								<td>New refresh token.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>EXPIRES_AT</code></th>
+								<td class="type">integer (int64)</td>
+								<td>Expiry epoch ms.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;TOKEN&quot;: &quot;eyJ…&quot;,
+  &quot;REFRESH_TOKEN&quot;: &quot;rt_…&quot;,
+  &quot;EXPIRES_AT&quot;: 1720907200000
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postSessionRefresh-statuses">
+					<h3 id="postSessionRefresh-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Tokens rotated.</td></tr>
+							<tr><th scope="row"><code>401</code></th><td>Refresh token invalid or revoked.</td></tr>
+							<tr><th scope="row"><code>417</code></th><td>Body parse/type failure.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getPortfolio">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/portfolio</code></h2>
+				</div>
+				<p>Aggregated holdings for Home. Empty for clean installs until funded.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getPortfolio-request">
+					<h3 id="getPortfolio-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getPortfolio-response">
+					<h3 id="getPortfolio-response">Successful response JSON</h3>
+					<p>Nested holding fields also use SCREAMING_SNAKE on the wire (SYMBOL, USD_VALUE, WALLETS, …).</p>
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>TOTAL</code></th>
+								<td class="type">number (double)</td>
+								<td>Portfolio total in display currency (USD).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>CHANGE_24H</code></th>
+								<td class="type">object</td>
+								<td>Keys AMOUNT (double), PCT (double).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>HOLDINGS</code></th>
+								<td class="type">array</td>
+								<td>Holding rows (SYMBOL, NAME, GLYPH, TYPE, AMOUNT string, USD_VALUE, CHANGE_24H, WALLETS?).</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;TOTAL&quot;: 0,
+  &quot;CHANGE_24H&quot;: { &quot;AMOUNT&quot;: 0, &quot;pct&quot;: 0 },
+  &quot;HOLDINGS&quot;: []
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="getPortfolio-statuses">
+					<h3 id="getPortfolio-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Portfolio returned.</td></tr>
+							<tr><th scope="row"><code>401</code></th><td>Missing or invalid Bearer token.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getAssets">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/assets</code></h2>
+				</div>
+				<p>Asset catalog (crypto, fiat, securities). Securities may be ENABLED false.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getAssets-request">
+					<h3 id="getAssets-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getAssets-response">
+					<h3 id="getAssets-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>ASSETS</code></th>
+								<td class="type">array</td>
+								<td>Catalog rows: SYMBOL, NAME, GLYPH, TYPE, DECIMALS, ENABLED, BADGE?, NOTE?.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;ASSETS&quot;: [
+    { &quot;SYMBOL&quot;: &quot;BTC&quot;, &quot;NAME&quot;: &quot;Bitcoin&quot;, &quot;GLYPH&quot;: &quot;₿&quot;, &quot;TYPE&quot;: &quot;crypto&quot;, &quot;DECIMALS&quot;: 8, &quot;ENABLED&quot;: true }
+  ]
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="getAssets-statuses">
+					<h3 id="getAssets-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Catalog returned.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getPrefs">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/prefs</code></h2>
+				</div>
+				<p>User preferences for Home layout, privacy, Cora, currencies, and app lock.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getPrefs-request">
+					<h3 id="getPrefs-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getPrefs-response">
+					<h3 id="getPrefs-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>HOME_ORDER</code></th>
+								<td class="type">array</td>
+								<td>Ordered Home section ids.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>HOME_VISIBLE</code></th>
+								<td class="type">object</td>
+								<td>Section visibility map.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>VALUES_HIDDEN_ON_LAUNCH</code></th>
+								<td class="type">boolean</td>
+								<td>Hide balances until reveal.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>CORA_ENABLED</code></th>
+								<td class="type">boolean</td>
+								<td>Show Cora copy.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>DEFAULT_SEND_SPEED</code></th>
+								<td class="type">string</td>
+								<td>instant | ach.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>APPEARANCE</code></th>
+								<td class="type">string</td>
+								<td>dark | light.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>BASE_CURRENCY</code></th>
+								<td class="type">string</td>
+								<td>Display currency ticker.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>ENABLED_CURRENCIES</code></th>
+								<td class="type">array</td>
+								<td>Enabled asset tickers.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>APP_LOCK_IDLE_SEC</code></th>
+								<td class="type">integer (int64)</td>
+								<td>Idle lock seconds.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;CORA_ENABLED&quot;: true,
+  &quot;DEFAULT_SEND_SPEED&quot;: &quot;instant&quot;,
+  &quot;APPEARANCE&quot;: &quot;dark&quot;,
+  &quot;BASE_CURRENCY&quot;: &quot;USD&quot;,
+  &quot;ENABLED_CURRENCIES&quot;: [&quot;BTC&quot;, &quot;XMR&quot;, &quot;USD&quot;]
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="getPrefs-statuses">
+					<h3 id="getPrefs-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Prefs returned.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="putPrefs">
+				<div class="route">
+					<span class="method">PUT</span>
+					<h2><code>/prefs</code></h2>
+				</div>
+				<p>Merges partial or full preference document.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="putPrefs-request">
+					<h3 id="putPrefs-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>(any pref key)</code></th>
+								<td class="type">mixed</td>
+								<td>Partial SCREAMING_SNAKE prefs body.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;CORA_ENABLED&quot;: false, &quot;BASE_CURRENCY&quot;: &quot;USD&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="putPrefs-response">
+					<h3 id="putPrefs-response">Successful response JSON</h3>
+					<p>Returns the full merged prefs document.</p>
+					<h4>Example</h4>
+					<pre><code>{ &quot;CORA_ENABLED&quot;: false, &quot;BASE_CURRENCY&quot;: &quot;USD&quot;, &quot;APPEARANCE&quot;: &quot;dark&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="putPrefs-statuses">
+					<h3 id="putPrefs-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Prefs merged.</td></tr>
+							<tr><th scope="row"><code>417</code></th><td>Body parse/type failure.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>Invalid enum or currency.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getAccountBootstrap">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/account/bootstrap</code></h2>
+				</div>
+				<p>Returning-user metadata pull: prefs + public ACH recipients (never seed or full account numbers).</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getAccountBootstrap-request">
+					<h3 id="getAccountBootstrap-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getAccountBootstrap-response">
+					<h3 id="getAccountBootstrap-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>PREFS</code></th>
+								<td class="type">object</td>
+								<td>Optional partial prefs merge.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>RECIPIENTS</code></th>
+								<td class="type">array</td>
+								<td>Public payees: ID, DISPLAY_NAME, ACCOUNT_HOLDER_NAME, BANK_NAME, ACCOUNT_LAST4, ACCOUNT_TYPE, ROUTING_NUMBER, RAIL, HANDLE, INITIALS.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>SYNCED_AT</code></th>
+								<td class="type">integer (int64)</td>
+								<td>Server sync timestamp ms.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;PREFS&quot;: { &quot;DEFAULT_SEND_SPEED&quot;: &quot;instant&quot; },
+  &quot;RECIPIENTS&quot;: [
+    {
+      &quot;ID&quot;: &quot;maya&quot;,
+      &quot;DISPLAY_NAME&quot;: &quot;Maya Chen&quot;,
+      &quot;ACCOUNT_HOLDER_NAME&quot;: &quot;Maya Chen&quot;,
+      &quot;BANK_NAME&quot;: &quot;Chase&quot;,
+      &quot;ACCOUNT_LAST4&quot;: &quot;4021&quot;,
+      &quot;ACCOUNT_TYPE&quot;: &quot;checking&quot;,
+      &quot;ROUTING_NUMBER&quot;: &quot;021000021&quot;,
+      &quot;RAIL&quot;: &quot;ACH&quot;,
+      &quot;HANDLE&quot;: &quot;maya@cipherbank.id&quot;,
+      &quot;INITIALS&quot;: &quot;MC&quot;
+    }
+  ],
+  &quot;SYNCED_AT&quot;: 1720900000000
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="getAccountBootstrap-statuses">
+					<h3 id="getAccountBootstrap-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Bootstrap payload returned (may be empty recipients).</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getRecipients">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/recipients</code></h2>
+				</div>
+				<p>Cloud recipient directory (public fields). On-device SQLite may hold full account numbers separately.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getRecipients-request">
+					<h3 id="getRecipients-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getRecipients-response">
+					<h3 id="getRecipients-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>RECIPIENTS</code></th>
+								<td class="type">array</td>
+								<td>Public recipient rows.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;RECIPIENTS&quot;: [] }</code></pre>
+				</section>
+
+				<section aria-labelledby="getRecipients-statuses">
+					<h3 id="getRecipients-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>List returned.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postRecipients">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/recipients</code></h2>
+				</div>
+				<p>Creates or updates a cloud recipient (public fields only on wire).</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postRecipients-request">
+					<h3 id="postRecipients-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>DISPLAY_NAME</code></th>
+								<td class="type">string</td>
+								<td>Payee display name.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>ACCOUNT_HOLDER_NAME</code></th>
+								<td class="type">string</td>
+								<td>Legal account name.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>ROUTING_NUMBER</code></th>
+								<td class="type">string</td>
+								<td>ABA routing (9 digits).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>ACCOUNT_LAST4</code></th>
+								<td class="type">string</td>
+								<td>Last four only — never full account number.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>ACCOUNT_TYPE</code></th>
+								<td class="type">string</td>
+								<td>checking | savings.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>RAIL</code></th>
+								<td class="type">string</td>
+								<td>ACH | wire | rtp.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;DISPLAY_NAME&quot;: &quot;Maya Chen&quot;,
+  &quot;ACCOUNT_HOLDER_NAME&quot;: &quot;Maya Chen&quot;,
+  &quot;ROUTING_NUMBER&quot;: &quot;021000021&quot;,
+  &quot;ACCOUNT_LAST4&quot;: &quot;4021&quot;,
+  &quot;ACCOUNT_TYPE&quot;: &quot;checking&quot;,
+  &quot;RAIL&quot;: &quot;ACH&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postRecipients-response">
+					<h3 id="postRecipients-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ID&quot;: &quot;rcp_…&quot;, &quot;DISPLAY_NAME&quot;: &quot;Maya Chen&quot;, &quot;ACCOUNT_LAST4&quot;: &quot;4021&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postRecipients-statuses">
+					<h3 id="postRecipients-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Recipient upserted.</td></tr>
+							<tr><th scope="row"><code>417</code></th><td>Body parse/type failure.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>Validation failed.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postBanksLink">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/banks/link</code></h2>
+				</div>
+				<p>Starts or completes institution link (Plaid-style). Later phase.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postBanksLink-request">
+					<h3 id="postBanksLink-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>PROVIDER_TOKEN</code></th>
+								<td class="type">string</td>
+								<td>Link provider public token.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;PROVIDER_TOKEN&quot;: &quot;link-sandbox-…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postBanksLink-response">
+					<h3 id="postBanksLink-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>LINKED</code></th>
+								<td class="type">boolean</td>
+								<td>Whether link succeeded.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>BANK_ID</code></th>
+								<td class="type">string</td>
+								<td>Linked institution id.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>LAST4</code></th>
+								<td class="type">string</td>
+								<td>Masked account last4.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;LINKED&quot;: true, &quot;BANK_ID&quot;: &quot;bank_…&quot;, &quot;LAST4&quot;: &quot;4021&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postBanksLink-statuses">
+					<h3 id="postBanksLink-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Bank linked.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>Provider token invalid.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getHistory">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/history</code></h2>
+				</div>
+				<p>Bulk OHLC / series for Home charts. Query: RANGE, GRANULARITY, SYMBOLS, FROM, TO (as query string keys screaming or lower — prefer RANGE=&amp;GRANULARITY=&amp;SYMBOLS=&amp;FROM=&amp;TO=).</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getHistory-request">
+					<h3 id="getHistory-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getHistory-response">
+					<h3 id="getHistory-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>SERIES</code></th>
+								<td class="type">array</td>
+								<td>Series rows: LABEL, SYMBOL, GRANULARITY, POINTS[{ T, V, O?, H?, L?, C? }].</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>META</code></th>
+								<td class="type">object</td>
+								<td>SOURCE, GENERATED_AT.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;SERIES&quot;: [
+    { &quot;LABEL&quot;: &quot;Wallet&quot;, &quot;SYMBOL&quot;: &quot;WALLET&quot;, &quot;GRANULARITY&quot;: &quot;1h&quot;, &quot;POINTS&quot;: [{ &quot;T&quot;: 1720900000, &quot;V&quot;: 100000, &quot;O&quot;: 99, &quot;H&quot;: 101, &quot;L&quot;: 98, &quot;C&quot;: 100 }] }
+  ],
+  &quot;META&quot;: { &quot;SOURCE&quot;: &quot;cipherbank&quot;, &quot;GENERATED_AT&quot;: 1720900000000 }
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="getHistory-statuses">
+					<h3 id="getHistory-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Series returned.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>Invalid range or symbols.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postConvert">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/convert</code></h2>
+				</div>
+				<p>Executes a convert against a locked quote. Requires Idempotency-Key. Pricing via public /iquote beforehand.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postConvert-request">
+					<h3 id="postConvert-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>QUOTE_ID</code></th>
+								<td class="type">string</td>
+								<td>Client or server lock id from pricing step.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>AMOUNT</code></th>
+								<td class="type">string</td>
+								<td>Input amount in asset units (decimal string).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Optional public code echo (BITCOIN).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
+								<td class="type">string (currency-code)</td>
+								<td>Optional public code echo.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;QUOTE_ID&quot;: &quot;q_…&quot;,
+  &quot;AMOUNT&quot;: &quot;0.0015&quot;,
+  &quot;INPUT_CURRENCY&quot;: &quot;BITCOIN&quot;,
+  &quot;OUTPUT_CURRENCY&quot;: &quot;USD&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postConvert-response">
+					<h3 id="postConvert-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>TX_ID</code></th>
+								<td class="type">string</td>
+								<td>Convert transaction id.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>STATUS</code></th>
+								<td class="type">string</td>
+								<td>accepted | settled | failed.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;TX_ID&quot;: &quot;cvt_…&quot;, &quot;STATUS&quot;: &quot;accepted&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postConvert-statuses">
+					<h3 id="postConvert-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Accepted; stream CONVERT.SETTLED follows.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>quote_expired or invalid quote.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postTransfers">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/transfers</code></h2>
+				</div>
+				<p>Send to a recipient (instant or ACH). Idempotency-Key required.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postTransfers-request">
+					<h3 id="postTransfers-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>RECIPIENT</code></th>
+								<td class="type">string</td>
+								<td>Recipient id or handle.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>AMOUNT</code></th>
+								<td class="type">string</td>
+								<td>Send amount.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>SOURCE</code></th>
+								<td class="type">string</td>
+								<td>Funding asset / wallet id.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>SPEED</code></th>
+								<td class="type">string</td>
+								<td>instant | ach.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;RECIPIENT&quot;: &quot;maya&quot;,
+  &quot;AMOUNT&quot;: &quot;1200&quot;,
+  &quot;SOURCE&quot;: &quot;USD&quot;,
+  &quot;SPEED&quot;: &quot;ach&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postTransfers-response">
+					<h3 id="postTransfers-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;TX_ID&quot;: &quot;xfer_…&quot;, &quot;STATUS&quot;: &quot;accepted&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postTransfers-statuses">
+					<h3 id="postTransfers-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Accepted; stream TRANSFER.SETTLED follows.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>insufficient_funds or recipient_unresolved.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postPayments">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/payments</code></h2>
+				</div>
+				<p>Multi-asset payment mix. Idempotency-Key required.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postPayments-request">
+					<h3 id="postPayments-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>RECIPIENT</code></th>
+								<td class="type">string</td>
+								<td>Payee id.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>TOTAL</code></th>
+								<td class="type">string</td>
+								<td>Total due in quote currency.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>SOURCES</code></th>
+								<td class="type">array</td>
+								<td>[{ ASSET, VALUE }] funding legs.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;RECIPIENT&quot;: &quot;sunset&quot;,
+  &quot;TOTAL&quot;: &quot;2400&quot;,
+  &quot;SOURCES&quot;: [
+    { &quot;ASSET&quot;: &quot;USD&quot;, &quot;VALUE&quot;: &quot;1200&quot; },
+    { &quot;ASSET&quot;: &quot;BTC&quot;, &quot;VALUE&quot;: &quot;0.02&quot; }
+  ]
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postPayments-response">
+					<h3 id="postPayments-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;PAYMENT_ID&quot;: &quot;pay_…&quot;, &quot;STATUS&quot;: &quot;accepted&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postPayments-statuses">
+					<h3 id="postPayments-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Accepted; stream PAYMENT.SETTLED follows.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>mix_undercovered when sources do not cover TOTAL.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getActivity">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/activity</code></h2>
+				</div>
+				<p>Unified activity feed with cursor pagination.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getActivity-request">
+					<h3 id="getActivity-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getActivity-response">
+					<h3 id="getActivity-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>ITEMS</code></th>
+								<td class="type">array</td>
+								<td>ID, KIND, STATUS, TITLE, AMOUNT, ASSET, COUNTERPART, CREATED_AT.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>NEXT_CURSOR</code></th>
+								<td class="type">string</td>
+								<td>Opaque cursor or null.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;ITEMS&quot;: [], &quot;NEXT_CURSOR&quot;: null }</code></pre>
+				</section>
+
+				<section aria-labelledby="getActivity-statuses">
+					<h3 id="getActivity-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Page returned.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getWallets">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/wallets</code></h2>
+				</div>
+				<p>List server wallets. Optional query SYMBOL=XMR.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getWallets-request">
+					<h3 id="getWallets-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getWallets-response">
+					<h3 id="getWallets-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>WALLETS</code></th>
+								<td class="type">array</td>
+								<td>Server wallet rows.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;WALLETS&quot;: [] }</code></pre>
+				</section>
+
+				<section aria-labelledby="getWallets-statuses">
+					<h3 id="getWallets-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>List returned.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getWallet">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/wallets/:id</code></h2>
+				</div>
+				<p>Wallet detail including sync status.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getWallet-request">
+					<h3 id="getWallet-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getWallet-response">
+					<h3 id="getWallet-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;ID&quot;: &quot;wal_xmr_1&quot;,
+  &quot;SYMBOL&quot;: &quot;XMR&quot;,
+  &quot;LABEL&quot;: &quot;Primary&quot;,
+  &quot;MODE&quot;: &quot;unmanaged&quot;,
+  &quot;ADDRESS&quot;: &quot;4…&quot;,
+  &quot;BALANCE&quot;: &quot;0&quot;,
+  &quot;SYNC&quot;: { &quot;HEIGHT&quot;: 3100400, &quot;TARGET&quot;: 3100500, &quot;STATE&quot;: &quot;syncing&quot; }
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="getWallet-statuses">
+					<h3 id="getWallet-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Wallet returned.</td></tr>
+							<tr><th scope="row"><code>404</code></th><td>not_found.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postWallets">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/wallets</code></h2>
+				</div>
+				<p>Create managed / unmanaged / watch wallet. Unmanaged may send VIEW_KEY once. Never send spend key or mnemonic.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postWallets-request">
+					<h3 id="postWallets-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>MODE</code></th>
+								<td class="type">string</td>
+								<td>managed | unmanaged | watch.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>SYMBOL</code></th>
+								<td class="type">string</td>
+								<td>Asset ticker (XMR).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>LABEL</code></th>
+								<td class="type">string</td>
+								<td>Display label.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>ADDRESS</code></th>
+								<td class="type">string</td>
+								<td>Required for unmanaged/watch.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>VIEW_KEY</code></th>
+								<td class="type">string</td>
+								<td>Unmanaged view key (once).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>RESTORE_HEIGHT</code></th>
+								<td class="type">integer (int64)</td>
+								<td>Optional scan height.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;MODE&quot;: &quot;unmanaged&quot;,
+  &quot;SYMBOL&quot;: &quot;XMR&quot;,
+  &quot;LABEL&quot;: &quot;Phone&quot;,
+  &quot;ADDRESS&quot;: &quot;4…&quot;,
+  &quot;VIEW_KEY&quot;: &quot;…&quot;,
+  &quot;RESTORE_HEIGHT&quot;: 3100000
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postWallets-response">
+					<h3 id="postWallets-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;WALLET_ID&quot;: &quot;wal_xmr_…&quot;,
+  &quot;SYMBOL&quot;: &quot;XMR&quot;,
+  &quot;MODE&quot;: &quot;unmanaged&quot;,
+  &quot;ADDRESS&quot;: &quot;4…&quot;,
+  &quot;VIEW_KEY_FINGERPRINT&quot;: &quot;••••abcd&quot;,
+  &quot;SYNC&quot;: { &quot;STATE&quot;: &quot;syncing&quot; }
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postWallets-statuses">
+					<h3 id="postWallets-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Wallet created.</td></tr>
+							<tr><th scope="row"><code>400</code></th><td>custody_local_only if seed/spend key present.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>Missing address/view key for mode.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postWalletRefresh">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/wallets/:id/refresh</code></h2>
+				</div>
+				<p>Kick wallet sync / balance refresh.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postWalletRefresh-request">
+					<h3 id="postWalletRefresh-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="postWalletRefresh-response">
+					<h3 id="postWalletRefresh-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ID&quot;: &quot;wal_xmr_…&quot;, &quot;SYNC&quot;: { &quot;STATE&quot;: &quot;synced&quot;, &quot;HEIGHT&quot;: 3100500, &quot;TARGET&quot;: 3100500 } }</code></pre>
+				</section>
+
+				<section aria-labelledby="postWalletRefresh-statuses">
+					<h3 id="postWalletRefresh-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Refresh accepted / completed.</td></tr>
+							<tr><th scope="row"><code>404</code></th><td>Wallet not found.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getReceive">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/receive/:asset</code></h2>
+				</div>
+				<p>Receive handle / address / URI for an asset. Local-derived addresses may override for self-custody coins.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getReceive-request">
+					<h3 id="getReceive-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getReceive-response">
+					<h3 id="getReceive-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>HANDLE</code></th>
+								<td class="type">string</td>
+								<td>Payment handle.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>ADDRESS</code></th>
+								<td class="type">string</td>
+								<td>Chain address.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>URI</code></th>
+								<td class="type">string</td>
+								<td>Payment URI.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>QR</code></th>
+								<td class="type">string</td>
+								<td>QR payload (often same as URI).</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;HANDLE&quot;: &quot;cora@cipherbank.id&quot;,
+  &quot;ADDRESS&quot;: &quot;bc1q…&quot;,
+  &quot;URI&quot;: &quot;bitcoin:bc1q…&quot;,
+  &quot;QR&quot;: &quot;bitcoin:bc1q…&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="getReceive-statuses">
+					<h3 id="getReceive-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Receive info returned.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postReceiveRequest">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/receive/request</code></h2>
+				</div>
+				<p>Optional server-issued amount request URI.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postReceiveRequest-request">
+					<h3 id="postReceiveRequest-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>ASSET</code></th>
+								<td class="type">string</td>
+								<td>Asset ticker.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>AMOUNT</code></th>
+								<td class="type">string</td>
+								<td>Requested amount.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;ASSET&quot;: &quot;BTC&quot;, &quot;AMOUNT&quot;: &quot;0.01&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postReceiveRequest-response">
+					<h3 id="postReceiveRequest-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;HANDLE&quot;: &quot;cora@cipherbank.id&quot;,
+  &quot;ADDRESS&quot;: &quot;bc1q…&quot;,
+  &quot;AMOUNT&quot;: &quot;0.01&quot;,
+  &quot;URI&quot;: &quot;bitcoin:bc1q…?amount=0.01&quot;,
+  &quot;QR&quot;: &quot;bitcoin:bc1q…?amount=0.01&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postReceiveRequest-statuses">
+					<h3 id="postReceiveRequest-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Request URI built.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getVaultBinaries">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/vault/binaries</code></h2>
+				</div>
+				<p>Server-held wallet binary metadata refs (never key material).</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getVaultBinaries-request">
+					<h3 id="getVaultBinaries-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getVaultBinaries-response">
+					<h3 id="getVaultBinaries-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>BINARIES</code></th>
+								<td class="type">array</td>
+								<td>ID, LABEL, KIND, STATUS, CREATED_AT.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;BINARIES&quot;: [] }</code></pre>
+				</section>
+
+				<section aria-labelledby="getVaultBinaries-statuses">
+					<h3 id="getVaultBinaries-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>List returned.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postVaultBinaries">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/vault/binaries</code></h2>
+				</div>
+				<p>Register binary metadata. Idempotency-Key recommended.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postVaultBinaries-request">
+					<h3 id="postVaultBinaries-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>LABEL</code></th>
+								<td class="type">string</td>
+								<td>Display label.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>KIND</code></th>
+								<td class="type">string</td>
+								<td>server_shard | backup_ref | …</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;LABEL&quot;: &quot;Primary shard&quot;, &quot;KIND&quot;: &quot;server_shard&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postVaultBinaries-response">
+					<h3 id="postVaultBinaries-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;ID&quot;: &quot;bin_…&quot;,
+  &quot;LABEL&quot;: &quot;Primary shard&quot;,
+  &quot;KIND&quot;: &quot;server_shard&quot;,
+  &quot;STATUS&quot;: &quot;active&quot;,
+  &quot;CREATED_AT&quot;: 1720900000000
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postVaultBinaries-statuses">
+					<h3 id="postVaultBinaries-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Binary registered.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getVaultCards">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/vault/cards</code></h2>
+				</div>
+				<p>Processor card tokens only — never PAN/CVV.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getVaultCards-request">
+					<h3 id="getVaultCards-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getVaultCards-response">
+					<h3 id="getVaultCards-response">Successful response JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>CARDS</code></th>
+								<td class="type">array</td>
+								<td>ID, BRAND, LAST4, EXP_MONTH, EXP_YEAR, PROCESSOR_TOKEN, HARDWARE_TEST?, LABEL?, CREATED_AT.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;CARDS&quot;: [] }</code></pre>
+				</section>
+
+				<section aria-labelledby="getVaultCards-statuses">
+					<h3 id="getVaultCards-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>List returned.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postVaultCards">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/vault/cards</code></h2>
+				</div>
+				<p>Tokenize display card fields into a processor token.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postVaultCards-request">
+					<h3 id="postVaultCards-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>BRAND</code></th>
+								<td class="type">string</td>
+								<td>Visa | Mastercard | …</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>LAST4</code></th>
+								<td class="type">string</td>
+								<td>Last four digits.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>EXP_MONTH</code></th>
+								<td class="type">integer</td>
+								<td>1–12.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>EXP_YEAR</code></th>
+								<td class="type">integer</td>
+								<td>Four-digit year.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>LABEL</code></th>
+								<td class="type">string</td>
+								<td>Optional label.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;BRAND&quot;: &quot;Visa&quot;,
+  &quot;LAST4&quot;: &quot;4242&quot;,
+  &quot;EXP_MONTH&quot;: 12,
+  &quot;EXP_YEAR&quot;: 2030
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postVaultCards-response">
+					<h3 id="postVaultCards-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;ID&quot;: &quot;card_…&quot;,
+  &quot;BRAND&quot;: &quot;Visa&quot;,
+  &quot;LAST4&quot;: &quot;4242&quot;,
+  &quot;PROCESSOR_TOKEN&quot;: &quot;tok_…&quot;,
+  &quot;CREATED_AT&quot;: 1720900000000
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postVaultCards-statuses">
+					<h3 id="postVaultCards-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Card tokenized.</td></tr>
+							<tr><th scope="row"><code>400</code></th><td>custody_local_only if PAN/CVV present.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postVaultCardDelete">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/vault/cards/:id/delete</code></h2>
+				</div>
+				<p>Deletes / revokes a card token.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postVaultCardDelete-request">
+					<h3 id="postVaultCardDelete-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="postVaultCardDelete-response">
+					<h3 id="postVaultCardDelete-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;OK&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="postVaultCardDelete-statuses">
+					<h3 id="postVaultCardDelete-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Card removed.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postPosSessions">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/pos/sessions</code></h2>
+				</div>
+				<p>Creates a POS session (pending_auth). Idempotency-Key recommended.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postPosSessions-request">
+					<h3 id="postPosSessions-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>MERCHANT_ID</code></th>
+								<td class="type">string</td>
+								<td>Merchant / lab terminal id.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>AMOUNT</code></th>
+								<td class="type">string</td>
+								<td>Ticket amount.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>CURRENCY</code></th>
+								<td class="type">string</td>
+								<td>Ticket currency (USD).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>LABEL</code></th>
+								<td class="type">string</td>
+								<td>Optional description.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;MERCHANT_ID&quot;: &quot;merchant_lab&quot;,
+  &quot;AMOUNT&quot;: &quot;42.50&quot;,
+  &quot;CURRENCY&quot;: &quot;USD&quot;,
+  &quot;LABEL&quot;: &quot;Coffee&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postPosSessions-response">
+					<h3 id="postPosSessions-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;SESSION_ID&quot;: &quot;pos_…&quot;,
+  &quot;STATUS&quot;: &quot;pending_auth&quot;,
+  &quot;AMOUNT&quot;: &quot;42.50&quot;,
+  &quot;CURRENCY&quot;: &quot;USD&quot;,
+  &quot;EXPIRES_AT&quot;: 1720900120000
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postPosSessions-statuses">
+					<h3 id="postPosSessions-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Session created.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postPosAuthorize">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/pos/authorize</code></h2>
+				</div>
+				<p>Authorizes funding sources + card for presentment.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postPosAuthorize-request">
+					<h3 id="postPosAuthorize-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>SESSION_ID</code></th>
+								<td class="type">string</td>
+								<td>POS session id.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>CARD_ID</code></th>
+								<td class="type">string</td>
+								<td>Vault card id.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>SOURCES</code></th>
+								<td class="type">array</td>
+								<td>[{ ASSET, VALUE }] funding.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>DEVICE_ATTESTATION</code></th>
+								<td class="type">string</td>
+								<td>Unlock / CDCVM proof.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;SESSION_ID&quot;: &quot;pos_…&quot;,
+  &quot;CARD_ID&quot;: &quot;card_tok_nfc_bench_4242&quot;,
+  &quot;SOURCES&quot;: [{ &quot;ASSET&quot;: &quot;USD&quot;, &quot;VALUE&quot;: &quot;42.50&quot; }],
+  &quot;DEVICE_ATTESTATION&quot;: &quot;ok&quot;
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postPosAuthorize-response">
+					<h3 id="postPosAuthorize-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;SESSION_ID&quot;: &quot;pos_…&quot;,
+  &quot;STATUS&quot;: &quot;authorized&quot;,
+  &quot;EPHEMERAL_CARD_TOKEN_ID&quot;: &quot;eph_…&quot;,
+  &quot;PRESENTMENT&quot;: { &quot;TTL_MS&quot;: 60000, &quot;TOKEN_REF&quot;: &quot;…&quot; }
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="postPosAuthorize-statuses">
+					<h3 id="postPosAuthorize-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Authorized for presentment.</td></tr>
+							<tr><th scope="row"><code>401</code></th><td>wallet_locked.</td></tr>
+							<tr><th scope="row"><code>409</code></th><td>pos_expired.</td></tr>
+							<tr><th scope="row"><code>422</code></th><td>insufficient_funds | test_card_required | mix_undercovered.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="postPosConfirm">
+				<div class="route">
+					<span class="method">POST</span>
+					<h2><code>/pos/confirm</code></h2>
+				</div>
+				<p>Marks session ready_to_present for NFC / simulate exchange.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="postPosConfirm-request">
+					<h3 id="postPosConfirm-request">Request JSON</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>SESSION_ID</code></th>
+								<td class="type">string</td>
+								<td>POS session id.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;SESSION_ID&quot;: &quot;pos_…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postPosConfirm-response">
+					<h3 id="postPosConfirm-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;SESSION_ID&quot;: &quot;pos_…&quot;, &quot;STATUS&quot;: &quot;ready_to_present&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="postPosConfirm-statuses">
+					<h3 id="postPosConfirm-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Ready to present.</td></tr>
+							<tr><th scope="row"><code>409</code></th><td>pos_expired or not authorized.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="getPosSession">
+				<div class="route">
+					<span class="method">GET</span>
+					<h2><code>/pos/sessions/:id</code></h2>
+				</div>
+				<p>Poll POS session status.</p>
+				<p><strong>Host:</strong> <code>api.cipherbank.dev · /v1</code> · <strong>HTTP:</strong> 1.1 · <strong>Wire:</strong> SCREAMING_SNAKE_CASE JSON</p>
+
+				<section aria-labelledby="getPosSession-request">
+					<h3 id="getPosSession-request">Request JSON</h3>
+					<p class="empty">No JSON request body is required.</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="getPosSession-response">
+					<h3 id="getPosSession-response">Successful response JSON</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;SESSION_ID&quot;: &quot;pos_…&quot;,
+  &quot;STATUS&quot;: &quot;ready_to_present&quot;,
+  &quot;AMOUNT&quot;: &quot;42.50&quot;,
+  &quot;CURRENCY&quot;: &quot;USD&quot;,
+  &quot;EXPIRES_AT&quot;: 1720900120000
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="getPosSession-statuses">
+					<h3 id="getPosSession-statuses">Status codes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Session returned.</td></tr>
+							<tr><th scope="row"><code>404</code></th><td>not_found.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+		</main>
+	</div>
+	<footer>CipherBank Full API Reference · aligned to CB_InitialAPIRef wire standards · generated for Cora Digital Teller</footer>
+</body>
+</html>

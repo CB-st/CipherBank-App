@@ -1,16 +1,22 @@
 # CipherBank `/v1` API Contract (App ↔ Backend)
 
-Canonical shapes the **live product API** must return so the Expo app can switch off mocks (`EXPO_PUBLIC_USE_MOCK=false`). Fixture sources live in [`fixtures/`](./fixtures/). POS detail: [`POS_API.md`](./POS_API.md). Original sketch: [`../API.md`](../API.md).
+Canonical shapes the **live product API** must return so the Expo app can switch off mocks (`EXPO_PUBLIC_USE_MOCK=false`). Fixture sources live in [`fixtures/`](./fixtures/). POS detail: [`POS_API.md`](./POS_API.md).
 
-**Public PriceCache API** (authoritative wire format for market data) is separate — see [`docs/PUBLIC_API.md`](../docs/PUBLIC_API.md) and [`docs/CB_InitialAPIRef.html`](../docs/CB_InitialAPIRef.html): host `api.cipherbank.money`, SCREAMING_SNAKE fields, `POST /currencies` · `/iquote` · `/quote` · `/test`.
+**Full HTML reference (same style as the initial public runtime doc):** [`docs/CB_FullAPIRef.html`](../docs/CB_FullAPIRef.html) — regenerate with `node scripts/generate-api-ref.mjs`.  
+**Initial public PriceCache only:** [`docs/CB_InitialAPIRef.html`](../docs/CB_InitialAPIRef.html) · [`docs/PUBLIC_API.md`](../docs/PUBLIC_API.md).
 
-**Conventions (product `/v1`)**
-- Base: `https://api.cipherbank.dev/v1` · Stream: `wss://api.cipherbank.dev/v1/stream`
+**Wire standard (all surfaces — matches CB_InitialAPIRef)**
+- Field names: **SCREAMING_SNAKE_CASE** on the wire (`TOKEN`, `CHANGE_24H`, `ACCOUNT_LAST4`)
+- Public host: `api.cipherbank.money` — `POST /currencies` · `/iquote` · `/quote` · `/test`
+- Product base: `https://api.cipherbank.dev/v1` · Stream: `wss://api.cipherbank.dev/v1/stream`
 - Auth: `Authorization: Bearer <token>` (except `POST /session`)
-- Amounts in asset units are **strings** on product money rails; **public market** amounts are JSON **number (double)**
-- Mutations accept `Idempotency-Key`; errors: `{ "code", "message", "detail"? }`
-- **Never** accept mnemonic / PAN / CVV from the client
-- **New** CipherBank-src HTTP routes should follow public API naming (SCREAMING_SNAKE + status codes 406/415/417/422/424)
+- `Accept` + `Content-Type: application/json`
+- Public market amounts: JSON **number (double)**; product asset legs often decimal **string**
+- Mutations: `Idempotency-Key`; errors: `{ "CODE", "MESSAGE", "DETAIL"? }`
+- Status vocabulary: `406` / `415` / `417` / `422` / `424` (+ product `401` / `404` / `409`)
+- Stream envelope: `{ "TYPE", "PAYLOAD" }` with SCREAMING event names (`BALANCE.UPDATE`, `CONVERT.SETTLED`, …)
+- **Never** accept mnemonic / PAN / CVV / full ACH account number
+- Expo encodes/decodes at the boundary via `src/lib/wireFormat.ts` (UI keeps camelCase)
 
 ---
 

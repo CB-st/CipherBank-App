@@ -14,6 +14,7 @@ import walletsFixture from './fixtures/wallets.json';
 import accountBootstrap from './fixtures/account-bootstrap.json';
 import type { UserPrefs } from '@/features/prefs/prefs.types';
 import { isSeedDemo } from '@/lib/runtimeFlags';
+import { decodeResponseBody, encodeRequestBody, fromWire, isPublicApiPath, toWire } from '@/lib/wireFormat';
 
 type Opts = { idempotencyKey?: string; signal?: AbortSignal };
 
@@ -584,16 +585,25 @@ export async function mockRequest<T>(
 
   await mockLatency();
 
+  // Product paths speak SCREAMING_SNAKE on the wire; handlers keep camelCase internally.
+  const internalBody =
+    body === undefined || body === null || isPublicApiPath(path) ? body : fromWire(body);
+
   let result: unknown;
   if (method === 'GET') result = await handleGet(path);
-  else if (method === 'POST') result = await handlePost(path, body);
-  else if (method === 'PUT') result = await handlePut(path, body);
+  else if (method === 'POST') result = await handlePost(path, internalBody);
+  else if (method === 'PUT') result = await handlePut(path, internalBody);
   else throw new MockApiError(405, 'method_not_allowed', `Mock does not support ${method}`);
 
+  const wireResult = isPublicApiPath(path) ? result : toWire(result);
+
   if (opts.idempotencyKey && method !== 'GET') {
-    idempotencyStore.set(opts.idempotencyKey, result);
+    idempotencyStore.set(opts.idempotencyKey, wireResult);
   }
-  return result as T;
+  return wireResult as T;
 }
+
+/** @deprecated — kept for tests that import encode helpers */
+export { encodeRequestBody, decodeResponseBody };
 
 export { MockApiError };

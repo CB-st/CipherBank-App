@@ -15,6 +15,7 @@
     "eas:build:preview:android": "eas build -p android --profile preview",
     "typecheck": "tsc --noEmit",
     "contract": "node scripts/dump-contract.mjs",
+    "api-ref": "node scripts/generate-api-ref.mjs",
     "demo": "bash scripts/demo.sh check",
     "demo:web": "bash scripts/demo.sh web",
     "demo:android": "bash scripts/demo.sh android",

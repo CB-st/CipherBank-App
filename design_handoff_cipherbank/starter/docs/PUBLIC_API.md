@@ -2,7 +2,8 @@
 
 Canonical runtime reference (generated from CipherBank-src):
 
-- HTML: [`CB_InitialAPIRef.html`](./CB_InitialAPIRef.html)
+- HTML (PriceCache only): [`CB_InitialAPIRef.html`](./CB_InitialAPIRef.html)
+- HTML (full app surface): [`CB_FullAPIRef.html`](./CB_FullAPIRef.html) — regenerate: `node scripts/generate-api-ref.mjs`
 - Host: `api.cipherbank.money`
 - OpenAPI: `https://api.cipherbank.money/docs/openapi.json` (when published)
 
@@ -76,12 +77,12 @@ UI still displays short tickers; encoding happens at the API boundary.
 
 ## Product `/v1` vs public API
 
-| Surface | Base | Style today |
-|---------|------|-------------|
+| Surface | Base | Wire style |
+|---------|------|------------|
 | **Public** (PriceCache) | `api.cipherbank.money` | SCREAMING_SNAKE · POST · doubles |
-| **Product** (session, portfolio, ACH, POS, convert settle) | `EXPO_PUBLIC_API_BASE` (`…/v1`) | Existing camelCase REST until migrated |
+| **Product** (session, portfolio, ACH, POS, convert settle) | `EXPO_PUBLIC_API_BASE` (`…/v1`) | SCREAMING_SNAKE on wire · REST methods · encode via `wireFormat.ts` |
 
-**New CipherBank-src HTTP routes** should follow public standards (SCREAMING_SNAKE, status codes above). The Expo mock product surface may keep camelCase during transition; do not invent a third naming scheme.
+**All** CipherBank-src HTTP routes use SCREAMING_SNAKE. See [`CB_FullAPIRef.html`](./CB_FullAPIRef.html) for the complete endpoint catalog.
 
 ### Deprecated app conveniences
 
