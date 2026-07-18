@@ -28,6 +28,8 @@ public sealed class HttpProductApi : IProductApi
     private const string PosSessionsPath = "v1/pos/sessions";
     private const string PosAuthorizePath = "v1/pos/authorize";
     private const string PosConfirmPath = "v1/pos/confirm";
+    private const string PrefsPath = "v1/prefs";
+    private const string AccountBootstrapPath = "v1/account/bootstrap";
 
     // --- Headers / media ---
     private const string IdempotencyHeader = "Idempotency-Key";
@@ -100,6 +102,35 @@ public sealed class HttpProductApi : IProductApi
 
     public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct = default)
         => PostMutationAsync<PosSessionDto>(PosConfirmPath, new { SESSION_ID = sessionId }, Guid.NewGuid().ToString("N"), ct);
+
+    public async Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            return await GetAsync<PrefsWireDto>(PrefsPath, ct).ConfigureAwait(false);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct = default)
+        => PutAsync(PrefsPath, prefs, ct);
+
+    public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct = default)
+        => GetAsync<AccountBootstrapDto>(AccountBootstrapPath, ct);
+
+    private async Task PutAsync(string path, object body, CancellationToken ct)
+    {
+        byte[] bodyUtf8 = JsonSerializer.SerializeToUtf8Bytes(body, JsonOptions);
+        using var resp = await SendWithOptionalRefreshAsync(HttpMethod.Put, path, bodyUtf8, idempotencyKey: null, ct).ConfigureAwait(false);
+        resp.EnsureSuccessStatusCode();
+    }
 
     private async Task<T> GetAsync<T>(string path, CancellationToken ct)
     {

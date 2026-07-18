@@ -120,4 +120,69 @@ public sealed class MockProductApi : IProductApi
             Brand = "visa",
             TtlMs = 45_000,
         });
+
+    private PrefsWireDto _prefs = new()
+    {
+        HomeOrderCamel = new List<string> { "cora", "balance", "quickActions", "performance", "holdings", "localWallets" },
+        HomeVisibleCamel = new Dictionary<string, bool>
+        {
+            ["cora"] = true,
+            ["balance"] = true,
+            ["quickActions"] = true,
+            ["performance"] = true,
+            ["holdings"] = true,
+            ["localWallets"] = true,
+        },
+        ValuesHiddenOnLaunchCamel = false,
+        CoraEnabledCamel = true,
+        DefaultSendSpeedCamel = "instant",
+        AppearanceCamel = "dark",
+        BaseCurrencyCamel = "USD",
+        AppLockIdleSecCamel = 120,
+        AssetsLayoutCamel = "separate",
+    };
+
+    public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct = default)
+        => Task.FromResult<PrefsWireDto?>(_prefs);
+
+    public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct = default)
+    {
+        _prefs = prefs;
+        return Task.CompletedTask;
+    }
+
+    public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct = default)
+        => Task.FromResult(new AccountBootstrapDto
+        {
+            PrefsCamel = new PrefsWireDto
+            {
+                DefaultSendSpeedCamel = "instant",
+                CoraEnabledCamel = true,
+            },
+            RecipientsCamel = new List<BootstrapRecipientDto>
+            {
+                new()
+                {
+                    IdCamel = "maya",
+                    DisplayNameCamel = "Maya Chen",
+                    AccountHolderNameCamel = "Maya Chen",
+                    BankNameCamel = "Chase",
+                    AccountLast4Camel = "4021",
+                    AccountTypeCamel = "checking",
+                    RoutingNumberCamel = "021000021",
+                },
+                new()
+                {
+                    IdCamel = "sunset",
+                    DisplayNameCamel = "Sunset Property Mgmt",
+                    AccountHolderNameCamel = "Sunset Property Management LLC",
+                    BankNameCamel = "Wells Fargo",
+                    AccountLast4Camel = "5544",
+                    AccountTypeCamel = "checking",
+                    RoutingNumberCamel = "121000248",
+                    MemoCamel = "Rent",
+                },
+            },
+            SyncedAtCamel = 1720900000000,
+        });
 }

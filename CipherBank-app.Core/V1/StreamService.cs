@@ -41,6 +41,9 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
 
     public bool IsConnected => _loop is { IsCompleted: false };
 
+    /// <summary>Test/helper: raise a stream event for hub wiring.</summary>
+    public void Emit(StreamEvent e) => EventReceived?.Invoke(this, e);
+
     public Task ConnectAsync(CancellationToken ct = default)
     {
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -52,6 +55,10 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
                 if (handlers is not null)
                 {
                     handlers.Invoke(this, new StreamEvent { Type = "RATE.TICK" });
+                    if (DateTimeOffset.UtcNow.Second % 2 == 0)
+                    {
+                        handlers.Invoke(this, new StreamEvent { Type = "balance.update" });
+                    }
                 }
 
                 try

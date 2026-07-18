@@ -57,9 +57,59 @@ public class AppSessionTests
 
     private sealed class FakePrefs : IPrefsStore
     {
-        public Task<UserPrefs> LoadAsync() => Task.FromResult(new UserPrefs { LockIdleSeconds = 1 });
+        public UserPrefs Current { get; set; } = new() { LockIdleSeconds = 1 };
 
-        public Task SaveAsync(UserPrefs prefs) => Task.CompletedTask;
+        public Task<UserPrefs> LoadAsync() => Task.FromResult(Current);
+
+        public Task SaveAsync(UserPrefs prefs)
+        {
+            Current = prefs;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class MemRecipients : IRecipientRepository
+    {
+        public List<AchRecipientRow> Rows { get; } = new();
+
+        public Task EnsureSchemaAsync() => Task.CompletedTask;
+
+        public Task<IReadOnlyList<AchRecipientRow>> ListAsync()
+            => Task.FromResult<IReadOnlyList<AchRecipientRow>>(Rows);
+
+        public Task UpsertAsync(AchRecipientRow row)
+        {
+            Rows.RemoveAll(r => r.Id == row.Id);
+            Rows.Add(row);
+            return Task.CompletedTask;
+        }
+
+        public Task SeedDefaultsIfEmptyAsync() => Task.CompletedTask;
+    }
+
+    private static AppSession CreateSession(
+        ICustodyService custody,
+        FakeWallets wallets,
+        FakePrefs? prefs = null,
+        MemRecipients? recipients = null)
+    {
+        prefs ??= new FakePrefs();
+        recipients ??= new MemRecipients();
+        var api = new MockProductApi();
+        var stream = new MockStreamService();
+        var hub = new StreamHub(stream);
+        var prefsSync = new PrefsSyncService(prefs, api);
+        var bootstrap = new AccountBootstrapService(api, prefs, recipients);
+        return new AppSession(
+            custody,
+            api,
+            stream,
+            hub,
+            new LocalWalletSeeder(wallets),
+            prefs,
+            prefsSync,
+            bootstrap,
+            new InMemoryProductSessionStore());
     }
 
     [Fact]
@@ -69,8 +119,7 @@ public class AppSessionTests
         var pin = new PinService(store);
         var custody = new CustodyService(store, pin);
         var wallets = new FakeWallets();
-        var seeder = new LocalWalletSeeder(wallets);
-        var session = new AppSession(custody, new MockProductApi(), new MockStreamService(), seeder, new FakePrefs(), new InMemoryProductSessionStore());
+        var session = CreateSession(custody, wallets);
 
         string mnemonic = MnemonicHelper.Generate();
         await session.FinishCustodySetupAsync(mnemonic, "123456");
@@ -88,11 +137,29 @@ public class AppSessionTests
         var store = new MemStore();
         var pin = new PinService(store);
         var custody = new CustodyService(store, pin);
-        var session = new AppSession(custody, new MockProductApi(), new MockStreamService(), new LocalWalletSeeder(new FakeWallets()), new FakePrefs(), new InMemoryProductSessionStore());
+        var session = CreateSession(custody, new FakeWallets());
         await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         session.IdleMs = 1;
         await Task.Delay(20);
         session.CheckIdleAndMaybeLock().Should().BeTrue();
         session.IsUnlocked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Unlock_PullsBootstrapRecipients_WithoutTouchingCustodySeal()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        var recipients = new MemRecipients();
+        var prefs = new FakePrefs();
+        var session = CreateSession(custody, new FakeWallets(), prefs, recipients);
+        await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
+        session.Lock();
+
+        (await session.UnlockAsync("123456")).Should().BeTrue();
+        recipients.Rows.Should().Contain(r => r.Name == "Maya Chen");
+        recipients.Rows.Should().Contain(r => r.Routing == "021000021");
+        custody.IsUnlocked.Should().BeTrue();
     }
 }

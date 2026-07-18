@@ -34,6 +34,9 @@ public partial class HomeViewModel : ObservableObject
     private readonly IWalletRepository _wallets;
     private readonly INavigationService _nav;
     private readonly IAppSession _session;
+    private readonly IStreamHub _streamHub;
+    private readonly EventDebouncer _refreshDebounce = new(TimeSpan.FromSeconds(1));
+    private bool _streamHooked;
     private string _rawTotalUsd = "—";
     private string _rawChange24H = "—";
 
@@ -42,13 +45,15 @@ public partial class HomeViewModel : ObservableObject
         IPrefsStore prefs,
         IWalletRepository wallets,
         INavigationService nav,
-        IAppSession session)
+        IAppSession session,
+        IStreamHub streamHub)
     {
         _api = api;
         _prefs = prefs;
         _wallets = wallets;
         _nav = nav;
         _session = session;
+        _streamHub = streamHub;
         CoraLine = CoraLines.For("home");
     }
 
@@ -139,14 +144,52 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private async Task AppearingAsync()
     {
+        EnsureStreamHooked();
         _session.Touch();
-        IsStale = Holdings.Count > 0 || !string.Equals(TotalUsd, "—", StringComparison.Ordinal);
-        IsBusy = true;
+        await RefreshPortfolioAsync(soft: Holdings.Count > 0 || !string.Equals(TotalUsd, "—", StringComparison.Ordinal));
+    }
+
+    private void EnsureStreamHooked()
+    {
+        if (_streamHooked)
+        {
+            return;
+        }
+
+        _streamHub.EventReceived += OnStreamEvent;
+        _streamHooked = true;
+    }
+
+    private void OnStreamEvent(object? sender, StreamEvent e)
+    {
+        if (!e.Type.Equals("RATE.TICK", StringComparison.OrdinalIgnoreCase)
+            && !e.Type.Equals("balance.update", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _ = _refreshDebounce.DebounceAsync(async () =>
+        {
+            if (MainThread.IsMainThread)
+            {
+                await RefreshPortfolioAsync(soft: true);
+            }
+            else
+            {
+                await MainThread.InvokeOnMainThreadAsync(() => RefreshPortfolioAsync(soft: true));
+            }
+        });
+    }
+
+    private async Task RefreshPortfolioAsync(bool soft)
+    {
+        IsStale = soft;
+        IsBusy = !soft;
         try
         {
             var prefs = await _prefs.LoadAsync();
             ApplySectionPrefs(prefs);
-            if (!IsStale)
+            if (!soft)
             {
                 BalancesHidden = prefs.ValuesHiddenOnLaunch;
             }

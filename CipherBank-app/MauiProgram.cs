@@ -130,8 +130,6 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IRecipientRepository, RecipientRepository>();
         mauiAppBuilder.Services.AddSingleton<IPrefsStore, PrefsStore>();
         mauiAppBuilder.Services.AddSingleton<ILocalWalletSeeder, LocalWalletSeeder>();
-        mauiAppBuilder.Services.AddSingleton<IAppSession, AppSession>();
-        mauiAppBuilder.Services.AddSingleton<AppIdleLockService>();
         mauiAppBuilder.Services.AddSingleton<IProductSessionStore, ProductSessionStorage>();
         mauiAppBuilder.Services.AddSingleton<MockProductApi>();
         mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductApi>();
@@ -165,6 +163,11 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IStreamService>(sp =>
             new ClientWebSocketStreamService(sp.GetRequiredService<ISettingsService>().StreamEndpoint));
 #endif
+        mauiAppBuilder.Services.AddSingleton<IStreamHub, StreamHub>();
+        mauiAppBuilder.Services.AddSingleton<IPrefsSyncService, PrefsSyncService>();
+        mauiAppBuilder.Services.AddSingleton<IAccountBootstrapService, AccountBootstrapService>();
+        mauiAppBuilder.Services.AddSingleton<IAppSession, AppSession>();
+        mauiAppBuilder.Services.AddSingleton<AppIdleLockService>();
 #if ANDROID
         mauiAppBuilder.Services.AddSingleton<INfcPresentmentService, Platforms.Android.Nfc.AndroidNdefPresentmentService>();
 #else

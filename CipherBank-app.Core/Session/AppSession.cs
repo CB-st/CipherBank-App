@@ -51,8 +51,11 @@ public sealed class AppSession : IAppSession
     private readonly ICustodyService _custody;
     private readonly IProductApi _api;
     private readonly IStreamService _stream;
+    private readonly IStreamHub _streamHub;
     private readonly ILocalWalletSeeder _seeder;
     private readonly IPrefsStore _prefs;
+    private readonly IPrefsSyncService _prefsSync;
+    private readonly IAccountBootstrapService _bootstrap;
     private readonly IProductSessionStore _productSessions;
     private DateTimeOffset _lastTouch = DateTimeOffset.UtcNow;
 
@@ -60,15 +63,21 @@ public sealed class AppSession : IAppSession
         ICustodyService custody,
         IProductApi api,
         IStreamService stream,
+        IStreamHub streamHub,
         ILocalWalletSeeder seeder,
         IPrefsStore prefs,
+        IPrefsSyncService prefsSync,
+        IAccountBootstrapService bootstrap,
         IProductSessionStore productSessions)
     {
         _custody = custody;
         _api = api;
         _stream = stream;
+        _streamHub = streamHub;
         _seeder = seeder;
         _prefs = prefs;
+        _prefsSync = prefsSync;
+        _bootstrap = bootstrap;
         _productSessions = productSessions;
         IdleMs = DefaultIdleMs;
     }
@@ -107,7 +116,7 @@ public sealed class AppSession : IAppSession
             return false;
         }
 
-        return await CompleteUnlockAsync().ConfigureAwait(false);
+        return await CompleteUnlockAsync(applyBootstrap: true).ConfigureAwait(false);
     }
 
     public Task<bool> CanUnlockWithDeviceOwnerAsync()
@@ -120,22 +129,41 @@ public sealed class AppSession : IAppSession
             return false;
         }
 
-        return await CompleteUnlockAsync().ConfigureAwait(false);
+        return await CompleteUnlockAsync(applyBootstrap: true).ConfigureAwait(false);
     }
 
     public void Touch() => _lastTouch = DateTimeOffset.UtcNow;
 
-    private async Task<bool> CompleteUnlockAsync()
+    private async Task<bool> CompleteUnlockAsync(bool applyBootstrap)
     {
         var session = await _api.CreateSessionAsync().ConfigureAwait(false);
         AccessToken = session.AccessToken;
         await _stream.ConnectAsync().ConfigureAwait(false);
+        _streamHub.Start();
+
+        try
+        {
+            await _prefsSync.PullMergeAsync().ConfigureAwait(false);
+            if (applyBootstrap)
+            {
+                await _bootstrap.ApplyAsync().ConfigureAwait(false);
+            }
+
+            var prefs = await _prefs.LoadAsync().ConfigureAwait(false);
+            IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * 1000 : DefaultIdleMs;
+        }
+        catch
+        {
+            // Prefs/bootstrap are best-effort; custody unlock already succeeded.
+        }
+
         Touch();
         return true;
     }
 
     public void Lock()
     {
+        _streamHub.Stop();
         _custody.Lock();
         AccessToken = null;
         _productSessions.Clear();
@@ -147,11 +175,8 @@ public sealed class AppSession : IAppSession
     {
         await _custody.SealAsync(mnemonic, pin).ConfigureAwait(false);
         await _seeder.EnsureDerivedAsync(mnemonic).ConfigureAwait(false);
-        var session = await _api.CreateSessionAsync().ConfigureAwait(false);
-        AccessToken = session.AccessToken;
-        await _stream.ConnectAsync().ConfigureAwait(false);
+        await CompleteUnlockAsync(applyBootstrap: false).ConfigureAwait(false);
         HasWallet = true;
-        Touch();
     }
 
     /// <summary>Returns true if idle exceeded and lock was applied.</summary>

@@ -32,4 +32,10 @@ public interface IProductApi
     Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct = default);
 
     Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct = default);
+
+    Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct = default);
+
+    Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct = default);
+
+    Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct = default);
 }

@@ -21,19 +21,78 @@ public partial class ConvertViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly IAppSession _session;
     private readonly IStepUpAuth _stepUp;
+    private readonly IStreamHub _streamHub;
     private QuoteDto? _lockedQuote;
     private CancellationTokenSource? _tickCts;
+    private bool _streamHooked;
 
-    public ConvertViewModel(IProductApi api, IDialogService dialogs, IAppSession session, IStepUpAuth stepUp)
+    public ConvertViewModel(
+        IProductApi api,
+        IDialogService dialogs,
+        IAppSession session,
+        IStepUpAuth stepUp,
+        IStreamHub streamHub)
     {
         _api = api;
         _dialogs = dialogs;
         _session = session;
         _stepUp = stepUp;
+        _streamHub = streamHub;
         CoraLine = CoraLines.For("convert");
         foreach (string symbol in BuildAssetList())
         {
             Assets.Add(symbol);
+        }
+
+        EnsureStreamHooked();
+    }
+
+    private void EnsureStreamHooked()
+    {
+        if (_streamHooked)
+        {
+            return;
+        }
+
+        _streamHub.EventReceived += OnStreamEvent;
+        _streamHooked = true;
+    }
+
+    private void OnStreamEvent(object? sender, StreamEvent e)
+    {
+        if (!e.Type.Equals("RATE.TICK", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (HasValidLock && IsQuoteFresh())
+        {
+            return;
+        }
+
+        _ = RefreshPreviewRateAsync();
+    }
+
+    private async Task RefreshPreviewRateAsync()
+    {
+        try
+        {
+            var quote = await _api.GetQuoteAsync(FromAsset, ToAsset);
+            if (MainThread.IsMainThread)
+            {
+                RateText = $"1 {quote.From} ≈ {quote.Rate} {quote.To} (live)";
+            }
+            else
+            {
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    RateText = $"1 {quote.From} ≈ {quote.Rate} {quote.To} (live)";
+                });
+            }
+        }
+        catch
+        {
+            // Preview refresh is best-effort.
         }
     }
 

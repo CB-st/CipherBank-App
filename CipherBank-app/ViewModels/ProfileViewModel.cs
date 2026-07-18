@@ -51,6 +51,7 @@ public partial class ProfileViewModel : ObservableObject
     private static readonly TimeSpan MnemonicRevealTtl = TimeSpan.FromSeconds(30);
 
     private readonly IPrefsStore _prefs;
+    private readonly IPrefsSyncService _prefsSync;
     private readonly ICustodyService _custody;
     private readonly IPinService _pin;
     private readonly IProductApi _api;
@@ -63,6 +64,7 @@ public partial class ProfileViewModel : ObservableObject
 
     public ProfileViewModel(
         IPrefsStore prefs,
+        IPrefsSyncService prefsSync,
         ICustodyService custody,
         IPinService pin,
         IProductApi api,
@@ -73,6 +75,7 @@ public partial class ProfileViewModel : ObservableObject
         IStepUpAuth stepUp)
     {
         _prefs = prefs;
+        _prefsSync = prefsSync;
         _custody = custody;
         _pin = pin;
         _api = api;
@@ -191,12 +194,14 @@ public partial class ProfileViewModel : ObservableObject
             prefs.HomeVisible[section.Key] = section.Visible;
         }
 
-        await _prefs.SaveAsync(prefs);
+        bool pushed = await _prefsSync.SaveAndPushAsync(prefs);
         _session.IdleMs = prefs.LockIdleSeconds * 1000;
         Application.Current!.UserAppTheme = Appearance.Equals("light", StringComparison.OrdinalIgnoreCase)
             ? AppTheme.Light
             : AppTheme.Dark;
-        await _dialogs.ShowAlertAsync("Saved", "Preferences updated.");
+        await _dialogs.ShowAlertAsync(
+            "Saved",
+            pushed ? "Preferences updated." : "Saved on device. Cloud sync failed — will retry later.");
     }
 
     [RelayCommand]
