@@ -12,6 +12,7 @@ namespace CipherBank_app.Views;
 public partial class PurchasePage : ContentPage
 {
     private readonly PurchaseViewModel _viewModel;
+    private bool _isOpeningPicker;
 
     public PurchasePage(PurchaseViewModel viewModel)
     {
@@ -30,5 +31,23 @@ public partial class PurchasePage : ContentPage
     {
         base.OnDisappearing();
         _viewModel.OnDisappearing();
+    }
+
+    private async void OnViewAllClicked(object? sender, EventArgs e)
+    {
+        if (_isOpeningPicker)
+        {
+            return;
+        }
+
+        _isOpeningPicker = true;
+        try
+        {
+            await Navigation.PushModalAsync(new AssetPickerPage(_viewModel));
+        }
+        finally
+        {
+            _isOpeningPicker = false;
+        }
     }
 }

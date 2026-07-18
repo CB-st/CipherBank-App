@@ -10,7 +10,7 @@ namespace CipherBank_app.E2ETests.PageObjects;
 public class PurchasePage : BasePage
 {
     // Element locators
-    private static readonly By CryptoSelector = By.Id("CryptoSelector");
+    private static readonly By ViewAllButton = By.Id("ViewAllButton");
     private static readonly By AmountField = By.Id("AmountEntry");
     private static readonly By PurchaseButton = By.Id("PurchaseButton");
     private static readonly By ConfirmButton = By.Id("ConfirmPurchaseButton");
@@ -30,7 +30,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public PurchasePage SelectCrypto(string symbol)
     {
-        ClickElement(CryptoSelector);
+        ClickElement(ViewAllButton);
         var cryptoOption = By.XPath($"//*[contains(@text, '{symbol}')]");
         ClickElement(cryptoOption);
         return this;
@@ -143,7 +143,7 @@ public class PurchasePage : BasePage
 
     public override void WaitForPageLoad()
     {
-        WaitForElement(CryptoSelector);
+        WaitForElement(ViewAllButton);
         WaitForElement(AmountField);
     }
 }

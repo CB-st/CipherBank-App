@@ -41,6 +41,12 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     private Wallet? selectedWallet;
 
     [ObservableProperty]
+    private ObservableCollection<WalletCardItem> walletCards = [];
+
+    [ObservableProperty]
+    private WalletCardItem? focusedWalletCard;
+
+    [ObservableProperty]
     private decimal totalBalance;
 
     [ObservableProperty]
@@ -60,6 +66,9 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private decimal sendAmount;
+
+    [ObservableProperty]
+    private bool isRefreshing;
 
     [ObservableProperty]
     private bool isSending;
@@ -98,6 +107,22 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    // Note: WalletCardItem is a record — the generated setter uses value equality, so this
+    // handler only fires when the card's data actually differs from the current one.
+    partial void OnFocusedWalletCardChanged(WalletCardItem? value)
+    {
+        var newWallet = value?.Wallet;
+        bool walletChanged = newWallet?.Id != SelectedWallet?.Id;
+
+        SelectedWallet = newWallet;
+
+        if (walletChanged)
+        {
+            SendToAddress = string.Empty;
+            SendAmount = 0;
+        }
+    }
+
     partial void OnSelectedWalletChanged(Wallet? value)
     {
         if (value != null)
@@ -132,30 +157,36 @@ public partial class WalletViewModel : ObservableObject, IDisposable
                 {
                     var walletList = await _walletService.GetWalletsAsync(_cts.Token);
 
+                    var previousFocusId = FocusedWalletCard?.Wallet.Id;
                     Wallets.Clear();
+                    WalletCards.Clear();
                     decimal totalUsd = 0;
 
                     foreach (var wallet in walletList)
                     {
                         Wallets.Add(wallet);
 
+                        WalletCardItem card;
                         try
                         {
                             var crypto = await _cryptoService.GetCryptoPriceAsync(wallet.CryptoSymbol, _cts.Token);
-                            totalUsd += wallet.Balance * crypto.CurrentPrice;
+                            card = WalletCardItem.FromWallet(wallet, crypto);
+                            totalUsd += card.UsdValue;
                         }
                         catch (Exception ex)
                         {
                             LogCouldNotGetPrice(_logger, ex, wallet.CryptoSymbol);
+                            card = WalletCardItem.WithoutPrice(wallet);
                         }
+
+                        WalletCards.Add(card);
                     }
 
                     TotalBalanceUsd = totalUsd;
 
-                    if (Wallets.Count > 0 && SelectedWallet == null)
-                    {
-                        SelectedWallet = Wallets.First();
-                    }
+                    FocusedWalletCard =
+                        WalletCards.FirstOrDefault(c => c.Wallet.Id == previousFocusId)
+                        ?? WalletCards.FirstOrDefault();
 
                     LogLoadedWallets(_logger, walletList.Count, TotalBalanceUsd);
                 },
@@ -179,6 +210,22 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Refreshes wallets via pull-to-refresh.
+    /// </summary>
+    [RelayCommand]
+    private async Task RefreshWalletsAsync()
+    {
+        try
+        {
+            await LoadWalletsAsync();
+        }
+        finally
+        {
+            IsRefreshing = false;
         }
     }
 

@@ -86,6 +86,13 @@ public class CryptoCurrencyTests
     }
 
     [Fact]
+    public void FormattedPrice_UsesDollarSymbolAndInvariantGrouping()
+    {
+        var crypto = new CryptoCurrency("BTC", "Bitcoin", 50000m, 0, 0, 0, 0, string.Empty);
+        crypto.FormattedPrice.Should().Be("$50,000.00");
+    }
+
+    [Fact]
     public void FormattedPercentChange_WhenPositive_IncludesPlusSign()
     {
         // Arrange
