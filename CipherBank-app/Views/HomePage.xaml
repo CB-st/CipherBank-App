@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.HomePage"
+             Title="Home"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="16">
+      <Label Text="{Binding CoraLine}" IsVisible="{Binding CoraEnabled}" FontSize="13"
+             FontFamily="InterRegular"
+             TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Label Text="Total balance" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+            <Label Text="{Binding TotalUsd}" FontFamily="SpaceGroteskBold" FontSize="36"
+                   TextColor="{AppThemeBinding Light=#111827, Dark=#F8FAFC}"
+                   AutomationId="HomeTotalUsdLabel" />
+            <Label Text="{Binding Change24H}" FontFamily="InterMedium" />
+            <HorizontalStackLayout Spacing="8">
+              <Button Text="7D" Command="{Binding SetRangeCommand}" CommandParameter="7d" />
+              <Button Text="30D" Command="{Binding SetRangeCommand}" CommandParameter="30d" />
+              <Button Text="90D" Command="{Binding SetRangeCommand}" CommandParameter="90d" />
+            </HorizontalStackLayout>
+            <GraphicsView x:Name="SparkView" HeightRequest="100" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Label Text="Performance" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+            <GraphicsView x:Name="CompareView" HeightRequest="160" />
+            <CollectionView ItemsSource="{Binding CompareLegend}" HeightRequest="28">
+              <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+              </CollectionView.ItemsLayout>
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Label Text="{Binding .}" FontSize="12" />
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <HorizontalStackLayout Spacing="8">
+        <Button Text="Convert" Command="{Binding GoConvertCommand}" AutomationId="HomeConvertButton" />
+        <Button Text="Send" Command="{Binding GoSendCommand}" AutomationId="HomeSendButton" />
+        <Button Text="Receive" Command="{Binding GoReceiveCommand}" AutomationId="HomeReceiveButton" />
+        <Button Text="Pay" Command="{Binding GoPayCommand}" AutomationId="HomePayButton" />
+      </HorizontalStackLayout>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Label Text="Holdings" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+            <CollectionView ItemsSource="{Binding Holdings}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,10" ColumnDefinitions="*,Auto,Auto">
+                    <Label Text="{Binding Symbol}" FontAttributes="Bold" />
+                    <Label Grid.Column="1" Text="{Binding Balance}" Margin="12,0" />
+                    <Label Grid.Column="2" Text="{Binding UsdValue}" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Local wallets" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+              <Button Grid.Column="1" Text="Add" Command="{Binding AddWalletCommand}" />
+            </Grid>
+            <CollectionView ItemsSource="{Binding LocalWallets}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,8" ColumnDefinitions="Auto,*,Auto">
+                    <Label Text="{Binding Symbol}" FontAttributes="Bold" />
+                    <Label Grid.Column="1" Text="{Binding Label}" Margin="12,0" LineBreakMode="TailTruncation" />
+                    <Label Grid.Column="2" Text="{Binding Kind}" FontSize="12" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

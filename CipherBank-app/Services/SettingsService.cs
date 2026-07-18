@@ -14,6 +14,7 @@ public sealed partial class SettingsService : ISettingsService
 {
     // Preference keys
     private const string IdCipherBankEndpointBase = "cipher_bank_endpoint";
+    private const string IdStreamEndpoint = "stream_endpoint";
     private const string IdThemeMode = "theme_mode";
     private const string IdNotificationsEnabled = "notifications_enabled";
     private const string IdBiometricAuthEnabled = "biometric_auth_enabled";
@@ -25,6 +26,7 @@ public sealed partial class SettingsService : ISettingsService
 
     // Default values
     private const string DefaultCipherBankEndpointBase = "https://api.sandbox.cipherbank.money";
+    private const string DefaultStreamEndpoint = "wss://api.sandbox.cipherbank.money/v1/stream";
     private const string DefaultThemeMode = "System";
     private const bool DefaultNotificationsEnabled = true;
     private const bool DefaultBiometricAuthEnabled = false;
@@ -56,6 +58,20 @@ public sealed partial class SettingsService : ISettingsService
             }
 
             Preferences.Set(IdCipherBankEndpointBase, value);
+        }
+    }
+
+    public string StreamEndpoint
+    {
+        get => Preferences.Get(IdStreamEndpoint, DefaultStreamEndpoint);
+        set
+        {
+            if (_logger != null && _logger.IsEnabled(LogLevel.Information))
+            {
+                LogSettingChanged(_logger, "StreamEndpoint", value);
+            }
+
+            Preferences.Set(IdStreamEndpoint, value);
         }
     }
 
@@ -144,7 +160,7 @@ public sealed partial class SettingsService : ISettingsService
 
             Preferences.Set(IdEnvironment, value);
 
-            // Update endpoint based on environment
+            // Update endpoints based on environment
             CipherBankEndpointBase = value switch
             {
                 "Production" => "https://api.cipherbank.money",
@@ -152,6 +168,14 @@ public sealed partial class SettingsService : ISettingsService
                 "Development" => "https://api.dev.cipherbank.money",
                 "Local" => "http://localhost:5000",
                 _ => DefaultCipherBankEndpointBase,
+            };
+            StreamEndpoint = value switch
+            {
+                "Production" => "wss://api.cipherbank.money/v1/stream",
+                "Sandbox" => "wss://api.sandbox.cipherbank.money/v1/stream",
+                "Development" => "wss://api.dev.cipherbank.money/v1/stream",
+                "Local" => "ws://localhost:5000/v1/stream",
+                _ => DefaultStreamEndpoint,
             };
         }
     }
@@ -191,6 +215,7 @@ public sealed partial class SettingsService : ISettingsService
     public void ResetToDefaults()
     {
         CipherBankEndpointBase = DefaultCipherBankEndpointBase;
+        StreamEndpoint = DefaultStreamEndpoint;
         ThemeMode = DefaultThemeMode;
         NotificationsEnabled = DefaultNotificationsEnabled;
         BiometricAuthEnabled = DefaultBiometricAuthEnabled;

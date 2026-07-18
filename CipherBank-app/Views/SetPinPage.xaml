@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CipherBank_app.Views.SetPinPage"
+             Title="Set PIN"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+
+      <Label Text="Choose a PIN to seal your wallet." />
+      <Entry Text="{Binding Pin}" IsPassword="True" Keyboard="Numeric" Placeholder="PIN" />
+      <Entry Text="{Binding ConfirmPin}" IsPassword="True" Keyboard="Numeric" Placeholder="Confirm PIN" />
+      <Label Text="{Binding Error}" TextColor="IndianRed" />
+      <Button Text="Seal wallet" Command="{Binding SealCommand}" />
+
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

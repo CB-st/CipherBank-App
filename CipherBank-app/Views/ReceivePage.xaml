@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.ReceivePage"
+             Title="Receive"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Entry Text="{Binding Asset}" Placeholder="Asset" />
+            <Entry Text="{Binding Amount}" Placeholder="Amount (optional)" Keyboard="Numeric" />
+            <Button Text="Refresh QR" Command="{Binding LoadCommand}" AutomationId="ReceiveRefreshButton" />
+            <Image Source="{Binding QrImage}" HeightRequest="220" WidthRequest="220" HorizontalOptions="Center" AutomationId="ReceiveQrImage" />
+            <Label Text="{Binding Address}" FontFamily="InterMedium" LineBreakMode="CharacterWrap" AutomationId="ReceiveAddressLabel" />
+            <Label Text="{Binding UriText}" FontSize="12" LineBreakMode="CharacterWrap" />
+            <Button Text="Copy" Command="{Binding CopyCommand}" />
+            <Button Text="Share" Command="{Binding ShareCommand}" />
+            <Button Text="Derive new address" Command="{Binding DeriveNewCommand}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.PosLabPage"
+             Title="POS Lab"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Label Text="Session" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+            <Label Text="{Binding Status}" FontAttributes="Bold" />
+            <Label Text="{Binding ActiveCardLabel}" FontSize="12" />
+            <Label Text="{Binding SessionId}" FontSize="11" LineBreakMode="CharacterWrap" />
+            <Label Text="{Binding TokenRef}" FontSize="11" LineBreakMode="CharacterWrap" />
+            <HorizontalStackLayout Spacing="12">
+              <Label Text="{Binding Brand}" />
+              <Label Text="{Binding Last4, StringFormat='•••• {0}'}" />
+              <Label Text="{Binding TtlText}" />
+            </HorizontalStackLayout>
+            <Label Text="{Binding PlatformHint}" FontSize="12" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+            <Label Text="{Binding PresentError}" TextColor="IndianRed" />
+            <Button Text="Start session" Command="{Binding StartSessionCommand}" AutomationId="PosStartSessionButton" />
+            <Button Text="Present NFC" Command="{Binding PresentNfcCommand}" IsEnabled="{Binding NfcSupported}" AutomationId="PosPresentNfcButton" />
+            <Button Text="Simulate exchange" Command="{Binding SimulateCommand}" AutomationId="PosSimulateButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Label Text="EMV lab stages" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+            <CollectionView ItemsSource="{Binding Stages}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Border StrokeThickness="1" Padding="10,8" Margin="0,4"
+                          Stroke="{AppThemeBinding Light=#CBD5E1, Dark=#334155}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <Label Text="{Binding Text}" />
+                      <Label Grid.Column="1" Text="{Binding StatusLabel}" FontSize="11" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CipherBank_app.Views.KeysPage"
+             Title="Recovery phrase"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+
+      <Label Text="Write these words down. They never leave this device." />
+      <Border StrokeThickness="1" Padding="16" Stroke="{AppThemeBinding Light=#CBD5E1, Dark=#334155}">
+        <Label Text="{Binding Mnemonic}" FontFamily="InterSemiBold" FontSize="18" LineBreakMode="WordWrap" />
+      </Border>
+      <Button Text="Copy" Command="{Binding CopyCommand}" />
+      <Button Text="I wrote them down" Command="{Binding ContinueCommand}" />
+
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

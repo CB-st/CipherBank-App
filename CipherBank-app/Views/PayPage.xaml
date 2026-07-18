@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.PayPage"
+             Title="Pay"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Entry Text="{Binding Amount}" Placeholder="Bill amount" Keyboard="Numeric" />
+            <Entry Text="{Binding UsdShare}" Placeholder="USD %" Keyboard="Numeric" />
+            <Entry Text="{Binding CryptoShare}" Placeholder="Crypto %" Keyboard="Numeric" />
+            <Entry Text="{Binding CryptoSymbol}" Placeholder="Crypto symbol" />
+            <Label Text="{Binding MixError}" TextColor="IndianRed" />
+            <controls:FundingMixBar x:Name="MixBar" Total="{Binding MixTotal}" />
+            <Button Text="Pay" Command="{Binding PayCommand}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.ProfilePage"
+             Title="Profile"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Preferences" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Cora footer" VerticalOptions="Center" />
+              <Switch Grid.Column="1" IsToggled="{Binding CoraEnabled}" />
+            </Grid>
+            <Entry Text="{Binding Appearance}" Placeholder="appearance: dark | light" />
+            <Entry Text="{Binding BaseCurrency}" Placeholder="Base currency" />
+            <Entry Text="{Binding LockIdleSeconds}" Placeholder="Lock idle seconds" Keyboard="Numeric" />
+            <Label Text="Home sections" FontAttributes="Bold" Margin="0,8,0,0" />
+            <CollectionView ItemsSource="{Binding HomeSections}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,6" ColumnDefinitions="*,Auto">
+                    <Label Text="{Binding Label}" VerticalOptions="Center" />
+                    <Switch Grid.Column="1" IsToggled="{Binding Visible}" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="Save prefs" Command="{Binding SavePrefsCommand}" AutomationId="ProfileSavePrefsButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Vault" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+            <Label Text="Cards (token refs only — never PAN)" FontSize="12" />
+            <Picker Title="Active POS card"
+                    ItemsSource="{Binding Cards}"
+                    ItemDisplayBinding="{Binding Label}"
+                    SelectedItem="{Binding SelectedCard}" />
+            <Label Text="{Binding ActiveCardLabel}" FontSize="12" />
+            <Label Text="Binaries" FontAttributes="Bold" Margin="0,8,0,0" />
+            <CollectionView ItemsSource="{Binding Binaries}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Label Text="{Binding Label}" />
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Entry Text="{Binding RevealPin}" IsPassword="True" Keyboard="Numeric" Placeholder="PIN to reveal mnemonic" />
+            <Button Text="Reveal mnemonic" Command="{Binding RevealMnemonicCommand}" />
+            <Label Text="{Binding MnemonicReveal}" LineBreakMode="WordWrap" FontFamily="InterMedium" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <Button Text="Tap to pay lab" Command="{Binding OpenPosLabCommand}" />
+      <Button Text="Lock app" Command="{Binding LockCommand}" />
+
+      <Button Text="{Binding ShowAdvanced, StringFormat='Advanced ({0})'}" Command="{Binding ToggleAdvancedCommand}" />
+      <controls:GlassCard IsVisible="{Binding ShowAdvanced}">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Entry Text="{Binding ApiEndpoint}" Placeholder="API endpoint" />
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Use mocks" VerticalOptions="Center" />
+              <Switch Grid.Column="1" IsToggled="{Binding UseMockServices}" />
+            </Grid>
+            <Button Text="Save advanced" Command="{Binding SaveAdvancedCommand}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

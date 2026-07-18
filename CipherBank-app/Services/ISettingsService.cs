@@ -15,6 +15,11 @@ public interface ISettingsService
     string CipherBankEndpointBase { get; set; }
 
     /// <summary>
+    /// Gets or sets the product websocket endpoint (wss://…/v1/stream).
+    /// </summary>
+    string StreamEndpoint { get; set; }
+
+    /// <summary>
     /// Gets or sets the application theme mode (Light, Dark, System).
     /// </summary>
     string ThemeMode { get; set; }

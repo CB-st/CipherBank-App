@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CipherBank_app.Views.BackupQuizPage"
+             Title="Confirm backup"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+
+      <Label Text="{Binding Prompt}" FontSize="18" />
+      <Entry Text="{Binding Answer}" Placeholder="word" />
+      <Label Text="{Binding Error}" TextColor="IndianRed" />
+      <Button Text="Verify" Command="{Binding VerifyCommand}" />
+
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

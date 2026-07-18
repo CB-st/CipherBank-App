@@ -2,22 +2,22 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
-using System;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading;
-using System.Threading.Tasks;
+using CipherBank_app.V1;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Services.Handlers;
 
 /// <summary>
-/// HTTP message handler that automatically injects Bearer token authentication headers.
-/// Retrieves the current auth token from IAuthService and adds it to outgoing requests.
+/// HTTP message handler that injects Bearer tokens from product session or legacy IAuthService.
 /// </summary>
 public sealed partial class AuthHeaderHandler : DelegatingHandler
 {
+    // --- Token freshness buffers ---
+    private const int ProductTokenSkewMinutes = 1;
+    private const int LegacyTokenSkewMinutes = 5;
+
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<AuthHeaderHandler>? _logger;
 
@@ -29,16 +29,33 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        // Skip auth header for login/refresh endpoints
-        var requestPath = request.RequestUri?.AbsolutePath ?? string.Empty;
-        if (IsAuthEndpoint(requestPath))
+        string requestPath = request.RequestUri?.AbsolutePath ?? string.Empty;
+        if (IsUnauthenticatedEndpoint(requestPath))
         {
-            return await base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Prefer product /v1 session (custody unlock path).
+        try
+        {
+            var productSessions = _serviceProvider.GetService<IProductSessionStore>();
+            if (productSessions is not null)
+            {
+                var product = await productSessions.GetAsync().ConfigureAwait(false);
+                if (product is { } p && p.Expires > DateTimeOffset.UtcNow.AddMinutes(ProductTokenSkewMinutes))
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", p.Access);
+                    return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+        catch
+        {
+            // Fall through to legacy auth service.
         }
 
         try
         {
-            // Get auth service - use GetService to avoid circular dependency issues during startup
             var authService = _serviceProvider.GetService<IAuthService>();
             if (authService == null)
             {
@@ -47,14 +64,13 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
                     LogAuthServiceNotAvailable(_logger);
                 }
 
-                return await base.SendAsync(request, cancellationToken);
+                return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
 
-            var token = await authService.GetStoredTokenAsync();
+            var token = await authService.GetStoredTokenAsync().ConfigureAwait(false);
             if (token != null && !string.IsNullOrEmpty(token.AccessToken))
             {
-                // Check if token is expired (with 5-minute buffer)
-                if (token.ExpiresUtc > DateTimeOffset.UtcNow.AddMinutes(5))
+                if (token.ExpiresUtc > DateTimeOffset.UtcNow.AddMinutes(LegacyTokenSkewMinutes))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
 #if DEBUG
@@ -66,7 +82,6 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
                 }
                 else
                 {
-                    // Token is expired or about to expire, try to refresh
                     if (_logger != null)
                     {
                         LogTokenExpiredAttemptingRefresh(_logger);
@@ -74,11 +89,10 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
 
                     try
                     {
-                        var newToken = await authService.RefreshAsync(token.RefreshToken, cancellationToken);
+                        var newToken = await authService.RefreshAsync(token.RefreshToken, cancellationToken).ConfigureAwait(false);
                         if (newToken != null && !string.IsNullOrEmpty(newToken.AccessToken))
                         {
                             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newToken.AccessToken);
-
                             if (_logger != null)
                             {
                                 LogRefreshedTokenAdded(_logger);
@@ -94,12 +108,9 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
                     }
                 }
             }
-            else
+            else if (_logger != null)
             {
-                if (_logger != null)
-                {
-                    LogNoStoredToken(_logger, request.RequestUri);
-                }
+                LogNoStoredToken(_logger, request.RequestUri);
             }
         }
         catch (Exception ex)
@@ -110,14 +121,16 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
             }
         }
 
-        return await base.SendAsync(request, cancellationToken);
+        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
-    private static bool IsAuthEndpoint(string path)
+    private static bool IsUnauthenticatedEndpoint(string path)
     {
         return path.Contains("/auth/login", StringComparison.OrdinalIgnoreCase) ||
                path.Contains("/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
-               path.Contains("/auth/register", StringComparison.OrdinalIgnoreCase);
+               path.Contains("/auth/register", StringComparison.OrdinalIgnoreCase) ||
+               path.EndsWith("/v1/session", StringComparison.OrdinalIgnoreCase) ||
+               path.Contains("/v1/session/refresh", StringComparison.OrdinalIgnoreCase);
     }
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "AuthService not available, proceeding without auth header")]
@@ -126,7 +139,7 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
     [LoggerMessage(Level = LogLevel.Debug, Message = "Added Bearer token to request for {Uri}")]
     private static partial void LogAddedBearerToken(ILogger logger, Uri? uri);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Token expired or expiring soon, attempting refresh")]
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Token expired or about to expire, attempting refresh")]
     private static partial void LogTokenExpiredAttemptingRefresh(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Refreshed token and added to request")]

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.SendPage"
+             Title="Send"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Recipient" FontAttributes="Bold" />
+            <Picker Title="Saved payees" ItemsSource="{Binding Recipients}"
+                    ItemDisplayBinding="{Binding Name}"
+                    SelectedItem="{Binding SelectedRecipient}" />
+            <Entry Text="{Binding Recipient}" Placeholder="Or type recipient" />
+            <Entry Text="{Binding NewRecipientName}" Placeholder="New payee name" />
+            <Button Text="Save payee" Command="{Binding AddRecipientCommand}" />
+            <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" />
+            <Picker Title="Speed" SelectedItem="{Binding Speed}">
+              <Picker.Items>
+                <x:String>instant</x:String>
+                <x:String>ach</x:String>
+              </Picker.Items>
+            </Picker>
+            <Button Text="Send" Command="{Binding SendCommand}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

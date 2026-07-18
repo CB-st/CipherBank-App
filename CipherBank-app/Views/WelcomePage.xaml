@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CipherBank_app.Views.WelcomePage"
+             Title="Welcome"
+             BackgroundColor="{AppThemeBinding Light=#F4F6FB, Dark=#0B1020}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+
+      <Label Text="CipherBank" FontFamily="SpaceGroteskBold" FontSize="32" TextColor="{AppThemeBinding Light=#111827, Dark=#F8FAFC}" />
+      <Label Text="{Binding CoraLine}" FontFamily="InterRegular" FontSize="15" TextColor="{AppThemeBinding Light=#4B5563, Dark=#94A3B8}" />
+      <Button Text="Create wallet" Command="{Binding CreateWalletCommand}" AutomationId="WelcomeCreateWalletButton" />
+      <Button Text="I already have a wallet" Command="{Binding ReturningCommand}" AutomationId="WelcomeReturningButton" />
+
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

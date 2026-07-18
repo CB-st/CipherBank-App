@@ -4,6 +4,12 @@
 
 using System.Globalization;
 using CipherBank_app.Extensions;
+using CipherBank_app.Custody;
+using CipherBank_app.Persist;
+using CipherBank_app.Pos;
+using CipherBank_app.V1;
+using CipherBank_app.Session;
+using CipherBank_app.Wallets;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Mocks;
 using CipherBank_app.ViewModels;
@@ -43,6 +49,7 @@ public static class MauiProgram
             .RegisterViewModels()
             .RegisterViews()
             .Build();
+        // Note: idle lock started from AppShell after services resolve
 
     /// <summary>
     /// Configures comprehensive logging with Serilog.
@@ -99,6 +106,62 @@ public static class MauiProgram
     {
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
+
+        // Cora port: custody / persist / product API / stream / NFC
+        mauiAppBuilder.Services.AddSingleton<ISecureStore, MauiSecureStore>();
+        mauiAppBuilder.Services.AddSingleton<IPinService, PinService>();
+        mauiAppBuilder.Services.AddSingleton<ICustodyService, CustodyService>();
+        mauiAppBuilder.Services.AddSingleton<IBiometricService, BiometricService>();
+        mauiAppBuilder.Services.AddSingleton<ILocalDb>(sp =>
+        {
+            string path = Path.Combine(FileSystem.AppDataDirectory, "cipherbank.db");
+            return new LocalDb(path);
+        });
+        mauiAppBuilder.Services.AddSingleton<IWalletRepository, WalletRepository>();
+        mauiAppBuilder.Services.AddSingleton<IRecipientRepository, RecipientRepository>();
+        mauiAppBuilder.Services.AddSingleton<IPrefsStore, PrefsStore>();
+        mauiAppBuilder.Services.AddSingleton<ILocalWalletSeeder, LocalWalletSeeder>();
+        mauiAppBuilder.Services.AddSingleton<IAppSession, AppSession>();
+        mauiAppBuilder.Services.AddSingleton<AppIdleLockService>();
+        mauiAppBuilder.Services.AddSingleton<IProductSessionStore, ProductSessionStorage>();
+        mauiAppBuilder.Services.AddSingleton<MockProductApi>();
+        mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductApi>();
+#if DEBUG
+        mauiAppBuilder.Services.AddSingleton<IProductApi>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            if (settings.UseMockServices)
+            {
+                Log.Debug("Using MockProductApi (based on settings)");
+                return sp.GetRequiredService<MockProductApi>();
+            }
+
+            Log.Debug("Using HttpProductApi (live /v1)");
+            return sp.GetRequiredService<HttpProductApi>();
+        });
+        mauiAppBuilder.Services.AddSingleton<IStreamService>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            if (settings.UseMockServices)
+            {
+                Log.Debug("Using MockStreamService (based on settings)");
+                return new MockStreamService();
+            }
+
+            Log.Debug("Using ClientWebSocketStreamService");
+            return new ClientWebSocketStreamService(settings.StreamEndpoint);
+        });
+#else
+        mauiAppBuilder.Services.AddSingleton<IProductApi>(sp => sp.GetRequiredService<HttpProductApi>());
+        mauiAppBuilder.Services.AddSingleton<IStreamService>(sp =>
+            new ClientWebSocketStreamService(sp.GetRequiredService<ISettingsService>().StreamEndpoint));
+#endif
+#if ANDROID
+        mauiAppBuilder.Services.AddSingleton<INfcPresentmentService, Platforms.Android.Nfc.AndroidNdefPresentmentService>();
+#else
+        mauiAppBuilder.Services.AddSingleton<INfcPresentmentService, NullNfcPresentmentService>();
+#endif
+
 
         // Rate Limiter (singleton)
         mauiAppBuilder.Services.AddSingleton<RateLimiter>();
@@ -216,6 +279,20 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder RegisterViewModels(this MauiAppBuilder mauiAppBuilder)
     {
+        mauiAppBuilder.Services.AddTransient<WelcomeViewModel>();
+        mauiAppBuilder.Services.AddTransient<KeysViewModel>();
+        mauiAppBuilder.Services.AddTransient<BackupQuizViewModel>();
+        mauiAppBuilder.Services.AddTransient<SetPinViewModel>();
+        mauiAppBuilder.Services.AddTransient<UnlockViewModel>();
+        mauiAppBuilder.Services.AddTransient<HomeViewModel>();
+        mauiAppBuilder.Services.AddTransient<ConvertViewModel>();
+        mauiAppBuilder.Services.AddTransient<SendViewModel>();
+        mauiAppBuilder.Services.AddTransient<PayViewModel>();
+        mauiAppBuilder.Services.AddTransient<ReceiveViewModel>();
+        mauiAppBuilder.Services.AddTransient<ProfileViewModel>();
+        mauiAppBuilder.Services.AddTransient<PosLabViewModel>();
+        mauiAppBuilder.Services.AddTransient<AddWalletViewModel>();
+        // Legacy pages kept registered for optional deep-links
         mauiAppBuilder.Services.AddTransient<LoginViewModel>();
         mauiAppBuilder.Services.AddTransient<DashboardViewModel>();
         mauiAppBuilder.Services.AddTransient<WalletViewModel>();
@@ -231,6 +308,19 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder RegisterViews(this MauiAppBuilder mauiAppBuilder)
     {
+        mauiAppBuilder.Services.AddTransient<WelcomePage>();
+        mauiAppBuilder.Services.AddTransient<KeysPage>();
+        mauiAppBuilder.Services.AddTransient<BackupQuizPage>();
+        mauiAppBuilder.Services.AddTransient<SetPinPage>();
+        mauiAppBuilder.Services.AddTransient<UnlockPage>();
+        mauiAppBuilder.Services.AddTransient<HomePage>();
+        mauiAppBuilder.Services.AddTransient<ConvertPage>();
+        mauiAppBuilder.Services.AddTransient<SendPage>();
+        mauiAppBuilder.Services.AddTransient<PayPage>();
+        mauiAppBuilder.Services.AddTransient<ReceivePage>();
+        mauiAppBuilder.Services.AddTransient<ProfilePage>();
+        mauiAppBuilder.Services.AddTransient<PosLabPage>();
+        mauiAppBuilder.Services.AddTransient<AddWalletPage>();
         mauiAppBuilder.Services.AddTransient<LoginPage>();
         mauiAppBuilder.Services.AddTransient<DashboardPage>();
         mauiAppBuilder.Services.AddTransient<WalletPage>();
