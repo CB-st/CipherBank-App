@@ -3,84 +3,69 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
              x:Class="CipherBank_app.Views.SettingsPage"
              x:DataType="viewmodels:SettingsViewModel"
              Title="Settings">
 
     <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="16">
+        <VerticalStackLayout x:Name="SettingsLayout" Padding="20,12,20,24" Spacing="16">
 
             <!-- API Settings -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                </Border.Shadow>
+            <controls:GlassCard x:Name="ApiSettingsCard" BodyPadding="16">
                 <VerticalStackLayout Spacing="12">
                     <Label Text="API Configuration"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
-                    <VerticalStackLayout Spacing="4">
-                        <Label Text="API Endpoint"
-                               FontSize="12"
-                               TextColor="Gray" />
-                        <Entry Placeholder="https://api.cipherbank.money"
-                               Text="{Binding ApiEndpoint}"
-                               Keyboard="Url" />
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="API Endpoint" Style="{StaticResource Eyebrow}" />
+                        <Border Style="{StaticResource InputBorder}">
+                            <Entry Placeholder="https://api.cipherbank.money"
+                                   Text="{Binding ApiEndpoint}"
+                                   Keyboard="Url" />
+                        </Border>
                     </VerticalStackLayout>
 
                     <Button Text="Test Connection"
                             Command="{Binding TestConnectionCommand}"
                             IsEnabled="{Binding IsTesting, Converter={StaticResource InvertedBoolConverter}}"
-                            BackgroundColor="#6C757D"
-                            TextColor="White"
-                            CornerRadius="8" />
+                            Style="{StaticResource SecondaryButton}" />
 
                     <ActivityIndicator IsRunning="{Binding IsTesting}"
                                        IsVisible="{Binding IsTesting}"
                                        HeightRequest="30" />
                 </VerticalStackLayout>
-            </Border>
+            </controls:GlassCard>
+
+            <!-- Developer Mode card (DEBUG only) is added in code-behind so it is absent from Release builds. -->
 
             <!-- Appearance Settings -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                </Border.Shadow>
+            <controls:GlassCard BodyPadding="16">
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Appearance"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
-                    <VerticalStackLayout Spacing="4">
-                        <Label Text="Theme"
-                               FontSize="12"
-                               TextColor="Gray" />
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Theme" Style="{StaticResource Eyebrow}" />
                         <Picker Title="Select theme"
                                 ItemsSource="{Binding ThemeModes}"
                                 SelectedItem="{Binding ThemeMode}" />
                     </VerticalStackLayout>
 
-                    <VerticalStackLayout Spacing="4">
-                        <Label Text="Default Currency"
-                               FontSize="12"
-                               TextColor="Gray" />
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Default Currency" Style="{StaticResource Eyebrow}" />
                         <Picker Title="Select currency"
                                 ItemsSource="{Binding Currencies}"
                                 SelectedItem="{Binding DefaultCurrency}" />
                     </VerticalStackLayout>
                 </VerticalStackLayout>
-            </Border>
+            </controls:GlassCard>
 
             <!-- Security Settings -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                </Border.Shadow>
+            <controls:GlassCard BodyPadding="16">
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Security"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Grid.Column="0"
@@ -90,37 +75,23 @@
                                 IsToggled="{Binding BiometricEnabled}" />
                     </Grid>
 
-                    <VerticalStackLayout Spacing="4">
-                        <Label Text="Auto-Lock Timeout"
-                               FontSize="12"
-                               TextColor="Gray" />
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Auto-Lock Timeout" Style="{StaticResource Eyebrow}" />
                         <Picker Title="Select timeout"
-                                SelectedItem="{Binding AutoLockTimeout}">
-                            <Picker.Items>
-                                <x:String>0</x:String>
-                                <x:String>1</x:String>
-                                <x:String>5</x:String>
-                                <x:String>15</x:String>
-                                <x:String>30</x:String>
-                                <x:String>60</x:String>
-                            </Picker.Items>
-                        </Picker>
+                                ItemsSource="{Binding AutoLockOptions}"
+                                SelectedItem="{Binding AutoLockTimeout}" />
                         <Label Text="Minutes until auto-lock (0 = disabled)"
                                FontSize="11"
-                               TextColor="Gray" />
+                               Style="{StaticResource SecondaryText}" />
                     </VerticalStackLayout>
                 </VerticalStackLayout>
-            </Border>
+            </controls:GlassCard>
 
             <!-- Notifications -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                </Border.Shadow>
+            <controls:GlassCard BodyPadding="16">
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Notifications"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Grid.Column="0"
@@ -132,17 +103,18 @@
 
                     <Label Text="Receive alerts for price changes and transactions."
                            FontSize="11"
-                           TextColor="Gray" />
+                           Style="{StaticResource SecondaryText}" />
                 </VerticalStackLayout>
-            </Border>
+            </controls:GlassCard>
 
             <!-- Status Message -->
             <Border IsVisible="{Binding StatusMessage, Converter={StaticResource StringToBoolConverter}}"
                     Padding="12"
-                    StrokeShape="RoundRectangle 8"
+                    StrokeShape="RoundRectangle 12"
                     Stroke="Transparent"
                     BackgroundColor="{Binding IsStatusSuccess, Converter={StaticResource StatusColorConverter}}">
                 <Label Text="{Binding StatusMessage}"
+                       TextColor="{StaticResource TextPrimary}"
                        HorizontalTextAlignment="Center" />
             </Border>
 
@@ -150,11 +122,7 @@
             <Button Text="Save Settings"
                     Command="{Binding SaveSettingsCommand}"
                     IsEnabled="{Binding IsSaving, Converter={StaticResource InvertedBoolConverter}}"
-                    BackgroundColor="#512BD4"
-                    TextColor="White"
-                    FontAttributes="Bold"
-                    CornerRadius="8"
-                    HeightRequest="50" />
+                    HeightRequest="52" />
 
             <ActivityIndicator IsRunning="{Binding IsSaving}"
                                IsVisible="{Binding IsSaving}"
@@ -162,40 +130,34 @@
 
             <Button Text="Reset to Defaults"
                     Command="{Binding ResetToDefaultsCommand}"
-                    BackgroundColor="#FFC107"
-                    TextColor="#333"
-                    CornerRadius="8"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource ButtonWarning}, Dark={StaticResource ButtonWarningDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource QuickAmountText}, Dark={StaticResource QuickAmountTextDark}}"
+                    CornerRadius="14"
                     HeightRequest="44" />
 
             <!-- Account Section -->
-            <Border StrokeShape="RoundRectangle 12" Padding="16" Stroke="Transparent" BackgroundColor="White" Margin="0,8,0,0">
-                <Border.Shadow>
-                    <Shadow Brush="Black" Offset="0,2" Radius="4" Opacity="0.15" />
-                </Border.Shadow>
+            <controls:GlassCard BodyPadding="16">
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Account"
-                           FontSize="18"
-                           FontAttributes="Bold" />
+                           Style="{StaticResource SectionHeader}" />
 
                     <Button Text="Log Out"
                             Command="{Binding LogoutCommand}"
-                            BackgroundColor="#DC3545"
-                            TextColor="White"
-                            CornerRadius="8"
+                            Style="{StaticResource DangerButton}"
                             HeightRequest="44" />
 
                     <Button Text="About CipherBank"
                             Command="{Binding ShowAboutCommand}"
-                            BackgroundColor="Transparent"
-                            TextColor="#512BD4"
+                            Style="{StaticResource GhostButton}"
                             HeightRequest="44" />
                 </VerticalStackLayout>
-            </Border>
+            </controls:GlassCard>
 
-            <!-- Version Info -->
-            <Label Text="Version 1.0.0"
+            <!-- Version Info (tap 3 times for dev mode; gesture wired in code-behind, DEBUG only) -->
+            <Label x:Name="VersionLabel"
+                   Text="Version 1.0.0"
                    FontSize="12"
-                   TextColor="Gray"
+                   Style="{StaticResource SecondaryText}"
                    HorizontalTextAlignment="Center"
                    Margin="0,8" />
 

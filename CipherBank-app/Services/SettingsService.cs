@@ -19,6 +19,9 @@ public sealed partial class SettingsService : ISettingsService
     private const string IdBiometricAuthEnabled = "biometric_auth_enabled";
     private const string IdAutoLockTimeout = "auto_lock_timeout";
     private const string IdDefaultCurrency = "default_currency";
+    private const string IdEnvironment = "environment";
+    private const string IdDeveloperModeEnabled = "developer_mode_enabled";
+    private const string IdUseMockServices = "use_mock_services";
 
     // Default values
     private const string DefaultCipherBankEndpointBase = "https://api.sandbox.cipherbank.money";
@@ -27,6 +30,9 @@ public sealed partial class SettingsService : ISettingsService
     private const bool DefaultBiometricAuthEnabled = false;
     private const int DefaultAutoLockTimeout = 5;
     private const string DefaultDefaultCurrency = "USD";
+    private const string DefaultEnvironment = "Sandbox";
+    private const bool DefaultDeveloperModeEnabled = false;
+    private const bool DefaultUseMockServices = true;
 
     private readonly ILogger<SettingsService>? _logger;
 
@@ -126,6 +132,62 @@ public sealed partial class SettingsService : ISettingsService
         }
     }
 
+    public string Environment
+    {
+        get => Preferences.Get(IdEnvironment, DefaultEnvironment);
+        set
+        {
+            if (_logger != null)
+            {
+                LogSettingChanged(_logger, "Environment", value);
+            }
+
+            Preferences.Set(IdEnvironment, value);
+
+            // Update endpoint based on environment
+            CipherBankEndpointBase = value switch
+            {
+                "Production" => "https://api.cipherbank.money",
+                "Sandbox" => "https://api.sandbox.cipherbank.money",
+                "Development" => "https://api.dev.cipherbank.money",
+                "Local" => "http://localhost:5000",
+                _ => DefaultCipherBankEndpointBase,
+            };
+        }
+    }
+
+#if DEBUG
+    public bool DeveloperModeEnabled
+    {
+        get => Preferences.Get(IdDeveloperModeEnabled, DefaultDeveloperModeEnabled);
+        set
+        {
+            if (_logger != null)
+            {
+                var valueString = value.ToString();
+                LogSettingChanged(_logger, "DeveloperModeEnabled", valueString);
+            }
+
+            Preferences.Set(IdDeveloperModeEnabled, value);
+        }
+    }
+
+    public bool UseMockServices
+    {
+        get => Preferences.Get(IdUseMockServices, DefaultUseMockServices);
+        set
+        {
+            if (_logger != null)
+            {
+                var valueString = value.ToString();
+                LogSettingChanged(_logger, "UseMockServices", valueString);
+            }
+
+            Preferences.Set(IdUseMockServices, value);
+        }
+    }
+#endif
+
     public void ResetToDefaults()
     {
         CipherBankEndpointBase = DefaultCipherBankEndpointBase;
@@ -134,6 +196,11 @@ public sealed partial class SettingsService : ISettingsService
         BiometricAuthEnabled = DefaultBiometricAuthEnabled;
         AutoLockTimeoutMinutes = DefaultAutoLockTimeout;
         DefaultCurrency = DefaultDefaultCurrency;
+        Environment = DefaultEnvironment;
+#if DEBUG
+        DeveloperModeEnabled = DefaultDeveloperModeEnabled;
+        UseMockServices = DefaultUseMockServices;
+#endif
 
         if (_logger != null)
         {

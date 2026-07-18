@@ -2,94 +2,108 @@
 
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
              xmlns:viewmodels="clr-namespace:CipherBank_app.ViewModels"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
              x:Class="CipherBank_app.Views.LoginPage"
              x:DataType="viewmodels:LoginViewModel"
              Title="Login"
-             Shell.NavBarIsVisible="False">
+             Shell.NavBarIsVisible="False"
+             ios:Page.UseSafeArea="True">
 
-    <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25"
-            VerticalOptions="Center">
+    <Grid x:Name="RootGrid">
+        <controls:GlowBackdrop />
 
-            <!-- App Title -->
-            <Label
-                Text="CipherBank"
-                FontSize="32"
-                FontAttributes="Bold"
-                HorizontalOptions="Center"
-                Margin="0,40,0,20" />
+        <!-- Environment badge (DEBUG only) is added in code-behind so it is absent from Release builds. -->
+        <ScrollView>
+            <VerticalStackLayout
+                x:Name="LoginFormLayout"
+                Padding="24,0"
+                Spacing="20"
+                VerticalOptions="Center">
 
-            <Label
-                Text="Welcome Back"
-                FontSize="24"
-                HorizontalOptions="Center"
-                Margin="0,0,0,40" />
+                <!-- App Logo -->
+                <Image Source="logo.png"
+                       HeightRequest="72"
+                       WidthRequest="72"
+                       HorizontalOptions="Center"
+                       Margin="0,40,0,0" />
 
-            <!-- Username Entry -->
-            <Border
-                StrokeThickness="1"
-                StrokeShape="RoundRectangle 8"
-                Padding="10"
-                Margin="0,10">
-                <Entry
-                    x:Name="UsernameEntry"
-                    AutomationId="UsernameEntry"
-                    Placeholder="Username"
-                    Text="{Binding Username}"
+                <!-- App Title -->
+                <Label
+                    Text="CipherBank"
+                    Style="{StaticResource DisplayTitle}"
+                    HorizontalOptions="Center" />
+
+                <Label
+                    Text="Welcome back"
+                    Style="{StaticResource SecondaryText}"
+                    FontSize="16"
+                    HorizontalOptions="Center"
+                    Margin="0,-12,0,16" />
+
+                <!-- Credentials -->
+                <controls:GlassCard>
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="Username" Style="{StaticResource Eyebrow}" />
+                        <Border Style="{StaticResource InputBorder}">
+                            <Entry
+                                x:Name="UsernameEntry"
+                                AutomationId="UsernameEntry"
+                                Placeholder="Username"
+                                Text="{Binding Username}"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                                ReturnType="Next"
+                                Completed="OnUsernameCompleted" />
+                        </Border>
+
+                        <Label Text="Password" Style="{StaticResource Eyebrow}" />
+                        <Border Style="{StaticResource InputBorder}">
+                            <Entry
+                                x:Name="PasswordEntry"
+                                AutomationId="PasswordEntry"
+                                Placeholder="Password"
+                                Text="{Binding Password}"
+                                IsPassword="True"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+                                ReturnType="Done"
+                                Completed="OnPasswordCompleted" />
+                        </Border>
+                    </VerticalStackLayout>
+                </controls:GlassCard>
+
+                <!-- Error Message -->
+                <Label
+                    x:Name="ErrorLabel"
+                    AutomationId="ErrorLabel"
+                    Text="{Binding ErrorMessage}"
+                    TextColor="{AppThemeBinding Light={StaticResource DangerText}, Dark={StaticResource DangerTextDark}}"
+                    IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+                    HorizontalOptions="Center"
+                    Margin="0,4" />
+
+                <!-- Sign In Button -->
+                <Button
+                    x:Name="LoginButton"
+                    AutomationId="LoginButton"
+                    Text="Sign In  →"
+                    Command="{Binding SignInCommand}"
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
-                    ReturnType="Next"
-                    Completed="OnUsernameCompleted" />
-            </Border>
+                    HorizontalOptions="Fill"
+                    Margin="0,12"
+                    HeightRequest="56"
+                    FontSize="17" />
 
-            <!-- Password Entry -->
-            <Border
-                StrokeThickness="1"
-                StrokeShape="RoundRectangle 8"
-                Padding="10"
-                Margin="0,10">
-                <Entry
-                    x:Name="PasswordEntry"
-                    AutomationId="PasswordEntry"
-                    Placeholder="Password"
-                    Text="{Binding Password}"
-                    IsPassword="True"
-                    IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
-                    ReturnType="Done"
-                    Completed="OnPasswordCompleted" />
-            </Border>
+                <!-- "Use Test Credentials" button (DEBUG only) is added in code-behind. -->
 
-            <!-- Error Message -->
-            <Label
-                x:Name="ErrorLabel"
-                AutomationId="ErrorLabel"
-                Text="{Binding ErrorMessage}"
-                TextColor="Red"
-                IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
-                HorizontalOptions="Center"
-                Margin="0,10" />
+                <!-- Loading Indicator -->
+                <ActivityIndicator
+                    IsRunning="{Binding IsBusy}"
+                    IsVisible="{Binding IsBusy}"
+                    HorizontalOptions="Center"
+                    Margin="0,12" />
 
-            <!-- Sign In Button -->
-            <Button
-                x:Name="LoginButton"
-                AutomationId="LoginButton"
-                Text="Sign In"
-                Command="{Binding SignInCommand}"
-                IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
-                HorizontalOptions="Fill"
-                Margin="0,20"
-                Padding="0,15" />
-
-            <!-- Loading Indicator -->
-            <ActivityIndicator
-                IsRunning="{Binding IsBusy}"
-                IsVisible="{Binding IsBusy}"
-                HorizontalOptions="Center"
-                Margin="0,20" />
-
-        </VerticalStackLayout>
-    </ScrollView>
-
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>

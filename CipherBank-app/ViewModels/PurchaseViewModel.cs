@@ -41,6 +41,12 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     private CryptoCurrency? selectedCrypto;
 
     [ObservableProperty]
+    private CryptoCurrency? focusedCrypto;
+
+    [ObservableProperty]
+    private string paymentNote = string.Empty;
+
+    [ObservableProperty]
     private decimal amount;
 
     [ObservableProperty]
@@ -108,6 +114,19 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     partial void OnSelectedCryptoChanged(CryptoCurrency? value)
     {
         CalculateTotalCost();
+
+        if (value != null && !Equals(FocusedCrypto, value))
+        {
+            FocusedCrypto = value;
+        }
+    }
+
+    partial void OnFocusedCryptoChanged(CryptoCurrency? value)
+    {
+        if (value != null && !Equals(SelectedCrypto, value))
+        {
+            SelectedCrypto = value;
+        }
     }
 
     partial void OnAmountTextChanged(string value)
@@ -170,9 +189,14 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                         AvailableCryptos.Add(crypto);
                     }
 
-                    if (AvailableCryptos.Count > 0 && SelectedCrypto == null)
+                    if (AvailableCryptos.Count > 0)
                     {
-                        SelectedCrypto = AvailableCryptos.First();
+                        // Reloaded records are new instances; re-resolve the selection by
+                        // symbol so the deck recenters on the refreshed item.
+                        var restored = SelectedCrypto != null
+                            ? AvailableCryptos.FirstOrDefault(c => c.Symbol == SelectedCrypto.Symbol)
+                            : null;
+                        SelectedCrypto = restored ?? AvailableCryptos.First();
                     }
 
                     LogLoadedCryptos(_logger, cryptos.Count);
@@ -244,6 +268,12 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             $"Subtotal: ${Amount * SelectedCrypto.CurrentPrice:F2}\n" +
             $"Fee (1.5%): ${Fee:F2}\n" +
             $"Total: ${TotalCost:F2}";
+
+        if (!string.IsNullOrWhiteSpace(PaymentNote))
+        {
+            confirmMessage += $"\nNote: {PaymentNote}";
+        }
+
         var confirm = await _dialog.ShowConfirmAsync(
             "Confirm Purchase",
             confirmMessage,
@@ -280,6 +310,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             // Clear form
             AmountText = string.Empty;
             Amount = 0;
+            PaymentNote = string.Empty;
             CalculateTotalCost();
 
             LogPurchaseCompleted(_logger, transaction.Id);

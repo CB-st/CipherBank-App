@@ -58,6 +58,20 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool isStatusSuccess;
 
+#if DEBUG
+    [ObservableProperty]
+    private string selectedEnvironment = "Sandbox";
+
+    [ObservableProperty]
+    private bool developerModeEnabled;
+
+    [ObservableProperty]
+    private bool useMockServices;
+
+    [ObservableProperty]
+    private int developerModeTapCount;
+#endif
+
     public SettingsViewModel(
         ILogger<SettingsViewModel> logger,
         ISettingsService settings,
@@ -92,6 +106,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     /// </summary>
     public int[] AutoLockOptions { get; } = [0, 1, 5, 15, 30, 60];
 
+#if DEBUG
+    /// <summary>
+    /// Available environments for development.
+    /// </summary>
+    public string[] Environments { get; } = ["Production", "Sandbox", "Development", "Local"];
+#endif
+
     /// <summary>
     /// Cancels any ongoing operations when leaving the page.
     /// </summary>
@@ -116,6 +137,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         BiometricEnabled = _settings.BiometricAuthEnabled;
         AutoLockTimeout = _settings.AutoLockTimeoutMinutes;
         DefaultCurrency = _settings.DefaultCurrency;
+
+#if DEBUG
+        SelectedEnvironment = _settings.Environment;
+        DeveloperModeEnabled = _settings.DeveloperModeEnabled;
+        UseMockServices = _settings.UseMockServices;
+#endif
 
         LogSettingsLoaded(_logger);
     }
@@ -152,6 +179,33 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _settings.BiometricAuthEnabled = BiometricEnabled;
             _settings.AutoLockTimeoutMinutes = AutoLockTimeout;
             _settings.DefaultCurrency = DefaultCurrency;
+
+#if DEBUG
+            _settings.DeveloperModeEnabled = DeveloperModeEnabled;
+            _settings.UseMockServices = UseMockServices;
+
+            // Clear auth tokens and return to login if environment changed
+            var previousEnvironment = _settings.Environment;
+            if (previousEnvironment != SelectedEnvironment)
+            {
+                // The Environment setter cascades its default endpoint into
+                // CipherBankEndpointBase, so only assign on an actual change to
+                // avoid clobbering the custom ApiEndpoint saved above.
+                _settings.Environment = SelectedEnvironment;
+                LogEnvironmentChanged(_logger, previousEnvironment, SelectedEnvironment);
+                await _authService.LogoutAsync();
+
+                // Apply theme before leaving so the change persists into the login screen.
+                ApplyTheme();
+
+                await _dialog.ShowAlertAsync(
+                    "Signed Out",
+                    $"Environment changed to {SelectedEnvironment}. Please sign in again.",
+                    "OK");
+                await _navigation.GoToAsync(Routes.Login);
+                return;
+            }
+#endif
 
             // Apply theme
             ApplyTheme();
@@ -314,6 +368,48 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             "OK");
     }
 
+#if DEBUG
+    /// <summary>
+    /// Handles taps on version number for developer mode activation.
+    /// </summary>
+    [RelayCommand]
+    private async Task TapVersionAsync()
+    {
+        DeveloperModeTapCount++;
+
+        if (DeveloperModeTapCount >= 3)
+        {
+            DeveloperModeTapCount = 0;
+
+            if (!DeveloperModeEnabled)
+            {
+                var confirm = await _dialog.ShowConfirmAsync(
+                    "Enable Developer Mode?",
+                    "Developer mode allows you to switch environments and use mock services. This is for development purposes only.",
+                    "Enable",
+                    "Cancel");
+
+                if (confirm)
+                {
+                    DeveloperModeEnabled = true;
+                    _settings.DeveloperModeEnabled = true;
+                    StatusMessage = "Developer mode enabled";
+                    IsStatusSuccess = true;
+                    LogDeveloperModeToggled(_logger, true);
+                }
+            }
+            else
+            {
+                DeveloperModeEnabled = false;
+                _settings.DeveloperModeEnabled = false;
+                StatusMessage = "Developer mode disabled";
+                IsStatusSuccess = false;
+                LogDeveloperModeToggled(_logger, false);
+            }
+        }
+    }
+#endif
+
     private void ApplyTheme()
     {
         if (Application.Current == null)
@@ -382,6 +478,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Settings page disappearing, operations cancelled")]
     private static partial void LogSettingsDisappearing(ILogger logger);
+
+#if DEBUG
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Environment changed from {PreviousEnvironment} to {NewEnvironment}, clearing auth tokens")]
+    private static partial void LogEnvironmentChanged(ILogger logger, string previousEnvironment, string newEnvironment);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Developer mode toggled: {Enabled}")]
+    private static partial void LogDeveloperModeToggled(ILogger logger, bool enabled);
+#endif
 #pragma warning restore SA1204 // Static members should appear before non-static members
 
     private void Dispose(bool disposing)
