@@ -43,6 +43,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
+    <ProjectReference Include="..\CipherBank-app.ChallengePass\CipherBank-app.ChallengePass.csproj" />
   </ItemGroup>
 
   <ItemGroup>

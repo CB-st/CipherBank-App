@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Globalization;
+using CipherBank_app.ChallengePass;
 using CipherBank_app.Extensions;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
@@ -131,6 +132,10 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IPrefsStore, PrefsStore>();
         mauiAppBuilder.Services.AddSingleton<ILocalWalletSeeder, LocalWalletSeeder>();
         mauiAppBuilder.Services.AddSingleton<IProductSessionStore, ProductSessionStorage>();
+        mauiAppBuilder.Services.AddSingleton<ISessionChallengeClient, InMemorySessionChallengeClient>();
+        mauiAppBuilder.Services.AddSingleton<IAccountKeySource, LockedAccountKeySource>();
+        mauiAppBuilder.Services.AddChallengePassModule();
+        // Lab remains the default session opener; swap to ChallengePassSessionProofBuilder when API + custody key source are ready.
         mauiAppBuilder.Services.AddSingleton<ISessionProofBuilder, LabSessionProofBuilder>();
         mauiAppBuilder.Services.AddSingleton<MockProductApi>();
         mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductApi>();
