@@ -35,8 +35,10 @@ public partial class HomeViewModel : ObservableObject
     private readonly INavigationService _nav;
     private readonly IAppSession _session;
     private readonly IStreamHub _streamHub;
+    private readonly IStreamService _stream;
     private readonly EventDebouncer _refreshDebounce = new(TimeSpan.FromSeconds(1));
     private bool _streamHooked;
+    private bool _lastPortfolioOk;
     private string _rawTotalUsd = "—";
     private string _rawChange24H = "—";
 
@@ -46,7 +48,8 @@ public partial class HomeViewModel : ObservableObject
         IWalletRepository wallets,
         INavigationService nav,
         IAppSession session,
-        IStreamHub streamHub)
+        IStreamHub streamHub,
+        IStreamService stream)
     {
         _api = api;
         _prefs = prefs;
@@ -54,7 +57,9 @@ public partial class HomeViewModel : ObservableObject
         _nav = nav;
         _session = session;
         _streamHub = streamHub;
+        _stream = stream;
         CoraLine = CoraLines.For("home");
+        RefreshOnline();
     }
 
     public ObservableCollection<HoldingDto> Holdings { get; } = new();
@@ -88,6 +93,9 @@ public partial class HomeViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isStale;
+
+    [ObservableProperty]
+    private bool isOnline;
 
     [ObservableProperty]
     private string selectedRange = "1m";
@@ -195,6 +203,7 @@ public partial class HomeViewModel : ObservableObject
             }
 
             var portfolio = await _api.GetPortfolioAsync();
+            _lastPortfolioOk = true;
             _rawTotalUsd = "$" + portfolio.TotalUsd;
             _rawChange24H = portfolio.Change24HPct + "%";
             ApplyBalanceMask();
@@ -218,10 +227,14 @@ public partial class HomeViewModel : ObservableObject
         }
         finally
         {
+            RefreshOnline();
             IsBusy = false;
             IsStale = false;
         }
     }
+
+    private void RefreshOnline()
+        => IsOnline = _stream.IsConnected || _lastPortfolioOk;
 
     [RelayCommand]
     private void ToggleBalancesHidden()
@@ -253,7 +266,8 @@ public partial class HomeViewModel : ObservableObject
         bool IsVis(string key) => prefs.HomeVisible.TryGetValue(key, out bool v) && v;
         bool combined = prefs.AssetsLayout.Equals("combined", StringComparison.OrdinalIgnoreCase);
 
-        ShowCora = IsVis("cora") && prefs.CoraEnabled;
+        // Brand header follows home-order visibility; CoraEnabled only gates the FAB.
+        ShowCora = IsVis("cora");
         ShowBalance = IsVis("balance");
         ShowQuickActions = IsVis("quickActions");
         ShowPerformance = IsVis("performance");

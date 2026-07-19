@@ -5,10 +5,11 @@
              x:Class="CipherBank_app.Views.HomePage"
              Title="Home"
              BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
   <ScrollView>
     <Grid Padding="18,16,18,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
 
-      <!-- Brand / Cora -->
+      <!-- Brand + connection -->
       <Grid Grid.Row="{Binding CoraRow}" ColumnDefinitions="*,Auto" IsVisible="{Binding ShowCora}">
         <Label FontFamily="SpaceGroteskBold" FontSize="22" VerticalOptions="Center">
           <Label.FormattedText>
@@ -19,13 +20,7 @@
           </Label.FormattedText>
         </Label>
         <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
-          <Label Text="{Binding CoraLine}"
-                 IsVisible="{Binding CoraEnabled}"
-                 FontFamily="ManropeRegular"
-                 FontSize="12"
-                 TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}"
-                 LineBreakMode="TailTruncation"
-                 MaxLines="1" />
+          <controls:ConnectionChip IsOnline="{Binding IsOnline}" />
           <Label Text="Updating…"
                  IsVisible="{Binding IsStale}"
                  FontSize="11"
@@ -177,4 +172,6 @@
 
     </Grid>
   </ScrollView>
+  <controls:CoraFab ScreenKey="home" AutomationId="CoraFab" />
+  </Grid>
 </ContentPage>

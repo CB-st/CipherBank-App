@@ -131,6 +131,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IPrefsStore, PrefsStore>();
         mauiAppBuilder.Services.AddSingleton<ILocalWalletSeeder, LocalWalletSeeder>();
         mauiAppBuilder.Services.AddSingleton<IProductSessionStore, ProductSessionStorage>();
+        mauiAppBuilder.Services.AddSingleton<ISessionProofBuilder, LabSessionProofBuilder>();
         mauiAppBuilder.Services.AddSingleton<MockProductApi>();
         mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductApi>();
 #if DEBUG

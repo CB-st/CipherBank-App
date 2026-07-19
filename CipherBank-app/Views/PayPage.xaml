@@ -5,10 +5,9 @@
              x:Class="CipherBank_app.Views.PayPage"
              Title="Pay"
              BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
   <ScrollView>
-    <VerticalStackLayout Padding="20" Spacing="14">
-      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
-
+    <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
       <controls:GlassCard UseDeepPurple="True" CornerRadius="18">
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="6">
@@ -39,4 +38,6 @@
       </controls:GlassCard>
     </VerticalStackLayout>
   </ScrollView>
+  <controls:CoraFab ScreenKey="pay" AutomationId="CoraFab" />
+  </Grid>
 </ContentPage>

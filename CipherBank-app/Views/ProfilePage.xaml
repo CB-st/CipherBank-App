@@ -5,16 +5,15 @@
              x:Class="CipherBank_app.Views.ProfilePage"
              Title="Profile"
              BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
   <ScrollView>
-    <VerticalStackLayout Padding="20" Spacing="14">
-      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
-
+    <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
       <controls:GlassCard>
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="10">
             <Label Text="Preferences" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
             <Grid ColumnDefinitions="*,Auto">
-              <Label Text="Cora footer" VerticalOptions="Center" />
+              <Label Text="Cora assistant" VerticalOptions="Center" />
               <Switch Grid.Column="1" IsToggled="{Binding CoraEnabled}" />
             </Grid>
             <Entry Text="{Binding Appearance}" Placeholder="appearance: dark | light" />
@@ -87,4 +86,6 @@
       </controls:GlassCard>
     </VerticalStackLayout>
   </ScrollView>
+  <controls:CoraFab ScreenKey="profile" AutomationId="CoraFab" />
+  </Grid>
 </ContentPage>

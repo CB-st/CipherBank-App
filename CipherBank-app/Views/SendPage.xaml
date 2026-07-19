@@ -5,9 +5,9 @@
              x:Class="CipherBank_app.Views.SendPage"
              Title="Send"
              BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
   <ScrollView>
-    <VerticalStackLayout Padding="20" Spacing="14">
-      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+    <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
       <controls:GlassCard>
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="10">
@@ -40,4 +40,6 @@
       </controls:GlassCard>
     </VerticalStackLayout>
   </ScrollView>
+  <controls:CoraFab ScreenKey="send" AutomationId="CoraFab" />
+  </Grid>
 </ContentPage>

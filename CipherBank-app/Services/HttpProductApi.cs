@@ -34,8 +34,6 @@ public sealed class HttpProductApi : IProductApi
     // --- Headers / media ---
     private const string IdempotencyHeader = "Idempotency-Key";
     private const string JsonMediaType = "application/json";
-    private const string LabAttestationStub = "lab";
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -43,11 +41,13 @@ public sealed class HttpProductApi : IProductApi
 
     private readonly HttpClient _http;
     private readonly IProductSessionStore _sessions;
+    private readonly ISessionProofBuilder _sessionProof;
 
-    public HttpProductApi(HttpClient http, IProductSessionStore sessions)
+    public HttpProductApi(HttpClient http, IProductSessionStore sessions, ISessionProofBuilder sessionProof)
     {
         _http = http;
         _sessions = sessions;
+        _sessionProof = sessionProof;
     }
 
     public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default)
@@ -61,9 +61,11 @@ public sealed class HttpProductApi : IProductApi
 
     public async Task<SessionDto> CreateSessionAsync(CancellationToken ct = default)
     {
+        // Lab stub today; ISessionProofBuilder will swap to challenge/pass without changing this call site.
+        object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
         using var req = new HttpRequestMessage(HttpMethod.Post, SessionPath)
         {
-            Content = JsonContent.Create(new { DEVICE_ATTESTATION = LabAttestationStub }),
+            Content = JsonContent.Create(body),
         };
         using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
