@@ -8,7 +8,8 @@
 
 **Tech Stack:** .NET 10 MAUI, NBitcoin/Nethereum custody, Microsoft.Data.Sqlite, Plugin.Maui.Biometric (or platform APIs), existing `HttpProductApi` / mock DI, Appium E2E.
 
-**Baseline:** Branch `feat/cora-maui-port`; comparison canvas `cora-maui-feature-compare.canvas.tsx` (86 scored features: 46 parity / 24 partial / 14 Cora-only / 2 MAUI-only).
+**Baseline:** Branch `feat/cora-maui-port`; comparison canvas `cora-maui-feature-compare.canvas.tsx`.  
+**F6.3 re-score (2026-07-19):** 86 scored features — **68 parity (79%)** / 9 partial / 7 Cora-only / 2 MAUI-only. See `2026-07-19-cora-maui-f6-scorecard.md`.
 
 ## Global Constraints
 
@@ -465,10 +466,10 @@ git commit -m "test: expand Cora shell E2E for parity surfaces"
 
 ### Task F6.3: Parity checklist + PR update
 
-- [ ] **Step 1: Re-score comparison canvas statuses (update canvas data)**
-- [ ] **Step 2: Run `dotnet test CipherBank-app.Tests`**
+- [x] **Step 1: Re-score comparison canvas statuses (update canvas data)**
+- [x] **Step 2: Run `dotnet test CipherBank-app.Tests`**
 - [ ] **Step 3: Emulator manual: onboard → Home sections → Convert → Send ACH → Receive → Pay step-up → PosLab → Profile reveal**
-- [ ] **Step 4: Push commits; update PR #15 body with Phase F0–F6 checklist**
+- [x] **Step 4: Push commits; update PR #15 body with Phase F0–F6 checklist**
 
 ```bash
 git push -u origin HEAD

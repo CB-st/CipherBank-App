@@ -141,8 +141,8 @@ Unchanged: XMR managed API, E2E AutomationIds, PR #15 checklist.
 - [x] Separate `CipherBank-app.ChallengePass` assembly with three slots + catalog.  
 - [x] A1 sealed round-trip + in-memory challenge→pass without seed fields.  
 - [x] Custody-backed key source + HTTP challenge client.  
-- [ ] F6.1–F6.3 done; PR #15 updated.  
+- [x] F6.1–F6.3 done; PR #15 updated.  
 - [x] Lab remains default opener until flag flip.  
 - [x] F6.1 Managed XMR wallet create (no spend key stored).  
 - [x] F6.2 E2E AutomationIds + parity smoke.  
-- [ ] F6.3 PR checklist.
+- [x] F6.3 PR checklist + scorecard.

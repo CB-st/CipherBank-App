@@ -95,9 +95,9 @@ git commit -m "feat: SessionProofMode flag for challenge/pass cutover"
 
 ### Task 6: F6.3 PR + ledger
 
-- [ ] Update `.superpowers/sdd/progress.md`
-- [ ] `gh pr edit 15` with F0–F6 checklist
-- [ ] Push `feat/cora-maui-port`
+- [x] Update `.superpowers/sdd/progress.md`
+- [x] `gh pr edit 15` with F0–F6 checklist
+- [x] Push `feat/cora-maui-port`
 
 ---
 
