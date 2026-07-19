@@ -1,21 +1,21 @@
 # SDD Progress Ledger — Cora MAUI Parity
 
 Branch: `feat/cora-maui-port`
-Plan: `docs/superpowers/plans/2026-07-18-cora-maui-parity.md`
-Auth module plan: `docs/superpowers/plans/2026-07-19-challenge-pass-module-and-f6.md`
+Auth plans:
+- `docs/superpowers/plans/2026-07-19-challenge-pass-module-and-f6.md`
+- `docs/superpowers/plans/2026-07-19-hybrid-pq-channel.md`
 Spec: `docs/superpowers/specs/2026-07-18-challenge-pass-auth-design.md`
 
 ## Complete
 
 - F0–F5
-- **Challenge/pass module** `CipherBank-app.ChallengePass` with slot-in/out:
-  - Algorithm (`ISealAlgorithm`)
-  - Template (`IChallengeTemplate`)
-  - Structure (`IChallengePassStructure`)
-  - Catalog + A1 suite (`a1-x25519-chacha-v1`)
-- Lab remains default `ISessionProofBuilder`
+- Challenge/pass module (3 slots) + A1 suite
+- **A2 hybrid PQ channel** (`a2-hybrid-pq-channel-v1`):
+  - ML-KEM-768 + X25519 key-share → 32-byte channel key
+  - ChaCha20-Poly1305 challenge/pass on that key
+- Lab remains default session opener
 
 ## Next
 
-- Custody `IAccountKeySource` + HTTP challenge client + SessionProofMode flag
+- Custody `IAccountKeySource` + HTTP key-share/challenge clients + SessionProofMode
 - F6.1 XMR managed · F6.2 E2E · F6.3 PR checklist

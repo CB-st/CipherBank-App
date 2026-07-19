@@ -19,7 +19,8 @@ Today, after local custody unlock, MAUI opens a product session with `{ DEVICE_A
 3. Preserve short-lived Bearer tokens after a successful pass (refresh path unchanged) until a later cutover retires them.
 4. Ship client crypto + mock round-trip behind a feature flag; live API verify can follow without rewriting unlock orchestration.
 5. **Slot-in / slot-out** algorithm, challenge template, and protocol structure independently via `CipherBank-app.ChallengePass`.
-6. Complete Phase F6 parity hardening in the same delivery wave (XMR managed, E2E, PR checklist) without blocking on live challenge endpoints.
+6. **A2 hybrid PQ channel:** ML-KEM-768 + X25519 key-share establishes a 32-byte channel key; challenge/pass uses ChaCha20-Poly1305 with that key.
+7. Complete Phase F6 parity hardening in the same delivery wave (XMR managed, E2E, PR checklist) without blocking on live challenge endpoints.
 
 ## Non-goals
 
@@ -59,6 +60,15 @@ CipherBank-app.ChallengePass
 | Template | `ChallengeIdNonceSha256Template` | `challenge-id-null-nonce-sha256-v1` |
 | Structure | `TwoStepChallengePassStructure` | `two-step-challenge-pass-v1` |
 | Suite | composition | `a1-x25519-chacha-v1` |
+| Suite A2 | hybrid key-share → channel AEAD | `a2-hybrid-pq-channel-v1` |
+
+**A2 flow**
+
+1. Device identity: X25519 + ML-KEM-768 from custody entropy (`account/hybrid/v1`).
+2. Key share: server encaps + ephemeral X25519 → `channel_key = HKDF(ss_kem ‖ ss_x)`.
+3. Challenge/pass: ChaCha20-Poly1305 with `channel_key` only (`pq-channel-chacha20poly1305-v1`).
+
+Portable ML-KEM via BouncyCastle (OS `MLKem.IsSupported` may be false on Android/Linux without OpenSSL 3.5).
 
 **Swap examples**
 
