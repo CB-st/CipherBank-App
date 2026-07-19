@@ -45,6 +45,11 @@ public interface ISettingsService
     string DefaultCurrency { get; set; }
 
     /// <summary>
+    /// Gets or sets how product session open proves device possession (Lab / A1 / A2).
+    /// </summary>
+    SessionProofMode SessionProofMode { get; set; }
+
+    /// <summary>
     /// Gets or sets the current environment (Production, Sandbox, Development, Local).
     /// </summary>
     string Environment { get; set; }

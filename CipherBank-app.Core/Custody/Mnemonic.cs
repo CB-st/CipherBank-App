@@ -36,4 +36,33 @@ public static class MnemonicHelper
 
     public static Mnemonic Parse(string phrase)
         => new Mnemonic(Normalize(phrase), Wordlist.English);
+
+    /// <summary>
+    /// BIP39 entropy bytes for HKDF account / hybrid key derivation.
+    /// NBitcoin 8 no longer exposes <c>Mnemonic.Entropy</c>; recover from word indices.
+    /// </summary>
+    public static byte[] Entropy(string phrase)
+    {
+        int[] indices = Parse(phrase).Indices;
+        int totalBits = indices.Length * 11;
+        int checksumBits = totalBits / 33;
+        int entropyBits = totalBits - checksumBits;
+        byte[] entropy = new byte[entropyBits / 8];
+
+        int bitPos = 0;
+        foreach (int index in indices)
+        {
+            for (int i = 10; i >= 0 && bitPos < entropyBits; i--)
+            {
+                if (((index >> i) & 1) == 1)
+                {
+                    entropy[bitPos / 8] |= (byte)(1 << (7 - (bitPos % 8)));
+                }
+
+                bitPos++;
+            }
+        }
+
+        return entropy;
+    }
 }

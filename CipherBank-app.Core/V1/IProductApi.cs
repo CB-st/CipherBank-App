@@ -13,6 +13,12 @@ public interface IProductApi
 
     Task<SessionDto> CreateSessionAsync(CancellationToken ct = default);
 
+    Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default);
+
+    Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default);
+
+    Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default);
+
     Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct = default);
 
     Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct = default);

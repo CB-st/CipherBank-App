@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.ChallengePass.Hybrid;
 using CipherBank_app.V1;
 
 namespace CipherBank_app.ChallengePass;
@@ -24,16 +25,22 @@ public sealed class ChallengePassSessionProofBuilder : ISessionProofBuilder
     public async Task<object> BuildOpenBodyAsync(CancellationToken ct = default)
     {
         ChallengePassSuite suite = _catalog.GetActive();
-        AccountKeyPair pair = _keys.RequireUnlockedKeyPair(suite.Algorithm);
-        string wire = WireEncoding.ToWire(pair.PublicKey);
+
+        if (suite.Structure is PqChannelChallengePassStructure pqStructure)
+        {
+            HybridPrivateIdentity hybrid = _keys.RequireHybridIdentity();
+            pqStructure.SetDeviceIdentity(hybrid);
+            var pair = new AccountKeyPair(hybrid.X25519PublicKey, hybrid.X25519PrivateKey);
+            string wire = WireEncoding.ToWire(hybrid.X25519PublicKey);
+            return await suite.Structure
+                .BuildSessionOpenBodyAsync(suite.Algorithm, suite.Template, pair, wire, ct)
+                .ConfigureAwait(false);
+        }
+
+        AccountKeyPair a1 = _keys.RequireUnlockedKeyPair(suite.Algorithm);
+        string a1Wire = WireEncoding.ToWire(a1.PublicKey);
         return await suite.Structure
-            .BuildSessionOpenBodyAsync(suite.Algorithm, suite.Template, pair, wire, ct)
+            .BuildSessionOpenBodyAsync(suite.Algorithm, suite.Template, a1, a1Wire, ct)
             .ConfigureAwait(false);
     }
-}
-
-/// <summary>Provides unlocked account key material to the proof builder.</summary>
-public interface IAccountKeySource
-{
-    AccountKeyPair RequireUnlockedKeyPair(ISealAlgorithm algorithm);
 }

@@ -20,6 +20,7 @@ public sealed partial class SettingsService : ISettingsService
     private const string IdBiometricAuthEnabled = "biometric_auth_enabled";
     private const string IdAutoLockTimeout = "auto_lock_timeout";
     private const string IdDefaultCurrency = "default_currency";
+    private const string IdSessionProofMode = "session_proof_mode";
     private const string IdEnvironment = "environment";
     private const string IdDeveloperModeEnabled = "developer_mode_enabled";
     private const string IdUseMockServices = "use_mock_services";
@@ -32,6 +33,7 @@ public sealed partial class SettingsService : ISettingsService
     private const bool DefaultBiometricAuthEnabled = false;
     private const int DefaultAutoLockTimeout = 5;
     private const string DefaultDefaultCurrency = "USD";
+    private const SessionProofMode DefaultSessionProofMode = SessionProofMode.Lab;
     private const string DefaultEnvironment = "Sandbox";
     private const bool DefaultDeveloperModeEnabled = false;
     private const bool DefaultUseMockServices = true;
@@ -148,6 +150,27 @@ public sealed partial class SettingsService : ISettingsService
         }
     }
 
+    public SessionProofMode SessionProofMode
+    {
+        get
+        {
+            string raw = Preferences.Get(IdSessionProofMode, DefaultSessionProofMode.ToString());
+            return Enum.TryParse(raw, ignoreCase: true, out SessionProofMode mode)
+                ? mode
+                : DefaultSessionProofMode;
+        }
+
+        set
+        {
+            if (_logger != null)
+            {
+                LogSettingChanged(_logger, "SessionProofMode", value.ToString());
+            }
+
+            Preferences.Set(IdSessionProofMode, value.ToString());
+        }
+    }
+
     public string Environment
     {
         get => Preferences.Get(IdEnvironment, DefaultEnvironment);
@@ -221,6 +244,7 @@ public sealed partial class SettingsService : ISettingsService
         BiometricAuthEnabled = DefaultBiometricAuthEnabled;
         AutoLockTimeoutMinutes = DefaultAutoLockTimeout;
         DefaultCurrency = DefaultDefaultCurrency;
+        SessionProofMode = DefaultSessionProofMode;
         Environment = DefaultEnvironment;
 #if DEBUG
         DeveloperModeEnabled = DefaultDeveloperModeEnabled;

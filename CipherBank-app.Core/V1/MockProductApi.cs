@@ -63,6 +63,55 @@ public sealed class MockProductApi : IProductApi
             ExpiresAt = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeMilliseconds(),
         });
 
+    public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default)
+    {
+        // Prefer ISessionChallengeClient / IPqChannelChallengeSource in DI for real crypto.
+        // This stub satisfies IProductApi for callers that hit MockProductApi directly.
+        _ = accountPublicKeyWire;
+        return Task.FromResult(new SessionChallengeDto
+        {
+            ChallengeId = "ch_mock_" + Guid.NewGuid().ToString("N")[..8],
+            Ciphertext = Convert.ToBase64String(new byte[48]),
+            ApiPublicKey = Convert.ToBase64String(new byte[32]),
+            ApiKeyId = "api_mock",
+            Algorithm = "x25519-chacha20poly1305",
+        });
+    }
+
+    public Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default)
+    {
+        _ = request;
+        return Task.FromResult(new KeyShareResponseDto
+        {
+            KeyShareId = "ks_mock_" + Guid.NewGuid().ToString("N")[..8],
+            MlKemCiphertext = Convert.ToBase64String(new byte[1088]),
+            ServerX25519PublicKey = Convert.ToBase64String(new byte[32]),
+            Algorithm = "hybrid-mlkem768-x25519-v1",
+        });
+    }
+
+    public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default)
+    {
+        string mode = string.IsNullOrWhiteSpace(request.Mode) ? "managed" : request.Mode.ToLowerInvariant();
+        string symbol = string.IsNullOrWhiteSpace(request.Symbol) ? "XMR" : request.Symbol.ToUpperInvariant();
+        string label = string.IsNullOrWhiteSpace(request.Label) ? $"CipherBank {mode}" : request.Label!;
+        string walletId = "wlt_" + Guid.NewGuid().ToString("N")[..12];
+        string? address = mode switch
+        {
+            "managed" => "4" + Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")[..10],
+            "watch" => request.Address,
+            _ => request.Address,
+        };
+        return Task.FromResult(new CreateWalletResultDto
+        {
+            WalletId = walletId,
+            Symbol = symbol,
+            Label = label,
+            Mode = mode,
+            Address = address,
+        });
+    }
+
     public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct = default)
         => Task.FromResult(new QuoteDto
         {

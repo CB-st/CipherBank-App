@@ -14,8 +14,15 @@ Spec: `docs/superpowers/specs/2026-07-18-challenge-pass-auth-design.md`
   - ML-KEM-768 + X25519 key-share → 32-byte channel key
   - ChaCha20-Poly1305 challenge/pass on that key
 - Lab remains default session opener
+- **Cutover wiring:**
+  - `CustodyAccountKeySource` (BIP39 entropy → A1 / hybrid identity)
+  - `SessionProofMode` (`Lab` | `ChallengePassA1` | `ChallengePassA2`)
+  - HTTP + in-memory clients for challenge / key-share / PQ challenge
+  - DI binds proof builder from settings (Lab default)
+- **F6.1** Managed XMR via `POST v1/wallets` (no spend key on device)
 
 ## Next
 
-- Custody `IAccountKeySource` + HTTP key-share/challenge clients + SessionProofMode
-- F6.1 XMR managed · F6.2 E2E · F6.3 PR checklist
+- F6.2 E2E AutomationIds + smoke
+- F6.3 Progress ledger + PR #15 checklist
+- Live API must implement session challenge / key-share / wallets for non-mock modes

@@ -5,24 +5,31 @@
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace CipherBank_app.ViewModels;
 
-/// <summary>Add derived or watch wallet (Phase B registry + Phase C Home prep).</summary>
+/// <summary>Add derived, watch, or managed server wallet.</summary>
 public partial class AddWalletViewModel : ObservableObject
 {
     private readonly ICustodyService _custody;
     private readonly IWalletRepository _wallets;
     private readonly IDialogService _dialogs;
+    private readonly IProductApi _api;
 
-    public AddWalletViewModel(ICustodyService custody, IWalletRepository wallets, IDialogService dialogs)
+    public AddWalletViewModel(
+        ICustodyService custody,
+        IWalletRepository wallets,
+        IDialogService dialogs,
+        IProductApi api)
     {
         _custody = custody;
         _wallets = wallets;
         _dialogs = dialogs;
+        _api = api;
         AvailableSymbols = WalletRegistry.All().Select(m => m.Symbol).ToList();
         Symbol = AvailableSymbols.FirstOrDefault() ?? "BTC";
         RefreshModes();
@@ -112,9 +119,37 @@ public partial class AddWalletViewModel : ObservableObject
                 "watch",
                 DateTimeOffset.UtcNow));
         }
+        else if (mode == WalletUiMode.Managed)
+        {
+            try
+            {
+                CreateWalletResultDto result = await _api.CreateWalletAsync(new CreateWalletRequestDto
+                {
+                    Symbol = Symbol.ToUpperInvariant(),
+                    Label = string.IsNullOrWhiteSpace(Label) ? null : Label,
+                    Mode = "managed",
+                });
+                await _wallets.UpsertAsync(new LocalWalletRow(
+                    result.WalletId,
+                    result.Symbol,
+                    result.Label,
+                    result.Address,
+                    null,
+                    0,
+                    "managed",
+                    DateTimeOffset.UtcNow));
+                await _dialogs.ShowAlertAsync("Managed wallet", "Server wallet created — spend key stays with CipherBank.");
+            }
+            catch (Exception ex)
+            {
+                await _dialogs.ShowAlertAsync("Failed", ex.Message);
+            }
+
+            return;
+        }
         else
         {
-            // XMR managed/unmanaged — Phase B stores a placeholder; live /wallets in Phase E.
+            // Unmanaged / other — local placeholder only (no spend key stored).
             await _wallets.UpsertAsync(new LocalWalletRow(
                 Guid.NewGuid().ToString("N"),
                 Symbol.ToUpperInvariant(),

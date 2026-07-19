@@ -4,6 +4,8 @@
 
 using System.Globalization;
 using CipherBank_app.ChallengePass;
+using CipherBank_app.ChallengePass.Hybrid;
+using CipherBank_app.ChallengePass.Templates;
 using CipherBank_app.Extensions;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
@@ -132,11 +134,49 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IPrefsStore, PrefsStore>();
         mauiAppBuilder.Services.AddSingleton<ILocalWalletSeeder, LocalWalletSeeder>();
         mauiAppBuilder.Services.AddSingleton<IProductSessionStore, ProductSessionStorage>();
-        mauiAppBuilder.Services.AddSingleton<ISessionChallengeClient, InMemorySessionChallengeClient>();
-        mauiAppBuilder.Services.AddSingleton<IAccountKeySource, LockedAccountKeySource>();
+        mauiAppBuilder.Services.AddSingleton<IAccountKeySource, CustodyAccountKeySource>();
+        mauiAppBuilder.Services.AddSingleton<InMemorySessionChallengeClient>();
+        mauiAppBuilder.Services.AddSingleton<HttpSessionChallengeClient>();
+        mauiAppBuilder.Services.AddSingleton<InMemoryPqKeyShareClient>();
+        mauiAppBuilder.Services.AddSingleton<HttpPqKeyShareClient>();
+        mauiAppBuilder.Services.AddSingleton<HttpPqChannelChallengeSource>();
+#if DEBUG
+        mauiAppBuilder.Services.AddSingleton<ISessionChallengeClient>(sp =>
+            sp.GetRequiredService<ISettingsService>().UseMockServices
+                ? sp.GetRequiredService<InMemorySessionChallengeClient>()
+                : sp.GetRequiredService<HttpSessionChallengeClient>());
+        mauiAppBuilder.Services.AddSingleton<IPqKeyShareClient>(sp =>
+            sp.GetRequiredService<ISettingsService>().UseMockServices
+                ? sp.GetRequiredService<InMemoryPqKeyShareClient>()
+                : sp.GetRequiredService<HttpPqKeyShareClient>());
+        mauiAppBuilder.Services.AddSingleton<IPqChannelChallengeSource>(sp =>
+            sp.GetRequiredService<ISettingsService>().UseMockServices
+                ? new InMemoryPqChannelChallengeSource(
+                    sp.GetRequiredService<InMemoryPqKeyShareClient>(),
+                    sp.GetRequiredService<ChallengeIdNonceSha256Template>())
+                : sp.GetRequiredService<HttpPqChannelChallengeSource>());
+#else
+        mauiAppBuilder.Services.AddSingleton<ISessionChallengeClient, HttpSessionChallengeClient>();
+        mauiAppBuilder.Services.AddSingleton<IPqKeyShareClient, HttpPqKeyShareClient>();
+        mauiAppBuilder.Services.AddSingleton<IPqChannelChallengeSource, HttpPqChannelChallengeSource>();
+#endif
         mauiAppBuilder.Services.AddChallengePassModule();
-        // Lab remains the default session opener; swap to ChallengePassSessionProofBuilder when API + custody key source are ready.
-        mauiAppBuilder.Services.AddSingleton<ISessionProofBuilder, LabSessionProofBuilder>();
+        mauiAppBuilder.Services.AddSingleton<ISessionProofBuilder>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            var catalog = sp.GetRequiredService<IChallengePassCatalog>();
+            switch (settings.SessionProofMode)
+            {
+                case SessionProofMode.ChallengePassA2:
+                    catalog.SetActive(ChallengePassServiceCollectionExtensions.SuiteA2Id);
+                    return sp.GetRequiredService<ChallengePassSessionProofBuilder>();
+                case SessionProofMode.ChallengePassA1:
+                    catalog.SetActive(ChallengePassServiceCollectionExtensions.SuiteA1Id);
+                    return sp.GetRequiredService<ChallengePassSessionProofBuilder>();
+                default:
+                    return sp.GetRequiredService<LabSessionProofBuilder>();
+            }
+        });
         mauiAppBuilder.Services.AddSingleton<MockProductApi>();
         mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductApi>();
 #if DEBUG

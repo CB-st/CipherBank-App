@@ -17,7 +17,10 @@ public sealed class HttpProductApi : IProductApi
     private const string PortfolioPath = "v1/portfolio";
     private const string HistoryPath = "v1/history";
     private const string SessionPath = "v1/session";
+    private const string SessionChallengePath = "v1/session/challenge";
+    private const string SessionKeySharePath = "v1/session/key-share";
     private const string SessionRefreshPath = "v1/session/refresh";
+    private const string WalletsPath = "v1/wallets";
     private const string QuotePath = "v1/quotes";
     private const string ConvertPath = "v1/convert";
     private const string TransfersPath = "v1/transfers";
@@ -74,6 +77,33 @@ public sealed class HttpProductApi : IProductApi
         await _sessions.SaveAsync(session).ConfigureAwait(false);
         return session;
     }
+
+    public async Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, SessionChallengePath)
+        {
+            Content = JsonContent.Create(new { ACCOUNT_PUBLIC_KEY = accountPublicKeyWire }),
+        };
+        using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<SessionChallengeDto>(JsonOptions, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Empty challenge response.");
+    }
+
+    public async Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default)
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Post, SessionKeySharePath)
+        {
+            Content = JsonContent.Create(request),
+        };
+        using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<KeyShareResponseDto>(JsonOptions, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Empty key-share response.");
+    }
+
+    public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default)
+        => PostMutationAsync<CreateWalletResultDto>(WalletsPath, request, Guid.NewGuid().ToString("N"), ct);
 
     public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct = default)
         => GetAsync<QuoteDto>($"{QuotePath}?from={Uri.EscapeDataString(from)}&to={Uri.EscapeDataString(to)}", ct);
