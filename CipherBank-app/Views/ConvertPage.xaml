@@ -16,12 +16,12 @@
             <Picker Title="From asset" ItemsSource="{Binding Assets}" SelectedItem="{Binding FromAsset}"
                     AutomationId="ConvertFromPicker" />
             <Button Text="Swap" Style="{StaticResource SecondaryButton}" Command="{Binding SwapAssetsCommand}"
-                    Shadow="{x:Null}" />
+                    Shadow="{x:Null}" AutomationId="ConvertSwapButton" />
             <Label Text="To" FontFamily="ManropeSemiBold" FontSize="12"
                    TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
             <Picker Title="To asset" ItemsSource="{Binding Assets}" SelectedItem="{Binding ToAsset}"
                     AutomationId="ConvertToPicker" />
-            <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" />
+            <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" AutomationId="ConvertAmountEntry" />
             <Label Text="{Binding RateText}" FontFamily="ManropeSemiBold" />
             <Label Text="{Binding LockCountdown}" FontSize="12" TextColor="{StaticResource Gold}" />
             <Button Text="Lock quote" Command="{Binding LockQuoteCommand}" AutomationId="ConvertLockQuoteButton" />

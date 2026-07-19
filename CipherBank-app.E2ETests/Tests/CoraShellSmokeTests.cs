@@ -8,7 +8,7 @@ using Xunit;
 namespace CipherBank_app.E2ETests.Tests;
 
 /// <summary>
-/// Cora Shell smoke path: Unlock → Home → Convert → Receive → PosLab Simulate.
+/// Cora Shell smoke path: Unlock → Home parity → Convert → Send ACH → Receive → PosLab Simulate.
 /// Requires Appium + a DEBUG build with a sealed wallet (or pre-seeded test PIN).
 /// </summary>
 [Collection("E2E Tests")]
@@ -75,6 +75,29 @@ public class CoraShellSmokeTests : IDisposable
         receive.RefreshQr();
         receive.IsQrVisible().Should().BeTrue();
         receive.GetAddress().Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public void Smoke_ParitySurfaces_ChartHideConvertAch_ShouldExist()
+    {
+        var unlock = new UnlockPage(_driver);
+        unlock.WaitForPageLoad();
+
+        var home = unlock.UnlockWithPin(_testPin);
+        home.WaitForPageLoad();
+        home.IsLoaded().Should().BeTrue();
+        home.HasHideBalancesToggle().Should().BeTrue("hide-balances control is a Home parity surface");
+        home.HasChartRangeChips().Should().BeTrue("1D/1W/1M/1Y range chips are Home parity surfaces");
+        home.SelectRange1w();
+        home.ToggleHideBalances();
+
+        var convert = home.GoToConvert();
+        convert.WaitForPageLoad();
+        convert.HasAssetPickers().Should().BeTrue("From/To pickers + amount are Convert parity surfaces");
+
+        var send = home.GoToSendTab();
+        send.WaitForPageLoad();
+        send.HasParitySurfaces().Should().BeTrue("ACH payee fields + amount/speed/send are Send parity surfaces");
     }
 
     [Fact]

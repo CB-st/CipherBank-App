@@ -14,27 +14,31 @@
             <Label Text="Recipient" FontAttributes="Bold" />
             <Picker Title="Saved payees" ItemsSource="{Binding Recipients}"
                     ItemDisplayBinding="{Binding Name}"
-                    SelectedItem="{Binding SelectedRecipient}" />
-            <Entry Text="{Binding Recipient}" Placeholder="Or type recipient" />
+                    SelectedItem="{Binding SelectedRecipient}"
+                    AutomationId="SendSavedPayeesPicker" />
+            <Entry Text="{Binding Recipient}" Placeholder="Or type recipient" AutomationId="SendRecipientEntry" />
 
             <Label Text="Add ACH payee" FontAttributes="Bold" Margin="0,8,0,0" />
-            <Entry Text="{Binding NewRecipientName}" Placeholder="Payee name" />
-            <Entry Text="{Binding NewHolder}" Placeholder="Account holder" />
-            <Entry Text="{Binding NewBank}" Placeholder="Bank name" />
-            <Entry Text="{Binding NewRouting}" Placeholder="Routing (9 digits)" Keyboard="Numeric" MaxLength="9" />
-            <Entry Text="{Binding NewAccount}" Placeholder="Account number" Keyboard="Numeric" />
-            <Picker Title="Account type" ItemsSource="{Binding AccountTypes}" SelectedItem="{Binding NewAccountType}" />
-            <Entry Text="{Binding NewMemo}" Placeholder="Memo (optional)" />
-            <Button Text="Save payee" Command="{Binding AddRecipientCommand}" />
+            <Entry Text="{Binding NewRecipientName}" Placeholder="Payee name" AutomationId="SendAchPayeeNameEntry" />
+            <Entry Text="{Binding NewHolder}" Placeholder="Account holder" AutomationId="SendAchHolderEntry" />
+            <Entry Text="{Binding NewBank}" Placeholder="Bank name" AutomationId="SendAchBankEntry" />
+            <Entry Text="{Binding NewRouting}" Placeholder="Routing (9 digits)" Keyboard="Numeric" MaxLength="9"
+                   AutomationId="SendAchRoutingEntry" />
+            <Entry Text="{Binding NewAccount}" Placeholder="Account number" Keyboard="Numeric"
+                   AutomationId="SendAchAccountEntry" />
+            <Picker Title="Account type" ItemsSource="{Binding AccountTypes}" SelectedItem="{Binding NewAccountType}"
+                    AutomationId="SendAchAccountTypePicker" />
+            <Entry Text="{Binding NewMemo}" Placeholder="Memo (optional)" AutomationId="SendAchMemoEntry" />
+            <Button Text="Save payee" Command="{Binding AddRecipientCommand}" AutomationId="SendAchSavePayeeButton" />
 
-            <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" />
-            <Picker Title="Speed" SelectedItem="{Binding Speed}">
+            <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" AutomationId="SendAmountEntry" />
+            <Picker Title="Speed" SelectedItem="{Binding Speed}" AutomationId="SendSpeedPicker">
               <Picker.Items>
                 <x:String>instant</x:String>
                 <x:String>ach</x:String>
               </Picker.Items>
             </Picker>
-            <Button Text="Send" Command="{Binding SendCommand}" />
+            <Button Text="Send" Command="{Binding SendCommand}" AutomationId="SendSubmitButton" />
           </VerticalStackLayout>
         </controls:GlassCard.Body>
       </controls:GlassCard>

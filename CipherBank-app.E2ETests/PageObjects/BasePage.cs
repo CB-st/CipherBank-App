@@ -79,6 +79,15 @@ public abstract class BasePage
     }
 
     /// <summary>
+    /// Taps a Shell tab (or any control) by visible text — used when AutomationId is not on the tab bar.
+    /// </summary>
+    protected void TapByText(string text)
+    {
+        By xpath = By.XPath($"//*[@text='{text}' or @content-desc='{text}' or @label='{text}']");
+        ClickElement(xpath);
+    }
+
+    /// <summary>
     /// Waits for the page to be fully loaded.
     /// Override in derived classes to add page-specific wait conditions.
     /// </summary>

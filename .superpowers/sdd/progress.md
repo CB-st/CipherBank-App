@@ -20,9 +20,9 @@ Spec: `docs/superpowers/specs/2026-07-18-challenge-pass-auth-design.md`
   - HTTP + in-memory clients for challenge / key-share / PQ challenge
   - DI binds proof builder from settings (Lab default)
 - **F6.1** Managed XMR via `POST v1/wallets` (no spend key on device)
+- **F6.2** E2E AutomationIds + parity smoke (Home chips/hide, Convert pickers, Send ACH)
 
 ## Next
 
-- F6.2 E2E AutomationIds + smoke
 - F6.3 Progress ledger + PR #15 checklist
 - Live API must implement session challenge / key-share / wallets for non-mock modes

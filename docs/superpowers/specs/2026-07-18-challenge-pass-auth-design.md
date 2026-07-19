@@ -144,4 +144,5 @@ Unchanged: XMR managed API, E2E AutomationIds, PR #15 checklist.
 - [ ] F6.1–F6.3 done; PR #15 updated.  
 - [x] Lab remains default opener until flag flip.  
 - [x] F6.1 Managed XMR wallet create (no spend key stored).  
-- [ ] F6.2 E2E · F6.3 PR checklist.
+- [x] F6.2 E2E AutomationIds + parity smoke.  
+- [ ] F6.3 PR checklist.

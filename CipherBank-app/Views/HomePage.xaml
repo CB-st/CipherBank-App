@@ -38,7 +38,8 @@
                      FontFamily="ManropeSemiBold"
                      TextColor="{StaticResource OnDarkMuted}" />
               <Button Grid.Column="1" Text="{Binding HideToggleLabel}" Style="{StaticResource PillButton}"
-                      Command="{Binding ToggleBalancesHiddenCommand}" Padding="10,4" />
+                      Command="{Binding ToggleBalancesHiddenCommand}" Padding="10,4"
+                      AutomationId="HomeHideBalancesButton" />
             </Grid>
             <Label Text="{Binding TotalUsd}"
                    FontFamily="SpaceGroteskBold"
@@ -50,10 +51,14 @@
                    FontSize="14"
                    TextColor="{StaticResource OnDarkSubtle}" />
             <HorizontalStackLayout Spacing="8" Margin="0,4,0,0">
-              <Button Text="1D" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1d" />
-              <Button Text="1W" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1w" />
-              <Button Text="1M" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1m" />
-              <Button Text="1Y" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1y" />
+              <Button Text="1D" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1d"
+                      AutomationId="HomeRange1dButton" />
+              <Button Text="1W" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1w"
+                      AutomationId="HomeRange1wButton" />
+              <Button Text="1M" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1m"
+                      AutomationId="HomeRange1mButton" />
+              <Button Text="1Y" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1y"
+                      AutomationId="HomeRange1yButton" />
             </HorizontalStackLayout>
             <GraphicsView x:Name="SparkView" HeightRequest="100" Margin="0,8,0,0" />
           </VerticalStackLayout>

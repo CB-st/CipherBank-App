@@ -9,13 +9,17 @@ End-to-end tests for critical user journeys using Appium. Requires a running App
 ```
 CipherBank-app.E2ETests/
 ├── PageObjects/
-│   ├── BasePage.cs         # Common wait/click/enter helpers
-│   ├── LoginPage.cs
-│   ├── DashboardPage.cs
-│   ├── WalletPage.cs
-│   └── PurchasePage.cs
+│   ├── BasePage.cs
+│   ├── UnlockPage.cs
+│   ├── HomePage.cs
+│   ├── ConvertPage.cs
+│   ├── SendPage.cs
+│   ├── ReceivePage.cs
+│   ├── PosLabPage.cs
+│   └── … (legacy Login/Dashboard/Wallet/Purchase)
 └── Tests/
-    └── CriticalUserJourneyTests.cs
+    ├── CoraShellSmokeTests.cs   # preferred
+    └── CriticalUserJourneyTests.cs  # legacy (skipped when Cora Shell is primary)
 ```
 
 ## Dependencies
@@ -42,61 +46,15 @@ CipherBank-app.E2ETests/
 | IOS_APP_PATH | Path to .app | /path/to/CipherBank.app |
 | IOS_DEVICE | Simulator/device name | iPhone 15 |
 | IOS_VERSION | iOS version | 17.0 |
+| E2E_TEST_PIN | Unlock PIN for sealed test wallet | 123456 |
 
-## Page Object Model
-
-### BasePage
-
-- `WaitForElement(By)` – Wait for visible element
-- `ClickElement(By)` – Click element
-- `EnterText(By, string)` – Clear and type
-- `GetElementText(By)` – Get text
-- `IsElementDisplayed(By)` – Visibility check
-- `WaitForPageLoad()` – Override in subclasses
-
-### LoginPage
-
-- `EnterUsername`, `EnterPassword` – Input
-- `ClickLogin` – Click Sign In
-- `LoginAs(username, password)` – Full login → DashboardPage
-- `IsErrorDisplayed`, `GetErrorMessage` – Error state
-- `LoginWithBiometric` – Biometric login (if available)
-
-**Element IDs**: UsernameEntry, PasswordEntry, LoginButton, ErrorLabel, BiometricLoginButton
-
-### DashboardPage
-
-- `GetWelcomeMessage`, `GetTotalBalance` – Displayed data
-- `GoToWallet` → WalletPage
-- `GoToPurchase` → PurchasePage
-- `GoToSettings` – Navigate to settings
-- `Logout` → LoginPage
-- `Refresh` – Refresh data
-- `IsLoggedIn`, `HasRecentTransactions` – State checks
-
-**Element IDs**: WelcomeLabel, TotalBalanceLabel, WalletButton, PurchaseButton, SettingsButton, LogoutButton, RefreshButton, RecentTransactionsList
-
-### WalletPage
-
-- `SendCrypto(address, amount)` – Send flow
-- `HasTransactionHistory` – Transaction list visible
-
-### PurchasePage
-
-- `CompletePurchase(symbol, usdAmount)` – Purchase flow
-- `IsPurchaseSuccessful`, `GetSuccessMessage` – Result
-- `GoBack` – Navigate back
-
-## CriticalUserJourneyTests
+## CoraShellSmokeTests
 
 | Test | Flow |
 |------|------|
-| LoginFlow_WithValidCredentials_ShouldShowDashboard | Login → verify dashboard |
-| LoginFlow_WithInvalidCredentials_ShouldShowError | Invalid login → error |
-| PurchaseFlow_CompletePurchase_ShouldSucceed | Login → Purchase → complete BTC purchase |
-| SendFlow_CompleteSend_ShouldSucceed | Login → Wallet → send crypto |
-| LogoutFlow_ShouldReturnToLogin | Login → Logout → login page |
-| CriticalPath_LoginPurchaseLogout_ShouldComplete | Login → Purchase ETH → Wallet → Logout |
+| Smoke_UnlockHomeConvertReceive_ShouldSucceed | Unlock → Convert lock → Receive QR |
+| Smoke_ParitySurfaces_ChartHideConvertAch_ShouldExist | Home chips + hide → Convert pickers → Send ACH fields |
+| Smoke_PosLabSimulate_ShouldRun | PosLab start + simulate (soft-skip if off route) |
 
 ## AutomationId Requirements
 
@@ -104,9 +62,15 @@ Page objects use `By.Id()` which maps to `AutomationId` in MAUI. All interactive
 
 | Page | Required AutomationIds |
 |------|-------------------------|
-| LoginPage | UsernameEntry, PasswordEntry, LoginButton, ErrorLabel |
-| DashboardPage | WelcomeLabel, TotalBalanceLabel, WalletButton, PurchaseButton, RefreshButton, ErrorLabel, RecentTransactionsList |
-| WalletPage | WalletBalanceLabel, WalletAddressLabel, RecipientAddressEntry, SendAmountEntry, SendButton, TransactionHistoryList, ErrorLabel |
-| PurchasePage | CryptoSelector, AmountEntry, PurchaseButton, FeeLabel, ErrorLabel |
+| UnlockPage | UnlockPinEntry, UnlockButton, UnlockErrorLabel |
+| HomePage | HomeTotalUsdLabel, HomeHideBalancesButton, HomeRange1dButton, HomeRange1wButton, HomeRange1mButton, HomeRange1yButton, HomeConvertButton, HomeSendButton, HomeReceiveButton, HomePayButton |
+| ConvertPage | ConvertFromPicker, ConvertToPicker, ConvertAmountEntry, ConvertLockQuoteButton, ConvertSubmitButton |
+| SendPage | SendSavedPayeesPicker, SendRecipientEntry, SendAchPayeeNameEntry, SendAchHolderEntry, SendAchBankEntry, SendAchRoutingEntry, SendAchAccountEntry, SendAchAccountTypePicker, SendAchMemoEntry, SendAchSavePayeeButton, SendAmountEntry, SendSpeedPicker, SendSubmitButton |
+| ReceivePage | ReceiveRefreshButton, ReceiveQrImage, ReceiveAddressLabel |
+| PosLabPage | PosStartSessionButton, PosSimulateButton |
+| LoginPage (legacy) | UsernameEntry, PasswordEntry, LoginButton, ErrorLabel |
+| DashboardPage (legacy) | WelcomeLabel, TotalBalanceLabel, WalletButton, PurchaseButton, RefreshButton, ErrorLabel, RecentTransactionsList |
+| WalletPage (legacy) | WalletBalanceLabel, WalletAddressLabel, RecipientAddressEntry, SendAmountEntry, SendButton, TransactionHistoryList, ErrorLabel |
+| PurchasePage (legacy) | CryptoSelector, AmountEntry, PurchaseButton, FeeLabel, ErrorLabel |
 
 When adding new UI elements used by E2E flows, add the corresponding `AutomationId` and update PageObjects.
