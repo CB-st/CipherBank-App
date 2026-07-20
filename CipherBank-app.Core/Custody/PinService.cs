@@ -16,6 +16,9 @@ public interface IPinService
 
     Task<bool> HasPinAsync();
 
+    /// <summary>Loads lockout / fail counters from secure storage into in-memory fields.</summary>
+    Task RefreshAsync();
+
     int FailedAttempts { get; }
 
     bool IsLockedOut { get; }
@@ -71,7 +74,7 @@ public sealed class PinService : IPinService
 
     public async Task<bool> VerifyPinAsync(string pin)
     {
-        await RefreshLockAsync().ConfigureAwait(false);
+        await RefreshAsync().ConfigureAwait(false);
         if (IsLockedOut)
         {
             return false;
@@ -107,6 +110,8 @@ public sealed class PinService : IPinService
 
         return false;
     }
+
+    public Task RefreshAsync() => RefreshLockAsync();
 
     private async Task RefreshLockAsync()
     {

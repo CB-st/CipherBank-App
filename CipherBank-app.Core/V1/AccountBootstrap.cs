@@ -86,7 +86,38 @@ public sealed class BootstrapRecipientDto
     [JsonPropertyName("memo")]
     public string? MemoCamel { get; set; }
 
-    public string ResolvedId => Id ?? IdCamel ?? Guid.NewGuid().ToString("N");
+    public string ResolvedId
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Id))
+            {
+                return Id!;
+            }
+
+            if (!string.IsNullOrWhiteSpace(IdCamel))
+            {
+                return IdCamel!;
+            }
+
+            // Stable synthetic key so re-bootstrap does not duplicate the same payee.
+            string seed = ResolvedName.Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(seed))
+            {
+                seed = (ResolvedLast4 ?? string.Empty) + "|" + (ResolvedRouting ?? string.Empty);
+            }
+
+            if (string.IsNullOrWhiteSpace(seed))
+            {
+                return "recipient_unknown";
+            }
+
+            return "bootstrap_" + Convert.ToHexString(
+                    System.Security.Cryptography.SHA256.HashData(
+                        System.Text.Encoding.UTF8.GetBytes(seed)))
+                .ToLowerInvariant()[..16];
+        }
+    }
 
     public string ResolvedName => DisplayName ?? DisplayNameCamel ?? string.Empty;
 

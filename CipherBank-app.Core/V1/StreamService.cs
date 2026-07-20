@@ -123,6 +123,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
     public async Task ConnectAsync(CancellationToken ct = default)
     {
+        await DisconnectAsync().ConfigureAwait(false);
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         _ws = new ClientWebSocket();
         await _ws.ConnectAsync(_uri, _cts.Token).ConfigureAwait(false);

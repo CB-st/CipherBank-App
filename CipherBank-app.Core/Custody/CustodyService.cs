@@ -49,7 +49,24 @@ public sealed class CustodyService : ICustodyService
         _pin = pin;
     }
 
-    public bool IsUnlocked => _mnemonic is not null && _expires is DateTimeOffset e && e > DateTimeOffset.UtcNow;
+    public bool IsUnlocked
+    {
+        get
+        {
+            if (_mnemonic is null)
+            {
+                return false;
+            }
+
+            if (_expires is not DateTimeOffset expires || expires <= DateTimeOffset.UtcNow)
+            {
+                Lock();
+                return false;
+            }
+
+            return true;
+        }
+    }
 
     public DateTimeOffset? SessionExpiresAt => _expires;
 

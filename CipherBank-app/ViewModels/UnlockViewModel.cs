@@ -55,11 +55,17 @@ public partial class UnlockViewModel : ObservableObject
     [RelayCommand]
     private async Task AppearingAsync()
     {
+        await _pin.RefreshAsync();
+        if (_pin.IsLockedOut)
+        {
+            Error = $"Locked out. Try again in {_pin.LockoutRemaining?.TotalSeconds:0}s.";
+        }
+
         BiometricsAvailable = _settings.BiometricAuthEnabled
             && await _session.CanUnlockWithDeviceOwnerAsync()
             && await _biometrics.IsAvailableAsync();
 
-        if (BiometricsAvailable && !_autoPrompted)
+        if (!_pin.IsLockedOut && BiometricsAvailable && !_autoPrompted)
         {
             _autoPrompted = true;
             await UnlockWithBiometricsAsync();
@@ -70,6 +76,7 @@ public partial class UnlockViewModel : ObservableObject
     private async Task UnlockAsync()
     {
         Error = null;
+        await _pin.RefreshAsync();
         if (_pin.IsLockedOut)
         {
             Error = $"Locked out. Try again in {_pin.LockoutRemaining?.TotalSeconds:0}s.";
