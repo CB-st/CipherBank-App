@@ -9,8 +9,14 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
-    <!-- Pin e_sqlite3 past NU1903 (GHSA-2m69-gcr7-jv3q on 2.1.11); android RID + desktop tests -->
-    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
+    <!-- Pin past NU1903 (2.1.11) but exclude ALL assets — desktop Linux natives
+         (libc.so.6) must never land in the Android APK or SqliteConnection type-init fails.
+         Android natives come only from sqlitepclraw.lib.e_sqlite3.android below.
+         CipherBank-app.Tests references the desktop package without ExcludeAssets. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>all</ExcludeAssets>
+    </PackageReference>
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.12" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
