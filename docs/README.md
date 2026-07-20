@@ -31,6 +31,7 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 
 | Document | Description |
 |----------|-------------|
+| [MAUI_FUNCTION_REF.md](MAUI_FUNCTION_REF.md) | Monolithic INVOKE-style map of MAUI/Core/ChallengePass functions (API.md format) |
 | [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
 | [core/README.md](core/README.md) | Core library overview |
 | [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |
