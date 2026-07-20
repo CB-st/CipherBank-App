@@ -13,6 +13,9 @@ namespace CipherBank_app;
 /// <summary>Application shell — Cora navigation graph.</summary>
 public partial class AppShell : Shell
 {
+    /// <summary>Minimum time on splash so the pulse mark is visible even when boot is fast.</summary>
+    private static readonly TimeSpan MinSplashDuration = TimeSpan.FromMilliseconds(900);
+
     public AppShell()
     {
         InitializeComponent();
@@ -30,8 +33,14 @@ public partial class AppShell : Shell
     {
         try
         {
-            await db.InitializeAsync();
-            await session.BootAsync();
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                await Current.GoToAsync(Routes.Splash);
+            });
+
+            var boot = BootSessionAsync(db, session);
+            await Task.WhenAll(boot, Task.Delay(MinSplashDuration)).ConfigureAwait(false);
+
             idleLock.Start();
             string route = session.HasWallet ? Routes.Unlock : Routes.Welcome;
             await MainThread.InvokeOnMainThreadAsync(async () =>
@@ -46,5 +55,11 @@ public partial class AppShell : Shell
                 await Current.GoToAsync(Routes.Welcome);
             });
         }
+    }
+
+    private static async Task BootSessionAsync(ILocalDb db, IAppSession session)
+    {
+        await db.InitializeAsync().ConfigureAwait(false);
+        await session.BootAsync().ConfigureAwait(false);
     }
 }

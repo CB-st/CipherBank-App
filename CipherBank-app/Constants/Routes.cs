@@ -7,6 +7,7 @@ namespace CipherBank_app.Constants;
 /// <summary>Shell navigation route constants (Cora IA).</summary>
 public static class Routes
 {
+    public const string Splash = "//SplashPage";
     public const string Welcome = "//WelcomePage";
     public const string Keys = "//KeysPage";
     public const string BackupQuiz = "//BackupQuizPage";

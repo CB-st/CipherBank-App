@@ -389,6 +389,7 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder RegisterViews(this MauiAppBuilder mauiAppBuilder)
     {
+        mauiAppBuilder.Services.AddTransient<SplashPage>();
         mauiAppBuilder.Services.AddTransient<WelcomePage>();
         mauiAppBuilder.Services.AddTransient<KeysPage>();
         mauiAppBuilder.Services.AddTransient<BackupQuizPage>();

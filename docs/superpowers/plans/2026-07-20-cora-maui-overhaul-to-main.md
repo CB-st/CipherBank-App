@@ -49,7 +49,7 @@ Full row inventory: Cursor canvas `cora-maui-overhaul-roadmap.canvas.tsx` and F6
 | P0 | Emulator manual smoke + keep unit/E2E green | — | Device | Open |
 | P1 | Profile prefs depth (appearance, enabled currencies, send speed) | `ProfileScreen`, `prefs/*` | `ProfileViewModel` / `ProfilePage` | **Done** |
 | P1 | Cora chrome fidelity (FAB vs Expo bar) | `CoraBar.tsx` + `CoraAssistant.tsx` | `Controls/CoraBar.cs` + `CoraFab` | **Done** (inline bar on Convert/Pay/Receive/Keys + FAB) |
-| P2 | Splash polish | `SplashScreen.tsx` | App boot chrome | Open |
+| P2 | Splash polish | `SplashScreen.tsx` | `SplashPage` + AppShell bootstrap | **Done** |
 | P2 | Legacy screen retirement from product docs/DI story | — | Login/Dashboard/Wallet(/Purchase?) | Open |
 
 ### Explicitly deferred (do not block overhaul)

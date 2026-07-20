@@ -19,6 +19,10 @@
         </Grid>
     </Shell.FlyoutHeader>
 
+    <!-- Cold-start splash (Expo SplashScreen parity) -->
+    <ShellContent Title="Splash" ContentTemplate="{DataTemplate views:SplashPage}" Route="SplashPage"
+                  FlyoutItemIsVisible="False" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" Shell.FlyoutBehavior="Disabled" />
+
     <!-- Onboarding / lock (hidden from flyout) -->
     <ShellContent Title="Welcome" ContentTemplate="{DataTemplate views:WelcomePage}" Route="WelcomePage"
                   FlyoutItemIsVisible="False" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" Shell.FlyoutBehavior="Disabled" />
