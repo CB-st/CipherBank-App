@@ -1,13 +1,29 @@
 import React from 'react';
 import { Modal, View, Text, Pressable, FlatList } from 'react-native';
-import { color, radius, font } from '@/theme';
+import { color, font } from '@/theme';
 import { AssetGlyph } from './AssetGlyph';
 import { listAssets } from '@/features/assets/assetConfig';
 
 /** Bottom-sheet asset picker. Filter by type; disabled assets (securities) show a badge. */
-export function AssetSelector({ visible, onClose, onPick, type }:
-  { visible: boolean; onClose: () => void; onPick: (symbol: string) => void; type?: 'crypto' | 'fiat' }) {
-  const assets = listAssets(type ? { type } : undefined);
+export function AssetSelector({
+  visible,
+  onClose,
+  onPick,
+  type,
+  allowedSymbols,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onPick: (symbol: string) => void;
+  type?: 'crypto' | 'fiat';
+  /** When set, only these tickers are selectable (from POST /currencies). */
+  allowedSymbols?: string[];
+}) {
+  const allowed = allowedSymbols?.map((s) => s.toUpperCase());
+  const assets = listAssets(type ? { type } : undefined).filter((a) => {
+    if (!allowed || allowed.length === 0) return true;
+    return allowed.includes(a.symbol.toUpperCase());
+  });
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: '#00000066', justifyContent: 'flex-end' }}>

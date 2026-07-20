@@ -14,6 +14,7 @@ import { Icon } from '@/components/primitives/Icon';
 import { useQuoteLock } from '@/features/quotes/useQuoteLock';
 import { useConvert } from '@/features/convert/useConvert';
 import { useRatesCache, rateUsd } from '@/features/market/ratesCache';
+import { useCurrencies } from '@/features/currencies/useCurrencies';
 import { useActivation } from '@/features/bootstrap';
 import { usePrefs } from '@/features/prefs/usePrefs';
 import { requireAuth } from '@/features/vault/requireAuth';
@@ -29,8 +30,9 @@ export function ConvertScreen({ navigation }: any) {
   const [amount, setAmount] = useState('0.5');
   const [pick, setPick] = useState<null | 'from' | 'to'>(null);
   const rates = useRatesCache();
+  const currencies = useCurrencies();
   const { setActivation } = useActivation();
-  const { quote, secondsLeft, expired } = useQuoteLock(from, to, amount);
+  const { quote, secondsLeft, expired, indicative } = useQuoteLock(from, to, amount);
   const convert = useConvert();
   const toast = useToast();
   const { lineFor } = useCora();
@@ -168,7 +170,12 @@ export function ConvertScreen({ navigation }: any) {
           />
         </View>
 
-        <RateLockStrip rateLabel={rateLabel} secondsLeft={secondsLeft} expired={expired} />
+        <RateLockStrip
+          rateLabel={rateLabel}
+          secondsLeft={secondsLeft}
+          expired={expired}
+          indicative={indicative}
+        />
 
         <Card style={{ paddingVertical: 4 }}>
           {[
@@ -199,12 +206,25 @@ export function ConvertScreen({ navigation }: any) {
           onPress={onConvert}
         />
         <Text style={{ textAlign: 'center', fontSize: 12, color: color.textSubtle, fontFamily: font.body }}>
-          Funds land instantly — ready for ACH, payments, or withdrawal.
+          {indicative
+            ? 'Live indicative estimate from /iquote. Settlement remains mocked until POST /convert ships.'
+            : 'Funds land instantly — ready for ACH, payments, or withdrawal.'}
         </Text>
       </ScrollView>
 
-      <AssetSelector visible={pick === 'from'} type="crypto" onClose={() => setPick(null)} onPick={setFrom} />
-      <AssetSelector visible={pick === 'to'} onClose={() => setPick(null)} onPick={setTo} />
+      <AssetSelector
+        visible={pick === 'from'}
+        type="crypto"
+        allowedSymbols={currencies.data}
+        onClose={() => setPick(null)}
+        onPick={setFrom}
+      />
+      <AssetSelector
+        visible={pick === 'to'}
+        allowedSymbols={currencies.data}
+        onClose={() => setPick(null)}
+        onPick={setTo}
+      />
       <CoraAssistant screen="convert" />
     </View>
   );

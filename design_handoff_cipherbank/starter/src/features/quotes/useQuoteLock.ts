@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { requestQuote, type Quote } from './quotes.api';
 
-/** Server-issued quote, client-counted TTL. Auto re-locks a fresh quote on expiry. */
+/** Quote with client countdown. Live public API quotes are indicative until /quote/lock exists. */
 export function useQuoteLock(from: string, to: string, amount: string) {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const { data: quote, refetch } = useQuery<Quote>({
@@ -28,5 +28,5 @@ export function useQuoteLock(from: string, to: string, amount: string) {
   }, [quote, refetch]);
 
   const expired = !!quote && secondsLeft === 0;
-  return { quote, secondsLeft, expired, relock: refetch };
+  return { quote, secondsLeft, expired, relock: refetch, indicative: !!quote?.indicative };
 }

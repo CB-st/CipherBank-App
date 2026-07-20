@@ -50,6 +50,31 @@ public static class HttpClientExtensions
     }
 
     /// <summary>
+    /// Registers an unauthenticated HttpClient for the public quote surface
+    /// (<c>/currencies</c>, <c>/quote</c>, <c>/iquote</c>, <c>/test</c>).
+    /// </summary>
+    public static IHttpClientBuilder AddPublicApiHttpClient<TClient>(
+        this IServiceCollection services,
+        Action<IServiceProvider, HttpClient>? configure = null)
+        where TClient : class
+    {
+        // Public PriceCache surface is production host (not product /v1 sandbox).
+        const string publicApiBase = "https://api.cipherbank.money/";
+        var builder = services.AddHttpClient<TClient>((sp, http) =>
+        {
+            http.BaseAddress = new Uri(publicApiBase);
+            http.Timeout = TimeSpan.FromSeconds(30);
+            http.DefaultRequestHeaders.Add("Accept", "application/json");
+            configure?.Invoke(sp, http);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler())
+        .AddHttpMessageHandler(sp => new RateLimitingHandler(sp));
+
+        builder.AddStandardResilienceHandler(ConfigureResilienceOptions);
+        return builder;
+    }
+
+    /// <summary>
     /// Registers the HealthCheck named HttpClient with certificate pinning for connection testing.
     /// </summary>
     public static IServiceCollection AddHealthCheckClient(this IServiceCollection services)

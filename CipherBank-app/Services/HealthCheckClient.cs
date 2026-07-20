@@ -3,11 +3,12 @@
 // </copyright>
 
 using System.Net.Http;
+using System.Text;
 
 namespace CipherBank_app.Services;
 
 /// <summary>
-/// Health check client using the app's configured HTTP handler (certificate pinning).
+/// Connectivity probe using the public <c>POST /test</c> endpoint (with certificate pinning).
 /// </summary>
 public sealed class HealthCheckClient : IHealthCheckClient
 {
@@ -24,8 +25,14 @@ public sealed class HealthCheckClient : IHealthCheckClient
         client.Timeout = TimeSpan.FromSeconds(10);
 
         var baseUri = new Uri(baseUrl.TrimEnd('/') + "/");
-        var healthUri = new Uri(baseUri, "health");
-        var response = await client.GetAsync(healthUri, cancellationToken);
+        var testUri = new Uri(baseUri, "test");
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, testUri);
+        request.Headers.Accept.ParseAdd("application/json");
+        request.Headers.Date = DateTimeOffset.UtcNow;
+        request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+
+        var response = await client.SendAsync(request, cancellationToken);
         return response.IsSuccessStatusCode;
     }
 }

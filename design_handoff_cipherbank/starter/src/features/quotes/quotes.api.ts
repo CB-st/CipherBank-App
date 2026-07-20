@@ -15,6 +15,8 @@ export interface Quote {
   to: string;
   amountOut?: string;
   fee?: string;
+  /** True when the quote is client-indicative (live /iquote) rather than server-locked. */
+  indicative?: boolean;
 }
 
 const QUOTE_TTL_MS = 15_000;
@@ -30,6 +32,7 @@ export async function requestQuote(from: string, to: string, amount: string): Pr
       amountOut: '0',
       expiresAt: Date.now() + QUOTE_TTL_MS,
       fee: '0.00',
+      indicative: true,
     };
   }
 
@@ -45,5 +48,6 @@ export async function requestQuote(from: string, to: string, amount: string): Pr
     amountOut: String(out),
     expiresAt: Date.now() + QUOTE_TTL_MS,
     fee: '0.00',
+    indicative: true,
   };
 }

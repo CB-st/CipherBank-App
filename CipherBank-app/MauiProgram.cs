@@ -241,6 +241,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<MockCryptoAPIService>();
         mauiAppBuilder.Services.AddSingleton<MockWalletService>();
         mauiAppBuilder.Services.AddSingleton<MockTransactionService>();
+        mauiAppBuilder.Services.AddSingleton<MockPublicQuoteService>();
 
         // Auth Service - Factory pattern for mock/real switching
         mauiAppBuilder.Services.AddCipherBankHttpClient<AuthService>();
@@ -284,6 +285,26 @@ public static class MauiProgram
         });
 #else
         mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<CryptoAPIService>());
+#endif
+
+        // Public quote surface (/currencies, /quote, /iquote, /test) — separate host from product /v1
+        mauiAppBuilder.Services.AddPublicApiHttpClient<PublicApiClient>();
+
+#if DEBUG
+        mauiAppBuilder.Services.AddTransient<IPublicQuoteService>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            if (settings.UseMockServices)
+            {
+                Log.Debug("Using MockPublicQuoteService (based on settings)");
+                return sp.GetRequiredService<MockPublicQuoteService>();
+            }
+
+            Log.Debug("Using PublicApiClient (real public API)");
+            return sp.GetRequiredService<PublicApiClient>();
+        });
+#else
+        mauiAppBuilder.Services.AddTransient<IPublicQuoteService>(sp => sp.GetRequiredService<PublicApiClient>());
 #endif
 
         // Wallet Service
