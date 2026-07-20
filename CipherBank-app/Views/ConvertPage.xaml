@@ -8,6 +8,7 @@
   <Grid>
   <ScrollView>
     <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
+      <controls:CoraBar ScreenKey="convert" Line="{Binding CoraLine}" />
       <controls:GlassCard>
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="10">

@@ -3,6 +3,7 @@
 // </copyright>
 
 using CipherBank_app.Constants;
+using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -19,10 +20,14 @@ public partial class KeysViewModel : ObservableObject
     {
         _nav = nav;
         Mnemonic = MnemonicHelper.Generate();
+        CoraLine = CoraLines.For("keys");
     }
 
     [ObservableProperty]
     private string mnemonic = string.Empty;
+
+    [ObservableProperty]
+    private string coraLine = string.Empty;
 
     [RelayCommand]
     private async Task CopyAsync()

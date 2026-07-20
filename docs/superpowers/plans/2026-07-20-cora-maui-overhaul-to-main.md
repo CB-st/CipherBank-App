@@ -48,7 +48,7 @@ Full row inventory: Cursor canvas `cora-maui-overhaul-roadmap.canvas.tsx` and F6
 | P0 | Home chart symbols from holdings ∩ enabled currencies | Home rates/held symbols | `HomeViewModel.BuildChartSymbols` | **Done** |
 | P0 | Emulator manual smoke + keep unit/E2E green | — | Device | Open |
 | P1 | Profile prefs depth (appearance, enabled currencies, send speed) | `ProfileScreen`, `prefs/*` | `ProfileViewModel` / `ProfilePage` | **Done** |
-| P1 | Cora chrome fidelity (bar vs FAB) | `CoraBar.tsx` | `Controls/CoraFab.cs` | Open |
+| P1 | Cora chrome fidelity (FAB vs Expo bar) | `CoraBar.tsx` + `CoraAssistant.tsx` | `Controls/CoraBar.cs` + `CoraFab` | **Done** (inline bar on Convert/Pay/Receive/Keys + FAB) |
 | P2 | Splash polish | `SplashScreen.tsx` | App boot chrome | Open |
 | P2 | Legacy screen retirement from product docs/DI story | — | Login/Dashboard/Wallet(/Purchase?) | Open |
 
@@ -66,6 +66,23 @@ Full row inventory: Cursor canvas `cora-maui-overhaul-roadmap.canvas.tsx` and F6
 - [ ] Manual: onboard → Home → Convert → Send → Receive → Pay step-up → PosLab → Profile reveal  
 - [ ] Appium `CoraShellSmokeTests` when APK + `E2E_TEST_PIN` available  
 - [ ] PR #15 closed; #16 merged; #2 retargeted/updated for main cutover  
+
+## Draft PR #2 (`CoraDesignOverhaul` → `main`)
+
+Draft [#2](https://github.com/CB-st/CipherBank-App/pull/2) is the **main cutover vehicle**. It currently describes the Expo handoff only.
+
+### To close #2 as the overhaul rebuild
+
+1. Merge [#16](https://github.com/CB-st/CipherBank-App/pull/16) into `CoraDesignOverhaul` (brings MAUI Shell + parity).
+2. Retitle/rewrite #2 as **MAUI-first Cora overhaul** (Expo = spec under `design_handoff_cipherbank/`).
+3. Finish remaining gates: emulator smoke, splash polish, park legacy Login/Dashboard/Wallet.
+4. Mark #2 ready for review → merge to `main`.
+
+### Already absorbed into #16 tip (no separate PR work)
+
+- CIP-19 radial wallet restyle ancestry (`feat/cora-onto-cip19-main`)
+- MAUI port Phases A–F + challenge/pass (`feat/cora-maui-port` / closed #15)
+- Public quote Part A + Convert/Home/Profile/Cora chrome parity commits
 
 ## Related docs
 

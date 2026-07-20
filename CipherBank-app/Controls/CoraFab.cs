@@ -35,6 +35,8 @@ public sealed class CoraFab : ContentView
         Margin = new Thickness(0, 0, 16, 72);
         InputTransparent = false;
         ZIndex = 20;
+        AutomationId = "CoraFab";
+        SemanticProperties.SetDescription(this, "Cora assistant");
 
         _lineLabel = new Label
         {
@@ -96,8 +98,14 @@ public sealed class CoraFab : ContentView
             _open = !_open;
             _bubble.IsVisible = _open;
             RefreshLine();
+            SemanticProperties.SetDescription(
+                this,
+                _open ? "Cora assistant open" : "Cora assistant");
         };
         avatar.GestureRecognizers.Add(tap);
+        AutomationProperties.SetIsInAccessibleTree(avatar, true);
+        SemanticProperties.SetDescription(avatar, "Toggle Cora assistant");
+
 
         _root = new VerticalStackLayout
         {
