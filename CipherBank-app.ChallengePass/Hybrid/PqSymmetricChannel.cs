@@ -3,7 +3,7 @@
 // </copyright>
 
 using System.Security.Cryptography;
-using NSec.Cryptography;
+using CipherBank_app.ChallengePass.Crypto;
 
 namespace CipherBank_app.ChallengePass.Hybrid;
 
@@ -28,11 +28,10 @@ public interface IPqChannel
 /// <inheritdoc />
 public sealed class PqSymmetricChannel : IPqChannel, IDisposable
 {
-    private static readonly AeadAlgorithm Aead = AeadAlgorithm.ChaCha20Poly1305;
-    private const int NonceSize = 12;
+    private const int NonceSize = PortableChaCha20Poly1305.NonceSize;
+    private const int TagSize = PortableChaCha20Poly1305.TagSize;
 
     private byte[]? _key;
-    private Key? _aeadKey;
 
     public bool IsEstablished => _key is not null;
 
@@ -51,8 +50,6 @@ public sealed class PqSymmetricChannel : IPqChannel, IDisposable
         Clear();
         _key = channelKey32.ToArray();
         KeyShareId = keyShareId;
-        var creation = new KeyCreationParameters { ExportPolicy = KeyExportPolicies.AllowPlaintextArchiving };
-        _aeadKey = Key.Import(Aead, _key, KeyBlobFormat.RawSymmetricKey, creation);
     }
 
     public void Clear()
@@ -63,16 +60,14 @@ public sealed class PqSymmetricChannel : IPqChannel, IDisposable
             _key = null;
         }
 
-        _aeadKey?.Dispose();
-        _aeadKey = null;
         KeyShareId = null;
     }
 
     public byte[] Seal(ReadOnlySpan<byte> plaintext)
     {
-        EnsureReady();
+        byte[] key = RequireKey();
         byte[] nonce = RandomNumberGenerator.GetBytes(NonceSize);
-        byte[] cipher = Aead.Encrypt(_aeadKey!, nonce, ReadOnlySpan<byte>.Empty, plaintext);
+        byte[] cipher = PortableChaCha20Poly1305.Encrypt(key, nonce, plaintext);
         var result = new byte[NonceSize + cipher.Length];
         nonce.CopyTo(result.AsSpan(0, NonceSize));
         cipher.CopyTo(result.AsSpan(NonceSize));
@@ -81,25 +76,19 @@ public sealed class PqSymmetricChannel : IPqChannel, IDisposable
 
     public byte[] Open(ReadOnlySpan<byte> ciphertext)
     {
-        EnsureReady();
-        if (ciphertext.Length < NonceSize + Aead.TagSize)
+        byte[] key = RequireKey();
+        if (ciphertext.Length < NonceSize + TagSize)
         {
             throw new CryptographicException("Ciphertext too short.");
         }
 
         ReadOnlySpan<byte> nonce = ciphertext[..NonceSize];
         ReadOnlySpan<byte> body = ciphertext[NonceSize..];
-        return Aead.Decrypt(_aeadKey!, nonce, ReadOnlySpan<byte>.Empty, body)
-            ?? throw new CryptographicException("Channel open failed.");
+        return PortableChaCha20Poly1305.Decrypt(key, nonce, body);
     }
 
     public void Dispose() => Clear();
 
-    private void EnsureReady()
-    {
-        if (_aeadKey is null)
-        {
-            throw new InvalidOperationException("PQ channel not established. Complete hybrid key share first.");
-        }
-    }
+    private byte[] RequireKey()
+        => _key ?? throw new InvalidOperationException("PQ channel not established. Complete hybrid key share first.");
 }

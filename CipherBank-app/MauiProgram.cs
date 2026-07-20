@@ -179,6 +179,8 @@ public static class MauiProgram
         });
         mauiAppBuilder.Services.AddSingleton<MockProductApi>();
         mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductApi>();
+        // Deferred resolve breaks HttpProductApi ↔ challenge/pass client cycle (MS.DI does not auto-wrap Lazy<T>).
+        mauiAppBuilder.Services.AddSingleton(sp => new Lazy<IProductApi>(() => sp.GetRequiredService<IProductApi>()));
 #if DEBUG
         mauiAppBuilder.Services.AddSingleton<IProductApi>(sp =>
         {

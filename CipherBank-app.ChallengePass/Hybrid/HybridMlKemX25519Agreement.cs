@@ -5,7 +5,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using CipherBank_app.ChallengePass.Algorithms;
-using NSec.Cryptography;
+using CipherBank_app.ChallengePass.Crypto;
 
 namespace CipherBank_app.ChallengePass.Hybrid;
 
@@ -59,27 +59,33 @@ public sealed class HybridMlKemX25519Agreement
 
         (byte[] kemCt, byte[] ssKem) = MlKem768Provider.Encapsulate(deviceMlKemPk);
 
-        var creation = new KeyCreationParameters { ExportPolicy = KeyExportPolicies.AllowPlaintextExport };
-        using var eph = Key.Create(KeyAgreementAlgorithm.X25519, creation);
-        byte[] ephPk = eph.PublicKey.Export(KeyBlobFormat.RawPublicKey);
-        PublicKey devicePk = PublicKey.Import(KeyAgreementAlgorithm.X25519, deviceX25519Pk, KeyBlobFormat.RawPublicKey);
-        var sharedParams = new SharedSecretCreationParameters { ExportPolicy = KeyExportPolicies.AllowPlaintextExport };
-        using SharedSecret shared = KeyAgreementAlgorithm.X25519.Agree(eph, devicePk, ref sharedParams)
-            ?? throw new CryptographicException("X25519 agree failed.");
-        byte[] ssX = shared.Export(SharedSecretBlobFormat.RawSharedSecret);
-
-        byte[] channelKey = Combine(ssKem, ssX);
-        CryptographicOperations.ZeroMemory(ssKem);
-        CryptographicOperations.ZeroMemory(ssX);
-
-        var response = new PqKeyShareResponse
+        (byte[] ephPk, byte[] ephSk) = PortableX25519.GenerateKeyPair();
+        try
         {
-            KeyShareId = "ks_" + Guid.NewGuid().ToString("N")[..16],
-            MlKemCiphertextWire = WireEncoding.ToWire(kemCt),
-            ServerX25519PublicKeyWire = WireEncoding.ToWire(ephPk),
-            Algorithm = KeyShareAlgorithmId,
-        };
-        return (response, channelKey);
+            byte[] ssX = PortableX25519.Agree(ephSk, deviceX25519Pk);
+            try
+            {
+                byte[] channelKey = Combine(ssKem, ssX);
+                CryptographicOperations.ZeroMemory(ssKem);
+
+                var response = new PqKeyShareResponse
+                {
+                    KeyShareId = "ks_" + Guid.NewGuid().ToString("N")[..16],
+                    MlKemCiphertextWire = WireEncoding.ToWire(kemCt),
+                    ServerX25519PublicKeyWire = WireEncoding.ToWire(ephPk),
+                    Algorithm = KeyShareAlgorithmId,
+                };
+                return (response, channelKey);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(ssX);
+            }
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(ephSk);
+        }
     }
 
     /// <summary>Device completes key-share → channel key.</summary>
@@ -89,20 +95,7 @@ public sealed class HybridMlKemX25519Agreement
         byte[] ssKem = MlKem768Provider.Decapsulate(kemCt, identity.MlKemPrivateKey);
 
         byte[] serverPkBytes = WireEncoding.FromWire(server.ServerX25519PublicKeyWire);
-        var creation = new KeyCreationParameters { ExportPolicy = KeyExportPolicies.AllowPlaintextExport };
-        using var deviceSk = Key.Import(
-            KeyAgreementAlgorithm.X25519,
-            identity.X25519PrivateKey,
-            KeyBlobFormat.RawPrivateKey,
-            creation);
-        PublicKey serverPk = PublicKey.Import(
-            KeyAgreementAlgorithm.X25519,
-            serverPkBytes,
-            KeyBlobFormat.RawPublicKey);
-        var sharedParams = new SharedSecretCreationParameters { ExportPolicy = KeyExportPolicies.AllowPlaintextExport };
-        using SharedSecret shared = KeyAgreementAlgorithm.X25519.Agree(deviceSk, serverPk, ref sharedParams)
-            ?? throw new CryptographicException("X25519 agree failed.");
-        byte[] ssX = shared.Export(SharedSecretBlobFormat.RawSharedSecret);
+        byte[] ssX = PortableX25519.Agree(identity.X25519PrivateKey, serverPkBytes);
 
         try
         {

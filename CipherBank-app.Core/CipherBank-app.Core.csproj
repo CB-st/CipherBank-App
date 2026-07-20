@@ -9,7 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
-    <!-- Android-native override (NU1903 on 2.1.11); do not reference desktop SQLitePCLRaw.lib.e_sqlite3 -->
+    <!-- Pin e_sqlite3 past NU1903 (GHSA-2m69-gcr7-jv3q on 2.1.11); android RID + desktop tests -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.12" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />

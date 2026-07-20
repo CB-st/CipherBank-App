@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.ChallengePass.Hybrid;
 using CipherBank_app.Constants;
 using CipherBank_app.Session;
 
@@ -15,12 +16,14 @@ public sealed class AppIdleLockService
 
     private readonly IAppSession _session;
     private readonly INavigationService _nav;
+    private readonly IPqChannel _pqChannel;
     private IDispatcherTimer? _timer;
 
-    public AppIdleLockService(IAppSession session, INavigationService nav)
+    public AppIdleLockService(IAppSession session, INavigationService nav, IPqChannel pqChannel)
     {
         _session = session;
         _nav = nav;
+        _pqChannel = pqChannel;
         _session.Locked += OnLocked;
     }
 
@@ -44,6 +47,7 @@ public sealed class AppIdleLockService
 
     private void OnLocked(object? sender, EventArgs e)
     {
+        _pqChannel.Clear();
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             await _nav.GoToAsync(Routes.Unlock);
