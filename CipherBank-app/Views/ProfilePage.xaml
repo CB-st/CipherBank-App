@@ -16,9 +16,20 @@
               <Label Text="Cora assistant" VerticalOptions="Center" />
               <Switch Grid.Column="1" IsToggled="{Binding CoraEnabled}" />
             </Grid>
-            <Entry Text="{Binding Appearance}" Placeholder="appearance: dark | light" />
-            <Entry Text="{Binding BaseCurrency}" Placeholder="Base currency" />
-            <Entry Text="{Binding LockIdleSeconds}" Placeholder="Lock idle seconds" Keyboard="Numeric" />
+            <Label Text="Appearance" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Picker Title="Appearance" ItemsSource="{Binding AppearanceOptions}" SelectedItem="{Binding Appearance}"
+                    AutomationId="ProfileAppearancePicker" />
+            <Label Text="Base currency" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Picker Title="Base currency" ItemsSource="{Binding BaseCurrencyOptions}" SelectedItem="{Binding BaseCurrency}"
+                    AutomationId="ProfileBaseCurrencyPicker" />
+            <Label Text="Default send speed" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Picker Title="Send speed" ItemsSource="{Binding SendSpeedOptions}" SelectedItem="{Binding DefaultSendSpeed}"
+                    AutomationId="ProfileSendSpeedPicker" />
+            <Entry Text="{Binding LockIdleSeconds}" Placeholder="Lock idle seconds" Keyboard="Numeric"
+                   AutomationId="ProfileLockIdleEntry" />
             <Grid ColumnDefinitions="*,Auto">
               <Label Text="Hide balances on launch" VerticalOptions="Center" />
               <Switch Grid.Column="1" IsToggled="{Binding ValuesHiddenOnLaunch}" />
@@ -27,6 +38,17 @@
               <Label Text="Combine holdings + local" VerticalOptions="Center" />
               <Switch Grid.Column="1" IsToggled="{Binding CombineAssets}" />
             </Grid>
+            <Label Text="Enabled currencies" FontAttributes="Bold" Margin="0,8,0,0" />
+            <CollectionView ItemsSource="{Binding EnabledCurrencyRows}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,6" ColumnDefinitions="*,Auto">
+                    <Label Text="{Binding Symbol}" VerticalOptions="Center" />
+                    <Switch Grid.Column="1" IsToggled="{Binding Enabled}" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
             <Label Text="Home sections" FontAttributes="Bold" Margin="0,8,0,0" />
             <CollectionView ItemsSource="{Binding HomeSections}">
               <CollectionView.ItemTemplate>

@@ -24,8 +24,8 @@
             <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" AutomationId="ConvertAmountEntry" />
             <Label Text="{Binding RateText}" FontFamily="ManropeSemiBold" />
             <Label Text="{Binding LockCountdown}" FontSize="12" TextColor="{StaticResource Gold}" />
-            <Button Text="Lock quote" Command="{Binding LockQuoteCommand}" AutomationId="ConvertLockQuoteButton" />
-            <Button Text="Convert instantly" Command="{Binding ConvertCommand}" IsEnabled="{Binding HasValidLock}" AutomationId="ConvertSubmitButton" />
+            <Button Text="Get indicative quote" Command="{Binding LockQuoteCommand}" AutomationId="ConvertLockQuoteButton" />
+            <Button Text="Convert (mocked settle)" Command="{Binding ConvertCommand}" IsEnabled="{Binding HasValidLock}" AutomationId="ConvertSubmitButton" />
             <Label Text="{Binding Status}" />
           </VerticalStackLayout>
         </controls:GlassCard.Body>

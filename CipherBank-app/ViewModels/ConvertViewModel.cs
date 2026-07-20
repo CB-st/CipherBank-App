@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Services;
@@ -14,10 +15,11 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace CipherBank_app.ViewModels;
 
-/// <summary>FX convert with asset pickers, swap, and quote countdown.</summary>
+/// <summary>FX convert with public /iquote locks, asset pickers, swap, and countdown.</summary>
 public partial class ConvertViewModel : ObservableObject
 {
     private readonly IProductApi _api;
+    private readonly IPublicQuoteService _publicQuotes;
     private readonly IDialogService _dialogs;
     private readonly IAppSession _session;
     private readonly IStepUpAuth _stepUp;
@@ -25,26 +27,30 @@ public partial class ConvertViewModel : ObservableObject
     private QuoteDto? _lockedQuote;
     private CancellationTokenSource? _tickCts;
     private bool _streamHooked;
+    private bool _assetsLoaded;
 
     public ConvertViewModel(
         IProductApi api,
+        IPublicQuoteService publicQuotes,
         IDialogService dialogs,
         IAppSession session,
         IStepUpAuth stepUp,
         IStreamHub streamHub)
     {
         _api = api;
+        _publicQuotes = publicQuotes;
         _dialogs = dialogs;
         _session = session;
         _stepUp = stepUp;
         _streamHub = streamHub;
         CoraLine = CoraLines.For("convert");
-        foreach (string symbol in BuildAssetList())
+        foreach (string symbol in FallbackAssets())
         {
             Assets.Add(symbol);
         }
 
         EnsureStreamHooked();
+        _ = LoadAssetsAsync();
     }
 
     private void EnsureStreamHooked()
@@ -73,21 +79,76 @@ public partial class ConvertViewModel : ObservableObject
         _ = RefreshPreviewRateAsync();
     }
 
+    private async Task LoadAssetsAsync()
+    {
+        if (_assetsLoaded)
+        {
+            return;
+        }
+
+        try
+        {
+            IReadOnlyList<string> currencies = await _publicQuotes.GetCurrenciesAsync();
+            if (currencies.Count == 0)
+            {
+                return;
+            }
+
+            void Apply()
+            {
+                Assets.Clear();
+                foreach (string symbol in currencies.OrderBy(s => s, StringComparer.OrdinalIgnoreCase))
+                {
+                    Assets.Add(symbol);
+                }
+
+                if (!Assets.Contains(FromAsset))
+                {
+                    FromAsset = Assets.FirstOrDefault() ?? "BTC";
+                }
+
+                if (!Assets.Contains(ToAsset) || ToAsset.Equals(FromAsset, StringComparison.OrdinalIgnoreCase))
+                {
+                    ToAsset = Assets.FirstOrDefault(s => !s.Equals(FromAsset, StringComparison.OrdinalIgnoreCase))
+                              ?? "USD";
+                }
+
+                _assetsLoaded = true;
+            }
+
+            if (MainThread.IsMainThread)
+            {
+                Apply();
+            }
+            else
+            {
+                await MainThread.InvokeOnMainThreadAsync(Apply);
+            }
+        }
+        catch
+        {
+            // Keep registry fallback list.
+        }
+    }
+
     private async Task RefreshPreviewRateAsync()
     {
         try
         {
-            var quote = await _api.GetQuoteAsync(FromAsset, ToAsset);
+            if (!TryParseAmount(out decimal amt) || amt <= 0)
+            {
+                amt = 1m;
+            }
+
+            var quote = await _publicQuotes.GetInverseQuoteAsync(FromAsset, amt, ToAsset);
+            string label = $"1 {quote.InputCurrency} ≈ {FormatRate(quote.Rate)} {quote.OutputCurrency} (live)";
             if (MainThread.IsMainThread)
             {
-                RateText = $"1 {quote.From} ≈ {quote.Rate} {quote.To} (live)";
+                RateText = label;
             }
             else
             {
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    RateText = $"1 {quote.From} ≈ {quote.Rate} {quote.To} (live)";
-                });
+                await MainThread.InvokeOnMainThreadAsync(() => RateText = label);
             }
         }
         catch
@@ -117,6 +178,9 @@ public partial class ConvertViewModel : ObservableObject
     private bool hasValidLock;
 
     [ObservableProperty]
+    private bool isIndicative;
+
+    [ObservableProperty]
     private string coraLine = string.Empty;
 
     [ObservableProperty]
@@ -138,9 +202,12 @@ public partial class ConvertViewModel : ObservableObject
 
     partial void OnToAssetChanged(string value) => RefreshInfoRows();
 
-    private static List<string> BuildAssetList()
+    private static List<string> FallbackAssets()
     {
-        var list = WalletRegistry.All().Select(m => m.Symbol).ToList();
+        var list = WalletRegistry.All()
+            .Select(m => m.Symbol)
+            .Where(CurrencySymbolMap.IsSupported)
+            .ToList();
         if (!list.Contains("USD", StringComparer.OrdinalIgnoreCase))
         {
             list.Insert(0, "USD");
@@ -155,35 +222,62 @@ public partial class ConvertViewModel : ObservableObject
                    || ToAsset.Equals("XMR", StringComparison.OrdinalIgnoreCase);
         PrivacyText = xmr ? "Shielded swap" : "Private by default";
         FeeText = "$0.00 we cover it";
-        SettlementText = "Instant";
+        SettlementText = IsIndicative
+            ? "Mock settle until server /convert"
+            : "Instant";
     }
 
     private bool IsQuoteFresh()
         => _lockedQuote is not null
            && _lockedQuote.ExpiresAt > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+    private bool TryParseAmount(out decimal amt)
+        => decimal.TryParse(
+            Amount,
+            NumberStyles.Number,
+            CultureInfo.InvariantCulture,
+            out amt);
+
+    private static string FormatRate(decimal rate)
+        => rate.ToString("0.########", CultureInfo.InvariantCulture);
+
     [RelayCommand]
     private void SwapAssets()
     {
         (FromAsset, ToAsset) = (ToAsset, FromAsset);
         HasValidLock = false;
+        IsIndicative = false;
         _lockedQuote = null;
         LockCountdown = null;
         RateText = null;
         _tickCts?.Cancel();
+        RefreshInfoRows();
     }
 
     [RelayCommand]
     private async Task LockQuoteAsync()
     {
         _session.Touch();
+        if (!TryParseAmount(out decimal amt) || amt <= 0)
+        {
+            await _dialogs.ShowAlertAsync("Amount", "Enter a positive amount.");
+            return;
+        }
+
         IsBusy = true;
         try
         {
-            _lockedQuote = await _api.GetQuoteAsync(FromAsset, ToAsset);
-            RateText = $"1 {_lockedQuote.From} = {_lockedQuote.Rate} {_lockedQuote.To}";
+            var pub = await _publicQuotes.GetInverseQuoteAsync(FromAsset, amt, ToAsset);
+            long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _lockedQuote = IndicativeQuoteMapper.ToQuoteDto(pub, now);
+            IsIndicative = true;
+            RateText = $"1 {_lockedQuote.From} = {FormatRate(pub.Rate)} {_lockedQuote.To}";
             RefreshInfoRows();
             StartCountdown();
+        }
+        catch (Exception ex)
+        {
+            await _dialogs.ShowAlertAsync("Quote", ex.Message);
         }
         finally
         {
@@ -211,10 +305,13 @@ public partial class ConvertViewModel : ObservableObject
 
         long remainingMs = _lockedQuote.ExpiresAt - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         HasValidLock = remainingMs > 0;
-        LockCountdown = HasValidLock ? $"{remainingMs / 1000}s remaining" : "Expired";
+        string kind = IsIndicative ? "Indicative" : "Locked";
+        LockCountdown = HasValidLock ? $"● {kind} · {remainingMs / 1000}s" : "Expired";
         if (!HasValidLock)
         {
             _lockedQuote = null;
+            IsIndicative = false;
+            RefreshInfoRows();
         }
     }
 
@@ -263,11 +360,11 @@ public partial class ConvertViewModel : ObservableObject
 
         if (!IsQuoteFresh())
         {
-            await _dialogs.ShowAlertAsync("Quote", "Lock a fresh quote first.");
+            await _dialogs.ShowAlertAsync("Quote", "Get a fresh indicative quote first.");
             return;
         }
 
-        if (!decimal.TryParse(Amount, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out decimal amt) || amt <= 0)
+        if (!TryParseAmount(out decimal amt) || amt <= 0)
         {
             await _dialogs.ShowAlertAsync("Amount", "Enter a positive amount.");
             return;
@@ -276,13 +373,16 @@ public partial class ConvertViewModel : ObservableObject
         IsBusy = true;
         try
         {
+            // Settlement remains on product/mock path until server POST /convert ships.
             var result = await _api.ConvertAsync(FromAsset, ToAsset, Amount, Guid.NewGuid().ToString("N"));
             Status = $"Convert {result.Id}: {result.Status}";
             await _dialogs.ShowAlertAsync("Convert", Status);
             HasValidLock = false;
+            IsIndicative = false;
             _lockedQuote = null;
             _tickCts?.Cancel();
             LockCountdown = null;
+            RefreshInfoRows();
         }
         finally
         {

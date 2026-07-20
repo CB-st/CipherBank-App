@@ -39,6 +39,11 @@ public sealed class UserPrefs
 
     public string BaseCurrency { get; set; } = "USD";
 
+    public static readonly string[] DefaultEnabledCurrencies = { "BTC", "XMR", "USD" };
+
+    /// <summary>Symbols visible on Home selectors / charts (uppercase tickers).</summary>
+    public List<string> EnabledCurrencies { get; set; } = new(DefaultEnabledCurrencies);
+
     public int LockIdleSeconds { get; set; } = 120;
 
     /// <summary>Migrate legacy Expo-style <c>assets</c> key and ensure holdings/local keys exist.</summary>
@@ -79,6 +84,29 @@ public sealed class UserPrefs
             || (AssetsLayout is not "separate" and not "combined"))
         {
             AssetsLayout = "separate";
+        }
+
+        if (EnabledCurrencies is null || EnabledCurrencies.Count == 0)
+        {
+            EnabledCurrencies = new List<string>(DefaultEnabledCurrencies);
+        }
+        else
+        {
+            EnabledCurrencies = EnabledCurrencies
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim().ToUpperInvariant())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (EnabledCurrencies.Count == 0)
+            {
+                EnabledCurrencies = new List<string>(DefaultEnabledCurrencies);
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(DefaultSendSpeed)
+            || (DefaultSendSpeed is not "instant" and not "ach"))
+        {
+            DefaultSendSpeed = "instant";
         }
     }
 }

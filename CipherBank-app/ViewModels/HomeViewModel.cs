@@ -420,7 +420,9 @@ public partial class HomeViewModel : ObservableObject
         CompareSeries.Clear();
         CompareLegend.Clear();
 
-        string[] symbols = { "BTC", "ETH", "USD" };
+        var prefs = await _prefs.LoadAsync();
+        string[] symbols = BuildChartSymbols(prefs);
+
         for (int i = 0; i < symbols.Length; i++)
         {
             var pts = await _api.GetHistoryAsync(symbols[i], SelectedRange);
@@ -441,6 +443,36 @@ public partial class HomeViewModel : ObservableObject
             });
             CompareLegend.Add(symbols[i]);
         }
+    }
+
+    /// <summary>
+    /// Chart symbols follow held assets ∩ enabled currencies (Expo Home behavior),
+    /// falling back to enabled list then BTC/USD.
+    /// </summary>
+    private string[] BuildChartSymbols(UserPrefs prefs)
+    {
+        var enabled = prefs.EnabledCurrencies.Count > 0
+            ? prefs.EnabledCurrencies
+            : UserPrefs.DefaultEnabledCurrencies.ToList();
+
+        var held = Holdings.Select(h => h.Symbol)
+            .Concat(LocalWallets.Select(w => w.Symbol))
+            .Where(s => enabled.Contains(s, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(3)
+            .ToList();
+
+        if (held.Count == 0)
+        {
+            held = enabled.Take(3).ToList();
+        }
+
+        if (held.Count == 0)
+        {
+            held = ["BTC", "USD"];
+        }
+
+        return held.ToArray();
     }
 
     [RelayCommand]

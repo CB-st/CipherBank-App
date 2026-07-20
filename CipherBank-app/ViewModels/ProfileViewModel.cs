@@ -33,6 +33,21 @@ public partial class HomeSectionToggle : ObservableObject
     private bool visible;
 }
 
+/// <summary>Currency visibility toggle row.</summary>
+public partial class CurrencyToggle : ObservableObject
+{
+    public CurrencyToggle(string symbol, bool enabled)
+    {
+        Symbol = symbol;
+        Enabled = enabled;
+    }
+
+    public string Symbol { get; }
+
+    [ObservableProperty]
+    private bool enabled;
+}
+
 /// <summary>Profile / prefs / vault — Phase D polished.</summary>
 public partial class ProfileViewModel : ObservableObject
 {
@@ -46,6 +61,11 @@ public partial class ProfileViewModel : ObservableObject
         ["localWallets"] = "Local wallets",
         ["assets"] = "Assets (legacy)",
     };
+
+    private static readonly string[] AppearanceChoices = ["dark", "light"];
+    private static readonly string[] BaseCurrencyChoices = ["USD", "BTC", "EUR", "JPY"];
+    private static readonly string[] SendSpeedChoices = ["instant", "ach"];
+    private static readonly string[] CurrencyCatalog = ["BTC", "XMR", "USD", "ETH"];
 
     // --- Mnemonic reveal hygiene ---
     private static readonly TimeSpan MnemonicRevealTtl = TimeSpan.FromSeconds(30);
@@ -85,6 +105,20 @@ public partial class ProfileViewModel : ObservableObject
         _session = session;
         _stepUp = stepUp;
         CoraLine = CoraLines.For("profile");
+        foreach (string a in AppearanceChoices)
+        {
+            AppearanceOptions.Add(a);
+        }
+
+        foreach (string c in BaseCurrencyChoices)
+        {
+            BaseCurrencyOptions.Add(c);
+        }
+
+        foreach (string s in SendSpeedChoices)
+        {
+            SendSpeedOptions.Add(s);
+        }
     }
 
     public ObservableCollection<VaultCardDto> Cards { get; } = new();
@@ -92,6 +126,14 @@ public partial class ProfileViewModel : ObservableObject
     public ObservableCollection<VaultBinaryDto> Binaries { get; } = new();
 
     public ObservableCollection<HomeSectionToggle> HomeSections { get; } = new();
+
+    public ObservableCollection<CurrencyToggle> EnabledCurrencyRows { get; } = new();
+
+    public ObservableCollection<string> AppearanceOptions { get; } = new();
+
+    public ObservableCollection<string> BaseCurrencyOptions { get; } = new();
+
+    public ObservableCollection<string> SendSpeedOptions { get; } = new();
 
     [ObservableProperty]
     private bool coraEnabled = true;
@@ -101,6 +143,9 @@ public partial class ProfileViewModel : ObservableObject
 
     [ObservableProperty]
     private string baseCurrency = "USD";
+
+    [ObservableProperty]
+    private string defaultSendSpeed = "instant";
 
     [ObservableProperty]
     private int lockIdleSeconds = 120;
@@ -146,6 +191,7 @@ public partial class ProfileViewModel : ObservableObject
         CoraEnabled = prefs.CoraEnabled;
         Appearance = prefs.Appearance;
         BaseCurrency = prefs.BaseCurrency;
+        DefaultSendSpeed = prefs.DefaultSendSpeed;
         LockIdleSeconds = prefs.LockIdleSeconds;
         ValuesHiddenOnLaunch = prefs.ValuesHiddenOnLaunch;
         CombineAssets = prefs.AssetsLayout.Equals("combined", StringComparison.OrdinalIgnoreCase);
@@ -159,6 +205,13 @@ public partial class ProfileViewModel : ObservableObject
             bool visible = prefs.HomeVisible.TryGetValue(key, out bool v) && v;
             string label = SectionLabels.TryGetValue(key, out string? l) ? l : key;
             HomeSections.Add(new HomeSectionToggle(key, label, visible));
+        }
+
+        EnabledCurrencyRows.Clear();
+        foreach (string symbol in CurrencyCatalog)
+        {
+            bool on = prefs.EnabledCurrencies.Contains(symbol, StringComparer.OrdinalIgnoreCase);
+            EnabledCurrencyRows.Add(new CurrencyToggle(symbol, on));
         }
 
         Cards.Clear();
@@ -186,9 +239,19 @@ public partial class ProfileViewModel : ObservableObject
         prefs.CoraEnabled = CoraEnabled;
         prefs.Appearance = Appearance;
         prefs.BaseCurrency = BaseCurrency;
+        prefs.DefaultSendSpeed = DefaultSendSpeed;
         prefs.LockIdleSeconds = Math.Clamp(LockIdleSeconds, 30, 3600);
         prefs.ValuesHiddenOnLaunch = ValuesHiddenOnLaunch;
         prefs.AssetsLayout = CombineAssets ? "combined" : "separate";
+        prefs.EnabledCurrencies = EnabledCurrencyRows
+            .Where(r => r.Enabled)
+            .Select(r => r.Symbol)
+            .ToList();
+        if (prefs.EnabledCurrencies.Count == 0)
+        {
+            prefs.EnabledCurrencies = new List<string>(UserPrefs.DefaultEnabledCurrencies);
+        }
+
         foreach (var section in HomeSections)
         {
             prefs.HomeVisible[section.Key] = section.Visible;

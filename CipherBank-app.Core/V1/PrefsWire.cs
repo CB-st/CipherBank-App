@@ -58,6 +58,12 @@ public sealed class PrefsWireDto
     [JsonPropertyName("baseCurrency")]
     public string? BaseCurrencyCamel { get; set; }
 
+    [JsonPropertyName("ENABLED_CURRENCIES")]
+    public List<string>? EnabledCurrencies { get; set; }
+
+    [JsonPropertyName("enabledCurrencies")]
+    public List<string>? EnabledCurrenciesCamel { get; set; }
+
     [JsonPropertyName("LOCK_IDLE_SECONDS")]
     public int? LockIdleSeconds { get; set; }
 
@@ -75,6 +81,7 @@ public sealed class PrefsWireDto
             DefaultSendSpeed = prefs.DefaultSendSpeed,
             Appearance = prefs.Appearance,
             BaseCurrency = prefs.BaseCurrency,
+            EnabledCurrencies = new List<string>(prefs.EnabledCurrencies),
             LockIdleSeconds = prefs.LockIdleSeconds,
         };
 
@@ -129,6 +136,12 @@ public sealed class PrefsWireDto
         if (!string.IsNullOrWhiteSpace(currency))
         {
             target.BaseCurrency = currency;
+        }
+
+        List<string>? enabled = EnabledCurrencies ?? EnabledCurrenciesCamel;
+        if (enabled is { Count: > 0 })
+        {
+            target.EnabledCurrencies = new List<string>(enabled);
         }
 
         int? idle = LockIdleSeconds ?? AppLockIdleSecCamel;

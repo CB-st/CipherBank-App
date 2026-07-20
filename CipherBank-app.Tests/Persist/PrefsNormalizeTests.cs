@@ -35,10 +35,18 @@ public class PrefsNormalizeTests
     }
 
     [Fact]
-    public void Normalize_InvalidAssetsLayout_DefaultsToSeparate()
+    public void Normalize_EmptyEnabledCurrencies_Defaults()
     {
-        var prefs = new UserPrefs { AssetsLayout = "weird" };
+        var prefs = new UserPrefs { EnabledCurrencies = new List<string>() };
         prefs.NormalizeHomeSections();
-        prefs.AssetsLayout.Should().Be("separate");
+        prefs.EnabledCurrencies.Should().BeEquivalentTo(UserPrefs.DefaultEnabledCurrencies);
+    }
+
+    [Fact]
+    public void Normalize_InvalidSendSpeed_DefaultsToInstant()
+    {
+        var prefs = new UserPrefs { DefaultSendSpeed = "warp" };
+        prefs.NormalizeHomeSections();
+        prefs.DefaultSendSpeed.Should().Be("instant");
     }
 }

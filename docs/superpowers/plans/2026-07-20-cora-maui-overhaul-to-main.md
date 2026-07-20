@@ -42,15 +42,15 @@ Full row inventory: Cursor canvas `cora-maui-overhaul-roadmap.canvas.tsx` and F6
 
 ### Must recreate / finish in MAUI (from Expo checklist)
 
-| Priority | Gap | Expo reference | MAUI touch |
-|----------|-----|----------------|------------|
-| P0 | Convert live indicative quotes via public `/iquote` | `publicMarket.api.ts`, `useQuoteLock` | `ConvertViewModel` → `IPublicQuoteService` (already registered) |
-| P0 | Home/Convert rates from public surface when not mocking | `ratesCache` / `fetchRatesViaPublicApi` | `HomeViewModel` / rates path |
-| P0 | Emulator manual smoke (onboard → money tabs → PosLab) | — | Device |
-| P1 | Profile prefs depth (appearance, enabled currencies) | `ProfileScreen`, `prefs/*` | `ProfileViewModel`, `PrefsStore` |
-| P1 | Cora chrome fidelity (bar vs FAB) | `CoraBar.tsx` | `Controls/CoraFab.cs` |
-| P2 | Splash polish | `SplashScreen.tsx` | App boot chrome |
-| P2 | Legacy screen retirement from product docs/DI story | — | Login/Dashboard/Wallet(/Purchase?) |
+| Priority | Gap | Expo reference | MAUI touch | Status |
+|----------|-----|----------------|------------|--------|
+| P0 | Convert live indicative quotes via public `/iquote` | `publicMarket.api.ts`, `useQuoteLock` | `ConvertViewModel` → `IPublicQuoteService` | **Done** (2026-07-20) |
+| P0 | Home chart symbols from holdings ∩ enabled currencies | Home rates/held symbols | `HomeViewModel.BuildChartSymbols` | **Done** |
+| P0 | Emulator manual smoke + keep unit/E2E green | — | Device | Open |
+| P1 | Profile prefs depth (appearance, enabled currencies, send speed) | `ProfileScreen`, `prefs/*` | `ProfileViewModel` / `ProfilePage` | **Done** |
+| P1 | Cora chrome fidelity (bar vs FAB) | `CoraBar.tsx` | `Controls/CoraFab.cs` | Open |
+| P2 | Splash polish | `SplashScreen.tsx` | App boot chrome | Open |
+| P2 | Legacy screen retirement from product docs/DI story | — | Login/Dashboard/Wallet(/Purchase?) | Open |
 
 ### Explicitly deferred (do not block overhaul)
 
