@@ -62,6 +62,17 @@ public sealed class LocalDb : ILocalDb
               v REAL NOT NULL,
               PRIMARY KEY (symbol, t)
             );
+            CREATE TABLE IF NOT EXISTS rates_snapshot (
+              symbol TEXT PRIMARY KEY NOT NULL,
+              usd REAL NOT NULL,
+              change24h REAL NOT NULL DEFAULT 0,
+              updated_at INTEGER NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS sync_meta (
+              key TEXT PRIMARY KEY NOT NULL,
+              value TEXT NOT NULL,
+              updated_at INTEGER NOT NULL
+            );
             """;
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = sql;
