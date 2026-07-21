@@ -1,18 +1,18 @@
 # Cora ↔ MAUI feature scorecard (F6.3)
 
-**Branch:** `feat/cora-maui-port`  
-**Re-scored:** 2026-07-19  
+**Branch:** `feat/cora-redesign-maui` (PR #16)  
+**Re-scored:** 2026-07-20 (Wave 1 rescore)  
 **Live canvas:** `cora-maui-feature-compare.canvas.tsx` (Cursor canvases)
 
 | Status | Count | Share |
 |--------|------:|------:|
-| Full parity | 68 | 79% |
-| Partial in MAUI | 9 | 10% |
-| Cora-only | 7 | 8% |
+| Full parity | 71 | 83% |
+| Partial in MAUI | 7 | 8% |
+| Cora-only | 6 | 7% |
 | MAUI-only | 2 | 2% |
 | **Total scored** | **86** | |
 
-Baseline before Phase F was ~53% full parity (46/86).
+Baseline before Phase F was ~53% full parity (46/86). After F6 (2026-07-19) was 79% (68/86). Wave 1 rescore (+3 parity): splash, public `/iquote`, Profile `EnabledCurrencies`, CoraBar note.
 
 ## Must-close list (F0.1) — all checked
 
@@ -28,17 +28,46 @@ Baseline before Phase F was ~53% full parity (46/86).
 10. [x] Receive asset chips + derivation path
 11. [x] Prefs GET/PUT sync when not mocking
 12. [x] Account bootstrap after seal
-13. [x] Cora FAB chrome
+13. [x] Cora FAB + CoraBar chrome
 14. [x] XMR managed path (`POST v1/wallets`, no spend key on device)
+15. [x] SplashPage + MinSplashDuration boot gate
+16. [x] Public `/iquote` via `IPublicQuoteService`
+17. [x] Profile currency visibility toggles (`EnabledCurrencies`)
 
-## Remaining gaps (not must-close / out of scope)
+## Persistence-first queue (Waves 2–4)
+
+From `docs/superpowers/specs/2026-07-20-persist-systems-design.md` — implementation plan: `docs/superpowers/plans/2026-07-20-persist-systems-and-mnemonic-backup.md`.
+
+**Wave 2 — Local market persist**
+
+- Home: filter holdings by `EnabledCurrencies`; expandable **Other assets (N)** for hidden
+- `LocalDb`: `rates_snapshot`, `sync_meta`; extend OHLC write-through
+- `IRatesCache` / `IMarketRepository`; P2 cold hydrate; P1 chart persist from `IPublicQuoteService`
+
+**Wave 3 — Sync queue (P1/P2 only)**
+
+- `ISyncJobQueue`: P1 chart / P2 cold bootstrap; concurrency 2; defer P3 (idle + charging)
+
+**Wave 4 — Management UIs + mnemonic backup**
+
+- Vault card add/remove on `IProductApi` + Profile UI
+- Wallet delete (Home / AddWallet) + recipient delete (Send)
+- Optional: post-create QR in add-wallet
+- `IMnemonicBackupService`: ciphered recovery file export/restore (recovery password)
+
+**Wave 5 — Emulator verify + re-score**
+
+- Manual smoke + update canvas to persistence-first 100% (denominator excludes long-term rows)
+
+## Long-term goals (not blocking persistence-first)
 
 - Activity tab UI (Expo stub; deferred)
 - Securities teaser / AAPL pay (out of scope)
-- HCE / VTS / MDES (deferred both sides)
-- Demo seed PIN flags, setup prompt, currency visibility toggles
-- SQLite rates cache, JobQueue P0–P3, post-create QR in add-wallet
-- Splash polish, header bell, merchant amount POS UI, base-currency formatting depth
+- Demo seed PIN `000000` flags, setup prompt (pull/ACH/skip)
+- HCE / VTS / MDES (deferred both sides — already scored parity)
+- Full Expo P3 JobQueue (idle + charging)
+- Header bell, POS merchant amount UI, base-currency formatting depth
+- Pay hardcoded recipient label, undercovered mix polish
 
 ## Verification
 

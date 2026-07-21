@@ -22,12 +22,20 @@
 
 ## Product path to main
 
-1. Close remaining **partial** gaps on redesign tip (queue below).
-2. Emulator smoke + `dotnet test` green.
-3. Merge PR #16 into `CoraDesignOverhaul`.
-4. Update draft PR #2 (`CoraDesignOverhaul` → `main`) as the overhaul cutover.
-5. Close PR #15; freeze Expo as runtime (keep as spec + contract docs).
-6. Park or remove legacy non-Shell pages (Login / Dashboard / Wallet) from the product story; Settings may remain as lab/debug.
+1. Execute **persistence-first waves** on redesign tip (see persist plan below) — closes remaining in-scope scorecard gaps.
+2. Close remaining **partial** chrome gaps (header bell, POS merchant UI) after persistence waves.
+3. Emulator smoke + `dotnet test` green.
+4. Merge PR #16 into `CoraDesignOverhaul`.
+5. Update draft PR #2 (`CoraDesignOverhaul` → `main`) as the overhaul cutover.
+6. Close PR #15; freeze Expo as runtime (keep as spec + contract docs).
+7. Park or remove legacy non-Shell pages (Login / Dashboard / Wallet) from the product story; Settings may remain as lab/debug.
+
+## Persistence-first plan (active)
+
+**Spec:** `docs/superpowers/specs/2026-07-20-persist-systems-design.md`  
+**Implementation:** `docs/superpowers/plans/2026-07-20-persist-systems-and-mnemonic-backup.md`
+
+Wave 1 (docs rescore) is done at **83%** (71/86 parity). Waves 2–5 deliver local market persist, P1/P2 sync queue, vault/wallet/recipient management, mnemonic recovery file, then emulator verify and re-score toward persistence-first 100%.
 
 ## Expo surfaces → MAUI (summary)
 
@@ -87,6 +95,8 @@ Draft [#2](https://github.com/CB-st/CipherBank-App/pull/2) is the **main cutover
 ## Related docs
 
 - `docs/superpowers/plans/2026-07-18-cora-maui-parity.md` — Phase F parity plan  
-- `docs/superpowers/plans/2026-07-19-cora-maui-f6-scorecard.md` — 79% scorecard  
+- `docs/superpowers/plans/2026-07-19-cora-maui-f6-scorecard.md` — 83% scorecard (Wave 1 rescore)
+- `docs/superpowers/specs/2026-07-20-persist-systems-design.md` — persistence-first + mnemonic backup design
+- `docs/superpowers/plans/2026-07-20-persist-systems-and-mnemonic-backup.md` — Waves 2–5 implementation plan  
 - `design_handoff_cipherbank/starter/docs/PROTOTYPE_MAP.md` — Expo inventory  
 - `design_handoff_cipherbank/starter/docs/NEXT_PHASE.md` — Expo next-phase (spec only)
