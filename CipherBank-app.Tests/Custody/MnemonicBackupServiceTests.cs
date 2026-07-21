@@ -23,7 +23,7 @@ public class MnemonicBackupServiceTests
         string opened = await svc.OpenBackupFileAsync(file, "correct-horse-battery-staple");
 
         opened.Should().Be(MnemonicHelper.Normalize(mnemonic));
-        Encoding.UTF8.GetString(file).Should().NotContain(mnemonic.Split(' ')[0]);
+        Encoding.UTF8.GetString(file).Should().NotContain(MnemonicHelper.Normalize(mnemonic));
 
         using JsonDocument json = JsonDocument.Parse(file);
         JsonElement root = json.RootElement;
@@ -63,5 +63,45 @@ public class MnemonicBackupServiceTests
         Func<Task> act = async () => await svc.CreateBackupFileAsync(MnemonicHelper.Generate(), "short");
 
         await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Missing_or_minimum_created_at_rejected(bool includeMinimumCreatedAt)
+    {
+        var svc = new MnemonicBackupService();
+        byte[] validFile = await svc.CreateBackupFileAsync(
+            MnemonicHelper.Generate(),
+            "correct-horse-battery-staple");
+        using JsonDocument validJson = JsonDocument.Parse(validFile);
+        var fields = validJson.RootElement.EnumerateObject()
+            .Where(property => property.Name != "CREATED_AT")
+            .ToDictionary(property => property.Name, property => property.Value.Clone());
+
+        if (includeMinimumCreatedAt)
+        {
+            fields["CREATED_AT"] = JsonSerializer.SerializeToElement(DateTimeOffset.MinValue);
+        }
+
+        byte[] invalidFile = JsonSerializer.SerializeToUtf8Bytes(fields);
+        Func<Task> act = async () =>
+            await svc.OpenBackupFileAsync(invalidFile, "correct-horse-battery-staple");
+
+        await act.Should().ThrowAsync<CryptographicException>();
+    }
+
+    [Theory]
+    [InlineData("""{"FORMAT":""")]
+    [InlineData("""{"FORMAT":"cipherbank-recovery-v1","KDF":"PBKDF2-SHA256","ITERATIONS":600000,"SALT_B64":"***","NONCE_B64":"AAAAAAAAAAAAAAAA","TAG_B64":"AAAAAAAAAAAAAAAAAAAAAA==","CIPHERTEXT_B64":"AA==","CREATED_AT":"2026-07-20T00:00:00+00:00"}""")]
+    public async Task Malformed_recovery_file_throws_cryptographic_exception(string invalidJson)
+    {
+        var svc = new MnemonicBackupService();
+
+        Func<Task> act = async () => await svc.OpenBackupFileAsync(
+            Encoding.UTF8.GetBytes(invalidJson),
+            "correct-horse-battery-staple");
+
+        await act.Should().ThrowAsync<CryptographicException>();
     }
 }

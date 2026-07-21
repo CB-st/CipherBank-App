@@ -76,14 +76,43 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         ct.ThrowIfCancellationRequested();
         ValidatePassword(recoveryPassword);
 
-        BackupDocument document = JsonSerializer.Deserialize<BackupDocument>(fileBytes.Span)
-            ?? throw new CryptographicException("Invalid recovery file.");
+        BackupDocument document;
+        try
+        {
+            document = JsonSerializer.Deserialize<BackupDocument>(fileBytes.Span)
+                ?? throw new CryptographicException("Invalid recovery file.");
+        }
+        catch (JsonException ex)
+        {
+            throw new CryptographicException("Invalid recovery file.", ex);
+        }
+
         ValidateDocument(document);
 
-        byte[] salt = Convert.FromBase64String(document.SaltBase64);
-        byte[] nonce = Convert.FromBase64String(document.NonceBase64);
-        byte[] tag = Convert.FromBase64String(document.TagBase64);
-        byte[] ciphertext = Convert.FromBase64String(document.CiphertextBase64);
+        byte[] salt;
+        byte[] nonce;
+        byte[] tag;
+        byte[] ciphertext;
+        try
+        {
+            salt = Convert.FromBase64String(document.SaltBase64);
+            nonce = Convert.FromBase64String(document.NonceBase64);
+            tag = Convert.FromBase64String(document.TagBase64);
+            ciphertext = Convert.FromBase64String(document.CiphertextBase64);
+        }
+        catch (FormatException ex)
+        {
+            throw new CryptographicException("Invalid recovery file.", ex);
+        }
+
+        if (salt.Length != SaltSize ||
+            nonce.Length != NonceSize ||
+            tag.Length != TagSize ||
+            ciphertext.Length == 0)
+        {
+            throw new CryptographicException("Invalid recovery file.");
+        }
+
         byte[] key = DeriveKey(recoveryPassword, salt);
         byte[] plaintext = new byte[ciphertext.Length];
 
@@ -143,7 +172,8 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
             string.IsNullOrWhiteSpace(document.SaltBase64) ||
             string.IsNullOrWhiteSpace(document.NonceBase64) ||
             string.IsNullOrWhiteSpace(document.TagBase64) ||
-            string.IsNullOrWhiteSpace(document.CiphertextBase64))
+            string.IsNullOrWhiteSpace(document.CiphertextBase64) ||
+            document.CreatedAt == default)
         {
             throw new CryptographicException("Unsupported or invalid recovery file.");
         }
