@@ -2,9 +2,13 @@
 
 The **on-device** contract: how the .NET 10 MAUI app (`CipherBank-app` + `CipherBank-app.Core` + `CipherBank-app.ChallengePass`) boots, seals custody, opens sessions, moves money, and locks. Shaped like [`design_handoff_cipherbank/starter/API.md`](../design_handoff_cipherbank/starter/API.md) — each entry is an **INVOKE** (not an HTTP path) with inputs → logic → outputs.
 
+**Navigable HTML (CB_FullAPIRef style):** [`../CB_MauiFunctionRef.html`](../CB_MauiFunctionRef.html) (repo root, PR #16) · regenerate: `node docs/scripts/generate-maui-function-ref.mjs`
+
 Companion wire docs:
 - Product `/v1`: [`design_handoff_cipherbank/starter/src/mocks/API_CONTRACT.md`](../design_handoff_cipherbank/starter/src/mocks/API_CONTRACT.md)
 - Public market: [`design_handoff_cipherbank/starter/docs/PUBLIC_API.md`](../design_handoff_cipherbank/starter/docs/PUBLIC_API.md)
+
+**Synced to:** `feat/cora-redesign-maui` @ consolidated tip (public quotes, splash, CoraBar, custody TTL wipe, stream reconnect, stable bootstrap IDs).
 
 Conventions:
 - **Base types:** `CipherBank_app.*` (Core), `CipherBank_app.ChallengePass.*`, MAUI ViewModels under `CipherBank-app/ViewModels/`.
@@ -21,15 +25,16 @@ Conventions:
 
 | # | Domain | Purpose | Key INVOKEs |
 |---|---|---|---|
-| 1 | **Boot & shell** | DB init, route to Welcome/Unlock | `AppShell.Bootstrap`, `AppSession.Boot` |
-| 2 | **Custody & PIN** | Seal mnemonic, verify PIN, device secret | `Custody.Seal`, `Pin.Set/Verify`, `CryptoBox.*` |
+| 1 | **Boot & shell** | Splash ≥900ms, DB init, Welcome/Unlock | `AppShell.Bootstrap`, `SplashPage`, `AppSession.Boot` |
+| 2 | **Custody & PIN** | Seal mnemonic, verify PIN, TTL wipe | `Custody.Seal/Unlock/IsUnlocked`, `Pin.Set/Verify/Refresh` |
 | 3 | **Session** | Unlock, lock, idle, product token | `AppSession.Unlock*`, `Lock`, `FinishCustodySetup` |
 | 4 | **Challenge / pass** | Lab · A1 · A2 session open body | `SessionProof.BuildOpenBody`, suites A1/A2 |
-| 5 | **Product API** | Portfolio, quotes, money moves, vault | `IProductApi.*` → HTTP or mock |
-| 6 | **Stream** | Live balance / rate ticks | `Stream.Connect`, `StreamHub.Start` |
-| 7 | **Persist** | SQLite wallets, prefs, recipients | `LocalDb.*`, repos, prefs sync |
+| 5 | **Product API** | Portfolio, settle convert, vault | `IProductApi.*` → HTTP or mock |
+| 5b | **Public quotes** | Live `/iquote` / `/quote` / `/currencies` | `IPublicQuoteService`, `CurrencySymbolMap` |
+| 6 | **Stream** | Live balance / rate ticks | `Stream.Connect` (disconnect-first), `StreamHub.Start` |
+| 7 | **Persist** | SQLite wallets, prefs, recipients | `LocalDb.*`, `EnabledCurrencies`, prefs sync |
 | 8 | **Wallets** | Derive addresses, managed XMR | `LocalWalletSeeder`, `AddressDerive`, `CreateWallet` |
-| 9 | **UI flows** | Onboarding → PIN → Home → tabs | ViewModel RelayCommands |
+| 9 | **UI flows** | Onboarding → PIN → Home → tabs | ViewModels + `CoraFab` / `CoraBar` |
 | 10 | **Step-up & NFC** | Biometrics/PIN gates, POS lab | `StepUp.Require`, `Nfc.Present` |
 
 ---
@@ -37,46 +42,42 @@ Conventions:
 ## Call graph (unlock / seal)
 
 ```
-UI (SetPin | Unlock)
-  → AppSession.FinishCustodySetup | Unlock*
-       → Custody.Seal | Unlock
-       → LocalWalletSeeder.EnsureDerived          (seal path only)
-       → CompleteUnlock
-            → IProductApi.CreateSession
-                 → ISessionProofBuilder.BuildOpenBody
-                      ├ Lab → { DEVICE_ATTESTATION: "lab" }
-                      ├ A1 → TwoStepChallengePass (X25519 seal)
-                      └ A2 → PQ key-share + channel challenge/pass
-            → IProductSessionStore.Save
-            → IStreamService.Connect + StreamHub.Start
-            → PrefsSync.PullMerge
-            → AccountBootstrap.Apply              (unlock path only)
-  → Shell → //HomePage
+Splash (≥900ms) + Boot
+  → Welcome → Keys → BackupQuiz → SetPin.Seal
+       → FinishCustodySetup → Seal → SeedWallets → CompleteUnlock(no bootstrap)
+  → Unlock.PIN|Biometrics
+       → Unlock* → CompleteUnlock(bootstrap)
+            → CreateSession (Lab|A1|A2 proof)
+            → Stream.Connect (disconnect-first) + Hub.Start
+            → PrefsSync.PullMerge [+ AccountBootstrap]
+  → Home
 
-Idle / Profile.Lock
-  → AppSession.Lock → stop hub, clear custody RAM, clear tokens
-  → AppIdleLockService → IPqChannel.Clear → //UnlockPage
+Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock
 ```
 
 ---
 
 ## 1 · Boot & shell
 
-Keys and DB live on-device. Shell decides Welcome vs Unlock from sealed-wallet presence.
+Keys and DB live on-device. Shell shows Splash, then Welcome vs Unlock from sealed-wallet presence.
 
 ### `INVOKE AppShell.BootstrapAsync`
 
 **File:** `CipherBank-app/AppShell.xaml.cs`
 
 ```
-{} → InitializeAsync → BootAsync → IdleLock.Start → route
+{} → Splash → InitializeAsync + BootAsync (≥900ms) → IdleLock.Start → route
 ```
 
 Logic:
-1. `ILocalDb.InitializeAsync` — create `cipherbank.db` + DDL (`wallets`, `prefs`, `recipients`, `ohlc`).
-2. `IAppSession.BootAsync` — set `HasWallet` from sealed blob; load `IdleMs` from prefs.
+1. Navigate `//SplashPage` (Expo-parity ink canvas + pulse).
+2. Parallel: `BootSessionAsync` (`ILocalDb.InitializeAsync` + `IAppSession.BootAsync`) and `Task.Delay(MinSplashDuration=900ms)`.
 3. `AppIdleLockService.Start` — 5s timer calling `CheckIdleAndMaybeLock`.
 4. Navigate `//UnlockPage` if `HasWallet`, else `//WelcomePage`. On exception → Welcome.
+
+### `INVOKE SplashPage.SetStatus(label)`
+
+Optional status caption during boot (main-thread safe).
 
 ### `INVOKE AppSession.BootAsync`
 
@@ -92,6 +93,7 @@ Logic: `ICustodyService.HasSealedWalletAsync` → `IPrefsStore.LoadAsync` → as
 
 | Constant | Path | Role |
 |---|---|---|
+| `Splash` | `//SplashPage` | Cold-start splash |
 | `Welcome` | `//WelcomePage` | Create / returning |
 | `Keys` | `//KeysPage` | Show BIP39 |
 | `BackupQuiz` | `//BackupQuizPage` | Confirm 3 words |
@@ -118,7 +120,11 @@ Logic: random salt → PBKDF2-SHA256 (120k) → secure store keys `cb_pin_hash` 
 
 ### `INVOKE PinService.VerifyPinAsync(pin)` → `bool`
 
-Logic: if lockout (`cb_pin_lock_until`) → fail; fixed-time compare of PBKDF2 hash; on fail increment `cb_pin_fails` (5 fails → 5 min lockout); on success reset counters.
+Logic: `RefreshAsync` first; if lockout (`cb_pin_lock_until`) → fail; fixed-time compare of PBKDF2 hash; on fail increment `cb_pin_fails` (5 fails → 5 min lockout); on success reset counters.
+
+### `INVOKE PinService.RefreshAsync()`
+
+Loads fail/lockout counters from secure storage into memory (called from Unlock appear so UI matches store after process death).
 
 ### `INVOKE CryptoBox.Seal(plaintext, pinOrSecret)` → `string` (base64)
 
@@ -148,6 +154,10 @@ Logic: `VerifyPinAsync` → open blob with device secret (or legacy PIN) → RAM
 ### `INVOKE CustodyService.UnlockWithDeviceSecretAsync()` → `bool`
 
 Logic: open blob with stored device secret (after OS biometrics). No PIN entry.
+
+### `INVOKE CustodyService.IsUnlocked` → `bool`
+
+Getter: if mnemonic present but TTL expired, calls `Lock()` (wipes RAM) and returns false. Prevents stale unlocked windows after expiry.
 
 ### `INVOKE CustodyService.Lock()`
 
@@ -324,11 +334,11 @@ Implementations: `MockProductApi` (Core, DEBUG) · `HttpProductApi` (MAUI). Path
 
 ### `INVOKE GetQuoteAsync(from, to)` → `QuoteDto`
 
-`POST /quotes` (or mock) — rate + TTL for convert lock.
+Product `/quotes` path (or mock) — rate + TTL. **Convert UI lock uses public `/iquote` instead** (see Public quotes).
 
 ### `INVOKE ConvertAsync(from, to, amount, idempotencyKey)` → `MoneyMoveDto`
 
-Mutation + idempotency → accepted / settling; definitive via stream.
+Mutation + idempotency → accepted / settling; definitive via stream. Called after indicative public quote + step-up.
 
 ### `INVOKE TransferAsync(to, amount, speed, idempotencyKey)` → `MoneyMoveDto`
 
@@ -354,17 +364,34 @@ Last4 / metadata only — **no PAN, no mnemonic.**
 
 POS lab session lifecycle → `PosSessionDto`.
 
-### `INVOKE GetPrefsAsync` / `PutPrefsAsync` / `GetAccountBootstrapAsync`
+### `INVOKE GetPrefsAsync` / `PutPrefsAsync`
 
-Prefs wire + bootstrap (prefs + ACH contacts). Bootstrap **never** carries custody material.
+Prefs wire DTO (SCREAMING + camel).
+
+### `INVOKE GetAccountBootstrapAsync`
+
+Prefs wire + bootstrap (prefs + ACH contacts). Bootstrap **never** carries custody material. Recipient `ResolvedId` is stable: wire id, else `bootstrap_` + SHA256(name|last4|routing)[:16] (no Guid churn on re-bootstrap).
 
 ---
+
+## 5b · Public quotes (`IPublicQuoteService`)
+
+Live PriceCache host (`api.cipherbank.money`). Impl: `PublicApiClient` / `MockPublicQuoteService`. Maps tickers via `CurrencySymbolMap` (BTC↔BITCOIN, XMR↔MONERO).
+
+| INVOKE | HTTP | Role |
+|---|---|---|
+| `TestConnectionAsync` | `POST /test` | Connectivity |
+| `GetCurrenciesAsync` | `POST /currencies` | App ticker list |
+| `GetInverseQuoteAsync(in, amt, out)` | `POST /iquote` | Fixed input → output (**Convert.LockQuote**) |
+| `GetQuoteAsync(in, outAmt, out)` | `POST /quote` | Fixed output → input |
+
+`IndicativeQuoteMapper.ToQuoteDto` attaches a client-side TTL so Convert can countdown before product settle.
 
 ## 6 · Stream
 
 ### `INVOKE IStreamService.ConnectAsync(token?)` / `DisconnectAsync`
 
-**Live:** `ClientWebSocketStreamService` — WSS, parse `{ TYPE, PAYLOAD }`.  
+**Live:** `ClientWebSocketStreamService` — **always DisconnectAsync first** (tears down prior socket), then WSS connect + receive; parse `{ TYPE, PAYLOAD }`.  
 **Mock:** `MockStreamService` — synthetic `RATE.TICK` / `balance.update`.
 
 ### `INVOKE StreamHub.Start` / `Stop`
@@ -399,7 +426,7 @@ Local ACH payees. `Validate` / `MaskAccount` / `MaskRouting`. `SeedDefaultsIfEmp
 
 ### `INVOKE PrefsStore.LoadAsync | SaveAsync`
 
-JSON blob under prefs key `user_prefs` → `UserPrefs` (home order/visibility, Cora, idle seconds, appearance, base currency, …).
+JSON blob under prefs key `user_prefs` → `UserPrefs` (home order/visibility, **EnabledCurrencies**, **DefaultSendSpeed**, Cora, idle seconds, appearance, base currency, …). Empty enabled list normalizes to `BTC,XMR,USD`.
 
 ### `INVOKE PrefsSyncService.PullMergeAsync | SaveAndPushAsync`
 
@@ -474,8 +501,8 @@ CommunityToolkit `[RelayCommand]` → `XxxCommand`. Query attrs via `IQueryAttri
 
 | INVOKE | Gates | API |
 |---|---|---|
-| `Convert.LockQuoteAsync` | — | `GetQuoteAsync` + countdown |
-| `Convert.ConvertAsync` | unlocked + step-up `Convert` | `ConvertAsync` |
+| `Convert.LockQuoteAsync` | — | **Public** `GetInverseQuoteAsync` + indicative TTL countdown |
+| `Convert.ConvertAsync` | unlocked + step-up `Convert` | Product `ConvertAsync` (after fresh indicative) |
 | `Send.SendAsync` | unlocked | `TransferAsync` |
 | `Send.AddRecipientAsync` | validation | `RecipientRepository.Upsert` |
 | `Pay.PayAsync` | unlocked + step-up `Payment` | `PayAsync` |
@@ -488,14 +515,16 @@ CommunityToolkit `[RelayCommand]` → `XxxCommand`. Query attrs via `IQueryAttri
 
 | INVOKE | Logic |
 |---|---|
-| `SavePrefsAsync` | `PrefsSync.SaveAndPushAsync`; apply theme + `IdleMs` |
+| `SavePrefsAsync` | `PrefsSync.SaveAndPushAsync` (appearance, base currency, send speed, enabled currencies, idle); apply theme + `IdleMs` |
 | `RevealMnemonicAsync` | step-up `RevealKeys` → `ExportMnemonic`; auto-clear ~30s |
 | `Lock` | `AppSession.Lock` → Unlock |
 | `OpenPosLabAsync` | → PosLab |
 
-### Cora FAB
+### Cora FAB + Bar
 
-`CoraFab` control: `CoraLines.For(ScreenKey)`; visibility from `UserPrefs.CoraEnabled`. Copy-only; no network.
+- `CoraFab` — floating; `CoraLines.For(ScreenKey)`; visibility from `UserPrefs.CoraEnabled`.
+- `CoraBar` — inline Expo-parity strip on money tabs; same line source / pref gate.
+- Copy-only; no network.
 
 ---
 
@@ -528,6 +557,7 @@ Payload is **token reference only** — never PAN.
 | `ILocalDb` + repos + seeder | Core SQLite |
 | `ISessionProofBuilder` | Lab / A1 / A2 from `SessionProofMode` |
 | `IProductApi` | `HttpProductApi` / `MockProductApi` |
+| `IPublicQuoteService` | `PublicApiClient` / `MockPublicQuoteService` |
 | `IStreamService` | WSS / `MockStreamService` |
 | `IAppSession` | `AppSession` |
 | Challenge clients | HTTP or in-memory |
@@ -559,6 +589,8 @@ Payload is **token reference only** — never PAN.
 
 | Doc | Role |
 |---|---|
+| [../CB_MauiFunctionRef.html](../CB_MauiFunctionRef.html) | Navigable HTML (repo root) |
+| [CB_MauiFunctionRef.html](CB_MauiFunctionRef.html) | Same HTML under docs/ |
 | [architecture.md](architecture.md) | Layers, HTTP pipeline |
 | [app/viewmodels.md](app/viewmodels.md) | Legacy VM notes |
 | [core/services.md](core/services.md) | Older service index |
