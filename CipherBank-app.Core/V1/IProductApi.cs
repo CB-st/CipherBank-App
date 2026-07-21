@@ -31,6 +31,10 @@ public interface IProductApi
 
     Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct = default);
 
+    Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct = default);
+
+    Task DeleteVaultCardAsync(string cardId, CancellationToken ct = default);
+
     Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct = default);
 
     Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct = default);

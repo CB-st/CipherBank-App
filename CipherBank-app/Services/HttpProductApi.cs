@@ -123,6 +123,12 @@ public sealed class HttpProductApi : IProductApi
     public async Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct = default)
         => await GetAsync<List<VaultCardDto>>(VaultCardsPath, ct).ConfigureAwait(false);
 
+    public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct = default)
+        => PostMutationAsync<VaultCardDto>(VaultCardsPath, card, idempotencyKey, ct);
+
+    public Task DeleteVaultCardAsync(string cardId, CancellationToken ct = default)
+        => PostAsync($"{VaultCardsPath}/{Uri.EscapeDataString(cardId)}/delete", new { }, ct);
+
     public async Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct = default)
         => await GetAsync<List<VaultBinaryDto>>(VaultBinariesPath, ct).ConfigureAwait(false);
 
@@ -179,6 +185,13 @@ public sealed class HttpProductApi : IProductApi
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<T>(JsonOptions, ct).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Empty response for {path}");
+    }
+
+    private async Task PostAsync(string path, object body, CancellationToken ct)
+    {
+        byte[] bodyUtf8 = JsonSerializer.SerializeToUtf8Bytes(body, JsonOptions);
+        using var resp = await SendWithOptionalRefreshAsync(HttpMethod.Post, path, bodyUtf8, idempotencyKey: null, ct).ConfigureAwait(false);
+        resp.EnsureSuccessStatusCode();
     }
 
     private async Task<HttpResponseMessage> SendWithOptionalRefreshAsync(

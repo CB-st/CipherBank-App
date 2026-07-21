@@ -75,6 +75,16 @@
                     ItemDisplayBinding="{Binding Label}"
                     SelectedItem="{Binding SelectedCard}" />
             <Label Text="{Binding ActiveCardLabel}" FontSize="12" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Text="Add demo card"
+                      Command="{Binding AddDemoCardCommand}"
+                      AutomationId="ProfileAddDemoCardButton" />
+              <Button Grid.Column="1"
+                      Text="Remove selected"
+                      Command="{Binding RemoveCardCommand}"
+                      CommandParameter="{Binding SelectedCard}"
+                      AutomationId="ProfileRemoveCardButton" />
+            </Grid>
             <Label Text="Binaries" FontAttributes="Bold" Margin="0,8,0,0" />
             <CollectionView ItemsSource="{Binding Binaries}">
               <CollectionView.ItemTemplate>

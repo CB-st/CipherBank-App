@@ -13,6 +13,10 @@ public sealed class MockProductApi : IProductApi
     private const int QuoteTtlSeconds = 30;
     private const int HistoryDayCount = 30;
     private const string MockReceiveAddress = "bc1qmockreceiveaddress0000000000000000";
+    private readonly List<VaultCardDto> _vaultCards =
+    [
+        new() { CardId = "card_lab_1", Last4 = "4242", Brand = "visa", Label = "Hardware test", HardwareTest = true },
+    ];
 
     public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default)
         => Task.FromResult(new PortfolioDto
@@ -140,10 +144,33 @@ public sealed class MockProductApi : IProductApi
         });
 
     public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct = default)
-        => Task.FromResult<IReadOnlyList<VaultCardDto>>(new[]
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<VaultCardDto>>(_vaultCards.ToList());
+    }
+
+    public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        _ = idempotencyKey;
+        var added = new VaultCardDto
         {
-            new VaultCardDto { CardId = "card_lab_1", Last4 = "4242", Brand = "visa", Label = "Hardware test", HardwareTest = true },
-        });
+            CardId = string.IsNullOrWhiteSpace(card.CardId) ? "card_" + Guid.NewGuid().ToString("N")[..12] : card.CardId,
+            Last4 = card.Last4,
+            Brand = card.Brand,
+            Label = card.Label,
+            HardwareTest = card.HardwareTest,
+        };
+        _vaultCards.Add(added);
+        return Task.FromResult(added);
+    }
+
+    public Task DeleteVaultCardAsync(string cardId, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        _vaultCards.RemoveAll(card => card.CardId == cardId);
+        return Task.CompletedTask;
+    }
 
     public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct = default)
         => Task.FromResult(new PosSessionDto { SessionId = Guid.NewGuid().ToString("N"), Status = "pending_auth" });

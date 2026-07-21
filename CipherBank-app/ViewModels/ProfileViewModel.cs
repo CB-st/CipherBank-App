@@ -287,6 +287,58 @@ public partial class ProfileViewModel : ObservableObject
         ScheduleMnemonicClear();
     }
 
+    [RelayCommand]
+    private async Task AddDemoCardAsync()
+    {
+        _session.Touch();
+        VaultCardDto card = await _api.AddVaultCardAsync(
+            new VaultCardDto
+            {
+                Last4 = "0001",
+                Brand = "visa",
+                Label = "Demo card",
+                HardwareTest = true,
+            },
+            Guid.NewGuid().ToString("N"));
+        Cards.Add(card);
+    }
+
+    [RelayCommand]
+    private async Task RemoveCardAsync(VaultCardDto? card)
+    {
+        _session.Touch();
+        VaultCardDto? cardToRemove = card ?? SelectedCard;
+        if (cardToRemove is null)
+        {
+            return;
+        }
+
+        bool removingActivePosCard = string.Equals(cardToRemove.CardId, ActiveCardId, StringComparison.Ordinal);
+        if (removingActivePosCard && !await _stepUp.RequireAsync(AuthReason.PosAuthorize))
+        {
+            return;
+        }
+
+        bool confirmed = await _dialogs.ShowConfirmAsync(
+            "Remove card",
+            $"Remove {cardToRemove.Label} •••• {cardToRemove.Last4} from the vault?",
+            "Remove",
+            "Cancel");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await _api.DeleteVaultCardAsync(cardToRemove.CardId);
+        Cards.Remove(cardToRemove);
+        if (removingActivePosCard)
+        {
+            ActiveCardId = Cards.FirstOrDefault()?.CardId;
+            SelectedCard = Cards.FirstOrDefault();
+            Preferences.Default.Set("pos_active_card", ActiveCardId ?? string.Empty);
+        }
+    }
+
     /// <summary>Clears on-screen mnemonic (call when leaving Profile).</summary>
     public void ClearMnemonicReveal()
     {
