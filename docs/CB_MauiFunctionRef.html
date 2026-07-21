@@ -158,6 +158,7 @@
 			·
 			<a href="https://github.com/CB-st/CipherBank-App/pull/16">PR #16</a>
 		</p>
+		<p><strong>94 functions</strong> · regenerate: <code>node docs/scripts/generate-maui-function-ref.mjs</code></p>
 	</header>
 	<div class="layout">
 		<nav aria-label="Function navigation">
@@ -168,45 +169,106 @@
 				<li><a href="#never-wire">Never on wire</a></li>
 				<li><a href="#shellBootstrap"><strong>Boot &amp; shell</strong></a></li>
 				<li><a href="#pinSet"><strong>Custody &amp; PIN</strong></a></li>
-				<li><a href="#sessionFinishCustody"><strong>Session</strong></a></li>
+				<li><a href="#sessionCompleteUnlock"><strong>Session</strong></a></li>
 				<li><a href="#proofLab"><strong>Challenge / pass</strong></a></li>
 				<li><a href="#apiCreateSession"><strong>Product API</strong></a></li>
 				<li><a href="#publicTest"><strong>Public quotes</strong></a></li>
 				<li><a href="#streamConnect"><strong>Stream &amp; prefs</strong></a></li>
-				<li><a href="#setPinSeal"><strong>UI flows</strong></a></li>
+				<li><a href="#walletSeeder"><strong>Wallets</strong></a></li>
+				<li><a href="#welcomeCreate"><strong>UI flows</strong></a></li>
 				<li><a href="#coraFab"><strong>Cora UI</strong></a></li>
 				<li><a href="#shellBootstrap"><span aria-hidden="true">INVOKE</span> AppShell.BootstrapAsync</a></li>
 				<li><a href="#splashSetStatus"><span aria-hidden="true">INVOKE</span> SplashPage.SetStatus</a></li>
 				<li><a href="#sessionBoot"><span aria-hidden="true">INVOKE</span> AppSession.BootAsync</a></li>
+				<li><a href="#idleStart"><span aria-hidden="true">INVOKE</span> AppIdleLockService.Start</a></li>
+				<li><a href="#sessionTouch"><span aria-hidden="true">INVOKE</span> AppSession.Touch</a></li>
+				<li><a href="#sessionCheckIdle"><span aria-hidden="true">INVOKE</span> AppSession.CheckIdleAndMaybeLock</a></li>
 				<li><a href="#pinSet"><span aria-hidden="true">INVOKE</span> PinService.SetPinAsync</a></li>
 				<li><a href="#pinVerify"><span aria-hidden="true">INVOKE</span> PinService.VerifyPinAsync</a></li>
 				<li><a href="#pinRefresh"><span aria-hidden="true">INVOKE</span> PinService.RefreshAsync</a></li>
+				<li><a href="#pinHas"><span aria-hidden="true">INVOKE</span> PinService.HasPinAsync</a></li>
+				<li><a href="#cryptoBox"><span aria-hidden="true">INVOKE</span> CryptoBox.Seal | Open</a></li>
 				<li><a href="#custodySeal"><span aria-hidden="true">INVOKE</span> CustodyService.SealAsync</a></li>
 				<li><a href="#custodyUnlock"><span aria-hidden="true">INVOKE</span> CustodyService.UnlockAsync</a></li>
+				<li><a href="#custodyUnlockDevice"><span aria-hidden="true">INVOKE</span> CustodyService.UnlockWithDeviceSecretAsync</a></li>
 				<li><a href="#custodyIsUnlocked"><span aria-hidden="true">INVOKE</span> CustodyService.IsUnlocked</a></li>
+				<li><a href="#custodyLock"><span aria-hidden="true">INVOKE</span> CustodyService.Lock</a></li>
+				<li><a href="#custodyExport"><span aria-hidden="true">INVOKE</span> CustodyService.ExportMnemonic</a></li>
+				<li><a href="#custodyHasSealed"><span aria-hidden="true">INVOKE</span> CustodyService.HasSealedWalletAsync</a></li>
+				<li><a href="#mnemonicGenerate"><span aria-hidden="true">INVOKE</span> MnemonicHelper.Generate | Validate | Entropy</a></li>
+				<li><a href="#backupQuiz"><span aria-hidden="true">INVOKE</span> BackupQuiz.PickRandom</a></li>
+				<li><a href="#stepUpRequire"><span aria-hidden="true">INVOKE</span> StepUpAuthService.RequireAsync</a></li>
+				<li><a href="#sessionCompleteUnlock"><span aria-hidden="true">INVOKE</span> AppSession.CompleteUnlockAsync</a></li>
 				<li><a href="#sessionFinishCustody"><span aria-hidden="true">INVOKE</span> AppSession.FinishCustodySetupAsync</a></li>
 				<li><a href="#sessionUnlock"><span aria-hidden="true">INVOKE</span> AppSession.UnlockAsync</a></li>
 				<li><a href="#sessionUnlockDevice"><span aria-hidden="true">INVOKE</span> AppSession.UnlockWithDeviceOwnerAsync</a></li>
+				<li><a href="#sessionCanUnlockDevice"><span aria-hidden="true">INVOKE</span> AppSession.CanUnlockWithDeviceOwnerAsync</a></li>
 				<li><a href="#sessionLock"><span aria-hidden="true">INVOKE</span> AppSession.Lock</a></li>
 				<li><a href="#proofLab"><span aria-hidden="true">INVOKE</span> LabSessionProofBuilder.BuildOpenBodyAsync</a></li>
+				<li><a href="#proofBuilder"><span aria-hidden="true">INVOKE</span> ChallengePassSessionProofBuilder.BuildOpenBodyAsync</a></li>
 				<li><a href="#proofA1"><span aria-hidden="true">INVOKE</span> TwoStepChallengePassStructure.BuildSessionOpenBodyAsync</a></li>
 				<li><a href="#proofA2"><span aria-hidden="true">INVOKE</span> PqChannelChallengePassStructure.BuildSessionOpenBodyAsync</a></li>
+				<li><a href="#hybridAgree"><span aria-hidden="true">INVOKE</span> HybridMlKemX25519Agreement.DeriveIdentity | CompleteAsDevice</a></li>
+				<li><a href="#pqChannel"><span aria-hidden="true">INVOKE</span> PqSymmetricChannel.SetChannelKey | Seal | Open | Clear</a></li>
+				<li><a href="#accountKeySource"><span aria-hidden="true">INVOKE</span> CustodyAccountKeySource.RequireUnlockedKeyPair | RequireHybridIdentity</a></li>
+				<li><a href="#httpChallengeClient"><span aria-hidden="true">INVOKE</span> HttpSessionChallengeClient.RequestChallengeAsync</a></li>
+				<li><a href="#httpKeyShare"><span aria-hidden="true">INVOKE</span> HttpPqKeyShareClient.EstablishAsync</a></li>
 				<li><a href="#apiCreateSession"><span aria-hidden="true">INVOKE</span> IProductApi.CreateSessionAsync</a></li>
+				<li><a href="#apiChallenge"><span aria-hidden="true">INVOKE</span> IProductApi.CreateSessionChallengeAsync</a></li>
+				<li><a href="#apiKeyShare"><span aria-hidden="true">INVOKE</span> IProductApi.EstablishKeyShareAsync</a></li>
 				<li><a href="#apiPortfolio"><span aria-hidden="true">INVOKE</span> IProductApi.GetPortfolioAsync</a></li>
+				<li><a href="#apiHistory"><span aria-hidden="true">INVOKE</span> IProductApi.GetHistoryAsync</a></li>
+				<li><a href="#apiProductQuote"><span aria-hidden="true">INVOKE</span> IProductApi.GetQuoteAsync</a></li>
 				<li><a href="#apiConvert"><span aria-hidden="true">INVOKE</span> IProductApi.ConvertAsync</a></li>
+				<li><a href="#apiTransfer"><span aria-hidden="true">INVOKE</span> IProductApi.TransferAsync</a></li>
+				<li><a href="#apiPay"><span aria-hidden="true">INVOKE</span> IProductApi.PayAsync</a></li>
+				<li><a href="#apiReceive"><span aria-hidden="true">INVOKE</span> IProductApi.GetReceiveAsync</a></li>
+				<li><a href="#apiCreateWallet"><span aria-hidden="true">INVOKE</span> IProductApi.CreateWalletAsync</a></li>
+				<li><a href="#apiPos"><span aria-hidden="true">INVOKE</span> IProductApi.CreatePosSessionAsync | AuthorizePosAsync | ConfirmPosAsync</a></li>
+				<li><a href="#apiPrefs"><span aria-hidden="true">INVOKE</span> IProductApi.GetPrefsAsync | PutPrefsAsync</a></li>
+				<li><a href="#apiBootstrap"><span aria-hidden="true">INVOKE</span> IProductApi.GetAccountBootstrapAsync</a></li>
+				<li><a href="#apiVault"><span aria-hidden="true">INVOKE</span> IProductApi.GetVaultCardsAsync | GetVaultBinariesAsync</a></li>
 				<li><a href="#publicTest"><span aria-hidden="true">INVOKE</span> IPublicQuoteService.TestConnectionAsync</a></li>
 				<li><a href="#publicCurrencies"><span aria-hidden="true">INVOKE</span> IPublicQuoteService.GetCurrenciesAsync</a></li>
 				<li><a href="#publicIquote"><span aria-hidden="true">INVOKE</span> IPublicQuoteService.GetInverseQuoteAsync</a></li>
 				<li><a href="#publicQuote"><span aria-hidden="true">INVOKE</span> IPublicQuoteService.GetQuoteAsync</a></li>
 				<li><a href="#currencyMap"><span aria-hidden="true">INVOKE</span> CurrencySymbolMap.ToApiCurrency | ToAppSymbol</a></li>
+				<li><a href="#indicativeMapper"><span aria-hidden="true">INVOKE</span> IndicativeQuoteMapper.ToQuoteDto</a></li>
 				<li><a href="#streamConnect"><span aria-hidden="true">INVOKE</span> ClientWebSocketStreamService.ConnectAsync</a></li>
+				<li><a href="#streamDisconnect"><span aria-hidden="true">INVOKE</span> IStreamService.DisconnectAsync</a></li>
+				<li><a href="#streamHub"><span aria-hidden="true">INVOKE</span> StreamHub.Start | Stop</a></li>
 				<li><a href="#prefsLoadSave"><span aria-hidden="true">INVOKE</span> PrefsStore.LoadAsync | SaveAsync</a></li>
+				<li><a href="#prefsSync"><span aria-hidden="true">INVOKE</span> PrefsSyncService.PullMergeAsync | SaveAndPushAsync</a></li>
 				<li><a href="#bootstrapApply"><span aria-hidden="true">INVOKE</span> AccountBootstrapService.ApplyAsync</a></li>
+				<li><a href="#localDbInit"><span aria-hidden="true">INVOKE</span> LocalDb.InitializeAsync</a></li>
+				<li><a href="#walletRepo"><span aria-hidden="true">INVOKE</span> WalletRepository.ListAsync | UpsertAsync | DeleteAsync</a></li>
+				<li><a href="#recipientRepo"><span aria-hidden="true">INVOKE</span> RecipientRepository.ListAsync | UpsertAsync | SeedDefaultsIfEmptyAsync</a></li>
+				<li><a href="#walletSeeder"><span aria-hidden="true">INVOKE</span> LocalWalletSeeder.EnsureDerivedAsync</a></li>
+				<li><a href="#addressDerive"><span aria-hidden="true">INVOKE</span> AddressDerive.Derive</a></li>
+				<li><a href="#nfcPresent"><span aria-hidden="true">INVOKE</span> INfcPresentmentService.PresentAsync</a></li>
+				<li><a href="#welcomeCreate"><span aria-hidden="true">INVOKE</span> WelcomeViewModel.CreateWalletAsync</a></li>
+				<li><a href="#welcomeReturning"><span aria-hidden="true">INVOKE</span> WelcomeViewModel.ReturningAsync</a></li>
+				<li><a href="#keysContinue"><span aria-hidden="true">INVOKE</span> KeysViewModel.ContinueAsync</a></li>
+				<li><a href="#backupVerify"><span aria-hidden="true">INVOKE</span> BackupQuizViewModel.VerifyAsync</a></li>
 				<li><a href="#setPinSeal"><span aria-hidden="true">INVOKE</span> SetPinViewModel.SealAsync</a></li>
+				<li><a href="#unlockAppearing"><span aria-hidden="true">INVOKE</span> UnlockViewModel.AppearingAsync</a></li>
+				<li><a href="#unlockPin"><span aria-hidden="true">INVOKE</span> UnlockViewModel.UnlockAsync</a></li>
+				<li><a href="#unlockBio"><span aria-hidden="true">INVOKE</span> UnlockViewModel.UnlockWithBiometricsAsync</a></li>
+				<li><a href="#homeAppearing"><span aria-hidden="true">INVOKE</span> HomeViewModel.AppearingAsync</a></li>
+				<li><a href="#homeRange"><span aria-hidden="true">INVOKE</span> HomeViewModel.SetRangeAsync</a></li>
 				<li><a href="#convertLockQuote"><span aria-hidden="true">INVOKE</span> ConvertViewModel.LockQuoteAsync</a></li>
 				<li><a href="#convertSettle"><span aria-hidden="true">INVOKE</span> ConvertViewModel.ConvertAsync</a></li>
-				<li><a href="#homeAppearing"><span aria-hidden="true">INVOKE</span> HomeViewModel.AppearingAsync</a></li>
+				<li><a href="#convertSwap"><span aria-hidden="true">INVOKE</span> ConvertViewModel.SwapAssets</a></li>
+				<li><a href="#sendAsync"><span aria-hidden="true">INVOKE</span> SendViewModel.SendAsync</a></li>
+				<li><a href="#sendAddRecipient"><span aria-hidden="true">INVOKE</span> SendViewModel.AddRecipientAsync</a></li>
+				<li><a href="#payAsync"><span aria-hidden="true">INVOKE</span> PayViewModel.PayAsync</a></li>
+				<li><a href="#receiveLoad"><span aria-hidden="true">INVOKE</span> ReceiveViewModel.LoadAsync | DeriveNewAsync</a></li>
+				<li><a href="#addWalletSave"><span aria-hidden="true">INVOKE</span> AddWalletViewModel.SaveAsync</a></li>
+				<li><a href="#posStart"><span aria-hidden="true">INVOKE</span> PosLabViewModel.StartSessionAsync</a></li>
+				<li><a href="#posNfc"><span aria-hidden="true">INVOKE</span> PosLabViewModel.PresentNfcAsync</a></li>
 				<li><a href="#profileSave"><span aria-hidden="true">INVOKE</span> ProfileViewModel.SavePrefsAsync</a></li>
+				<li><a href="#profileReveal"><span aria-hidden="true">INVOKE</span> ProfileViewModel.RevealMnemonicAsync</a></li>
+				<li><a href="#profileLock"><span aria-hidden="true">INVOKE</span> ProfileViewModel.Lock</a></li>
 				<li><a href="#coraFab"><span aria-hidden="true">INVOKE</span> CoraFab (ScreenKey)</a></li>
 				<li><a href="#coraBar"><span aria-hidden="true">INVOKE</span> CoraBar (ScreenKey | Line)</a></li>
 			</ul>
@@ -220,33 +282,36 @@
 						<tr><th scope="row">Badge</th><td><code>INVOKE</code> — C# method / RelayCommand (not HTTP)</td></tr>
 						<tr><th scope="row">Projects</th><td><code>CipherBank-app</code> · <code>CipherBank-app.Core</code> · <code>CipherBank-app.ChallengePass</code></td></tr>
 						<tr><th scope="row">Session proof</th><td><code>Lab</code> (default) · <code>ChallengePassA1</code> · <code>ChallengePassA2</code></td></tr>
+						<tr><th scope="row">Unlock orchestrator</th><td><code>CompleteUnlockAsync</code> — session+stream required; prefs/bootstrap best-effort</td></tr>
 						<tr><th scope="row">Product API</th><td><code>IProductApi</code> → mock or <code>HttpProductApi</code> (<code>/v1</code>)</td></tr>
 						<tr><th scope="row">Public quotes</th><td><code>IPublicQuoteService</code> → <code>PublicApiClient</code> (<code>api.cipherbank.money</code>)</td></tr>
-						<tr><th scope="row">Convert lock</th><td>Indicative via <code>POST /iquote</code>; settle via product <code>ConvertAsync</code></td></tr>
-						<tr><th scope="row">SQLite Android</th><td>Ship <code>SQLitePCLRaw.lib.e_sqlite3.android</code> only — exclude desktop natives from APK</td></tr>
-						<tr><th scope="row">Idle lock</th><td><code>AppIdleLockService</code> → <code>AppSession.Lock</code> + <code>IPqChannel.Clear</code> → Unlock</td></tr>
+						<tr><th scope="row">Convert lock vs settle</th><td>Lock = public <code>/iquote</code> + 15s client TTL; settle = product <code>ConvertAsync</code> (quote not sent)</td></tr>
+						<tr><th scope="row">Session wire</th><td><code>ACCESS_TOKEN</code> · <code>REFRESH_TOKEN</code> · <code>EXPIRES_AT</code></td></tr>
+						<tr><th scope="row">Portfolio wire</th><td><code>TOTAL_USD</code> · holdings <code>BALANCE</code> / <code>USD_VALUE</code></td></tr>
+						<tr><th scope="row">SQLite Android</th><td>Ship <code>e_sqlite3.android</code> only — exclude desktop natives from APK</td></tr>
+						<tr><th scope="row">Idle lock</th><td><code>AppIdleLockService</code> → <code>AppSession.Lock</code> → <code>IPqChannel.Clear</code> → Unlock</td></tr>
 					</tbody>
 				</table>
 			</section>
 
 			<section class="endpoint" id="call-graph" aria-labelledby="call-graph-title">
 				<h2 id="call-graph-title">Unlock / seal call graph</h2>
-				<pre><code>Splash (≥900ms) + Boot
-  → Welcome → Keys → BackupQuiz → SetPin.Seal
-       → FinishCustodySetup → Seal → SeedWallets → CompleteUnlock(no bootstrap)
+				<pre><code>Splash (≥900ms) + Boot + IdleLock.Start
+  → Welcome → Keys(Generate) → BackupQuiz → SetPin.Seal
+       → FinishCustodySetup → Seal → Seed(BTC,ETH) → CompleteUnlock(no bootstrap)
   → Unlock.PIN|Biometrics
        → Unlock* → CompleteUnlock(bootstrap)
-            → CreateSession (Lab|A1|A2 proof)
+            → CreateSession (Lab|A1|A2 via ChallengePassSessionProofBuilder)
             → Stream.Connect (disconnect-first) + Hub.Start
-            → PrefsSync.PullMerge [+ AccountBootstrap]
+            → PrefsSync.PullMerge [+ AccountBootstrap]  // best-effort
   → Home
 
-Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
+Idle / Profile.Lock → AppSession.Lock → Locked → PQ Clear → Unlock</code></pre>
 			</section>
 
 			<section class="endpoint" id="never-wire" aria-labelledby="never-wire-title">
 				<h2 id="never-wire-title">Never on the wire</h2>
-				<p>Mnemonic, BIP39 entropy, PIN plaintext, device secret, account private key, spend keys, PAN/CVV, full ACH account numbers. Public/product APIs receive public keys, sealed ciphertexts, handles, and masked last4 only.</p>
+				<p>Mnemonic, BIP39 entropy, PIN plaintext, device secret, account private key, spend keys, PAN/CVV, full ACH account numbers. Public/product APIs receive public keys, sealed ciphertexts, handles, and masked last4 only. CryptoBox passphrase for custody is the <strong>device secret</strong>, not the PIN (PIN is the logical gate).</p>
 			</section>
 
 
@@ -255,9 +320,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>AppShell.BootstrapAsync</code></h2>
 				</div>
-				<p>Cold-start: show Splash (≥900ms), initialize SQLite + AppSession, start idle lock, route Welcome or Unlock.</p>
+				<p>Cold-start: show Splash (≥900ms), init SQLite + AppSession, start idle lock, route Welcome or Unlock.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app · Shell</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				<p><strong>Logic:</strong> GoTo Splash → parallel BootSessionAsync(db.Initialize + session.Boot) with MinSplashDuration → idleLock.Start → GoTo Unlock|Welcome.</p>
+				<p><strong>Logic:</strong> GoTo Splash → parallel BootSessionAsync(db.InitializeAsync + session.BootAsync) with MinSplashDuration(900ms) → idleLock.Start → GoTo Unlock|Welcome. Catch → Welcome.</p>
 
 				<section aria-labelledby="shellBootstrap-request">
 					<h3 id="shellBootstrap-request">Input</h3>
@@ -275,7 +340,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 							<tr>
 								<th scope="row"><code>route</code></th>
 								<td class="type">string</td>
-								<td>//UnlockPage if HasWallet else //WelcomePage (or Welcome on error).</td>
+								<td>//UnlockPage if HasWallet else //WelcomePage (Welcome on error).</td>
 							</tr>
 						</tbody>
 					</table>
@@ -292,7 +357,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>Navigates past splash to Welcome or Unlock.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>Past splash to Welcome or Unlock.</td></tr>
 							<tr><th scope="row"><code>catch</code></th><td>Any boot exception → //WelcomePage.</td></tr>
 						</tbody>
 					</table>
@@ -304,7 +369,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>SplashPage.SetStatus</code></h2>
 				</div>
-				<p>Optional status caption on the Expo-parity ink splash while shell boots.</p>
+				<p>Optional status caption on Expo-parity ink splash while shell boots.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app · Views</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -348,9 +413,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>AppSession.BootAsync</code></h2>
 				</div>
-				<p>Sets HasWallet from sealed custody blob; loads IdleMs from UserPrefs.</p>
+				<p>Sets HasWallet from sealed custody blob; loads IdleMs from UserPrefs.LockIdleSeconds.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> HasWallet = HasSealedWalletAsync; IdleMs = LockIdleSeconds*1000 or DefaultIdleMs(60000). IsBooting true during work.</p>
 
 				<section aria-labelledby="sessionBoot-request">
 					<h3 id="sessionBoot-request">Input</h3>
@@ -380,12 +445,115 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 				</section>
 			</article>
 
+			<article class="endpoint" id="idleStart">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>AppIdleLockService.Start</code></h2>
+				</div>
+				<p>5s dispatcher timer polls CheckIdleAndMaybeLock; Locked event clears PQ channel and navigates Unlock.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · Services</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> CreateTimer(5s) → CheckIdleAndMaybeLock. OnLocked: IPqChannel.Clear → GoToAsync(Unlock). Touch() forwards to AppSession.Touch.</p>
+
+				<section aria-labelledby="idleStart-request">
+					<h3 id="idleStart-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="idleStart-response">
+					<h3 id="idleStart-response">Result / effects</h3>
+					<p class="empty">No structured return (void / fire-and-forget side effects).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="idleStart-statuses">
+					<h3 id="idleStart-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Idle watch running.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="sessionTouch">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>AppSession.Touch</code></h2>
+				</div>
+				<p>Resets idle clock (_lastTouch = UtcNow). Called from tab Appearing/actions and idle service.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="sessionTouch-request">
+					<h3 id="sessionTouch-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="sessionTouch-response">
+					<h3 id="sessionTouch-response">Result / effects</h3>
+					<p class="empty">No structured return (void / fire-and-forget side effects).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="sessionTouch-statuses">
+					<h3 id="sessionTouch-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Idle window restarted.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="sessionCheckIdle">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>AppSession.CheckIdleAndMaybeLock</code></h2>
+				</div>
+				<p>If unlocked and idle ≥ IdleMs → Lock(); returns whether lock was applied.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="sessionCheckIdle-request">
+					<h3 id="sessionCheckIdle-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="sessionCheckIdle-response">
+					<h3 id="sessionCheckIdle-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;locked&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="sessionCheckIdle-statuses">
+					<h3 id="sessionCheckIdle-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>true</code></th><td>Idle exceeded; Lock invoked.</td></tr>
+							<tr><th scope="row"><code>false</code></th><td>Still within idle window or already locked.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
 			<article class="endpoint" id="pinSet">
 				<div class="route">
 					<span class="method">INVOKE</span>
 					<h2><code>PinService.SetPinAsync</code></h2>
 				</div>
-				<p>Store PBKDF2-SHA256 hash + salt in secure storage; clear lockout. PIN plaintext never persisted.</p>
+				<p>PBKDF2-SHA256 (120k) hash + salt to secure storage; clear lockout. PIN plaintext never persisted.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -418,7 +586,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>cb_pin_hash / cb_pin_salt written.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>cb_pin_hash / cb_pin_salt written; fails cleared.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -429,7 +597,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>PinService.VerifyPinAsync</code></h2>
 				</div>
-				<p>Refresh lockout from store, fixed-time hash compare; 5 fails → 5 min lockout.</p>
+				<p>RefreshAsync then fixed-time hash compare; 5 fails → 5 min lockout.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -484,7 +652,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>PinService.RefreshAsync</code></h2>
 				</div>
-				<p>Reload fail/lockout counters from secure storage into memory (Unlock appear).</p>
+				<p>Reload fail/lockout counters from secure storage (Unlock appear / before verify).</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -507,7 +675,91 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>In-memory lockout state matches store.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>In-memory lockout matches store.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="pinHas">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>PinService.HasPinAsync</code></h2>
+				</div>
+				<p>True when cb_pin_hash is present in secure storage.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="pinHas-request">
+					<h3 id="pinHas-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="pinHas-response">
+					<h3 id="pinHas-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;hasPin&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="pinHas-statuses">
+					<h3 id="pinHas-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>true/false</code></th><td>Hash key presence.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="cryptoBox">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>CryptoBox.Seal | Open</code></h2>
+				</div>
+				<p>AES-GCM with PBKDF2-SHA256 (210k) key from passphrase (device secret or legacy PIN).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> DeriveKey → AES-GCM pack salt|nonce|tag|cipher (Seal). Open unpacks and zeros key material.</p>
+
+				<section aria-labelledby="cryptoBox-request">
+					<h3 id="cryptoBox-request">Input</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>plaintext</code></th>
+								<td class="type">string</td>
+								<td>Mnemonic (Seal) or sealed base64 (Open).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>passphrase</code></th>
+								<td class="type">string</td>
+								<td>Device secret (preferred) or legacy PIN.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;passphrase&quot;: &quot;&lt;device-secret&gt;&quot;, &quot;plaintext&quot;: &quot;&lt;mnemonic&gt;&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="cryptoBox-response">
+					<h3 id="cryptoBox-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;sealedB64&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="cryptoBox-statuses">
+					<h3 id="cryptoBox-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Sealed or opened.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>Decrypt/auth failure.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -518,9 +770,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>CustodyService.SealAsync</code></h2>
 				</div>
-				<p>Validate BIP39 → set PIN → generate device secret → AES-GCM seal mnemonic → RAM unlock TTL 5m.</p>
+				<p>Normalize+Validate BIP39 → SetPin → random device secret → CryptoBox.Seal(mnemonic, deviceSecret) → store → RAM unlock 5m TTL.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				<p><strong>Logic:</strong> Blob key cb_custody_blob; device secret cb_device_secret_v1. Legacy PIN-as-passphrase migrates on unlock.</p>
+				<p><strong>Logic:</strong> Order: Normalize → Validate → SetPinAsync → CreateDeviceSecret(32B) → Seal(mnemonic, secret) → store cb_device_secret_v1 + cb_custody_blob → _mnemonic + _expires.</p>
 
 				<section aria-labelledby="custodySeal-request">
 					<h3 id="custodySeal-request">Input</h3>
@@ -536,7 +788,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 							<tr>
 								<th scope="row"><code>pin</code></th>
 								<td class="type">string</td>
-								<td>Wallet PIN.</td>
+								<td>Logical gate only; AES key is device secret.</td>
 							</tr>
 						</tbody>
 					</table>
@@ -553,7 +805,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h4>Example</h4>
 					<pre><code>{
   &quot;sealed&quot;: true,
-  &quot;sessionExpiresAt&quot;: &quot;2026-07-20T18:05:00Z&quot;
+  &quot;sessionTtlMinutes&quot;: 5
 }</code></pre>
 				</section>
 
@@ -563,7 +815,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
 							<tr><th scope="row"><code>ok</code></th><td>Sealed at rest; unlocked in RAM.</td></tr>
-							<tr><th scope="row"><code>throw</code></th><td>Invalid mnemonic or crypto failure.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>Invalid mnemonic.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -574,9 +826,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>CustodyService.UnlockAsync</code></h2>
 				</div>
-				<p>Verify PIN then open sealed blob with device secret (or legacy PIN).</p>
+				<p>VerifyPin → Open blob with device secret, or legacy Open(pin) then MigrateToDeviceSecret.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> VerifyPinAsync → load blob → if device secret: Open(blob, secret); else Open(blob, pin) + MigrateToDeviceSecretAsync → 5m TTL.</p>
 
 				<section aria-labelledby="custodyUnlock-request">
 					<h3 id="custodyUnlock-request">Input</h3>
@@ -587,7 +839,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 							<tr>
 								<th scope="row"><code>pin</code></th>
 								<td class="type">string</td>
-								<td>Wallet PIN.</td>
+								<td>Wallet PIN (gate).</td>
 							</tr>
 						</tbody>
 					</table>
@@ -598,16 +850,6 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 				<section aria-labelledby="custodyUnlock-response">
 					<h3 id="custodyUnlock-response">Result / effects</h3>
 					
-					<table>
-						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
-						<tbody>
-							<tr>
-								<th scope="row"><code>ok</code></th>
-								<td class="type">boolean</td>
-								<td>Unlocked with 5m TTL.</td>
-							</tr>
-						</tbody>
-					</table>
 					<h4>Example</h4>
 					<pre><code>{ &quot;ok&quot;: true }</code></pre>
 				</section>
@@ -618,7 +860,42 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
 							<tr><th scope="row"><code>true</code></th><td>Mnemonic in RAM.</td></tr>
-							<tr><th scope="row"><code>false</code></th><td>Bad PIN / lockout.</td></tr>
+							<tr><th scope="row"><code>false</code></th><td>Bad PIN, missing blob, or decrypt fail.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="custodyUnlockDevice">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>CustodyService.UnlockWithDeviceSecretAsync</code></h2>
+				</div>
+				<p>Open sealed blob with stored device secret (after OS biometrics). No PIN.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="custodyUnlockDevice-request">
+					<h3 id="custodyUnlockDevice-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="custodyUnlockDevice-response">
+					<h3 id="custodyUnlockDevice-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ok&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="custodyUnlockDevice-statuses">
+					<h3 id="custodyUnlockDevice-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>true</code></th><td>Unlocked 5m TTL.</td></tr>
+							<tr><th scope="row"><code>false</code></th><td>Missing secret/blob or decrypt fail.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -629,7 +906,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>CustodyService.IsUnlocked</code></h2>
 				</div>
-				<p>Getter: if TTL expired, calls Lock() (wipes RAM mnemonic) and returns false.</p>
+				<p>If mnemonic present but TTL expired, Lock() wipes RAM and returns false.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -652,8 +929,284 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>true</code></th><td>Mnemonic present and TTL valid.</td></tr>
+							<tr><th scope="row"><code>true</code></th><td>Mnemonic + valid TTL.</td></tr>
 							<tr><th scope="row"><code>false</code></th><td>Locked or auto-wiped on TTL.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="custodyLock">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>CustodyService.Lock</code></h2>
+				</div>
+				<p>Clear in-memory mnemonic and expiry. Blob stays sealed at rest.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="custodyLock-request">
+					<h3 id="custodyLock-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="custodyLock-response">
+					<h3 id="custodyLock-response">Result / effects</h3>
+					<p class="empty">No structured return (void / fire-and-forget side effects).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="custodyLock-statuses">
+					<h3 id="custodyLock-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>RAM wiped.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="custodyExport">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>CustodyService.ExportMnemonic</code></h2>
+				</div>
+				<p>Returns RAM mnemonic iff IsUnlocked; else null. UI gates with step-up RevealKeys.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="custodyExport-request">
+					<h3 id="custodyExport-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="custodyExport-response">
+					<h3 id="custodyExport-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;mnemonic&quot;: &quot;&lt;12 words or null&gt;&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="custodyExport-statuses">
+					<h3 id="custodyExport-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>string</code></th><td>Unlocked export.</td></tr>
+							<tr><th scope="row"><code>null</code></th><td>Locked.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="custodyHasSealed">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>CustodyService.HasSealedWalletAsync</code></h2>
+				</div>
+				<p>True when cb_custody_blob exists (drives Boot HasWallet / Welcome Returning).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="custodyHasSealed-request">
+					<h3 id="custodyHasSealed-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="custodyHasSealed-response">
+					<h3 id="custodyHasSealed-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;hasSealed&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="custodyHasSealed-statuses">
+					<h3 id="custodyHasSealed-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>true/false</code></th><td>Blob presence.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="mnemonicGenerate">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>MnemonicHelper.Generate | Validate | Entropy</code></h2>
+				</div>
+				<p>BIP39 12-word English generate/validate; Entropy recovers bytes for account-key HKDF.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> Generate uses NBitcoin. Entropy never leaves device. KeysViewModel ctor calls Generate.</p>
+
+				<section aria-labelledby="mnemonicGenerate-request">
+					<h3 id="mnemonicGenerate-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;mnemonic&quot;: &quot;&lt;12 words&gt;&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="mnemonicGenerate-response">
+					<h3 id="mnemonicGenerate-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;valid&quot;: true, &quot;entropyBytes&quot;: 16 }</code></pre>
+				</section>
+
+				<section aria-labelledby="mnemonicGenerate-statuses">
+					<h3 id="mnemonicGenerate-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Phrase or entropy ready.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="backupQuiz">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>BackupQuiz.PickRandom</code></h2>
+				</div>
+				<p>Fisher–Yates pick of distinct word indices for onboarding quiz (typically 3).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="backupQuiz-request">
+					<h3 id="backupQuiz-request">Input</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>words</code></th>
+								<td class="type">string[]</td>
+								<td>Mnemonic words.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>count</code></th>
+								<td class="type">int</td>
+								<td>Quiz size.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;count&quot;: 3 }</code></pre>
+				</section>
+
+				<section aria-labelledby="backupQuiz-response">
+					<h3 id="backupQuiz-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;indices&quot;: [2, 7, 11] }</code></pre>
+				</section>
+
+				<section aria-labelledby="backupQuiz-statuses">
+					<h3 id="backupQuiz-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Sorted distinct indices.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="stepUpRequire">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>StepUpAuthService.RequireAsync</code></h2>
+				</div>
+				<p>Prefer biometrics via IStepUpChallenges; else PIN prompt → PinService.VerifyPinAsync.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Custody</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> MauiStepUpChallenges.TryBiometricsAsync first; on fail PromptForPinAsync → VerifyPinAsync.</p>
+
+				<section aria-labelledby="stepUpRequire-request">
+					<h3 id="stepUpRequire-request">Input</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>reason</code></th>
+								<td class="type">AuthReason</td>
+								<td>Payment | Convert | PosAuthorize | PosPresent | RevealKeys | Derive.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;reason&quot;: &quot;Convert&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="stepUpRequire-response">
+					<h3 id="stepUpRequire-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ok&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="stepUpRequire-statuses">
+					<h3 id="stepUpRequire-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>true</code></th><td>Step-up satisfied.</td></tr>
+							<tr><th scope="row"><code>false</code></th><td>User cancel or bad PIN.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="sessionCompleteUnlock">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>AppSession.CompleteUnlockAsync</code></h2>
+				</div>
+				<p>Shared unlock orchestrator after custody is open. Callers: Unlock*, FinishCustodySetup.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session (private)</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> REQUIRED: CreateSessionAsync → AccessToken=session.AccessToken → stream.ConnectAsync → streamHub.Start. BEST-EFFORT try: prefsSync.PullMergeAsync; if applyBootstrap bootstrap.ApplyAsync; reload IdleMs from prefs. Catch swallows prefs/bootstrap errors. Touch(); return true.</p>
+
+				<section aria-labelledby="sessionCompleteUnlock-request">
+					<h3 id="sessionCompleteUnlock-request">Input</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>applyBootstrap</code></th>
+								<td class="type">bool</td>
+								<td>true on Unlock paths; false on SetPin seal path.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;applyBootstrap&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="sessionCompleteUnlock-response">
+					<h3 id="sessionCompleteUnlock-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ok&quot;: true, &quot;accessToken&quot;: &quot;&lt;ACCESS_TOKEN&gt;&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="sessionCompleteUnlock-statuses">
+					<h3 id="sessionCompleteUnlock-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>true</code></th><td>Always true after CreateSession+stream succeed; prefs failures do not fail unlock.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>CreateSession or Connect failure aborts.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -664,9 +1217,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>AppSession.FinishCustodySetupAsync</code></h2>
 				</div>
-				<p>Seal → seed derived wallets → CompleteUnlock without account bootstrap (Set PIN path).</p>
+				<p>Seal → seed BTC+ETH derived wallets → CompleteUnlock(applyBootstrap:false) → HasWallet=true.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				<p><strong>Logic:</strong> SealAsync → LocalWalletSeeder.EnsureDerivedAsync → CompleteUnlockAsync(applyBootstrap:false).</p>
+				<p><strong>Logic:</strong> Custody.SealAsync → LocalWalletSeeder.EnsureDerivedAsync(mnemonic) defaults BTC,ETH → CompleteUnlockAsync(false) → HasWallet=true.</p>
 
 				<section aria-labelledby="sessionFinishCustody-request">
 					<h3 id="sessionFinishCustody-request">Input</h3>
@@ -677,7 +1230,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 							<tr>
 								<th scope="row"><code>mnemonic</code></th>
 								<td class="type">string</td>
-								<td>BIP39 phrase.</td>
+								<td>BIP39.</td>
 							</tr>
 							<tr>
 								<th scope="row"><code>pin</code></th>
@@ -694,11 +1247,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h3 id="sessionFinishCustody-response">Result / effects</h3>
 					
 					<h4>Example</h4>
-					<pre><code>{
-  &quot;hasWallet&quot;: true,
-  &quot;accessToken&quot;: &quot;&lt;bearer&gt;&quot;,
-  &quot;streamConnected&quot;: true
-}</code></pre>
+					<pre><code>{ &quot;hasWallet&quot;: true }</code></pre>
 				</section>
 
 				<section aria-labelledby="sessionFinishCustody-statuses">
@@ -717,9 +1266,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>AppSession.UnlockAsync</code></h2>
 				</div>
-				<p>PIN unlock custody then CompleteUnlock with prefs pull + account bootstrap.</p>
+				<p>Custody.UnlockAsync(pin) then CompleteUnlockAsync(applyBootstrap:true).</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> If custody unlock fails → false. Else CompleteUnlock (session+stream required; prefs+bootstrap best-effort).</p>
 
 				<section aria-labelledby="sessionUnlock-request">
 					<h3 id="sessionUnlock-request">Input</h3>
@@ -742,7 +1291,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h3 id="sessionUnlock-response">Result / effects</h3>
 					
 					<h4>Example</h4>
-					<pre><code>{ &quot;ok&quot;: true, &quot;accessToken&quot;: &quot;&lt;bearer&gt;&quot; }</code></pre>
+					<pre><code>{ &quot;ok&quot;: true }</code></pre>
 				</section>
 
 				<section aria-labelledby="sessionUnlock-statuses">
@@ -750,7 +1299,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>true</code></th><td>Session + stream live.</td></tr>
+							<tr><th scope="row"><code>true</code></th><td>Custody open + session/stream up.</td></tr>
 							<tr><th scope="row"><code>false</code></th><td>Custody unlock failed.</td></tr>
 						</tbody>
 					</table>
@@ -762,7 +1311,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>AppSession.UnlockWithDeviceOwnerAsync</code></h2>
 				</div>
-				<p>After OS biometrics: open blob with device secret → CompleteUnlock(bootstrap:true).</p>
+				<p>Custody.UnlockWithDeviceSecretAsync then CompleteUnlock(applyBootstrap:true).</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -786,7 +1335,41 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
 							<tr><th scope="row"><code>true</code></th><td>Biometric path unlocked.</td></tr>
-							<tr><th scope="row"><code>false</code></th><td>No device secret or open failed.</td></tr>
+							<tr><th scope="row"><code>false</code></th><td>Device-secret unlock failed.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="sessionCanUnlockDevice">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>AppSession.CanUnlockWithDeviceOwnerAsync</code></h2>
+				</div>
+				<p>Delegates to Custody.CanUnlockWithDeviceOwnerAsync (device secret present).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="sessionCanUnlockDevice-request">
+					<h3 id="sessionCanUnlockDevice-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="sessionCanUnlockDevice-response">
+					<h3 id="sessionCanUnlockDevice-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ok&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="sessionCanUnlockDevice-statuses">
+					<h3 id="sessionCanUnlockDevice-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>true/false</code></th><td>Whether biometrics unlock is available.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -797,9 +1380,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>AppSession.Lock</code></h2>
 				</div>
-				<p>Stop stream hub, wipe custody RAM, clear tokens/session store, disconnect WSS, raise Locked.</p>
+				<p>Stop hub, custody Lock, clear AccessToken + product session store, DisconnectAsync stream, raise Locked.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Session</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> Does NOT clear PQ channel here. AppIdleLockService.OnLocked clears IPqChannel and navigates Unlock.</p>
 
 				<section aria-labelledby="sessionLock-request">
 					<h3 id="sessionLock-request">Input</h3>
@@ -820,7 +1403,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>Idle lock / Profile.Lock navigate Unlock; PQ channel cleared by AppIdleLockService.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>Locked event raised for idle service.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -831,7 +1414,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>LabSessionProofBuilder.BuildOpenBodyAsync</code></h2>
 				</div>
-				<p>Default Lab session open body (no crypto).</p>
+				<p>Default Lab session open body (no crypto). SessionProofMode.Lab.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · V1</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -856,7 +1439,42 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>Stub attestation for POST /session.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>Stub for POST /session.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="proofBuilder">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>ChallengePassSessionProofBuilder.BuildOpenBodyAsync</code></h2>
+				</div>
+				<p>Active-suite entry: A2 hybrid identity + PQ structure, or A1 keypair + two-step structure.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.ChallengePass</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> catalog.GetActive(). If Structure is PqChannelChallengePassStructure: RequireHybridIdentity → SetDeviceIdentity → BuildSessionOpenBodyAsync. Else: RequireUnlockedKeyPair(algo) → wire pk → BuildSessionOpenBodyAsync.</p>
+
+				<section aria-labelledby="proofBuilder-request">
+					<h3 id="proofBuilder-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="proofBuilder-response">
+					<h3 id="proofBuilder-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ /* SessionPassDto SCREAMING fields */ }</code></pre>
+				</section>
+
+				<section aria-labelledby="proofBuilder-statuses">
+					<h3 id="proofBuilder-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Proof body for CreateSessionAsync.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>Custody locked / missing keys.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -867,9 +1485,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>TwoStepChallengePassStructure.BuildSessionOpenBodyAsync</code></h2>
 				</div>
-				<p>X25519 challenge open + pass seal → SessionPassDto for POST /session.</p>
+				<p>Suite a1-x25519-chacha-v1: challenge Open → SHA-256 pass → Seal to API pk.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.ChallengePass · A1</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				<p><strong>Logic:</strong> RequestChallenge → Open with account sk → SHA-256 pass → Seal to API pk. Private key never on wire.</p>
+				<p><strong>Logic:</strong> ISessionChallengeClient.RequestChallengeAsync(wirePk) → algo.Open(accountSk) → ChallengeIdNonceSha256Template.Parse/BuildPassPayload(SHA256 of plaintext) → algo.Seal to API pk → SessionPassDto. Private key never on wire.</p>
 
 				<section aria-labelledby="proofA1-request">
 					<h3 id="proofA1-request">Input</h3>
@@ -878,14 +1496,14 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
 						<tbody>
 							<tr>
-								<th scope="row"><code>accountPublicKey</code></th>
-								<td class="type">string (wire)</td>
-								<td>URL-safe base64 account pk.</td>
+								<th scope="row"><code>accountKeyPair</code></th>
+								<td class="type">AccountKeyPair</td>
+								<td>From CustodyAccountKeySource (derived, not user-supplied).</td>
 							</tr>
 						</tbody>
 					</table>
 					<h4>Example</h4>
-					<pre><code>{ &quot;accountPublicKey&quot;: &quot;&lt;wire&gt;&quot; }</code></pre>
+					<pre><code>{ &quot;accountPublicKeyWire&quot;: &quot;&lt;from derivation&gt;&quot; }</code></pre>
 				</section>
 
 				<section aria-labelledby="proofA1-response">
@@ -916,18 +1534,15 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>PqChannelChallengePassStructure.BuildSessionOpenBodyAsync</code></h2>
 				</div>
-				<p>Hybrid ML-KEM+X25519 key-share → PQ channel challenge/pass.</p>
+				<p>Suite a2-hybrid-pq-channel-v1: key-share if needed, then channel challenge/pass.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.ChallengePass · A2</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				<p><strong>Logic:</strong> Establish key-share if needed → SetChannelKey → channel Open/Seal. Channel cleared on idle lock.</p>
+				<p><strong>Logic:</strong> If no channel: IPqKeyShareClient.EstablishAsync(deviceIdentity) → CompleteAsDevice → IPqChannel.SetChannelKey. Then IPqChannelChallengeSource.RequestChallengeAsync → channel Open → BuildPass → channel Seal. Keys from RequireHybridIdentity (mnemonic entropy), not free-form request.</p>
 
 				<section aria-labelledby="proofA2-request">
 					<h3 id="proofA2-request">Input</h3>
-					
+					<p class="empty">No structured input (void / parameterless).</p>
 					<h4>Example</h4>
-					<pre><code>{
-  &quot;deviceMlKemPublicKey&quot;: &quot;…&quot;,
-  &quot;deviceX25519PublicKey&quot;: &quot;…&quot;
-}</code></pre>
+					<pre><code>{}</code></pre>
 				</section>
 
 				<section aria-labelledby="proofA2-response">
@@ -946,7 +1561,189 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>PQ SessionPassDto body ready.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>PQ SessionPassDto ready.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="hybridAgree">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>HybridMlKemX25519Agreement.DeriveIdentity | CompleteAsDevice</code></h2>
+				</div>
+				<p>ML-KEM-768 + X25519 → HKDF channel key. Ids: hybrid-mlkem768-x25519-v1.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.ChallengePass · Hybrid</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> DeriveIdentity(entropy) for device; CreateShareAsServer / CompleteAsDevice for encapsulate/decapsulate → channel key.</p>
+
+				<section aria-labelledby="hybridAgree-request">
+					<h3 id="hybridAgree-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;entropy&quot;: &quot;&lt;from mnemonic&gt;&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="hybridAgree-response">
+					<h3 id="hybridAgree-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;channelKeySet&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="hybridAgree-statuses">
+					<h3 id="hybridAgree-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Hybrid identity or channel key.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="pqChannel">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>PqSymmetricChannel.SetChannelKey | Seal | Open | Clear</code></h2>
+				</div>
+				<p>In-memory ChaCha20-Poly1305 channel. Cleared on idle lock (AppIdleLockService.OnLocked).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.ChallengePass · Hybrid</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> SetChannelKey stores key; Seal/Open AEAD; Clear zeros. Never logged.</p>
+
+				<section aria-labelledby="pqChannel-request">
+					<h3 id="pqChannel-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;key&quot;: &quot;&lt;32-byte HKDF&gt;&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="pqChannel-response">
+					<h3 id="pqChannel-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;cleared&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="pqChannel-statuses">
+					<h3 id="pqChannel-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Channel op.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>No key / decrypt fail.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="accountKeySource">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>CustodyAccountKeySource.RequireUnlockedKeyPair | RequireHybridIdentity</code></h2>
+				</div>
+				<p>ExportMnemonic → Entropy → AccountKeyDerivation or HybridMlKemX25519Agreement.DeriveIdentity.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.ChallengePass</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="accountKeySource-request">
+					<h3 id="accountKeySource-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="accountKeySource-response">
+					<h3 id="accountKeySource-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;publicKeyWire&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="accountKeySource-statuses">
+					<h3 id="accountKeySource-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Keys for active suite.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>Custody locked.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="httpChallengeClient">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>HttpSessionChallengeClient.RequestChallengeAsync</code></h2>
+				</div>
+				<p>A1 adapter: IProductApi.CreateSessionChallengeAsync(accountPublicKeyWire).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · Services</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="httpChallengeClient-request">
+					<h3 id="httpChallengeClient-request">Input</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>accountPublicKeyWire</code></th>
+								<td class="type">string</td>
+								<td>URL-safe base64 account pk.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;ACCOUNT_PUBLIC_KEY&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="httpChallengeClient-response">
+					<h3 id="httpChallengeClient-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;CHALLENGE_ID&quot;: &quot;…&quot;, &quot;CIPHERTEXT&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="httpChallengeClient-statuses">
+					<h3 id="httpChallengeClient-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>SessionChallengeDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="httpKeyShare">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>HttpPqKeyShareClient.EstablishAsync</code></h2>
+				</div>
+				<p>A2 adapter: IProductApi.EstablishKeyShareAsync with device public keys only.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · Services</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="httpKeyShare-request">
+					<h3 id="httpKeyShare-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;MLKEM_PUBLIC_KEY&quot;: &quot;…&quot;, &quot;X25519_PUBLIC_KEY&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="httpKeyShare-response">
+					<h3 id="httpKeyShare-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;KEY_SHARE_ID&quot;: &quot;…&quot;, &quot;MLKEM_CIPHERTEXT&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="httpKeyShare-statuses">
+					<h3 id="httpKeyShare-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>KeyShareResponseDto.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -957,23 +1754,43 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>IProductApi.CreateSessionAsync</code></h2>
 				</div>
-				<p>Build proof via ISessionProofBuilder then POST /session; persist SessionDto.</p>
+				<p>Http: BuildOpenBody via ISessionProofBuilder then POST /session. Mock: returns tokens with no proof.</p>
 				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> HttpProductApi saves SessionDto via IProductSessionStore. Mock skips proof/HTTP.</p>
 
 				<section aria-labelledby="apiCreateSession-request">
 					<h3 id="apiCreateSession-request">Input</h3>
 					
 					<h4>Example</h4>
-					<pre><code>{ /* proof body from Lab | A1 | A2 */ }</code></pre>
+					<pre><code>{ /* Lab | A1 | A2 proof body */ }</code></pre>
 				</section>
 
 				<section aria-labelledby="apiCreateSession-response">
 					<h3 id="apiCreateSession-response">Result / effects</h3>
 					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>ACCESS_TOKEN</code></th>
+								<td class="type">string</td>
+								<td>Bearer for product routes.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>REFRESH_TOKEN</code></th>
+								<td class="type">string</td>
+								<td>Refresh token.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>EXPIRES_AT</code></th>
+								<td class="type">number</td>
+								<td>Epoch ms expiry.</td>
+							</tr>
+						</tbody>
+					</table>
 					<h4>Example</h4>
 					<pre><code>{
-  &quot;TOKEN&quot;: &quot;…&quot;,
+  &quot;ACCESS_TOKEN&quot;: &quot;…&quot;,
   &quot;REFRESH_TOKEN&quot;: &quot;…&quot;,
   &quot;EXPIRES_AT&quot;: 1720900000000
 }</code></pre>
@@ -984,8 +1801,76 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>200</code></th><td>Session stored; AccessToken set on unlock path.</td></tr>
-							<tr><th scope="row"><code>throw</code></th><td>Non-success HTTP or empty body.</td></tr>
+							<tr><th scope="row"><code>200</code></th><td>Session stored.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>Non-success or empty body (Http).</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiChallenge">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.CreateSessionChallengeAsync</code></h2>
+				</div>
+				<p>POST /session/challenge { ACCOUNT_PUBLIC_KEY } → sealed challenge for A1.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiChallenge-request">
+					<h3 id="apiChallenge-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ACCOUNT_PUBLIC_KEY&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiChallenge-response">
+					<h3 id="apiChallenge-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;CHALLENGE_ID&quot;: &quot;…&quot;, &quot;CIPHERTEXT&quot;: &quot;…&quot;, &quot;API_PUBLIC_KEY&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiChallenge-statuses">
+					<h3 id="apiChallenge-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>SessionChallengeDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiKeyShare">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.EstablishKeyShareAsync</code></h2>
+				</div>
+				<p>POST /session/key-share — device public keys only (no private/mnemonic).</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiKeyShare-request">
+					<h3 id="apiKeyShare-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;MLKEM_PUBLIC_KEY&quot;: &quot;…&quot;, &quot;X25519_PUBLIC_KEY&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiKeyShare-response">
+					<h3 id="apiKeyShare-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;KEY_SHARE_ID&quot;: &quot;…&quot;, &quot;MLKEM_CIPHERTEXT&quot;: &quot;…&quot;, &quot;SERVER_X25519_PUBLIC_KEY&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiKeyShare-statuses">
+					<h3 id="apiKeyShare-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>KeyShareResponseDto.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1010,10 +1895,25 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 				<section aria-labelledby="apiPortfolio-response">
 					<h3 id="apiPortfolio-response">Result / effects</h3>
 					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>TOTAL_USD</code></th>
+								<td class="type">string</td>
+								<td>Portfolio total USD (decimal string).</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>HOLDINGS</code></th>
+								<td class="type">array</td>
+								<td>SYMBOL, NAME, BALANCE, USD_VALUE, CHANGE_24H_PCT.</td>
+							</tr>
+						</tbody>
+					</table>
 					<h4>Example</h4>
 					<pre><code>{
-  &quot;TOTAL&quot;: 128432.19,
-  &quot;HOLDINGS&quot;: [ { &quot;SYMBOL&quot;: &quot;BTC&quot;, &quot;AMOUNT&quot;: &quot;1.204&quot; } ]
+  &quot;TOTAL_USD&quot;: &quot;128432.19&quot;,
+  &quot;HOLDINGS&quot;: [ { &quot;SYMBOL&quot;: &quot;BTC&quot;, &quot;BALANCE&quot;: &quot;1.204&quot;, &quot;USD_VALUE&quot;: &quot;76104.22&quot; } ]
 }</code></pre>
 				</section>
 
@@ -1022,7 +1922,90 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>200</code></th><td>Portfolio DTO returned.</td></tr>
+							<tr><th scope="row"><code>200</code></th><td>PortfolioDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiHistory">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.GetHistoryAsync</code></h2>
+				</div>
+				<p>GET /history?symbols=&amp;range= for Home sparklines.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiHistory-request">
+					<h3 id="apiHistory-request">Input</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>symbol</code></th>
+								<td class="type">string</td>
+								<td>Ticker.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>range</code></th>
+								<td class="type">string</td>
+								<td>Chart range key.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;symbol&quot;: &quot;BTC&quot;, &quot;range&quot;: &quot;1D&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiHistory-response">
+					<h3 id="apiHistory-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>[ { &quot;T&quot;: 1720900000000, &quot;V&quot;: 65000.0 } ]</code></pre>
+				</section>
+
+				<section aria-labelledby="apiHistory-statuses">
+					<h3 id="apiHistory-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>HistoryPointDto[].</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiProductQuote">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.GetQuoteAsync</code></h2>
+				</div>
+				<p>Product /v1 quotes path (distinct from public POST /quote). Convert UI uses public /iquote for lock.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiProductQuote-request">
+					<h3 id="apiProductQuote-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;from&quot;: &quot;BTC&quot;, &quot;to&quot;: &quot;USD&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiProductQuote-response">
+					<h3 id="apiProductQuote-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;FROM&quot;: &quot;BTC&quot;, &quot;TO&quot;: &quot;USD&quot;, &quot;RATE&quot;: 65000, &quot;EXPIRES_AT&quot;: 1720900015000 }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiProductQuote-statuses">
+					<h3 id="apiProductQuote-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>QuoteDto.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1033,9 +2016,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>IProductApi.ConvertAsync</code></h2>
 				</div>
-				<p>Settle convert on product path (after indicative public quote in UI).</p>
+				<p>POST v1/convert with FROM/TO/AMOUNT + Idempotency-Key. Indicative public quote is NOT sent.</p>
 				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> Mock returns Status=pending. Live may accept then settle via stream CONVERT.SETTLED.</p>
 
 				<section aria-labelledby="apiConvert-request">
 					<h3 id="apiConvert-request">Input</h3>
@@ -1067,10 +2050,10 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					</table>
 					<h4>Example</h4>
 					<pre><code>{
-  &quot;from&quot;: &quot;BTC&quot;,
-  &quot;to&quot;: &quot;USD&quot;,
-  &quot;amount&quot;: &quot;0.01&quot;,
-  &quot;idempotencyKey&quot;: &quot;…&quot;
+  &quot;FROM&quot;: &quot;BTC&quot;,
+  &quot;TO&quot;: &quot;USD&quot;,
+  &quot;AMOUNT&quot;: &quot;0.01&quot;,
+  &quot;Idempotency-Key&quot;: &quot;…&quot;
 }</code></pre>
 				</section>
 
@@ -1078,7 +2061,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h3 id="apiConvert-response">Result / effects</h3>
 					
 					<h4>Example</h4>
-					<pre><code>{ &quot;ID&quot;: &quot;tx_…&quot;, &quot;STATUS&quot;: &quot;accepted&quot; }</code></pre>
+					<pre><code>{ &quot;ID&quot;: &quot;tx_…&quot;, &quot;STATUS&quot;: &quot;pending&quot; }</code></pre>
 				</section>
 
 				<section aria-labelledby="apiConvert-statuses">
@@ -1086,7 +2069,279 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>202|200</code></th><td>MoneyMoveDto; settle via stream when live.</td></tr>
+							<tr><th scope="row"><code>200|202</code></th><td>MoneyMoveDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiTransfer">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.TransferAsync</code></h2>
+				</div>
+				<p>Send/ACH mutation with speed instant|ach + Idempotency-Key.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiTransfer-request">
+					<h3 id="apiTransfer-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;to&quot;: &quot;payee&quot;, &quot;amount&quot;: &quot;25.00&quot;, &quot;speed&quot;: &quot;instant&quot;, &quot;idempotencyKey&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiTransfer-response">
+					<h3 id="apiTransfer-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ID&quot;: &quot;tx_…&quot;, &quot;STATUS&quot;: &quot;pending&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiTransfer-statuses">
+					<h3 id="apiTransfer-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200|202</code></th><td>MoneyMoveDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiPay">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.PayAsync</code></h2>
+				</div>
+				<p>Multi-asset mix payment; server mediates to single currency for recipient.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiPay-request">
+					<h3 id="apiPay-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;amount&quot;: &quot;100&quot;, &quot;mix&quot;: { &quot;BTC&quot;: &quot;0.001&quot;, &quot;USD&quot;: &quot;50&quot; }, &quot;idempotencyKey&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiPay-response">
+					<h3 id="apiPay-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ID&quot;: &quot;pay_…&quot;, &quot;STATUS&quot;: &quot;pending&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiPay-statuses">
+					<h3 id="apiPay-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200|202</code></th><td>MoneyMoveDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiReceive">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.GetReceiveAsync</code></h2>
+				</div>
+				<p>GET receive payload for asset (handle/address/uri).</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiReceive-request">
+					<h3 id="apiReceive-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;asset&quot;: &quot;BTC&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiReceive-response">
+					<h3 id="apiReceive-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ASSET&quot;: &quot;BTC&quot;, &quot;ADDRESS&quot;: &quot;bc1…&quot;, &quot;URI&quot;: &quot;bitcoin:…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiReceive-statuses">
+					<h3 id="apiReceive-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>ReceiveDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiCreateWallet">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.CreateWalletAsync</code></h2>
+				</div>
+				<p>Managed/unmanaged/watch wallet. Result never includes spend key.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiCreateWallet-request">
+					<h3 id="apiCreateWallet-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;SYMBOL&quot;: &quot;XMR&quot;, &quot;MODE&quot;: &quot;managed&quot;, &quot;LABEL&quot;: &quot;Primary&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiCreateWallet-response">
+					<h3 id="apiCreateWallet-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;WALLET_ID&quot;: &quot;wal_…&quot;, &quot;ADDRESS&quot;: &quot;4…&quot;, &quot;MODE&quot;: &quot;managed&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiCreateWallet-statuses">
+					<h3 id="apiCreateWallet-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>CreateWalletResultDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiPos">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.CreatePosSessionAsync | AuthorizePosAsync | ConfirmPosAsync</code></h2>
+				</div>
+				<p>POS lab session lifecycle → PosSessionDto (TOKEN_REF, LAST4 — no PAN).</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiPos-request">
+					<h3 id="apiPos-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;sessionId&quot;: &quot;pos_…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiPos-response">
+					<h3 id="apiPos-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;SESSION_ID&quot;: &quot;pos_…&quot;, &quot;STATUS&quot;: &quot;ready_to_present&quot;, &quot;TOKEN_REF&quot;: &quot;…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiPos-statuses">
+					<h3 id="apiPos-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>PosSessionDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiPrefs">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.GetPrefsAsync | PutPrefsAsync</code></h2>
+				</div>
+				<p>GET/PUT /prefs wire DTO for PrefsSyncService.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiPrefs-request">
+					<h3 id="apiPrefs-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ /* PrefsWireDto */ }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiPrefs-response">
+					<h3 id="apiPrefs-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ /* PrefsWireDto or null */ }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiPrefs-statuses">
+					<h3 id="apiPrefs-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Prefs read/written.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiBootstrap">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.GetAccountBootstrapAsync</code></h2>
+				</div>
+				<p>GET /account/bootstrap — prefs + ACH contacts. Never mnemonic/PIN.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiBootstrap-request">
+					<h3 id="apiBootstrap-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="apiBootstrap-response">
+					<h3 id="apiBootstrap-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;PREFS&quot;: { }, &quot;RECIPIENTS&quot;: [ ] }</code></pre>
+				</section>
+
+				<section aria-labelledby="apiBootstrap-statuses">
+					<h3 id="apiBootstrap-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>AccountBootstrapDto.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="apiVault">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IProductApi.GetVaultCardsAsync | GetVaultBinariesAsync</code></h2>
+				</div>
+				<p>Vault metadata — last4 / labels only; no PAN, no mnemonic.</p>
+				<p><strong>Assembly:</strong> <code>HttpProductApi | MockProductApi</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="apiVault-request">
+					<h3 id="apiVault-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="apiVault-response">
+					<h3 id="apiVault-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>[ { &quot;CARD_ID&quot;: &quot;…&quot;, &quot;LAST4&quot;: &quot;4242&quot;, &quot;BRAND&quot;: &quot;visa&quot; } ]</code></pre>
+				</section>
+
+				<section aria-labelledby="apiVault-statuses">
+					<h3 id="apiVault-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>200</code></th><td>Vault DTOs.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1120,7 +2375,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>true</code></th><td>2xx from public API.</td></tr>
+							<tr><th scope="row"><code>true</code></th><td>2xx.</td></tr>
 							<tr><th scope="row"><code>false</code></th><td>Non-success.</td></tr>
 						</tbody>
 					</table>
@@ -1132,7 +2387,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>IPublicQuoteService.GetCurrenciesAsync</code></h2>
 				</div>
-				<p>POST /currencies → map BITCOIN/MONERO/USD to app tickers via CurrencySymbolMap.</p>
+				<p>POST /currencies → map CURRENCIES via CurrencySymbolMap.ToAppSymbol.</p>
 				<p><strong>Assembly:</strong> <code>PublicApiClient · api.cipherbank.money</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -1166,7 +2421,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>IPublicQuoteService.GetInverseQuoteAsync</code></h2>
 				</div>
-				<p>POST /iquote — fixed input → output. Used by Convert.LockQuoteAsync (indicative).</p>
+				<p>POST /iquote — fixed input → output. Used by Convert.LockQuoteAsync.</p>
 				<p><strong>Assembly:</strong> <code>PublicApiClient · api.cipherbank.money</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -1177,19 +2432,19 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
 						<tbody>
 							<tr>
-								<th scope="row"><code>inputSymbol</code></th>
+								<th scope="row"><code>INPUT_CURRENCY</code></th>
 								<td class="type">string</td>
-								<td>App ticker e.g. BTC.</td>
+								<td>API code e.g. BITCOIN (mapped from BTC).</td>
 							</tr>
 							<tr>
-								<th scope="row"><code>inputAmount</code></th>
-								<td class="type">decimal</td>
+								<th scope="row"><code>INPUT_AMOUNT</code></th>
+								<td class="type">number (double)</td>
 								<td>Input amount.</td>
 							</tr>
 							<tr>
-								<th scope="row"><code>outputSymbol</code></th>
+								<th scope="row"><code>OUTPUT_CURRENCY</code></th>
 								<td class="type">string</td>
-								<td>App ticker e.g. USD.</td>
+								<td>API code e.g. USD.</td>
 							</tr>
 						</tbody>
 					</table>
@@ -1207,8 +2462,6 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h4>Example</h4>
 					<pre><code>{
   &quot;inputSymbol&quot;: &quot;BTC&quot;,
-  &quot;inputAmount&quot;: 0.0015,
-  &quot;outputSymbol&quot;: &quot;USD&quot;,
   &quot;outputAmount&quot;: 100.0,
   &quot;rate&quot;: 66666.66666667
 }</code></pre>
@@ -1219,8 +2472,8 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>PublicQuote returned.</td></tr>
-							<tr><th scope="row"><code>422|424</code></th><td>Business / dependency errors from public API.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>PublicQuote.</td></tr>
+							<tr><th scope="row"><code>422|424</code></th><td>Business / dependency errors.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1231,7 +2484,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>IPublicQuoteService.GetQuoteAsync</code></h2>
 				</div>
-				<p>POST /quote — fixed output → required input.</p>
+				<p>POST /quote — fixed output → required input (public API; not product GetQuoteAsync).</p>
 				<p><strong>Assembly:</strong> <code>PublicApiClient · api.cipherbank.money</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -1250,11 +2503,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h3 id="publicQuote-response">Result / effects</h3>
 					
 					<h4>Example</h4>
-					<pre><code>{
-  &quot;inputAmount&quot;: 0.0015,
-  &quot;outputAmount&quot;: 100.0,
-  &quot;rate&quot;: 66666.66666667
-}</code></pre>
+					<pre><code>{ &quot;inputAmount&quot;: 0.0015, &quot;rate&quot;: 66666.66666667 }</code></pre>
 				</section>
 
 				<section aria-labelledby="publicQuote-statuses">
@@ -1262,7 +2511,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>PublicQuote returned.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>PublicQuote.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1273,9 +2522,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>CurrencySymbolMap.ToApiCurrency | ToAppSymbol</code></h2>
 				</div>
-				<p>BTC↔BITCOIN, XMR↔MONERO, USD↔USD at the public API boundary.</p>
+				<p>BTC↔BITCOIN, XMR↔MONERO, USD↔USD at public API boundary.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Services</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> ToApiCurrency throws on unsupported. ToAppSymbol returns uppercase key as-is when unmapped (no throw). IsSupported checks AppToApi map.</p>
 
 				<section aria-labelledby="currencyMap-request">
 					<h3 id="currencyMap-request">Input</h3>
@@ -1297,7 +2546,41 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
 							<tr><th scope="row"><code>ok</code></th><td>Mapped.</td></tr>
-							<tr><th scope="row"><code>throw</code></th><td>Unsupported symbol.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>ToApiCurrency only — unsupported symbol.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="indicativeMapper">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IndicativeQuoteMapper.ToQuoteDto</code></h2>
+				</div>
+				<p>Maps PublicQuote → QuoteDto with client TTL (default 15_000 ms) for Convert countdown.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Services</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="indicativeMapper-request">
+					<h3 id="indicativeMapper-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;publicQuote&quot;: { }, &quot;nowMs&quot;: 1720900000000, &quot;ttlMs&quot;: 15000 }</code></pre>
+				</section>
+
+				<section aria-labelledby="indicativeMapper-response">
+					<h3 id="indicativeMapper-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;FROM&quot;: &quot;BTC&quot;, &quot;TO&quot;: &quot;USD&quot;, &quot;RATE&quot;: 65000, &quot;EXPIRES_AT&quot;: 1720900015000 }</code></pre>
+				</section>
+
+				<section aria-labelledby="indicativeMapper-statuses">
+					<h3 id="indicativeMapper-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Indicative QuoteDto (not a server lock).</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1308,9 +2591,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>ClientWebSocketStreamService.ConnectAsync</code></h2>
 				</div>
-				<p>Disconnect prior socket (if any), then connect WSS and start receive loop.</p>
+				<p>Always DisconnectAsync first (tear down prior socket), then WSS connect + receive loop.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · V1</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				<p><strong>Logic:</strong> Always DisconnectAsync before new ConnectAsync to avoid leaked sockets on reconnect.</p>
+				<p><strong>Logic:</strong> Prevents leaked sockets on reconnect. Parses { TYPE, PAYLOAD } SCREAMING events.</p>
 
 				<section aria-labelledby="streamConnect-request">
 					<h3 id="streamConnect-request">Input</h3>
@@ -1331,7 +2614,75 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>IsConnected; events fan out via StreamHub.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>IsConnected; events to StreamHub.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="streamDisconnect">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>IStreamService.DisconnectAsync</code></h2>
+				</div>
+				<p>Close WebSocket / stop mock ticks. Called from Connect (preflight) and AppSession.Lock.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · V1</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="streamDisconnect-request">
+					<h3 id="streamDisconnect-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="streamDisconnect-response">
+					<h3 id="streamDisconnect-response">Result / effects</h3>
+					<p class="empty">No structured return (void / fire-and-forget side effects).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="streamDisconnect-statuses">
+					<h3 id="streamDisconnect-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Disconnected.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="streamHub">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>StreamHub.Start | Stop</code></h2>
+				</div>
+				<p>Single fan-out of EventReceived. Start on unlock; Stop on Lock.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · V1</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="streamHub-request">
+					<h3 id="streamHub-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="streamHub-response">
+					<h3 id="streamHub-response">Result / effects</h3>
+					<p class="empty">No structured return (void / fire-and-forget side effects).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="streamHub-statuses">
+					<h3 id="streamHub-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Hub running or stopped.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1342,9 +2693,9 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>PrefsStore.LoadAsync | SaveAsync</code></h2>
 				</div>
-				<p>Local UserPrefs JSON including EnabledCurrencies, DefaultSendSpeed, Cora, idle, appearance.</p>
+				<p>Local UserPrefs JSON: EnabledCurrencies, DefaultSendSpeed, Cora, idle, appearance, home sections.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Persist</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> Empty EnabledCurrencies normalizes to BTC,XMR,USD. DefaultSendSpeed must be instant|ach.</p>
 
 				<section aria-labelledby="prefsLoadSave-request">
 					<h3 id="prefsLoadSave-request">Input</h3>
@@ -1353,8 +2704,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<pre><code>{
   &quot;enabledCurrencies&quot;: [&quot;BTC&quot;, &quot;XMR&quot;, &quot;USD&quot;],
   &quot;defaultSendSpeed&quot;: &quot;instant&quot;,
-  &quot;lockIdleSeconds&quot;: 120,
-  &quot;coraEnabled&quot;: true
+  &quot;lockIdleSeconds&quot;: 120
 }</code></pre>
 				</section>
 
@@ -1376,14 +2726,49 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 				</section>
 			</article>
 
+			<article class="endpoint" id="prefsSync">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>PrefsSyncService.PullMergeAsync | SaveAndPushAsync</code></h2>
+				</div>
+				<p>Local ↔ GET/PUT /prefs. PullMerge on unlock; SaveAndPush from Profile.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · V1</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> PrefsMerge.Merge preserves local AssetsLayout if remote omits. SaveAndPush always saves local; returns false if PUT fails.</p>
+
+				<section aria-labelledby="prefsSync-request">
+					<h3 id="prefsSync-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ /* UserPrefs */ }</code></pre>
+				</section>
+
+				<section aria-labelledby="prefsSync-response">
+					<h3 id="prefsSync-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;cloudSynced&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="prefsSync-statuses">
+					<h3 id="prefsSync-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Merged or pushed.</td></tr>
+							<tr><th scope="row"><code>false</code></th><td>Local saved; cloud PUT failed.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
 			<article class="endpoint" id="bootstrapApply">
 				<div class="route">
 					<span class="method">INVOKE</span>
 					<h2><code>AccountBootstrapService.ApplyAsync</code></h2>
 				</div>
-				<p>GET /account/bootstrap → merge prefs + upsert recipients with stable SHA256 ids (no Guid churn).</p>
+				<p>GET bootstrap → merge prefs → upsert recipients. Never touches custody.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · V1</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				<p><strong>Logic:</strong> ResolvedId prefers wire id; else SHA256(name|last4|routing) prefix. Never touches custody.</p>
+				<p><strong>Logic:</strong> ResolvedId: wire Id/IdCamel first; else SHA256(lowercase name) → bootstrap_+16 hex; if name empty seed=last4|routing; if still empty recipient_unknown. Skips recipients without 9-digit routing / empty name. Account stored masked ****+last4.</p>
 
 				<section aria-labelledby="bootstrapApply-request">
 					<h3 id="bootstrapApply-request">Input</h3>
@@ -1413,14 +2798,372 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 				</section>
 			</article>
 
+			<article class="endpoint" id="localDbInit">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>LocalDb.InitializeAsync</code></h2>
+				</div>
+				<p>Create cipherbank.db + DDL (wallets, prefs, recipients, ohlc). Android uses Bionic e_sqlite3 only.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Persist</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="localDbInit-request">
+					<h3 id="localDbInit-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="localDbInit-response">
+					<h3 id="localDbInit-response">Result / effects</h3>
+					<p class="empty">No structured return (void / fire-and-forget side effects).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="localDbInit-statuses">
+					<h3 id="localDbInit-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Schema ready.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="walletRepo">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>WalletRepository.ListAsync | UpsertAsync | DeleteAsync</code></h2>
+				</div>
+				<p>Local wallet rows: address/path only — no private keys.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Persist</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="walletRepo-request">
+					<h3 id="walletRepo-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;id&quot;: &quot;wal_btc_0&quot;, &quot;symbol&quot;: &quot;BTC&quot;, &quot;address&quot;: &quot;bc1…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="walletRepo-response">
+					<h3 id="walletRepo-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;count&quot;: 2 }</code></pre>
+				</section>
+
+				<section aria-labelledby="walletRepo-statuses">
+					<h3 id="walletRepo-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>SQLite row ops.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="recipientRepo">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>RecipientRepository.ListAsync | UpsertAsync | SeedDefaultsIfEmptyAsync</code></h2>
+				</div>
+				<p>Local ACH payees + demo seed. Validate/Mask via AchRecipientValidation.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Persist</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="recipientRepo-request">
+					<h3 id="recipientRepo-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;name&quot;: &quot;Alex&quot;, &quot;routing&quot;: &quot;021000021&quot;, &quot;account&quot;: &quot;••••1234&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="recipientRepo-response">
+					<h3 id="recipientRepo-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;seeded&quot;: false }</code></pre>
+				</section>
+
+				<section aria-labelledby="recipientRepo-statuses">
+					<h3 id="recipientRepo-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Recipients ready.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="walletSeeder">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>LocalWalletSeeder.EnsureDerivedAsync</code></h2>
+				</div>
+				<p>For each missing derivable symbol (default BTC, ETH): AddressDerive → Upsert LocalWalletRow.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Wallets</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="walletSeeder-request">
+					<h3 id="walletSeeder-request">Input</h3>
+					
+					<table>
+						<thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+						<tbody>
+							<tr>
+								<th scope="row"><code>mnemonic</code></th>
+								<td class="type">string</td>
+								<td>In-process only.</td>
+							</tr>
+							<tr>
+								<th scope="row"><code>symbols</code></th>
+								<td class="type">string[]?</td>
+								<td>Defaults BTC,ETH.</td>
+							</tr>
+						</tbody>
+					</table>
+					<h4>Example</h4>
+					<pre><code>{ &quot;symbols&quot;: [&quot;BTC&quot;, &quot;ETH&quot;] }</code></pre>
+				</section>
+
+				<section aria-labelledby="walletSeeder-response">
+					<h3 id="walletSeeder-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;upserted&quot;: [&quot;BTC&quot;, &quot;ETH&quot;] }</code></pre>
+				</section>
+
+				<section aria-labelledby="walletSeeder-statuses">
+					<h3 id="walletSeeder-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Derived addresses in SQLite.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="addressDerive">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>AddressDerive.Derive</code></h2>
+				</div>
+				<p>BIP84 BTC/LTC, BIP44 DOGE, BIP44 ETH (Nethereum). Public address + path only.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app.Core · Wallets</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="addressDerive-request">
+					<h3 id="addressDerive-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;symbol&quot;: &quot;BTC&quot;, &quot;accountIndex&quot;: 0 }</code></pre>
+				</section>
+
+				<section aria-labelledby="addressDerive-response">
+					<h3 id="addressDerive-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;address&quot;: &quot;bc1…&quot;, &quot;path&quot;: &quot;m/84'/0'/0'/0/0&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="addressDerive-statuses">
+					<h3 id="addressDerive-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>DerivedAddress.</td></tr>
+							<tr><th scope="row"><code>throw</code></th><td>Unsupported symbol.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="nfcPresent">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>INfcPresentmentService.PresentAsync</code></h2>
+				</div>
+				<p>Present NfcPresentmentPayload (tokenRef only — never PAN). Null impl on non-Android.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · Pos</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="nfcPresent-request">
+					<h3 id="nfcPresent-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;tokenRef&quot;: &quot;…&quot;, &quot;last4&quot;: &quot;4242&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="nfcPresent-response">
+					<h3 id="nfcPresent-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;ok&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="nfcPresent-statuses">
+					<h3 id="nfcPresent-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>NDEF presented.</td></tr>
+							<tr><th scope="row"><code>fail</code></th><td>Unsupported / LastError set.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="welcomeCreate">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>WelcomeViewModel.CreateWalletAsync</code></h2>
+				</div>
+				<p>Navigate //KeysPage to begin custody onboarding.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="welcomeCreate-request">
+					<h3 id="welcomeCreate-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="welcomeCreate-response">
+					<h3 id="welcomeCreate-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;navigated&quot;: &quot;//KeysPage&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="welcomeCreate-statuses">
+					<h3 id="welcomeCreate-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Keys shown.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="welcomeReturning">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>WelcomeViewModel.ReturningAsync</code></h2>
+				</div>
+				<p>HasSealedWalletAsync → Unlock if sealed else Keys.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="welcomeReturning-request">
+					<h3 id="welcomeReturning-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="welcomeReturning-response">
+					<h3 id="welcomeReturning-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;navigated&quot;: &quot;//UnlockPage&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="welcomeReturning-statuses">
+					<h3 id="welcomeReturning-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Unlock or Keys.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="keysContinue">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>KeysViewModel.ContinueAsync</code></h2>
+				</div>
+				<p>Ctor generates BIP39 via MnemonicHelper.Generate; Continue → BackupQuiz?mnemonic=.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> CopyAsync optional clipboard. Continue passes mnemonic in query string (on-device navigation only).</p>
+
+				<section aria-labelledby="keysContinue-request">
+					<h3 id="keysContinue-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="keysContinue-response">
+					<h3 id="keysContinue-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;navigated&quot;: &quot;//BackupQuizPage?mnemonic=…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="keysContinue-statuses">
+					<h3 id="keysContinue-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Quiz next.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="backupVerify">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>BackupQuizViewModel.VerifyAsync</code></h2>
+				</div>
+				<p>PickRandom 3 words; on match → SetPin?mnemonic=.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="backupVerify-request">
+					<h3 id="backupVerify-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;answers&quot;: [&quot;word2&quot;, &quot;word7&quot;, &quot;word11&quot;] }</code></pre>
+				</section>
+
+				<section aria-labelledby="backupVerify-response">
+					<h3 id="backupVerify-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;navigated&quot;: &quot;//SetPinPage?mnemonic=…&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="backupVerify-statuses">
+					<h3 id="backupVerify-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>SetPin.</td></tr>
+							<tr><th scope="row"><code>error</code></th><td>Inline mismatch Error.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
 			<article class="endpoint" id="setPinSeal">
 				<div class="route">
 					<span class="method">INVOKE</span>
 					<h2><code>SetPinViewModel.SealAsync</code></h2>
 				</div>
-				<p>Validate PIN≥6 + match + BIP39 → FinishCustodySetupAsync → //HomePage.</p>
+				<p>PIN≥6 + match + BIP39 validate → FinishCustodySetupAsync → //HomePage.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				
+				<p><strong>Logic:</strong> Clear Error → length/match/validate checks → IsBusy → FinishCustodySetupAsync → GoTo Home. Catch → Error=ex.Message.</p>
 
 				<section aria-labelledby="setPinSeal-request">
 					<h3 id="setPinSeal-request">Input</h3>
@@ -1445,82 +3188,112 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>Wallet sealed; Home shown.</td></tr>
-							<tr><th scope="row"><code>error</code></th><td>Inline Error = exception message (e.g. Sqlite type-init if natives wrong).</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>Wallet sealed; Home.</td></tr>
+							<tr><th scope="row"><code>error</code></th><td>Inline Error string.</td></tr>
 						</tbody>
 					</table>
 				</section>
 			</article>
 
-			<article class="endpoint" id="convertLockQuote">
+			<article class="endpoint" id="unlockAppearing">
 				<div class="route">
 					<span class="method">INVOKE</span>
-					<h2><code>ConvertViewModel.LockQuoteAsync</code></h2>
+					<h2><code>UnlockViewModel.AppearingAsync</code></h2>
 				</div>
-				<p>Indicative lock via public /iquote; maps to QuoteDto with client TTL; starts countdown.</p>
-				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
-				<p><strong>Logic:</strong> GetInverseQuoteAsync → IndicativeQuoteMapper.ToQuoteDto → StartCountdown. Settlement still IProductApi.ConvertAsync.</p>
-
-				<section aria-labelledby="convertLockQuote-request">
-					<h3 id="convertLockQuote-request">Input</h3>
-					
-					<h4>Example</h4>
-					<pre><code>{ &quot;fromAsset&quot;: &quot;BTC&quot;, &quot;toAsset&quot;: &quot;USD&quot;, &quot;amount&quot;: &quot;0.01&quot; }</code></pre>
-				</section>
-
-				<section aria-labelledby="convertLockQuote-response">
-					<h3 id="convertLockQuote-response">Result / effects</h3>
-					
-					<h4>Example</h4>
-					<pre><code>{
-  &quot;isIndicative&quot;: true,
-  &quot;rateText&quot;: &quot;1 BTC = 65000 USD&quot;,
-  &quot;hasValidLock&quot;: true
-}</code></pre>
-				</section>
-
-				<section aria-labelledby="convertLockQuote-statuses">
-					<h3 id="convertLockQuote-statuses">Outcomes</h3>
-					<table>
-						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
-						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>Indicative quote shown.</td></tr>
-							<tr><th scope="row"><code>alert</code></th><td>Amount / Quote dialogs on failure.</td></tr>
-						</tbody>
-					</table>
-				</section>
-			</article>
-
-			<article class="endpoint" id="convertSettle">
-				<div class="route">
-					<span class="method">INVOKE</span>
-					<h2><code>ConvertViewModel.ConvertAsync</code></h2>
-				</div>
-				<p>Require unlocked + step-up Convert + fresh indicative quote → product ConvertAsync.</p>
+				<p>Pin.RefreshAsync; if device-secret + biometrics available may auto-prompt UnlockWithBiometrics.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
-				<section aria-labelledby="convertSettle-request">
-					<h3 id="convertSettle-request">Input</h3>
-					
+				<section aria-labelledby="unlockAppearing-request">
+					<h3 id="unlockAppearing-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
 					<h4>Example</h4>
-					<pre><code>{ &quot;fromAsset&quot;: &quot;BTC&quot;, &quot;toAsset&quot;: &quot;USD&quot;, &quot;amount&quot;: &quot;0.01&quot; }</code></pre>
+					<pre><code>{}</code></pre>
 				</section>
 
-				<section aria-labelledby="convertSettle-response">
-					<h3 id="convertSettle-response">Result / effects</h3>
-					
+				<section aria-labelledby="unlockAppearing-response">
+					<h3 id="unlockAppearing-response">Result / effects</h3>
+					<p class="empty">No structured return (void / fire-and-forget side effects).</p>
 					<h4>Example</h4>
-					<pre><code>{ &quot;status&quot;: &quot;Convert tx_…: accepted&quot; }</code></pre>
+					<pre><code>{}</code></pre>
 				</section>
 
-				<section aria-labelledby="convertSettle-statuses">
-					<h3 id="convertSettle-statuses">Outcomes</h3>
+				<section aria-labelledby="unlockAppearing-statuses">
+					<h3 id="unlockAppearing-statuses">Outcomes</h3>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>Alert with move status.</td></tr>
-							<tr><th scope="row"><code>blocked</code></th><td>Locked / step-up cancel / stale quote.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>Lockout UI refreshed; optional biometric prompt.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="unlockPin">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>UnlockViewModel.UnlockAsync</code></h2>
+				</div>
+				<p>RefreshAsync + lockout check → AppSession.UnlockAsync(Pin) → //HomePage.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="unlockPin-request">
+					<h3 id="unlockPin-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;pin&quot;: &quot;••••••&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="unlockPin-response">
+					<h3 id="unlockPin-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;navigated&quot;: &quot;//HomePage&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="unlockPin-statuses">
+					<h3 id="unlockPin-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Home.</td></tr>
+							<tr><th scope="row"><code>error</code></th><td>Lockout or incorrect PIN message.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="unlockBio">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>UnlockViewModel.UnlockWithBiometricsAsync</code></h2>
+				</div>
+				<p>OS AuthenticateAsync → AppSession.UnlockWithDeviceOwnerAsync → Home.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="unlockBio-request">
+					<h3 id="unlockBio-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="unlockBio-response">
+					<h3 id="unlockBio-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;navigated&quot;: &quot;//HomePage&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="unlockBio-statuses">
+					<h3 id="unlockBio-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Home.</td></tr>
+							<tr><th scope="row"><code>error</code></th><td>Biometric fail; fall back to PIN messaging.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1531,7 +3304,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>HomeViewModel.AppearingAsync</code></h2>
 				</div>
-				<p>Touch idle; load portfolio, local wallets, charts; respect EnabledCurrencies / values-hidden prefs.</p>
+				<p>Touch; GetPortfolioAsync; local wallets; history charts; stream soft-refresh; EnabledCurrencies / values-hidden prefs.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -1546,7 +3319,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h3 id="homeAppearing-response">Result / effects</h3>
 					
 					<h4>Example</h4>
-					<pre><code>{ &quot;totalUsd&quot;: 128432.19, &quot;sections&quot;: [&quot;holdings&quot;, &quot;localWallets&quot;] }</code></pre>
+					<pre><code>{ &quot;totalUsd&quot;: &quot;128432.19&quot; }</code></pre>
 				</section>
 
 				<section aria-labelledby="homeAppearing-statuses">
@@ -1554,7 +3327,393 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>Home bound; stream soft-refresh hooked.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>Home bound.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="homeRange">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>HomeViewModel.SetRangeAsync</code></h2>
+				</div>
+				<p>Reload sparkline history for selected range via GetHistoryAsync.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="homeRange-request">
+					<h3 id="homeRange-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;range&quot;: &quot;1W&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="homeRange-response">
+					<h3 id="homeRange-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;points&quot;: 168 }</code></pre>
+				</section>
+
+				<section aria-labelledby="homeRange-statuses">
+					<h3 id="homeRange-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Charts updated.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="convertLockQuote">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>ConvertViewModel.LockQuoteAsync</code></h2>
+				</div>
+				<p>Indicative lock: public GetInverseQuoteAsync → IndicativeQuoteMapper.ToQuoteDto (15s TTL) → countdown.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> Does not call product GetQuoteAsync. Settlement is a separate ConvertAsync that does not send the indicative quote to the server.</p>
+
+				<section aria-labelledby="convertLockQuote-request">
+					<h3 id="convertLockQuote-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;fromAsset&quot;: &quot;BTC&quot;, &quot;toAsset&quot;: &quot;USD&quot;, &quot;amount&quot;: &quot;0.01&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="convertLockQuote-response">
+					<h3 id="convertLockQuote-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{
+  &quot;isIndicative&quot;: true,
+  &quot;hasValidLock&quot;: true,
+  &quot;ttlMs&quot;: 15000
+}</code></pre>
+				</section>
+
+				<section aria-labelledby="convertLockQuote-statuses">
+					<h3 id="convertLockQuote-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Indicative quote + countdown.</td></tr>
+							<tr><th scope="row"><code>alert</code></th><td>Amount / Quote dialogs.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="convertSettle">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>ConvertViewModel.ConvertAsync</code></h2>
+				</div>
+				<p>Unlocked + StepUp(Convert) + fresh indicative → IProductApi.ConvertAsync (product settle).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="convertSettle-request">
+					<h3 id="convertSettle-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;fromAsset&quot;: &quot;BTC&quot;, &quot;toAsset&quot;: &quot;USD&quot;, &quot;amount&quot;: &quot;0.01&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="convertSettle-response">
+					<h3 id="convertSettle-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;status&quot;: &quot;Convert tx_…: pending&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="convertSettle-statuses">
+					<h3 id="convertSettle-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Alert with move status.</td></tr>
+							<tr><th scope="row"><code>blocked</code></th><td>Locked / step-up cancel / stale quote.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="convertSwap">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>ConvertViewModel.SwapAssets</code></h2>
+				</div>
+				<p>Swap From/To; clear lock, indicative flag, countdown.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="convertSwap-request">
+					<h3 id="convertSwap-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="convertSwap-response">
+					<h3 id="convertSwap-response">Result / effects</h3>
+					<p class="empty">No structured return (void / fire-and-forget side effects).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="convertSwap-statuses">
+					<h3 id="convertSwap-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Pair swapped; lock cleared.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="sendAsync">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>SendViewModel.SendAsync</code></h2>
+				</div>
+				<p>Require unlocked → TransferAsync(to, amount, speed, idempotencyKey).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="sendAsync-request">
+					<h3 id="sendAsync-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;to&quot;: &quot;Alex&quot;, &quot;amount&quot;: &quot;25&quot;, &quot;speed&quot;: &quot;instant&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="sendAsync-response">
+					<h3 id="sendAsync-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;status&quot;: &quot;Send tx_…: pending&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="sendAsync-statuses">
+					<h3 id="sendAsync-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Alert result.</td></tr>
+							<tr><th scope="row"><code>alert</code></th><td>Locked / Recipient / Amount.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="sendAddRecipient">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>SendViewModel.AddRecipientAsync</code></h2>
+				</div>
+				<p>AchRecipientValidation.Validate → RecipientRepository.UpsertAsync.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="sendAddRecipient-request">
+					<h3 id="sendAddRecipient-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;name&quot;: &quot;Alex&quot;, &quot;routing&quot;: &quot;021000021&quot;, &quot;account&quot;: &quot;123456789&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="sendAddRecipient-response">
+					<h3 id="sendAddRecipient-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;saved&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="sendAddRecipient-statuses">
+					<h3 id="sendAddRecipient-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Recipient saved.</td></tr>
+							<tr><th scope="row"><code>alert</code></th><td>Validation fail.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="payAsync">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>PayViewModel.PayAsync</code></h2>
+				</div>
+				<p>Unlocked + StepUp(Payment) → PayAsync(amount, mix, idempotencyKey).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="payAsync-request">
+					<h3 id="payAsync-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;amount&quot;: &quot;100&quot;, &quot;mix&quot;: { &quot;BTC&quot;: &quot;0.001&quot;, &quot;USD&quot;: &quot;50&quot; } }</code></pre>
+				</section>
+
+				<section aria-labelledby="payAsync-response">
+					<h3 id="payAsync-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;status&quot;: &quot;Pay pay_…: pending&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="payAsync-statuses">
+					<h3 id="payAsync-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Alert result.</td></tr>
+							<tr><th scope="row"><code>blocked</code></th><td>Locked / step-up / mix.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="receiveLoad">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>ReceiveViewModel.LoadAsync | DeriveNewAsync</code></h2>
+				</div>
+				<p>Local derive or GetReceiveAsync; QR PNG; DeriveNew upserts new account index.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="receiveLoad-request">
+					<h3 id="receiveLoad-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;asset&quot;: &quot;BTC&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="receiveLoad-response">
+					<h3 id="receiveLoad-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;address&quot;: &quot;bc1…&quot;, &quot;qrPngBytes&quot;: 1234 }</code></pre>
+				</section>
+
+				<section aria-labelledby="receiveLoad-statuses">
+					<h3 id="receiveLoad-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Address/QR ready.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="addWalletSave">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>AddWalletViewModel.SaveAsync</code></h2>
+				</div>
+				<p>Branched: Derive local / Watch address / Managed CreateWalletAsync (XMR).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> Derive: AddressDerive + WalletRepository. Watch: validate address upsert. Managed: requires unlocked → CreateWalletAsync (no spend key returned).</p>
+
+				<section aria-labelledby="addWalletSave-request">
+					<h3 id="addWalletSave-request">Input</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;mode&quot;: &quot;managed&quot;, &quot;symbol&quot;: &quot;XMR&quot;, &quot;label&quot;: &quot;Primary&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="addWalletSave-response">
+					<h3 id="addWalletSave-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;saved&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="addWalletSave-statuses">
+					<h3 id="addWalletSave-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Alert Saved.</td></tr>
+							<tr><th scope="row"><code>alert</code></th><td>Locked / Invalid / Failed.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="posStart">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>PosLabViewModel.StartSessionAsync</code></h2>
+				</div>
+				<p>Step-up → CreatePosSession → AuthorizePos → ConfirmPos (single command chain).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				<p><strong>Logic:</strong> Three IProductApi calls in sequence after StepUpAuth(PosAuthorize).</p>
+
+				<section aria-labelledby="posStart-request">
+					<h3 id="posStart-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="posStart-response">
+					<h3 id="posStart-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;sessionId&quot;: &quot;pos_…&quot;, &quot;status&quot;: &quot;ready_to_present&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="posStart-statuses">
+					<h3 id="posStart-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Session fields filled.</td></tr>
+							<tr><th scope="row"><code>blocked</code></th><td>Step-up cancel / API error.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="posNfc">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>PosLabViewModel.PresentNfcAsync</code></h2>
+				</div>
+				<p>Step-up PosPresent → INfcPresentmentService.PresentAsync(tokenRef payload).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="posNfc-request">
+					<h3 id="posNfc-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="posNfc-response">
+					<h3 id="posNfc-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;presented&quot;: true }</code></pre>
+				</section>
+
+				<section aria-labelledby="posNfc-statuses">
+					<h3 id="posNfc-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>NFC presentment.</td></tr>
+							<tr><th scope="row"><code>alert</code></th><td>Unsupported / fail.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1565,7 +3724,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>ProfileViewModel.SavePrefsAsync</code></h2>
 				</div>
-				<p>Persist appearance, base currency, send speed, enabled currencies, idle; push prefs sync.</p>
+				<p>Persist appearance, base currency, send speed, enabled currencies, idle; PrefsSync.SaveAndPushAsync.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -1575,8 +3734,6 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h4>Example</h4>
 					<pre><code>{
   &quot;appearance&quot;: &quot;dark&quot;,
-  &quot;baseCurrency&quot;: &quot;USD&quot;,
-  &quot;defaultSendSpeed&quot;: &quot;instant&quot;,
   &quot;enabledCurrencies&quot;: [&quot;BTC&quot;, &quot;XMR&quot;, &quot;USD&quot;],
   &quot;lockIdleSeconds&quot;: 120
 }</code></pre>
@@ -1594,7 +3751,76 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<table>
 						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
 						<tbody>
-							<tr><th scope="row"><code>ok</code></th><td>Alert Saved; IdleMs updated on session.</td></tr>
+							<tr><th scope="row"><code>ok</code></th><td>Alert Saved; session IdleMs updated.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="profileReveal">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>ProfileViewModel.RevealMnemonicAsync</code></h2>
+				</div>
+				<p>StepUp(RevealKeys) → ExportMnemonic; auto-clear ~30s.</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="profileReveal-request">
+					<h3 id="profileReveal-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="profileReveal-response">
+					<h3 id="profileReveal-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;revealedSeconds&quot;: 30 }</code></pre>
+				</section>
+
+				<section aria-labelledby="profileReveal-statuses">
+					<h3 id="profileReveal-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Mnemonic shown then cleared.</td></tr>
+							<tr><th scope="row"><code>blocked</code></th><td>Step-up cancel / locked.</td></tr>
+						</tbody>
+					</table>
+				</section>
+			</article>
+
+			<article class="endpoint" id="profileLock">
+				<div class="route">
+					<span class="method">INVOKE</span>
+					<h2><code>ProfileViewModel.Lock</code></h2>
+				</div>
+				<p>AppSession.Lock → GoTo Unlock (PQ clear via idle Locked handler).</p>
+				<p><strong>Assembly:</strong> <code>CipherBank-app · ViewModels</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
+				
+
+				<section aria-labelledby="profileLock-request">
+					<h3 id="profileLock-request">Input</h3>
+					<p class="empty">No structured input (void / parameterless).</p>
+					<h4>Example</h4>
+					<pre><code>{}</code></pre>
+				</section>
+
+				<section aria-labelledby="profileLock-response">
+					<h3 id="profileLock-response">Result / effects</h3>
+					
+					<h4>Example</h4>
+					<pre><code>{ &quot;navigated&quot;: &quot;//UnlockPage&quot; }</code></pre>
+				</section>
+
+				<section aria-labelledby="profileLock-statuses">
+					<h3 id="profileLock-statuses">Outcomes</h3>
+					<table>
+						<thead><tr><th scope="col">Status</th><th scope="col">Behavior</th></tr></thead>
+						<tbody>
+							<tr><th scope="row"><code>ok</code></th><td>Locked + Unlock page.</td></tr>
 						</tbody>
 					</table>
 				</section>
@@ -1605,7 +3831,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>CoraFab (ScreenKey)</code></h2>
 				</div>
-				<p>Floating assistant; line from CoraLines.For(ScreenKey); visibility from CoraEnabled pref.</p>
+				<p>Floating assistant; CoraLines.For(ScreenKey); visibility from CoraEnabled pref.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app · Controls</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -1639,7 +3865,7 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<span class="method">INVOKE</span>
 					<h2><code>CoraBar (ScreenKey | Line)</code></h2>
 				</div>
-				<p>Inline Expo-parity Cora strip beside FAB on money tabs; same line source / pref gate.</p>
+				<p>Inline Expo-parity Cora strip; same line source / pref gate as FAB.</p>
 				<p><strong>Assembly:</strong> <code>CipherBank-app · Controls</code> · <strong>Kind:</strong> on-device C# · <strong>Wire:</strong> never sends mnemonic/PIN/spend keys</p>
 				
 
@@ -1647,14 +3873,14 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 					<h3 id="coraBar-request">Input</h3>
 					
 					<h4>Example</h4>
-					<pre><code>{ &quot;screenKey&quot;: &quot;convert&quot;, &quot;line&quot;: null }</code></pre>
+					<pre><code>{ &quot;screenKey&quot;: &quot;convert&quot; }</code></pre>
 				</section>
 
 				<section aria-labelledby="coraBar-response">
 					<h3 id="coraBar-response">Result / effects</h3>
 					
 					<h4>Example</h4>
-					<pre><code>{ &quot;visible&quot;: true, &quot;text&quot;: &quot;…&quot; }</code></pre>
+					<pre><code>{ &quot;visible&quot;: true }</code></pre>
 				</section>
 
 				<section aria-labelledby="coraBar-statuses">
@@ -1670,6 +3896,6 @@ Idle / Profile.Lock → AppSession.Lock → PQ Clear → Unlock</code></pre>
 
 		</main>
 	</div>
-	<footer>CipherBank MAUI Function Reference · PR #16 feat/cora-redesign-maui · regenerate: <code>node docs/scripts/generate-maui-function-ref.mjs</code></footer>
+	<footer>CipherBank MAUI Function Reference · 94 INVOKEs · PR #16 feat/cora-redesign-maui · regenerate: <code>node docs/scripts/generate-maui-function-ref.mjs</code></footer>
 </body>
 </html>

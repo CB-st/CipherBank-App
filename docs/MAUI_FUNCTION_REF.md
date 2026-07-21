@@ -2,13 +2,13 @@
 
 The **on-device** contract: how the .NET 10 MAUI app (`CipherBank-app` + `CipherBank-app.Core` + `CipherBank-app.ChallengePass`) boots, seals custody, opens sessions, moves money, and locks. Shaped like [`design_handoff_cipherbank/starter/API.md`](../design_handoff_cipherbank/starter/API.md) — each entry is an **INVOKE** (not an HTTP path) with inputs → logic → outputs.
 
-**Navigable HTML (CB_FullAPIRef style):** [`../CB_MauiFunctionRef.html`](../CB_MauiFunctionRef.html) (repo root, PR #16) · regenerate: `node docs/scripts/generate-maui-function-ref.mjs`
+**Navigable HTML (CB_FullAPIRef style):** [`../CB_MauiFunctionRef.html`](../CB_MauiFunctionRef.html) (repo root, PR #16) · **94 INVOKEs** · regenerate: `node docs/scripts/generate-maui-function-ref.mjs`
 
 Companion wire docs:
 - Product `/v1`: [`design_handoff_cipherbank/starter/src/mocks/API_CONTRACT.md`](../design_handoff_cipherbank/starter/src/mocks/API_CONTRACT.md)
 - Public market: [`design_handoff_cipherbank/starter/docs/PUBLIC_API.md`](../design_handoff_cipherbank/starter/docs/PUBLIC_API.md)
 
-**Synced to:** `feat/cora-redesign-maui` @ consolidated tip (public quotes, splash, CoraBar, custody TTL wipe, stream reconnect, stable bootstrap IDs).
+**Synced to:** `feat/cora-redesign-maui` (PR #16) — audited for CompleteUnlock breakout, full product money/POS/challenge surface, ChallengePass builder, idle PQ clear, wire `ACCESS_TOKEN`/`TOTAL_USD`, bootstrap ResolvedId, Convert 15s indicative TTL.
 
 Conventions:
 - **Base types:** `CipherBank_app.*` (Core), `CipherBank_app.ChallengePass.*`, MAUI ViewModels under `CipherBank-app/ViewModels/`.
@@ -201,22 +201,23 @@ Logic: `Custody.UnlockAsync(pin)` → if ok `CompleteUnlockAsync(applyBootstrap:
 
 Logic: `Custody.UnlockWithDeviceSecretAsync` → same complete unlock with bootstrap.
 
-### `INVOKE AppSession.CompleteUnlockAsync` *(private)*
+### `INVOKE AppSession.CompleteUnlockAsync(applyBootstrap)` *(private orchestrator)*
 
 ```
 { applyBootstrap } → AccessToken + live stream + prefs [+ bootstrap]
 ```
 
-Logic:
-1. `IProductApi.CreateSessionAsync` → store `AccessToken` (+ refresh via session store).
-2. `IStreamService.ConnectAsync` + `IStreamHub.Start`.
-3. `IPrefsSyncService.PullMergeAsync` (failures swallowed).
-4. If `applyBootstrap`: `IAccountBootstrapService.ApplyAsync` (failures swallowed).
-5. Refresh `IdleMs` from prefs; `Touch()`.
+Logic (exact order):
+1. **Required:** `IProductApi.CreateSessionAsync` → `AccessToken = session.AccessToken` → `IStreamService.ConnectAsync` → `IStreamHub.Start`.
+2. **Best-effort try:** `PrefsSync.PullMergeAsync`; if `applyBootstrap` then `AccountBootstrap.ApplyAsync`; reload `IdleMs` from prefs. Failures are **swallowed** (custody already unlocked).
+3. `Touch()`; return `true`.
+
+Callers: `UnlockAsync` / `UnlockWithDeviceOwnerAsync` pass `true`; `FinishCustodySetupAsync` passes `false`.
 
 ### `INVOKE AppSession.Lock()`
 
-Logic: stop stream hub → custody `Lock` → clear `AccessToken` + `IProductSessionStore.Clear` → disconnect stream → raise `Locked`.
+Logic: stop stream hub → custody `Lock` → clear `AccessToken` + `IProductSessionStore.Clear` → disconnect stream → raise `Locked`.  
+**Does not** clear PQ channel — `AppIdleLockService.OnLocked` calls `IPqChannel.Clear()` then navigates Unlock.
 
 ### `INVOKE AppSession.Touch()` / `CheckIdleAndMaybeLock()` → `bool`
 
@@ -385,7 +386,7 @@ Live PriceCache host (`api.cipherbank.money`). Impl: `PublicApiClient` / `MockPu
 | `GetInverseQuoteAsync(in, amt, out)` | `POST /iquote` | Fixed input → output (**Convert.LockQuote**) |
 | `GetQuoteAsync(in, outAmt, out)` | `POST /quote` | Fixed output → input |
 
-`IndicativeQuoteMapper.ToQuoteDto` attaches a client-side TTL so Convert can countdown before product settle.
+`IndicativeQuoteMapper.ToQuoteDto` attaches a **client-side TTL (default 15_000 ms)** so Convert can countdown before product settle. The indicative quote is **not** sent to `IProductApi.ConvertAsync`.
 
 ## 6 · Stream
 
@@ -434,7 +435,8 @@ Local SQLite ↔ `GET/PUT /prefs` via `PrefsMerge.Merge` (preserves local `Asset
 
 ### `INVOKE AccountBootstrapService.ApplyAsync`
 
-`GET /account/bootstrap` → merge prefs → upsert recipients (routing 9 digits; account as masked last4). **Does not touch custody.**
+`GET /account/bootstrap` → merge prefs → upsert recipients. **Does not touch custody.**  
+`ResolvedId`: wire `Id`/`IdCamel` first; else `SHA256(lowercase name)` → `bootstrap_`+16 hex; if name empty seed=`last4|routing`; if still empty `recipient_unknown`. Skips empty name / non-9-digit routing. Account stored as `****`+last4.
 
 ---
 
