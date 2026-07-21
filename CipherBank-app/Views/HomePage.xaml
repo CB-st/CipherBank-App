@@ -104,11 +104,30 @@
           <VerticalStackLayout Spacing="8">
             <BoxView HeightRequest="3" Color="{StaticResource Success}" HorizontalOptions="Fill" />
             <Label Text="Holdings" Style="{StaticResource SectionHeader}" TextColor="{StaticResource Success}" />
-            <CollectionView ItemsSource="{Binding HoldingRows}">
+            <CollectionView ItemsSource="{Binding VisibleHoldings}">
               <CollectionView.ItemTemplate>
                 <DataTemplate>
                   <Grid Padding="0,10" ColumnDefinitions="4,*,Auto,Auto" ColumnSpacing="8">
                     <BoxView WidthRequest="3" Color="{StaticResource Success}" VerticalOptions="Fill" />
+                    <Label Grid.Column="1" Text="{Binding Symbol}" FontFamily="ManropeBold" />
+                    <Label Grid.Column="2" Text="{Binding Balance}" Margin="12,0"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                    <Label Grid.Column="3" Text="{Binding UsdValue}" FontFamily="ManropeSemiBold" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="{Binding OtherAssetsLabel}"
+                    Style="{StaticResource PillButton}"
+                    Command="{Binding ToggleOtherHoldingsCommand}"
+                    IsVisible="{Binding HasOtherHoldings}"
+                    HorizontalOptions="Start" />
+            <CollectionView ItemsSource="{Binding OtherHoldings}"
+                            IsVisible="{Binding IsOtherHoldingsExpanded}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,10" ColumnDefinitions="4,*,Auto,Auto" ColumnSpacing="8">
+                    <BoxView WidthRequest="3" Color="{StaticResource TextSubtle}" VerticalOptions="Fill" />
                     <Label Grid.Column="1" Text="{Binding Symbol}" FontFamily="ManropeBold" />
                     <Label Grid.Column="2" Text="{Binding Balance}" Margin="12,0"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
@@ -167,6 +186,25 @@
                     <Label Grid.Column="2" Text="{Binding Detail}" Margin="12,0" LineBreakMode="TailTruncation"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                     <Label Grid.Column="3" Text="{Binding Trailing}" FontFamily="ManropeSemiBold" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="{Binding OtherAssetsLabel}"
+                    Style="{StaticResource PillButton}"
+                    Command="{Binding ToggleOtherHoldingsCommand}"
+                    IsVisible="{Binding HasOtherHoldings}"
+                    HorizontalOptions="Start" />
+            <CollectionView ItemsSource="{Binding OtherHoldings}"
+                            IsVisible="{Binding IsOtherHoldingsExpanded}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,10" ColumnDefinitions="4,*,Auto,Auto" ColumnSpacing="8">
+                    <BoxView WidthRequest="3" Color="{StaticResource TextSubtle}" VerticalOptions="Fill" />
+                    <Label Grid.Column="1" Text="{Binding Symbol}" FontFamily="ManropeBold" />
+                    <Label Grid.Column="2" Text="{Binding Balance}" Margin="12,0"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                    <Label Grid.Column="3" Text="{Binding UsdValue}" FontFamily="ManropeSemiBold" />
                   </Grid>
                 </DataTemplate>
               </CollectionView.ItemTemplate>

@@ -41,6 +41,7 @@ public partial class HomeViewModel : ObservableObject
     private readonly ISyncJobQueue _syncJobQueue;
     private readonly IPublicQuoteService _publicQuotes;
     private readonly EventDebouncer _refreshDebounce = new(TimeSpan.FromSeconds(1));
+    private IReadOnlyCollection<string> _enabledCurrencies = UserPrefs.DefaultEnabledCurrencies;
     private bool _streamHooked;
     private bool _lastPortfolioOk;
     private string _rawTotalUsd = "—";
@@ -77,6 +78,10 @@ public partial class HomeViewModel : ObservableObject
     public ObservableCollection<HoldingDto> Holdings { get; } = new();
 
     public ObservableCollection<HoldingDisplayVm> HoldingRows { get; } = new();
+
+    public ObservableCollection<HoldingDisplayVm> VisibleHoldings { get; } = new();
+
+    public ObservableCollection<HoldingDisplayVm> OtherHoldings { get; } = new();
 
     public ObservableCollection<LocalWalletRow> LocalWallets { get; } = new();
 
@@ -118,6 +123,26 @@ public partial class HomeViewModel : ObservableObject
     public string HideToggleLabel => BalancesHidden ? "Show" : "Hide";
 
     partial void OnBalancesHiddenChanged(bool value) => OnPropertyChanged(nameof(HideToggleLabel));
+
+    [ObservableProperty]
+    private bool isOtherHoldingsExpanded;
+
+    [ObservableProperty]
+    private int otherHoldingsCount;
+
+    public string OtherAssetsLabel => $"Other assets ({OtherHoldingsCount})";
+
+    public bool HasOtherHoldings => OtherHoldingsCount > 0;
+
+    partial void OnOtherHoldingsCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(OtherAssetsLabel));
+        OnPropertyChanged(nameof(HasOtherHoldings));
+        if (value == 0)
+        {
+            IsOtherHoldingsExpanded = false;
+        }
+    }
 
     [ObservableProperty]
     private bool showCora = true;
@@ -233,6 +258,7 @@ public partial class HomeViewModel : ObservableObject
                 Holdings.Add(h);
             }
 
+            _enabledCurrencies = prefs.EnabledCurrencies;
             RefreshHoldingRows();
 
             RebuildCombinedAssets();
@@ -393,27 +419,35 @@ public partial class HomeViewModel : ObservableObject
     private void RefreshHoldingRows()
     {
         HoldingRows.Clear();
-        foreach (var h in Holdings)
+        VisibleHoldings.Clear();
+        OtherHoldings.Clear();
+
+        HoldingVisibilityResult partition = HoldingVisibility.Split(Holdings, _enabledCurrencies);
+        foreach (var h in partition.Visible)
         {
-            HoldingRows.Add(new HoldingDisplayVm
-            {
-                Symbol = h.Symbol,
-                Balance = BalancesHidden ? "••••" : h.Balance,
-                UsdValue = BalancesHidden ? "••••" : h.UsdValue,
-            });
+            HoldingDisplayVm row = ToHoldingRow(h);
+            HoldingRows.Add(row);
+            VisibleHoldings.Add(row);
         }
+
+        foreach (var h in partition.Other)
+        {
+            OtherHoldings.Add(ToHoldingRow(h));
+        }
+
+        OtherHoldingsCount = OtherHoldings.Count;
     }
 
     private void RebuildCombinedAssets()
     {
         CombinedAssets.Clear();
-        foreach (var h in Holdings)
+        foreach (var h in VisibleHoldings)
         {
             CombinedAssets.Add(new AssetRowVm
             {
                 Symbol = h.Symbol,
-                Detail = BalancesHidden ? "••••" : h.Balance,
-                Trailing = BalancesHidden ? "••••" : h.UsdValue,
+                Detail = h.Balance,
+                Trailing = h.UsdValue,
                 Accent = HoldingsAccent,
                 KindLabel = "holding",
             });
@@ -431,6 +465,22 @@ public partial class HomeViewModel : ObservableObject
             });
         }
     }
+
+    [RelayCommand]
+    private void ToggleOtherHoldings()
+    {
+        if (OtherHoldingsCount > 0)
+        {
+            IsOtherHoldingsExpanded = !IsOtherHoldingsExpanded;
+        }
+    }
+
+    private HoldingDisplayVm ToHoldingRow(HoldingDto holding) => new()
+    {
+        Symbol = holding.Symbol,
+        Balance = BalancesHidden ? "••••" : holding.Balance,
+        UsdValue = BalancesHidden ? "••••" : holding.UsdValue,
+    };
 
     private async Task ReloadChartsAsync()
     {
