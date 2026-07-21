@@ -205,13 +205,20 @@ public partial class HomeViewModel : ObservableObject
     {
         IsStale = soft;
         IsBusy = !soft;
+        UserPrefs? prefs = null;
         try
         {
-            var prefs = await _prefs.LoadAsync();
+            prefs = await _prefs.LoadAsync();
             ApplySectionPrefs(prefs);
             if (!soft)
             {
                 BalancesHidden = prefs.ValuesHiddenOnLaunch;
+            }
+
+            LocalWallets.Clear();
+            foreach (var w in await _wallets.ListAsync())
+            {
+                LocalWallets.Add(w);
             }
 
             var portfolio = await _api.GetPortfolioAsync();
@@ -228,18 +235,16 @@ public partial class HomeViewModel : ObservableObject
 
             RefreshHoldingRows();
 
-            LocalWallets.Clear();
-            foreach (var w in await _wallets.ListAsync())
-            {
-                LocalWallets.Add(w);
-            }
-
             RebuildCombinedAssets();
-            EnqueueRatesHydrate(prefs);
             await ReloadChartsAsync();
         }
         finally
         {
+            if (prefs is not null)
+            {
+                EnqueueRatesHydrate(prefs);
+            }
+
             RefreshOnline();
             IsBusy = false;
             IsStale = false;
