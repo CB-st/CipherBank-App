@@ -16,6 +16,10 @@
                     ItemDisplayBinding="{Binding Name}"
                     SelectedItem="{Binding SelectedRecipient}"
                     AutomationId="SendSavedPayeesPicker" />
+            <Button Text="Remove saved payee" Style="{StaticResource SecondaryButton}"
+                    Command="{Binding RemoveRecipientCommand}"
+                    CommandParameter="{Binding SelectedRecipient}"
+                    AutomationId="SendRemovePayeeButton" />
             <Entry Text="{Binding Recipient}" Placeholder="Or type recipient" AutomationId="SendRecipientEntry" />
 
             <Label Text="Add ACH payee" FontAttributes="Bold" Margin="0,8,0,0" />

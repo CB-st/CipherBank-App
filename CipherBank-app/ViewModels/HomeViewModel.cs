@@ -32,6 +32,7 @@ public partial class HomeViewModel : ObservableObject
     private readonly IProductApi _api;
     private readonly IPrefsStore _prefs;
     private readonly IWalletRepository _wallets;
+    private readonly IDialogService _dialogs;
     private readonly INavigationService _nav;
     private readonly IAppSession _session;
     private readonly IStreamHub _streamHub;
@@ -51,6 +52,7 @@ public partial class HomeViewModel : ObservableObject
         IProductApi api,
         IPrefsStore prefs,
         IWalletRepository wallets,
+        IDialogService dialogs,
         INavigationService nav,
         IAppSession session,
         IStreamHub streamHub,
@@ -63,6 +65,7 @@ public partial class HomeViewModel : ObservableObject
         _api = api;
         _prefs = prefs;
         _wallets = wallets;
+        _dialogs = dialogs;
         _nav = nav;
         _session = session;
         _streamHub = streamHub;
@@ -462,6 +465,8 @@ public partial class HomeViewModel : ObservableObject
                 Trailing = w.Kind,
                 Accent = LocalAccent,
                 KindLabel = "local",
+                LocalWallet = w,
+                IsLocalWallet = true,
             });
         }
     }
@@ -604,6 +609,44 @@ public partial class HomeViewModel : ObservableObject
         _session.Touch();
         return _nav.GoToAsync(Routes.AddWallet);
     }
+
+    [RelayCommand]
+    private async Task RemoveWalletAsync(LocalWalletRow? wallet)
+    {
+        if (wallet is null)
+        {
+            return;
+        }
+
+        await RemoveLocalWalletAsync(wallet);
+    }
+
+    [RelayCommand]
+    private async Task RemoveCombinedWalletAsync(AssetRowVm? asset)
+    {
+        if (asset?.LocalWallet is not null)
+        {
+            await RemoveLocalWalletAsync(asset.LocalWallet);
+        }
+    }
+
+    private async Task RemoveLocalWalletAsync(LocalWalletRow wallet)
+    {
+        string walletName = string.IsNullOrWhiteSpace(wallet.Label) ? wallet.Symbol : wallet.Label;
+        bool confirmed = await _dialogs.ShowConfirmAsync(
+            "Remove local wallet",
+            $"Remove {walletName} from this device?",
+            "Remove",
+            "Cancel");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await _wallets.DeleteAsync(wallet.Id);
+        LocalWallets.Remove(wallet);
+        RebuildCombinedAssets();
+    }
 }
 
 /// <summary>Unified asset row for combined holdings+local layout.</summary>
@@ -618,6 +661,10 @@ public sealed class AssetRowVm
     public Color Accent { get; set; } = Colors.Gray;
 
     public string KindLabel { get; set; } = string.Empty;
+
+    public LocalWalletRow? LocalWallet { get; set; }
+
+    public bool IsLocalWallet { get; set; }
 }
 
 /// <summary>Holdings row with optional masked balances.</summary>

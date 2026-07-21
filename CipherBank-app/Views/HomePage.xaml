@@ -153,13 +153,17 @@
             <CollectionView ItemsSource="{Binding LocalWallets}">
               <CollectionView.ItemTemplate>
                 <DataTemplate>
-                  <Grid Padding="0,8" ColumnDefinitions="4,Auto,*,Auto" ColumnSpacing="8">
+                  <Grid Padding="0,8" ColumnDefinitions="4,Auto,*,Auto,Auto" ColumnSpacing="8">
                     <BoxView WidthRequest="3" Color="{StaticResource Gold}" VerticalOptions="Fill" />
                     <Label Grid.Column="1" Text="{Binding Symbol}" FontFamily="ManropeBold" />
                     <Label Grid.Column="2" Text="{Binding Label}" Margin="12,0" LineBreakMode="TailTruncation"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                     <Label Grid.Column="3" Text="{Binding Kind}" FontSize="12"
                            TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+                    <Button Grid.Column="4" Text="Remove" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveWalletCommand}"
+                            CommandParameter="{Binding .}"
+                            AutomationId="HomeRemoveWalletButton" />
                   </Grid>
                 </DataTemplate>
               </CollectionView.ItemTemplate>
@@ -180,12 +184,17 @@
             <CollectionView ItemsSource="{Binding CombinedAssets}">
               <CollectionView.ItemTemplate>
                 <DataTemplate>
-                  <Grid Padding="0,8" ColumnDefinitions="4,*,Auto,Auto" ColumnSpacing="8">
+                  <Grid Padding="0,8" ColumnDefinitions="4,*,Auto,Auto,Auto" ColumnSpacing="8">
                     <BoxView WidthRequest="3" Color="{Binding Accent}" VerticalOptions="Fill" />
                     <Label Grid.Column="1" Text="{Binding Symbol}" FontFamily="ManropeBold" />
                     <Label Grid.Column="2" Text="{Binding Detail}" Margin="12,0" LineBreakMode="TailTruncation"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
                     <Label Grid.Column="3" Text="{Binding Trailing}" FontFamily="ManropeSemiBold" />
+                    <Button Grid.Column="4" Text="Remove" Style="{StaticResource SecondaryButton}"
+                            IsVisible="{Binding IsLocalWallet}"
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveCombinedWalletCommand}"
+                            CommandParameter="{Binding .}"
+                            AutomationId="HomeRemoveCombinedWalletButton" />
                   </Grid>
                 </DataTemplate>
               </CollectionView.ItemTemplate>

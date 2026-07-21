@@ -93,14 +93,19 @@ public partial class SendViewModel : ObservableObject
     {
         _session.Touch();
         await _recipients.SeedDefaultsIfEmptyAsync();
+        await RefreshRecipientsAsync();
+
+        var prefs = await _prefs.LoadAsync();
+        Speed = prefs.DefaultSendSpeed;
+    }
+
+    private async Task RefreshRecipientsAsync()
+    {
         Recipients.Clear();
         foreach (var r in await _recipients.ListAsync())
         {
             Recipients.Add(r);
         }
-
-        var prefs = await _prefs.LoadAsync();
-        Speed = prefs.DefaultSendSpeed;
     }
 
     [RelayCommand]
@@ -144,6 +149,35 @@ public partial class SendViewModel : ObservableObject
         NewAccount = string.Empty;
         NewAccountType = "checking";
         NewMemo = string.Empty;
+    }
+
+    [RelayCommand]
+    private async Task RemoveRecipientAsync(AchRecipientRow? recipient)
+    {
+        AchRecipientRow? recipientToRemove = recipient ?? SelectedRecipient;
+        if (recipientToRemove is null)
+        {
+            return;
+        }
+
+        bool confirmed = await _dialogs.ShowConfirmAsync(
+            "Remove payee",
+            $"Remove {recipientToRemove.Name} from saved payees?",
+            "Remove",
+            "Cancel");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await _recipients.DeleteAsync(recipientToRemove.Id);
+        if (SelectedRecipient?.Id == recipientToRemove.Id)
+        {
+            SelectedRecipient = null;
+            Recipient = string.Empty;
+        }
+
+        await RefreshRecipientsAsync();
     }
 
     [RelayCommand]

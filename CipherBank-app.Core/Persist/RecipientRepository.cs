@@ -27,6 +27,8 @@ public interface IRecipientRepository
 
     Task UpsertAsync(AchRecipientRow row);
 
+    Task DeleteAsync(string id);
+
     Task SeedDefaultsIfEmptyAsync();
 }
 
@@ -130,6 +132,17 @@ public sealed class RecipientRepository : IRecipientRepository
         cmd.Parameters.AddWithValue("$am", (object?)row.AccountMask ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$rm", (object?)row.RoutingMask ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$created", row.CreatedAt.ToString("O"));
+        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+    }
+
+    public async Task DeleteAsync(string id)
+    {
+        await EnsureSchemaAsync().ConfigureAwait(false);
+        await using var conn = _db.Open();
+        await conn.OpenAsync().ConfigureAwait(false);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM recipients WHERE id=$id";
+        cmd.Parameters.AddWithValue("$id", id);
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
 

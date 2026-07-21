@@ -23,4 +23,32 @@ public class RecipientRepositoryTests
         await repo.SeedDefaultsIfEmptyAsync();
         (await repo.ListAsync()).Should().HaveCount(list.Count);
     }
+
+    [Fact]
+    public async Task DeleteAsync_RemovesOnlyRecipientWithMatchingId()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        var db = new LocalDb(path);
+        await db.InitializeAsync();
+        var repo = new RecipientRepository(db);
+        var recipientToDelete = new AchRecipientRow(
+            "delete-me",
+            "Delete me",
+            null,
+            null,
+            null,
+            null,
+            "checking",
+            null,
+            null,
+            null,
+            DateTimeOffset.UtcNow);
+        var recipientToKeep = recipientToDelete with { Id = "keep-me", Name = "Keep me" };
+        await repo.UpsertAsync(recipientToDelete);
+        await repo.UpsertAsync(recipientToKeep);
+
+        await repo.DeleteAsync(recipientToDelete.Id);
+
+        (await repo.ListAsync()).Should().ContainSingle().Which.Id.Should().Be(recipientToKeep.Id);
+    }
 }

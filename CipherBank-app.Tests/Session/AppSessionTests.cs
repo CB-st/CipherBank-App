@@ -84,6 +84,12 @@ public class AppSessionTests
             return Task.CompletedTask;
         }
 
+        public Task DeleteAsync(string id)
+        {
+            Rows.RemoveAll(r => r.Id == id);
+            return Task.CompletedTask;
+        }
+
         public Task SeedDefaultsIfEmptyAsync() => Task.CompletedTask;
     }
 
