@@ -36,6 +36,10 @@ public partial class HomeViewModel : ObservableObject
     private readonly IAppSession _session;
     private readonly IStreamHub _streamHub;
     private readonly IStreamService _stream;
+    private readonly IRatesCache _ratesCache;
+    private readonly IMarketRepository _marketRepository;
+    private readonly ISyncJobQueue _syncJobQueue;
+    private readonly IPublicQuoteService _publicQuotes;
     private readonly EventDebouncer _refreshDebounce = new(TimeSpan.FromSeconds(1));
     private bool _streamHooked;
     private bool _lastPortfolioOk;
@@ -49,7 +53,11 @@ public partial class HomeViewModel : ObservableObject
         INavigationService nav,
         IAppSession session,
         IStreamHub streamHub,
-        IStreamService stream)
+        IStreamService stream,
+        IRatesCache ratesCache,
+        IMarketRepository marketRepository,
+        ISyncJobQueue syncJobQueue,
+        IPublicQuoteService publicQuotes)
     {
         _api = api;
         _prefs = prefs;
@@ -58,6 +66,10 @@ public partial class HomeViewModel : ObservableObject
         _session = session;
         _streamHub = streamHub;
         _stream = stream;
+        _ratesCache = ratesCache;
+        _marketRepository = marketRepository;
+        _syncJobQueue = syncJobQueue;
+        _publicQuotes = publicQuotes;
         CoraLine = CoraLines.For("home");
         RefreshOnline();
     }
@@ -223,6 +235,7 @@ public partial class HomeViewModel : ObservableObject
             }
 
             RebuildCombinedAssets();
+            EnqueueRatesHydrate(prefs);
             await ReloadChartsAsync();
         }
         finally
@@ -426,6 +439,12 @@ public partial class HomeViewModel : ObservableObject
         for (int i = 0; i < symbols.Length; i++)
         {
             var pts = await _api.GetHistoryAsync(symbols[i], SelectedRange);
+            (long T, double V)[] ohlc = pts.Select(point => (point.T, point.V)).ToArray();
+            string symbol = symbols[i];
+            _syncJobQueue.Enqueue(
+                $"p1-ohlc-{symbol.ToUpperInvariant()}",
+                SyncPriority.P1,
+                ct => _marketRepository.UpsertOhlcAsync(symbol, ohlc, ct));
             var chartPts = pts.Select(p => new ChartPoint(p.T, p.V)).ToList();
             if (i == 0)
             {
@@ -443,6 +462,27 @@ public partial class HomeViewModel : ObservableObject
             });
             CompareLegend.Add(symbols[i]);
         }
+    }
+
+    private void EnqueueRatesHydrate(UserPrefs prefs)
+    {
+        var enabled = prefs.EnabledCurrencies.Count > 0
+            ? prefs.EnabledCurrencies
+            : UserPrefs.DefaultEnabledCurrencies.ToList();
+        string[] heldEnabledSymbols = Holdings.Select(holding => holding.Symbol)
+            .Concat(LocalWallets.Select(wallet => wallet.Symbol))
+            .Where(symbol => enabled.Contains(symbol, StringComparer.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        _syncJobQueue.Enqueue(
+            "p2-rates",
+            SyncPriority.P2,
+            ct => MarketBootstrap.HydrateAndRefreshAsync(
+                _ratesCache,
+                _publicQuotes,
+                heldEnabledSymbols,
+                ct));
     }
 
     /// <summary>
