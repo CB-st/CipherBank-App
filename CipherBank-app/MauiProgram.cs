@@ -133,6 +133,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IRecipientRepository, RecipientRepository>();
         mauiAppBuilder.Services.AddSingleton<IRatesCache, RatesCache>();
         mauiAppBuilder.Services.AddSingleton<IMarketRepository, MarketRepository>();
+        mauiAppBuilder.Services.AddSingleton<ISyncJobQueue, SyncJobQueue>();
         mauiAppBuilder.Services.AddSingleton<IPrefsStore, PrefsStore>();
         mauiAppBuilder.Services.AddSingleton<ILocalWalletSeeder, LocalWalletSeeder>();
         mauiAppBuilder.Services.AddSingleton<IProductSessionStore, ProductSessionStorage>();
