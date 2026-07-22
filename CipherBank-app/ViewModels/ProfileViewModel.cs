@@ -312,59 +312,62 @@ public partial class ProfileViewModel : ObservableObject
     private async Task ExportBackupAsync()
     {
         _session.Touch();
-        if (!_custody.IsUnlocked)
-        {
-            await _dialogs.ShowAlertAsync("Locked", "Unlock custody first.");
-            return;
-        }
-
-        if (!await _stepUp.RequireAsync(AuthReason.BackupExport))
-        {
-            return;
-        }
-
-        if (BackupPassword.Length < MinRecoveryPasswordLength)
-        {
-            await _dialogs.ShowAlertAsync(
-                "Password too short",
-                $"Recovery password must be at least {MinRecoveryPasswordLength} characters.");
-            ClearBackupFields();
-            return;
-        }
-
-        if (!string.Equals(BackupPassword, BackupPasswordConfirm, StringComparison.Ordinal))
-        {
-            await _dialogs.ShowAlertAsync("Mismatch", "Recovery passwords do not match.");
-            ClearBackupFields();
-            return;
-        }
-
-        string? mnemonic = _custody.ExportMnemonic();
-        if (mnemonic is null)
-        {
-            await _dialogs.ShowAlertAsync("Locked", "Unlock custody first.");
-            ClearBackupFields();
-            return;
-        }
-
-        IsBackupBusy = true;
         try
         {
-            string? hint = string.IsNullOrWhiteSpace(BackupHint) ? null : BackupHint.Trim();
-            byte[] file = await _backup.CreateBackupFileAsync(mnemonic, BackupPassword, hint);
-            string fileName = $"cipherbank-recovery-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.cbr.json";
-            await _backupFiles.SaveAndShareAsync(file, fileName);
-            await _dialogs.ShowAlertAsync(
-                "Backup created",
-                "Store this file offline in a safe place. CipherBank never receives a copy.");
-        }
-        catch (Exception ex)
-        {
-            await _dialogs.ShowAlertAsync("Backup failed", ex.Message);
+            if (!_custody.IsUnlocked)
+            {
+                await _dialogs.ShowAlertAsync("Locked", "Unlock custody first.");
+                return;
+            }
+
+            if (!await _stepUp.RequireAsync(AuthReason.BackupExport))
+            {
+                return;
+            }
+
+            if (BackupPassword.Length < MinRecoveryPasswordLength)
+            {
+                await _dialogs.ShowAlertAsync(
+                    "Password too short",
+                    $"Recovery password must be at least {MinRecoveryPasswordLength} characters.");
+                return;
+            }
+
+            if (!string.Equals(BackupPassword, BackupPasswordConfirm, StringComparison.Ordinal))
+            {
+                await _dialogs.ShowAlertAsync("Mismatch", "Recovery passwords do not match.");
+                return;
+            }
+
+            string? mnemonic = _custody.ExportMnemonic();
+            if (mnemonic is null)
+            {
+                await _dialogs.ShowAlertAsync("Locked", "Unlock custody first.");
+                return;
+            }
+
+            IsBackupBusy = true;
+            try
+            {
+                string? hint = string.IsNullOrWhiteSpace(BackupHint) ? null : BackupHint.Trim();
+                byte[] file = await _backup.CreateBackupFileAsync(mnemonic, BackupPassword, hint);
+                string fileName = $"cipherbank-recovery-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.cbr.json";
+                await _backupFiles.SaveAndShareAsync(file, fileName);
+                await _dialogs.ShowAlertAsync(
+                    "Backup created",
+                    "Store this file offline in a safe place. CipherBank never receives a copy.");
+            }
+            catch (Exception ex)
+            {
+                await _dialogs.ShowAlertAsync("Backup failed", ex.Message);
+            }
+            finally
+            {
+                IsBackupBusy = false;
+            }
         }
         finally
         {
-            IsBackupBusy = false;
             ClearBackupFields();
         }
     }
