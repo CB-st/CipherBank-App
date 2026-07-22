@@ -21,6 +21,7 @@ public static class Routes
     public const string Profile = "//ProfilePage";
     public const string PosLab = "PosLabPage";
     public const string AddWallet = "AddWalletPage";
+    public const string RestoreBackup = "RestoreBackupPage";
 
     // Legacy (parked)
     public const string Login = "//LoginPage";

@@ -43,4 +43,8 @@ public partial class WelcomeViewModel : ObservableObject
             await _nav.GoToAsync(Routes.Keys);
         }
     }
+
+    [RelayCommand]
+    private async Task RestoreFromBackupAsync()
+        => await _nav.GoToAsync(Routes.RestoreBackup);
 }

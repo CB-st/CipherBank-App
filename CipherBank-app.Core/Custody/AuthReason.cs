@@ -13,4 +13,5 @@ public enum AuthReason
     PosPresent,
     RevealKeys,
     Derive,
+    BackupExport,
 }

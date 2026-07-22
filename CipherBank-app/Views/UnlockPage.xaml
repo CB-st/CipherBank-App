@@ -45,6 +45,10 @@
               TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"
               IsVisible="{Binding BiometricsAvailable}"
               AutomationId="UnlockBiometricButton" />
+      <Button Text="Recover with backup file" Command="{Binding RestoreFromBackupCommand}"
+              Style="{StaticResource GhostButton}"
+              TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"
+              AutomationId="UnlockRestoreFromBackupButton" />
     </VerticalStackLayout>
   </Grid>
 </ContentPage>

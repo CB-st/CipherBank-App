@@ -126,4 +126,8 @@ public partial class UnlockViewModel : ObservableObject
             IsBusy = false;
         }
     }
+
+    [RelayCommand]
+    private async Task RestoreFromBackupAsync()
+        => await _nav.GoToAsync(Routes.RestoreBackup);
 }

@@ -70,6 +70,9 @@ public partial class ProfileViewModel : ObservableObject
     // --- Mnemonic reveal hygiene ---
     private static readonly TimeSpan MnemonicRevealTtl = TimeSpan.FromSeconds(30);
 
+    // --- Backup recovery file ---
+    private const int MinRecoveryPasswordLength = 12;
+
     private readonly IPrefsStore _prefs;
     private readonly IPrefsSyncService _prefsSync;
     private readonly ICustodyService _custody;
@@ -80,6 +83,8 @@ public partial class ProfileViewModel : ObservableObject
     private readonly ISettingsService _settings;
     private readonly IAppSession _session;
     private readonly IStepUpAuth _stepUp;
+    private readonly IMnemonicBackupService _backup;
+    private readonly IBackupFileService _backupFiles;
     private CancellationTokenSource? _mnemonicClearCts;
 
     public ProfileViewModel(
@@ -92,7 +97,9 @@ public partial class ProfileViewModel : ObservableObject
         IDialogService dialogs,
         ISettingsService settings,
         IAppSession session,
-        IStepUpAuth stepUp)
+        IStepUpAuth stepUp,
+        IMnemonicBackupService backup,
+        IBackupFileService backupFiles)
     {
         _prefs = prefs;
         _prefsSync = prefsSync;
@@ -104,6 +111,8 @@ public partial class ProfileViewModel : ObservableObject
         _settings = settings;
         _session = session;
         _stepUp = stepUp;
+        _backup = backup;
+        _backupFiles = backupFiles;
         CoraLine = CoraLines.For("profile");
         foreach (string a in AppearanceChoices)
         {
@@ -155,6 +164,18 @@ public partial class ProfileViewModel : ObservableObject
 
     [ObservableProperty]
     private string? mnemonicReveal;
+
+    [ObservableProperty]
+    private string backupPassword = string.Empty;
+
+    [ObservableProperty]
+    private string backupPasswordConfirm = string.Empty;
+
+    [ObservableProperty]
+    private string backupHint = string.Empty;
+
+    [ObservableProperty]
+    private bool isBackupBusy;
 
     [ObservableProperty]
     private string coraLine = string.Empty;
@@ -285,6 +306,75 @@ public partial class ProfileViewModel : ObservableObject
         MnemonicReveal = _custody.ExportMnemonic();
         RevealPin = string.Empty;
         ScheduleMnemonicClear();
+    }
+
+    [RelayCommand]
+    private async Task ExportBackupAsync()
+    {
+        _session.Touch();
+        if (!_custody.IsUnlocked)
+        {
+            await _dialogs.ShowAlertAsync("Locked", "Unlock custody first.");
+            return;
+        }
+
+        if (!await _stepUp.RequireAsync(AuthReason.BackupExport))
+        {
+            return;
+        }
+
+        if (BackupPassword.Length < MinRecoveryPasswordLength)
+        {
+            await _dialogs.ShowAlertAsync(
+                "Password too short",
+                $"Recovery password must be at least {MinRecoveryPasswordLength} characters.");
+            ClearBackupFields();
+            return;
+        }
+
+        if (!string.Equals(BackupPassword, BackupPasswordConfirm, StringComparison.Ordinal))
+        {
+            await _dialogs.ShowAlertAsync("Mismatch", "Recovery passwords do not match.");
+            ClearBackupFields();
+            return;
+        }
+
+        string? mnemonic = _custody.ExportMnemonic();
+        if (mnemonic is null)
+        {
+            await _dialogs.ShowAlertAsync("Locked", "Unlock custody first.");
+            ClearBackupFields();
+            return;
+        }
+
+        IsBackupBusy = true;
+        try
+        {
+            string? hint = string.IsNullOrWhiteSpace(BackupHint) ? null : BackupHint.Trim();
+            byte[] file = await _backup.CreateBackupFileAsync(mnemonic, BackupPassword, hint);
+            string fileName = $"cipherbank-recovery-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.cbr.json";
+            await _backupFiles.SaveAndShareAsync(file, fileName);
+            await _dialogs.ShowAlertAsync(
+                "Backup created",
+                "Store this file offline in a safe place. CipherBank never receives a copy.");
+        }
+        catch (Exception ex)
+        {
+            await _dialogs.ShowAlertAsync("Backup failed", ex.Message);
+        }
+        finally
+        {
+            IsBackupBusy = false;
+            ClearBackupFields();
+        }
+    }
+
+    /// <summary>Clears backup password/hint fields (call on leaving Profile too).</summary>
+    public void ClearBackupFields()
+    {
+        BackupPassword = string.Empty;
+        BackupPasswordConfirm = string.Empty;
+        BackupHint = string.Empty;
     }
 
     [RelayCommand]

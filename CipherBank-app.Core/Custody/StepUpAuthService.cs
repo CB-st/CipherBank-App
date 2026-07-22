@@ -44,6 +44,7 @@ public sealed class StepUpAuthService : IStepUpAuth
         AuthReason.PosPresent => "Present payment credential",
         AuthReason.RevealKeys => "Reveal recovery phrase",
         AuthReason.Derive => "Derive wallet keys",
+        AuthReason.BackupExport => "Export recovery file",
         _ => "Confirm action",
     };
 }

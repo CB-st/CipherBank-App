@@ -124,6 +124,8 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IBiometricService, BiometricService>();
         mauiAppBuilder.Services.AddSingleton<IStepUpChallenges, MauiStepUpChallenges>();
         mauiAppBuilder.Services.AddSingleton<IStepUpAuth, StepUpAuthService>();
+        mauiAppBuilder.Services.AddSingleton<IMnemonicBackupService, MnemonicBackupService>();
+        mauiAppBuilder.Services.AddSingleton<IBackupFileService, BackupFileService>();
         mauiAppBuilder.Services.AddSingleton<ILocalDb>(sp =>
         {
             string path = Path.Combine(FileSystem.AppDataDirectory, "cipherbank.db");
@@ -368,6 +370,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddTransient<BackupQuizViewModel>();
         mauiAppBuilder.Services.AddTransient<SetPinViewModel>();
         mauiAppBuilder.Services.AddTransient<UnlockViewModel>();
+        mauiAppBuilder.Services.AddTransient<RestoreBackupViewModel>();
         mauiAppBuilder.Services.AddTransient<HomeViewModel>();
         mauiAppBuilder.Services.AddTransient<ConvertViewModel>();
         mauiAppBuilder.Services.AddTransient<SendViewModel>();
@@ -398,6 +401,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddTransient<BackupQuizPage>();
         mauiAppBuilder.Services.AddTransient<SetPinPage>();
         mauiAppBuilder.Services.AddTransient<UnlockPage>();
+        mauiAppBuilder.Services.AddTransient<RestoreBackupPage>();
         mauiAppBuilder.Services.AddTransient<HomePage>();
         mauiAppBuilder.Services.AddTransient<ConvertPage>();
         mauiAppBuilder.Services.AddTransient<SendPage>();

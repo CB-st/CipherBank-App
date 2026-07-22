@@ -100,6 +100,26 @@
         </controls:GlassCard.Body>
       </controls:GlassCard>
 
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Backup recovery file" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+            <Label Text="Encrypts your recovery phrase with a separate password you choose. Store the file offline — CipherBank never receives it."
+                   FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Entry Text="{Binding BackupPassword}" IsPassword="True" Placeholder="Recovery password (12+ characters)"
+                   AutomationId="ProfileBackupPasswordEntry" />
+            <Entry Text="{Binding BackupPasswordConfirm}" IsPassword="True" Placeholder="Confirm recovery password"
+                   AutomationId="ProfileBackupPasswordConfirmEntry" />
+            <Entry Text="{Binding BackupHint}" Placeholder="Optional hint (never the password)"
+                   AutomationId="ProfileBackupHintEntry" />
+            <Button Text="Create and save backup file" Command="{Binding ExportBackupCommand}"
+                    IsEnabled="{Binding IsBackupBusy, Converter={StaticResource InvertedBoolConverter}}"
+                    AutomationId="ProfileExportBackupButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
       <Button Text="Tap to pay lab" Command="{Binding OpenPosLabCommand}" />
       <Button Text="Lock app" Command="{Binding LockCommand}" />
 

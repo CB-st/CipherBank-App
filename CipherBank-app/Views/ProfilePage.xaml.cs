@@ -27,7 +27,8 @@ public partial class ProfilePage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        // Do not leave recovery phrase on-screen / in VM after leaving Profile.
+        // Do not leave recovery phrase / recovery password on-screen / in VM after leaving Profile.
         _vm.ClearMnemonicReveal();
+        _vm.ClearBackupFields();
     }
 }

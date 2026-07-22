@@ -53,6 +53,10 @@
               Command="{Binding ReturningCommand}"
               Style="{StaticResource GhostButton}"
               AutomationId="WelcomeReturningButton" />
+      <Button Text="Restore from backup file"
+              Command="{Binding RestoreFromBackupCommand}"
+              Style="{StaticResource GhostButton}"
+              AutomationId="WelcomeRestoreFromBackupButton" />
 
     </VerticalStackLayout>
   </ScrollView>
