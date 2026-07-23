@@ -47,3 +47,6 @@ Task 3: complete (commits 2b51e4d..8ce7623, review clean)
 - Task 8: complete (commits 93f135a..2a42478, review clean)
 - Task 9: complete (commits 2a42478..4ed5280, DONE_WITH_CONCERNS: Android SDK missing for XAML compile; feature code + tests landed)
 - Task 10: complete (commit bf1b954, DONE_WITH_CONCERNS: Android SDK missing for XAML compile; UI/DI wired onto existing Core IMnemonicBackupService, no new Core helpers so no new tests, full suite green 248/248)
+
+- Task 11: complete (Wave 5 emulator smoke + persistence-first scorecard 100%; Android Debug EmbedAssemblies install; tests 248/248; canvas + F6.3 scorecard re-scored 2026-07-22)
+
