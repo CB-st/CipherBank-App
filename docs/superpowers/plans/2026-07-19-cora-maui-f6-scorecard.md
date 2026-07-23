@@ -81,4 +81,4 @@ From `docs/superpowers/specs/2026-07-20-persist-systems-design.md` — plan: `do
 
 ## Task 11 review follow-up (2026-07-22)
 
-Cold-start hang fixed by removing Splash `FadeTo` pulse (UI-thread spin). Re-smoke: **Other assets (1)** expand OK (ETH); **Send** delete recipient E2E OK (`Rent — 4th St LLC` removed); **Profile** vault remove through final confirm still incomplete (idle lock + Unlock PIN `adb` entry unreliable). Persistence-first scorecard numbers unchanged. Details: `.superpowers/sdd/task-11-report.md` follow-up section.
+Cold-start hang fixed by removing Splash `FadeTo` pulse (UI-thread spin). Re-smoke all three click-throughs OK: **Other assets (1)** expand (ETH); **Send** delete recipient E2E (`Rent — 4th St LLC`); **Profile** vault remove through step-up PIN + final confirm (`Demo card •••• 0001`). Persistence-first scorecard numbers unchanged (77/77). Details: `.superpowers/sdd/task-11-report.md` follow-up section.

@@ -49,5 +49,8 @@ Task 3: complete (commits 2b51e4d..8ce7623, review clean)
 - Task 10: complete (commit bf1b954, DONE_WITH_CONCERNS: Android SDK missing for XAML compile; UI/DI wired onto existing Core IMnemonicBackupService, no new Core helpers so no new tests, full suite green 248/248)
 
 - Task 11: complete (Wave 5 emulator smoke + persistence-first scorecard 100%; Android Debug EmbedAssemblies install; tests 248/248; canvas + F6.3 scorecard re-scored 2026-07-22)
-- Task 11 review follow-up (2026-07-22): cold-start fixed (Splash FadeTo pulse removed); **Other assets** expand OK; **Send** delete recipient E2E OK; **Profile** vault remove final confirm still incomplete (idle lock + Unlock PIN automation); see `.superpowers/sdd/task-11-report.md` follow-up
+- Task 11 review follow-up (2026-07-22): cold-start fixed (Splash FadeTo pulse removed); **Other assets** expand OK; **Send** delete recipient E2E OK; **Profile** vault remove through final confirm OK; see `.superpowers/sdd/task-11-report.md` follow-up
 
+## Task 11 review follow-up (2026-07-22)
+
+Cold-start hang fixed by removing Splash `FadeTo` pulse (UI-thread spin). Re-smoke all three click-throughs OK: **Other assets (1)** expand (ETH); **Send** delete recipient E2E (`Rent — 4th St LLC`); **Profile** vault remove through step-up PIN + final confirm (`Demo card •••• 0001`). Persistence-first scorecard numbers unchanged. Details: `.superpowers/sdd/task-11-report.md` follow-up section.
