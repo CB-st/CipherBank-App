@@ -81,4 +81,4 @@ From `docs/superpowers/specs/2026-07-20-persist-systems-design.md` — plan: `do
 
 ## Task 11 review follow-up (2026-07-22)
 
-Emulator re-smoke for incomplete Step 2 click-throughs (**Other assets** expand, **Send** delete recipient E2E, **Profile** vault remove final confirm) is **BLOCKED** by cold-start ANR (`mCurrentFocus=null`, app 100%+ CPU, `uiautomator` null root). Persistence-first scorecard numbers unchanged. Details: `.superpowers/sdd/task-11-report.md` follow-up section. Focused unit filter HoldingVisibility|Recipient|Vault|Send → 13 passed.
+Cold-start hang fixed by removing Splash `FadeTo` pulse (UI-thread spin). Re-smoke: **Other assets (1)** expand OK (ETH); **Send** delete recipient E2E OK (`Rent — 4th St LLC` removed); **Profile** vault remove through final confirm still incomplete (idle lock + Unlock PIN `adb` entry unreliable). Persistence-first scorecard numbers unchanged. Details: `.superpowers/sdd/task-11-report.md` follow-up section.

@@ -31,13 +31,26 @@ public partial class AppShell : Shell
         // window's page, so defer navigation-dependent boot work until Loaded
         // fires; otherwise Current.GoToAsync below throws NRE and the app is
         // stuck on whatever ShellContent is declared first in the XAML (Splash).
-        void OnLoaded(object? sender, EventArgs e)
+        // Dispatcher fallback covers rare cases where Loaded is delayed.
+        var started = 0;
+        void StartBoot()
         {
-            Loaded -= OnLoaded;
+            if (System.Threading.Interlocked.Exchange(ref started, 1) != 0)
+            {
+                return;
+            }
+
             _ = BootstrapAsync(session, db, idleLock);
         }
 
+        void OnLoaded(object? sender, EventArgs e)
+        {
+            Loaded -= OnLoaded;
+            StartBoot();
+        }
+
         Loaded += OnLoaded;
+        Dispatcher.Dispatch(StartBoot);
     }
 
     private static async Task BootstrapAsync(IAppSession session, ILocalDb db, AppIdleLockService idleLock)
