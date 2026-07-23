@@ -8,43 +8,39 @@
              Shell.FlyoutBehavior="Disabled"
              BackgroundColor="{StaticResource Ink}"
              AutomationId="SplashPage">
-  <Grid>
-    <VerticalStackLayout x:Name="PulseRoot"
-                         VerticalOptions="Center"
-                         HorizontalOptions="Center"
-                         Spacing="20"
-                         Opacity="0.6">
-      <!-- Expo SplashScreen: diamond mark (outer gold stroke, inner violet fill) -->
-      <Grid WidthRequest="64"
-            HeightRequest="64"
-            HorizontalOptions="Center"
-            VerticalOptions="Center">
-        <Border WidthRequest="36"
-                HeightRequest="36"
-                Rotation="45"
-                StrokeThickness="2.8"
-                Stroke="{StaticResource Gold}"
-                BackgroundColor="Transparent"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
-                StrokeShape="RoundRectangle 6" />
-        <Border WidthRequest="18"
-                HeightRequest="18"
-                Rotation="45"
-                StrokeThickness="0"
-                BackgroundColor="{StaticResource Violet}"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
-                StrokeShape="RoundRectangle 3" />
-      </Grid>
-      <Label x:Name="StatusLabel"
-             Text="Securing your session…"
-             FontFamily="SpaceMonoRegular"
-             FontSize="12"
-             CharacterSpacing="1"
-             TextColor="{StaticResource OnDarkSubtle}"
-             HorizontalTextAlignment="Center"
-             AutomationId="SplashStatusLabel" />
-    </VerticalStackLayout>
-  </Grid>
+  <VerticalStackLayout VerticalOptions="Center"
+                       HorizontalOptions="Center"
+                       Spacing="20">
+    <!-- Static diamond mark — animated FadeTo pulse removed (caused Android cold-start UI-thread spin). -->
+    <Grid WidthRequest="64"
+          HeightRequest="64"
+          HorizontalOptions="Center"
+          VerticalOptions="Center">
+      <Border WidthRequest="36"
+              HeightRequest="36"
+              Rotation="45"
+              StrokeThickness="2.8"
+              Stroke="{StaticResource Gold}"
+              BackgroundColor="Transparent"
+              HorizontalOptions="Center"
+              VerticalOptions="Center"
+              StrokeShape="RoundRectangle 6" />
+      <Border WidthRequest="18"
+              HeightRequest="18"
+              Rotation="45"
+              StrokeThickness="0"
+              BackgroundColor="{StaticResource Violet}"
+              HorizontalOptions="Center"
+              VerticalOptions="Center"
+              StrokeShape="RoundRectangle 3" />
+    </Grid>
+    <Label x:Name="StatusLabel"
+           Text="Securing your session…"
+           FontFamily="SpaceMonoRegular"
+           FontSize="12"
+           CharacterSpacing="1"
+           TextColor="{StaticResource OnDarkSubtle}"
+           HorizontalTextAlignment="Center"
+           AutomationId="SplashStatusLabel" />
+  </VerticalStackLayout>
 </ContentPage>
