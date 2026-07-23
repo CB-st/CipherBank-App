@@ -27,7 +27,17 @@ public partial class AppShell : Shell
     public AppShell(IAppSession session, ILocalDb db, AppIdleLockService idleLock)
         : this()
     {
-        _ = BootstrapAsync(session, db, idleLock);
+        // Shell.Current is not assigned until this instance is attached as the
+        // window's page, so defer navigation-dependent boot work until Loaded
+        // fires; otherwise Current.GoToAsync below throws NRE and the app is
+        // stuck on whatever ShellContent is declared first in the XAML (Splash).
+        void OnLoaded(object? sender, EventArgs e)
+        {
+            Loaded -= OnLoaded;
+            _ = BootstrapAsync(session, db, idleLock);
+        }
+
+        Loaded += OnLoaded;
     }
 
     private static async Task BootstrapAsync(IAppSession session, ILocalDb db, AppIdleLockService idleLock)
