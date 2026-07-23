@@ -30,13 +30,6 @@ Plan: `docs/superpowers/plans/2026-07-20-persist-systems-and-mnemonic-backup.md`
 Branch: `feat/cora-redesign-maui` · PR #16  
 Base at plan start: `4fbcadb`
 
-
-## Persist systems + mnemonic backup (2026-07-20)
-
-Plan: `docs/superpowers/plans/2026-07-20-persist-systems-and-mnemonic-backup.md`  
-Branch: `feat/cora-redesign-maui` · PR #16  
-Base at plan start: `4fbcadb`
-
 Task 1: complete (commits 4fbcadb..e58ce9e, review clean; minors: canvas Wave 5 label, CoraBar count wording)
 Task 2: complete (commits e58ce9e..2b51e4d, review clean; minor note CREATED_AT ISO vs epoch ms)
 Task 3: complete (commits 2b51e4d..8ce7623, review clean)
@@ -54,3 +47,4 @@ Task 3: complete (commits 2b51e4d..8ce7623, review clean)
 ## Task 11 review follow-up (2026-07-22)
 
 Cold-start hang fixed by removing Splash `FadeTo` pulse (UI-thread spin). Re-smoke all three click-throughs OK: **Other assets (1)** expand (ETH); **Send** delete recipient E2E (`Rent — 4th St LLC`); **Profile** vault remove through step-up PIN + final confirm (`Demo card •••• 0001`). Persistence-first scorecard numbers unchanged. Details: `.superpowers/sdd/task-11-report.md` follow-up section.
+- Whole-branch review fixes (2026-07-22): BackupFileService deletes temp recovery export after share; progress header dedupe; AppShell splash comment refreshed.

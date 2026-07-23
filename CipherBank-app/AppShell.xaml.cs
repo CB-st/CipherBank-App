@@ -13,7 +13,7 @@ namespace CipherBank_app;
 /// <summary>Application shell — Cora navigation graph.</summary>
 public partial class AppShell : Shell
 {
-    /// <summary>Minimum time on splash so the pulse mark is visible even when boot is fast.</summary>
+    /// <summary>Minimum time on splash so branding is visible even when boot is fast.</summary>
     private static readonly TimeSpan MinSplashDuration = TimeSpan.FromMilliseconds(900);
 
     public AppShell()
