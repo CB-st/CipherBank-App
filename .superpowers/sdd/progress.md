@@ -49,4 +49,5 @@ Task 3: complete (commits 2b51e4d..8ce7623, review clean)
 - Task 10: complete (commit bf1b954, DONE_WITH_CONCERNS: Android SDK missing for XAML compile; UI/DI wired onto existing Core IMnemonicBackupService, no new Core helpers so no new tests, full suite green 248/248)
 
 - Task 11: complete (Wave 5 emulator smoke + persistence-first scorecard 100%; Android Debug EmbedAssemblies install; tests 248/248; canvas + F6.3 scorecard re-scored 2026-07-22)
+- Task 11 review follow-up (2026-07-22): **BLOCKED** on emulator cold-start ANR — Other assets expand / Send delete recipient E2E / Profile vault remove confirm not re-exercised; focused tests 13/13; see `.superpowers/sdd/task-11-report.md` follow-up section
 

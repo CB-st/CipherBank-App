@@ -78,3 +78,7 @@ From `docs/superpowers/specs/2026-07-20-persist-systems-design.md` — plan: `do
 - [x] Emulator smoke: Welcome → Keys → Quiz → SetPin → Home → Convert → Send (delete payee UI) → Profile vault add/remove → Backup export → clear app data → restore → SetPin → Home
 - [x] E2E AutomationIds + `CoraShellSmokeTests` parity smoke expanded (F6.2)
 - [x] No HCE / cloud-seed scope creep
+
+## Task 11 review follow-up (2026-07-22)
+
+Emulator re-smoke for incomplete Step 2 click-throughs (**Other assets** expand, **Send** delete recipient E2E, **Profile** vault remove final confirm) is **BLOCKED** by cold-start ANR (`mCurrentFocus=null`, app 100%+ CPU, `uiautomator` null root). Persistence-first scorecard numbers unchanged. Details: `.superpowers/sdd/task-11-report.md` follow-up section. Focused unit filter HoldingVisibility|Recipient|Vault|Send → 13 passed.
