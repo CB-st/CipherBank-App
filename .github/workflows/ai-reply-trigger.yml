@@ -225,9 +225,6 @@ jobs:
       pr_base_ref: ${{ needs.resolve.outputs.pr_base_ref }}
       pr_title: ${{ needs.resolve.outputs.pr_title }}
       pr_author: ${{ needs.resolve.outputs.pr_author }}
-    secrets:
-      automerge_app_id: ${{ secrets.AUTOMERGE_APP_ID }}
-      automerge_app_key: ${{ secrets.AUTOMERGE_APP_KEY }}
 
   dispatch_replies:
     needs: [resolve, ai_context]

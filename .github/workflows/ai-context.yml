@@ -1,12 +1,12 @@
 name: AI Context
 
+# Thin wrapper around CipherBank.AI's reusable context builder.
+# This app reviews itself only -- no sibling repos, so no automerge
+# GitHub App token is required. Central ai-context treats
+# sibling_fetch_token as optional and falls back to github.token.
+
 on:
   workflow_call:
-    secrets:
-      automerge_app_id:
-        required: true
-      automerge_app_key:
-        required: true
     inputs:
       pr_number:   { type: number, required: true }
       pr_head_sha: { type: string, required: true }
@@ -15,10 +15,6 @@ on:
       pr_base_ref: { type: string, required: true }
       pr_title:    { type: string, required: false, default: '' }
       pr_author:   { type: string, required: false, default: '' }
-      sibling_repositories_json:
-        type: string
-        required: false
-        default: '[]'
     outputs:
       head_sha_snapshotted:
         description: "The PR head SHA this context snapshot was built against."
@@ -31,22 +27,7 @@ on:
         value: ${{ jobs.context.outputs.preflight_failed }}
 
 jobs:
-  sibling-token:
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: read
-    outputs:
-      token: ${{ steps.generate-token.outputs.token }}
-    steps:
-    - name: Generate CB automerge installation token
-      id: generate-token
-      uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
-      with:
-        app-id: ${{ secrets.automerge_app_id }}
-        private-key: ${{ secrets.automerge_app_key }}
-
   context:
-    needs: sibling-token
     permissions:
       contents: read
       pull-requests: read
@@ -61,6 +42,5 @@ jobs:
       pr_base_ref: ${{ inputs.pr_base_ref }}
       pr_title: ${{ inputs.pr_title }}
       pr_author: ${{ inputs.pr_author }}
-      sibling_repositories_json: ${{ inputs.sibling_repositories_json }}
-    secrets:
-      sibling_fetch_token: ${{ needs.sibling-token.outputs.token }}
+      # Empty sibling list -- review this repository only.
+      sibling_repositories_json: '[]'
