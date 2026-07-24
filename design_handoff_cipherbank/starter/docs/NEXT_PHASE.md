@@ -19,6 +19,8 @@ Companion to the CoraDesignOverhaul PR. Phase 1 (this PR) ships a **mock-first E
 
 Full endpoint-by-endpoint task lists (session, portfolio, market, prefs/bootstrap, money movement, wallets, vault, POS): [`API_BUILD_PLAN.md`](./API_BUILD_PLAN.md).
 
+User-story E2E plan (Playwright on Expo web; shared story IDs with MAUI Appium): [`PLAYWRIGHT_PLAN.md`](./PLAYWRIGHT_PLAN.md).
+
 ## Phase 2 — storage security & wallet setup (priority)
 
 ### 2.1 Local custody (device)

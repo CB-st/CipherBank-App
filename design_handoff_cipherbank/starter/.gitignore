@@ -17,3 +17,10 @@ npm-debug.*
 android/
 ios/
 .env
+
+# Playwright
+/test-results/
+/e2e-report/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

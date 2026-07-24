@@ -47,6 +47,7 @@ export function HomeSetupPrompt({ onNavigateSend }: { onNavigateSend?: () => voi
 
   return (
     <View
+      testID="home-setup-prompt"
       style={{
         padding: 16,
         borderRadius: radius.panel,

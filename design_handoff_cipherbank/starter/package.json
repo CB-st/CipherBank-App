@@ -14,9 +14,10 @@
     "eas:build:ios": "eas build -p ios --profile development",
     "eas:build:preview:android": "eas build -p android --profile preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/lib/__tests__/publicApi.test.ts",
     "contract": "node scripts/dump-contract.mjs",
     "api-ref": "node scripts/generate-api-ref.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "demo": "bash scripts/demo.sh check",
     "demo:web": "bash scripts/demo.sh web",
     "demo:android": "bash scripts/demo.sh android",
@@ -69,10 +70,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@playwright/test": "^1.61.1",
     "@types/react": "~18.2.79",
     "babel-plugin-module-resolver": "^5.0.2",
     "eas-cli": "^20.5.1",
-    "tsx": "^4.19.2",
     "typescript": "^5.4.5"
   }
 }

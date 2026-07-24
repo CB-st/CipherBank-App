@@ -45,7 +45,7 @@ export function KeysScreen({ navigation }: any) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.canvas }}>
+    <View style={{ flex: 1, backgroundColor: color.canvas }} testID="keys-screen">
       <Header title="Secure keys" onBack={() => navigation.goBack?.()} />
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 22, paddingBottom: 40, gap: 16 }}>
         <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -95,6 +95,8 @@ export function KeysScreen({ navigation }: any) {
           {words.map((w, i) => (
             <View
               key={i}
+              testID={`keys-word-${i}`}
+              accessibilityLabel={`Word ${i + 1} ${w}`}
               style={{
                 width: '47%',
                 flexDirection: 'row',
@@ -109,7 +111,12 @@ export function KeysScreen({ navigation }: any) {
               <Text style={{ fontFamily: font.mono, fontSize: 11, color: '#A8A2B0' }}>
                 {String(i + 1).padStart(2, '0')}
               </Text>
-              <Text style={{ fontFamily: font.mono, fontSize: 13, fontWeight: '700', color: color.text }}>{w}</Text>
+              <Text
+                testID={`keys-word-text-${i}`}
+                style={{ fontFamily: font.mono, fontSize: 13, fontWeight: '700', color: color.text }}
+              >
+                {w}
+              </Text>
             </View>
           ))}
         </View>
@@ -128,6 +135,7 @@ export function KeysScreen({ navigation }: any) {
 
         <CoraBar line={lineFor('keys')} />
         <Button
+          testID="keys-continue"
           label="I've saved it — continue"
           onPress={() => navigation.navigate('BackupQuiz')}
           disabled={words.length !== 12}

@@ -30,8 +30,21 @@ export function SetPinScreen({ navigation }: any) {
     setBusy(true);
     try {
       await sealPendingCustody(pin);
-      await ensureDerivedWallets();
+    } catch {
+      toast({ kind: 'error', title: 'Could not seal keys', sub: 'Try again from Secure keys.' });
+      navigation.navigate('Keys');
+      setBusy(false);
+      return;
+    }
 
+    // Derivation / SQLite / cloud bootstrap must not undo a sealed vault.
+    try {
+      await ensureDerivedWallets();
+    } catch {
+      /* Home / unlock can derive later */
+    }
+
+    try {
       let path = await getSetupPath();
       if (!path) {
         await beginSetupPath('new');
@@ -62,18 +75,21 @@ export function SetPinScreen({ navigation }: any) {
       } else {
         toast({ kind: 'ok', title: 'Vault secured', sub: 'PIN + on-device encryption enabled.' });
       }
+    } catch {
+      toast({ kind: 'ok', title: 'Vault secured', sub: 'PIN + on-device encryption enabled.' });
+    }
 
+    try {
       await finishCustodySetup();
     } catch {
-      toast({ kind: 'error', title: 'Could not seal keys', sub: 'Try again from Secure keys.' });
-      navigation.navigate('Keys');
+      toast({ kind: 'error', title: 'Could not open app', sub: 'Restart and unlock with your PIN.' });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.canvas }}>
+    <View style={{ flex: 1, backgroundColor: color.canvas }} testID="set-pin-screen">
       <Header title="Set PIN" onBack={() => navigation.goBack?.()} />
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 22, paddingBottom: 40, gap: 16 }}>
         <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -94,6 +110,7 @@ export function SetPinScreen({ navigation }: any) {
           <View style={{ gap: 6 }}>
             <Text style={{ fontFamily: font.body, fontWeight: '700', fontSize: 13, color: color.text }}>PIN</Text>
             <TextInput
+              testID="pin-input"
               value={pin}
               onChangeText={(t) => setPin(t.replace(/\D/g, '').slice(0, 6))}
               keyboardType="number-pad"
@@ -116,6 +133,7 @@ export function SetPinScreen({ navigation }: any) {
           <View style={{ gap: 6 }}>
             <Text style={{ fontFamily: font.body, fontWeight: '700', fontSize: 13, color: color.text }}>Confirm PIN</Text>
             <TextInput
+              testID="pin-confirm"
               value={confirm}
               onChangeText={(t) => setConfirm(t.replace(/\D/g, '').slice(0, 6))}
               keyboardType="number-pad"
@@ -137,7 +155,7 @@ export function SetPinScreen({ navigation }: any) {
           </View>
         </View>
 
-        <Button label="Finish setup" busy={busy} onPress={onSave} />
+        <Button testID="pin-finish" label="Finish setup" busy={busy} onPress={onSave} />
       </ScrollView>
     </View>
   );

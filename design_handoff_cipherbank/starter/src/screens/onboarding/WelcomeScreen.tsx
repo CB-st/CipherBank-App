@@ -10,17 +10,25 @@ export function WelcomeScreen({ navigation }: any) {
   const { source, lineFor } = useCora();
 
   const startNew = async () => {
-    await beginSetupPath('new');
+    try {
+      await beginSetupPath('new');
+    } catch {
+      /* Keys still opens; SetPin re-applies path if needed */
+    }
     navigation.navigate('Keys');
   };
 
   const startReturning = async () => {
-    await beginSetupPath('returning');
+    try {
+      await beginSetupPath('returning');
+    } catch {
+      /* same */
+    }
     navigation.navigate('Keys');
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.deepPurple }}>
+    <View style={{ flex: 1, backgroundColor: color.deepPurple }} testID="welcome-screen">
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 26, paddingTop: 70, paddingBottom: 40 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Svg width={30} height={30} viewBox="0 0 46 46">
@@ -105,8 +113,14 @@ export function WelcomeScreen({ navigation }: any) {
             />
           ))}
         </View>
-        <Button label="Create my account" onPress={startNew} />
-        <Pressable onPress={startReturning} style={{ marginTop: 16, paddingVertical: 8 }}>
+        <Button testID="welcome-create" label="Create my account" onPress={startNew} />
+        <Pressable
+          testID="welcome-returning"
+          accessibilityRole="button"
+          accessibilityLabel="Set up this device"
+          onPress={startReturning}
+          style={{ marginTop: 16, paddingVertical: 8 }}
+        >
           <Text style={{ textAlign: 'center', fontSize: 13, color: color.onDarkSubtle, fontFamily: font.body }}>
             Already use CipherBank?{' '}
             <Text style={{ color: color.gold, fontWeight: '700' }}>Set up this device</Text>

@@ -10,14 +10,17 @@ type Props = {
   disabled?: boolean;
   variant?: 'gold' | 'ghost';
   style?: ViewStyle;
+  testID?: string;
 };
 
 /** Primary action = gold. One per screen. Busy -> inline spinner + disabled (optimistic pending). */
-export function Button({ label, onPress, busy, disabled, variant = 'gold', style }: Props) {
+export function Button({ label, onPress, busy, disabled, variant = 'gold', style, testID }: Props) {
   const gold = variant === 'gold';
   const inactive = busy || disabled;
   return (
     <PressableScale
+      testID={testID}
+      accessibilityLabel={label}
       onPress={onPress}
       disabled={inactive}
       scaleTo={0.97}

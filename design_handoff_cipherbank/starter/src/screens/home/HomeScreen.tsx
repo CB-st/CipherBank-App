@@ -176,7 +176,7 @@ export function HomeScreen({ navigation }: any) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.canvas }}>
+    <View style={{ flex: 1, backgroundColor: color.canvas }} testID="home-screen">
       <Header brand online rightIcon="bell" />
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 110, gap: 13 }} showsVerticalScrollIndicator={false}>
         <FadeIn>

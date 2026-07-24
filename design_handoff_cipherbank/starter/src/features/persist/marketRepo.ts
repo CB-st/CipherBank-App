@@ -1,6 +1,25 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDb } from './db';
 import type { HistoryGranularity, HistoryPoint } from '@/features/history/history.api';
 import type { RateRow } from '@/features/market/ratesCache';
+
+const SYNC_META_ASYNC = 'cb_sync_meta_v1:';
+
+async function getSyncMetaAsync(key: string): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(SYNC_META_ASYNC + key);
+  } catch {
+    return null;
+  }
+}
+
+async function setSyncMetaAsync(key: string, value: string): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SYNC_META_ASYNC + key, value);
+  } catch {
+    /* ignore */
+  }
+}
 
 export async function getRatesSnapshot(symbols?: string[]): Promise<RateRow[]> {
   const db = await getDb();
@@ -98,20 +117,31 @@ export async function upsertOhlcPoints(
 }
 
 export async function getSyncMeta(key: string): Promise<string | null> {
-  const db = await getDb();
-  const row = await db.getFirstAsync<{ value: string }>(
-    'SELECT value FROM sync_meta WHERE key = ?',
-    key,
-  );
-  return row?.value ?? null;
+  try {
+    const db = await getDb();
+    const row = await db.getFirstAsync<{ value: string }>(
+      'SELECT value FROM sync_meta WHERE key = ?',
+      key,
+    );
+    if (row?.value != null) return row.value;
+  } catch {
+    /* web / corrupt sqlite — fall through */
+  }
+  return getSyncMetaAsync(key);
 }
 
 export async function setSyncMeta(key: string, value: string): Promise<void> {
-  const db = await getDb();
-  await db.runAsync(
-    'INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, ?)',
-    key,
-    value,
-    Date.now(),
-  );
+  // AsyncStorage first so setup flags survive when expo-sqlite web is flaky.
+  await setSyncMetaAsync(key, value);
+  try {
+    const db = await getDb();
+    await db.runAsync(
+      'INSERT OR REPLACE INTO sync_meta (key, value, updated_at) VALUES (?, ?, ?)',
+      key,
+      value,
+      Date.now(),
+    );
+  } catch {
+    /* AsyncStorage already holds the value */
+  }
 }

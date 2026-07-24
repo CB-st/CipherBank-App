@@ -13,9 +13,12 @@ npm run demo:android  # same → Android emulator/device
 npm run android:setup # full SDK/AVD/native install + Metro (see ANDROID_SETUP.md)
 npm run android:apk   # compile debug APK into dist/
 npm run contract      # fixture + endpoint inventory only
+npm run api-ref       # regenerate CB_FullAPIRef.html
 ```
 
 Or: `./scripts/demo.sh web` · Full Android guide: [`ANDROID_SETUP.md`](./ANDROID_SETUP.md).
+
+**User-story E2E (Playwright):** plan and story catalog in [`PLAYWRIGHT_PLAN.md`](./PLAYWRIGHT_PLAN.md). Target Expo web + mock first; MAUI keeps Appium (`CipherBank-app.E2ETests`) with shared `US-*` IDs.
 
 ## Quick matrix
 

@@ -38,7 +38,7 @@ export function BackupQuizScreen({ navigation }: any) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.canvas }}>
+    <View style={{ flex: 1, backgroundColor: color.canvas }} testID="quiz-screen">
       <Header title="Verify backup" onBack={() => navigation.goBack?.()} />
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 22, paddingBottom: 40, gap: 16 }}>
         <View style={{ flexDirection: 'row', gap: 6 }}>
@@ -59,11 +59,15 @@ export function BackupQuizScreen({ navigation }: any) {
 
         <View style={[{ backgroundColor: color.surface, borderRadius: radius.card, padding: 16, gap: 14 }, shadow.card]}>
           {quiz.map((idx) => (
-            <View key={idx} style={{ gap: 6 }}>
-              <Text style={{ fontFamily: font.mono, fontSize: 12, color: color.textSubtle }}>
+            <View key={idx} style={{ gap: 6 }} testID={`quiz-prompt-${idx}`}>
+              <Text
+                testID={`quiz-prompt-label-${idx}`}
+                style={{ fontFamily: font.mono, fontSize: 12, color: color.textSubtle }}
+              >
                 Word {String(idx + 1).padStart(2, '0')}
               </Text>
               <TextInput
+                testID={`quiz-answer-${idx}`}
                 value={answers[idx] ?? ''}
                 onChangeText={(t) => setAnswers((prev) => ({ ...prev, [idx]: t }))}
                 autoCapitalize="none"
@@ -84,7 +88,7 @@ export function BackupQuizScreen({ navigation }: any) {
           ))}
         </View>
 
-        <Button label="Continue to PIN" onPress={onContinue} />
+        <Button testID="quiz-continue" label="Continue to PIN" onPress={onContinue} />
       </ScrollView>
     </View>
   );

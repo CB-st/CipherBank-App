@@ -13,6 +13,8 @@ type Props = {
   style?: StyleProp<ViewStyle>;
   scaleTo?: number;
   hitSlop?: number;
+  testID?: string;
+  accessibilityLabel?: string;
 };
 
 /**
@@ -27,6 +29,8 @@ export function PressableScale({
   style,
   scaleTo = 0.97,
   hitSlop,
+  testID,
+  accessibilityLabel,
 }: Props) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
@@ -41,6 +45,9 @@ export function PressableScale({
 
   return (
     <Pressable
+      testID={testID}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
       hitSlop={hitSlop}
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
