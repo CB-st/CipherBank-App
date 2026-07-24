@@ -1,14 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
+import { e2eEnv } from './e2e/config/env';
 
 /**
  * Expo web user-story suite — see docs/PLAYWRIGHT_PLAN.md
  * Run: npm run test:e2e
  */
-const PORT = Number(process.env.E2E_PORT ?? 8081);
-const BASE = process.env.E2E_BASE_URL ?? `http://127.0.0.1:${PORT}`;
+const PORT = e2eEnv.port;
+const BASE = e2eEnv.baseURL;
 
 export default defineConfig({
   testDir: './e2e/stories',
+  testMatch: /.*\.spec\.ts/,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -18,9 +20,9 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e-report' }]],
   use: {
     baseURL: BASE,
-    trace: 'on-first-retry',
+    trace: e2eEnv.trace,
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: e2eEnv.video,
   },
   projects: [
     {

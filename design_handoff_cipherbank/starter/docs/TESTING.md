@@ -18,7 +18,7 @@ npm run api-ref       # regenerate CB_FullAPIRef.html
 
 Or: `./scripts/demo.sh web` · Full Android guide: [`ANDROID_SETUP.md`](./ANDROID_SETUP.md).
 
-**User-story E2E (Playwright):** plan and story catalog in [`PLAYWRIGHT_PLAN.md`](./PLAYWRIGHT_PLAN.md). Target Expo web + mock first; MAUI keeps Appium (`CipherBank-app.E2ETests`) with shared `US-*` IDs.
+**User-story E2E (Playwright):** plan and story catalog in [`PLAYWRIGHT_PLAN.md`](./PLAYWRIGHT_PLAN.md); CB-* procedures in [`USER_STORIES.md`](./USER_STORIES.md); ID bridge in [`STORY_ID_MAP.md`](./STORY_ID_MAP.md); env/selectors in [`E2E_CONFIGURABLES.md`](./E2E_CONFIGURABLES.md). Target Expo web + mock first; MAUI keeps Appium (`CipherBank-app.E2ETests`) with shared `US-*` IDs.
 
 ## Quick matrix
 

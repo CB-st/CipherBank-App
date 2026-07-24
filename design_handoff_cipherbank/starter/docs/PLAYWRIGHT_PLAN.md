@@ -4,6 +4,8 @@ Companion to [`API_BUILD_PLAN.md`](./API_BUILD_PLAN.md) and [`TESTING.md`](./TES
 
 **Goal:** Grow an executable Playwright suite that walks Cora **user stories** as we add functionality — mock-first on Expo web today, reusable story IDs for MAUI Appium later.
 
+**Procedural CB-* catalog:** Draw.io scaffold stories live in [`USER_STORIES.md`](./USER_STORIES.md); bridge to Expo `US-*` IDs in [`STORY_ID_MAP.md`](./STORY_ID_MAP.md). Env/selectors: [`E2E_CONFIGURABLES.md`](./E2E_CONFIGURABLES.md). Fixture contract (future): [`FIXTURE_API_CONTRACT.md`](./FIXTURE_API_CONTRACT.md).
+
 **Primary target (this plan):** Expo web (`npm run web`) with `EXPO_PUBLIC_USE_MOCK=true`.  
 **Native:** MAUI already has Appium smoke (`CipherBank-app.E2ETests` on `feat/cora-redesign-maui`). Map the same story IDs; do not duplicate drivers in one framework until Shell parity is locked.
 
@@ -23,12 +25,12 @@ Playwright lives under `design_handoff_cipherbank/starter/e2e/` and guards the *
 
 ## Principles
 
-1. **Story IDs are stable** (`US-ONB-01`, `US-CNV-02`) — same IDs in Playwright titles, Appium facts, and GitHub issues.
+1. **Story IDs are stable** — Expo `US-*` and scaffold `CB-*` both appear in titles when mapped (`CB-ACCOUNT-001 / US-ONB-01`). Same IDs in Playwright, Appium facts, and GitHub issues.
 2. **Mock-first** — suite runs with `USE_MOCK=true` without staging. Add `@live` tag later for `USE_MOCK=false`.
-3. **One story → one (or few) tests** — assert user-visible outcomes, not implementation details.
+3. **One story → one (or few) tests** — assert user-visible outcomes, not implementation details. Prefer `runStoryStep()` for CB-* procedures.
 4. **Seed modes** — `SEED_DEMO=false` for clean OOTB; optional project for lab seed.
 5. **No secrets in repo** — demo PIN `000000` only under `SEED_DEMO`; clean path generates PIN in-test.
-6. **Accessibility hooks** — prefer `getByRole` / `getByTestId`; add `testID` / `accessibilityLabel` as stories land.
+6. **Accessibility hooks** — prefer `getByRole` / `getByTestId`; add `testID` / `accessibilityLabel` as stories land. Central map: `e2e/config/selectors.ts`.
 
 ---
 
@@ -124,16 +126,23 @@ Do **not** wait for backend P0 to start PW0–PW2 — mock stories are the safet
 design_handoff_cipherbank/starter/
   playwright.config.ts
   e2e/
-    fixtures/env.ts          # SEED_DEMO, baseURL, storage reset
-    fixtures/onboarding.ts   # helpers: createAccount(), unlock()
+    config/
+      env.ts
+      selectors.ts
+      routes.ts
+    stories/catalog.ts       # CB-* StoryDefinition[]
+    support/story-runner.ts
+    fixtures/onboarding.ts
     stories/
-      onboarding.spec.ts     # US-ONB-*
-      unlock.spec.ts         # US-LCK-*
-      home-setup.spec.ts     # US-HOM-*
-      convert.spec.ts        # US-CNV-*
-      send-receive.spec.ts   # US-SND-*, US-RCV-*
-      pos-lab.spec.ts        # US-POS-*
-    README.md
+      smoke.spec.ts
+      onboarding.spec.ts     # CB-ACCOUNT-001 / US-ONB-*, US-ONB-04
+      cb-backlog.spec.ts     # remaining CB-* fixme + negatives
+  docs/
+    PLAYWRIGHT_PLAN.md
+    USER_STORIES.md
+    STORY_ID_MAP.md
+    E2E_CONFIGURABLES.md
+    FIXTURE_API_CONTRACT.md
 ```
 
 ### Config sketch
@@ -163,8 +172,9 @@ Before US-ONB-*: clear site data / IndexedDB / localStorage for the origin (web 
 ### PW1 — Onboarding
 
 - [x] Add `testID`s: `welcome-create`, `welcome-returning`, `keys-continue`, `quiz-*`, `pin-input`, `pin-confirm`
-- [x] Implement US-ONB-01, US-ONB-04
+- [x] Implement CB-ACCOUNT-001 / US-ONB-01 via `runStoryStep`, US-ONB-04
 - [x] Storage reset helper
+- [x] CB-* backlog + negatives as `test.fixme` (`cb-backlog.spec.ts`)
 - [ ] US-ONB-02 returning path
 - [ ] US-ONB-03 wrong quiz words
 
