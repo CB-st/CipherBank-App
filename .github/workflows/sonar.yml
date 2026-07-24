@@ -14,10 +14,9 @@ concurrency:
 
 # Author gate: only run for allowlisted PR authors, or when an allowlisted
 # user pushes to main/release/sandbox. PIPELINE_ALLOWED_AUTHOR is a CSV of
-# GitHub logins, e.g. "alice,bob" or "alice, bob". Defaults to
+# GitHub logins, e.g. "alice,bob". Defaults to
 # RED-FLAG-DEVELOPMENT when unset. GHA expressions have no split()/replace(),
-# so membership uses comma-padded contains() (with and without a space after
-# each comma).
+# so membership uses comma-padded contains() .
 
 # No build job yet. When a pipeline build lands, wire `sonar` (and optionally
 # `context`) to `needs: build` and upload a coverage artifact the Sonar job
