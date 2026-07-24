@@ -8,9 +8,10 @@ on:
   pull_request_review:
     types: [submitted]
 
-# Author gate: only reply on PRs authored by an allowlisted login.
-# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob". Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions
-# have no split()/replace(), so membership uses comma-padded contains().
+# Author gate: PR author AND commenter/reviewer must both be allowlisted.
+# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob".
+# Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
+# split()/replace(), so membership uses comma-padded contains().
 
 concurrency:
   group: ai-reply-${{ github.event.issue.number || github.event.pull_request.number }}
@@ -28,30 +29,38 @@ jobs:
       (
         github.event_name == 'issue_comment'
         && github.event.issue.pull_request != null
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.event.issue.user.login)
-          )))
+        && contains(
+             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+             format(',{0},', github.event.issue.user.login)
+           )
+        && contains(
+             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+             format(',{0},', github.event.comment.user.login)
+           )
+      )
       ||
       (
         github.event_name == 'pull_request_review_comment'
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.event.pull_request.user.login)
-          )
-        )
+        && contains(
+             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+             format(',{0},', github.event.pull_request.user.login)
+           )
+        && contains(
+             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+             format(',{0},', github.event.comment.user.login)
+           )
       )
       ||
       (
         github.event_name == 'pull_request_review'
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.event.pull_request.user.login)
-          )
-        )
+        && contains(
+             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+             format(',{0},', github.event.pull_request.user.login)
+           )
+        && contains(
+             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+             format(',{0},', github.event.review.user.login)
+           )
       )
     runs-on: ubuntu-22.04
     outputs:
@@ -71,12 +80,18 @@ jobs:
     steps:
     - name: Resolve reply trigger
       id: resolve
+      env:
+        PIPELINE_ALLOWED_AUTHOR: ${{ vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT' }}
       uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
         script: |
           const { owner, repo } = context.repo;
           const eventName = context.eventName;
           const payload = context.payload;
+          const allowedAuthors = (process.env.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
           const skip = (reason) =>
           {
             core.info(`Skipping reply trigger: ${reason}`);
@@ -117,6 +132,10 @@ jobs:
             return skip('missing pull request or comment payload');
           if (pr.draft)
             return skip('pull request is draft');
+
+          const prAuthor = pr.user?.login || '';
+          if (!allowedAuthors.includes(prAuthor))
+            return skip(`PR author '${prAuthor}' is not in allowlist (${allowedAuthors.join(', ')})`);
 
           const resolveReviewCommentThreadNodeId = async () =>
           {
@@ -203,6 +222,8 @@ jobs:
             return skip('comment author is missing');
           if (comment.user?.type === 'Bot')
             return skip(`comment author is a bot (${author})`);
+          if (!allowedAuthors.includes(author))
+            return skip(`commenter '${author}' is not in allowlist (${allowedAuthors.join(', ')})`);
           if (kind === 'review' && !body.trim())
             return skip('submitted review body is empty');
 

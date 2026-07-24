@@ -12,11 +12,11 @@ concurrency:
   group: sonar-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-# Author gate: only run for allowlisted PR authors, or when an allowlisted
-# user pushes to main/release/sandbox. PIPELINE_ALLOWED_AUTHOR is a CSV of
-# GitHub logins, e.g. "alice,bob". Defaults to
-# RED-FLAG-DEVELOPMENT when unset. GHA expressions have no split()/replace(),
-# so membership uses comma-padded contains() .
+# Author gate: PR runs require allowlisted PR author AND github.actor (who
+# opened/synced/marked ready). Push runs require allowlisted actor or commit
+# author. PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob".
+# Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
+# split()/replace(), so membership uses comma-padded contains().
 
 # No build job yet. When a pipeline build lands, wire `sonar` (and optionally
 # `context`) to `needs: build` and upload a coverage artifact the Sonar job
@@ -54,12 +54,14 @@ jobs:
     if: >-
       github.event_name == 'pull_request'
       && !github.event.pull_request.draft
-      && (
-        contains(
-          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-          format(',{0},', github.event.pull_request.user.login)
-        )
-      )
+      && contains(
+           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+           format(',{0},', github.event.pull_request.user.login)
+         )
+      && contains(
+           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+           format(',{0},', github.actor)
+         )
     permissions:
       contents: read
       pull-requests: read
@@ -88,12 +90,14 @@ jobs:
       (
         github.event_name == 'pull_request'
         && !github.event.pull_request.draft
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.event.pull_request.user.login)
-          )
-        )
+        && contains(
+             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+             format(',{0},', github.event.pull_request.user.login)
+           )
+        && contains(
+             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+             format(',{0},', github.actor)
+           )
       )
       ||
       (
@@ -105,12 +109,10 @@ jobs:
           )
           || (
             github.event.head_commit.author.username != ''
-            && (
-              contains(
-                format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-                format(',{0},', github.event.head_commit.author.username)
-              )
-            )
+            && contains(
+                 format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+                 format(',{0},', github.event.head_commit.author.username)
+               )
           )
         )
       )
@@ -245,7 +247,6 @@ jobs:
             /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,design_handoff_cipherbank/**" \
             /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml" \
             /d:sonar.cs.cobertura.reportsPaths="reports/coverage.cobertura.xml,CipherBank-app.Tests/coverage/coverage.cobertura.xml" \
-            /d:sonar.verbose=true \
             "${extra_args[@]}"
 
       - name: Build analyzable projects
