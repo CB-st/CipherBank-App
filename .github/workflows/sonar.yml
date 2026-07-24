@@ -129,6 +129,10 @@ jobs:
       SONAR_DIR:            bin/sonar
       # SonarScanner for .NET writes report-task under .sonarqube/, not .scannerwork/.
       REPORT_TASK:          .sonarqube/out/.sonar/report-task.txt
+      # Must match the SonarQube project key provisioned by SRE. Override via
+      # repo variable SONAR_PROJECT_KEY. Do NOT add a root sonar-project.properties
+      # — SonarScanner for .NET rejects that file and fails post-processing.
+      SONAR_PROJECT_KEY:    ${{ vars.SONAR_PROJECT_KEY || 'CB-st_CipherBank-App_6f7fd196-021a-4b20-a3f2-9094fa18ab2c' }}
       DOTNET_NOLOGO:        true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
     steps:
@@ -209,15 +213,12 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
-          # SonarScanner for .NET requires /k: on begin; it does not load
-          # sonar.projectKey from sonar-project.properties the way the CLI does.
-          sonar_project_key="$(
-            sed -n 's/^[[:space:]]*sonar\.projectKey[[:space:]]*=[[:space:]]*//p' sonar-project.properties \
-              | head -n1 \
-              | tr -d '\r'
-          )"
-          if [ -z "${sonar_project_key}" ]; then
-            echo "sonar.projectKey missing from sonar-project.properties" >&2
+          if [ -z "${SONAR_PROJECT_KEY}" ]; then
+            echo "SONAR_PROJECT_KEY is unset." >&2
+            exit 1
+          fi
+          if [ -f sonar-project.properties ]; then
+            echo "Remove sonar-project.properties: SonarScanner for .NET does not support it and will fail post-processing." >&2
             exit 1
           fi
           extra_args=()
@@ -231,11 +232,19 @@ jobs:
             extra_args+=("/d:sonar.branch.name=${SONAR_BRANCH_NAME}")
           fi
           # shellcheck disable=SC2086
+          # Sources/tests come from MSBuild project graphs; pass exclusions and
+          # optional coverage paths as begin properties (not a properties file).
           dotnet sonarscanner begin \
-            /k:"${sonar_project_key}" \
+            /k:"${SONAR_PROJECT_KEY}" \
+            /n:"CipherBank App" \
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="${SONAR_HOST_URL}" \
             /d:sonar.scanner.skipJreProvisioning=true \
+            /d:sonar.sourceEncoding=UTF-8 \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
+            /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,design_handoff_cipherbank/**" \
+            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml" \
+            /d:sonar.cs.cobertura.reportsPaths="reports/coverage.cobertura.xml,CipherBank-app.Tests/coverage/coverage.cobertura.xml" \
             /d:sonar.verbose=true \
             "${extra_args[@]}"
 
@@ -458,7 +467,9 @@ jobs:
 
   review:
     needs: [context, sonar]
-    if: ${{ always() && needs.context.result == 'success' }}
+    # Require both context and a successful Sonar scan so AI review does not
+    # run when analysis failed or was skipped (e.g. draft / author gate).
+    if: ${{ always() && needs.context.result == 'success' && needs.sonar.result == 'success' }}
     runs-on: ubuntu-22.04
     steps:
     - name: Mint CipherBank.AI dispatch token
