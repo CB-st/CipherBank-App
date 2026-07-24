@@ -9,8 +9,10 @@ on:
     types: [submitted]
 
 # Author gate: only reply on PRs authored by an allowlisted login.
-# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins (spaces optional).
-# Defaults to RED-FLAG-DEVELOPMENT when unset.
+# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob" or
+# "alice, bob". Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions
+# have no split()/replace(), so membership uses comma-padded contains()
+# (with and without a space after each comma).
 
 concurrency:
   group: ai-reply-${{ github.event.issue.number || github.event.pull_request.number }}
@@ -25,9 +27,34 @@ permissions:
 jobs:
   resolve:
     if: >-
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
-      github.event_name == 'pull_request_review_comment' ||
-      github.event_name == 'pull_request_review'
+      (
+        github.event_name == 'issue_comment'
+        && github.event.issue.pull_request != null
+        && (
+          contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.event.issue.user.login)
+          )))
+      ||
+      (
+        github.event_name == 'pull_request_review_comment'
+        && (
+          contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.event.pull_request.user.login)
+          )
+        )
+      )
+      ||
+      (
+        github.event_name == 'pull_request_review'
+        && (
+          contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.event.pull_request.user.login)
+          )
+        )
+      )
     runs-on: ubuntu-22.04
     outputs:
       proceed: ${{ steps.resolve.outputs.proceed }}
@@ -46,18 +73,12 @@ jobs:
     steps:
     - name: Resolve reply trigger
       id: resolve
-      env:
-        PIPELINE_ALLOWED_AUTHOR: ${{ vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT' }}
       uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
         script: |
           const { owner, repo } = context.repo;
           const eventName = context.eventName;
           const payload = context.payload;
-          const allowedAuthors = (process.env.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT')
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean);
           const skip = (reason) =>
           {
             core.info(`Skipping reply trigger: ${reason}`);
@@ -98,8 +119,6 @@ jobs:
             return skip('missing pull request or comment payload');
           if (pr.draft)
             return skip('pull request is draft');
-          if (!allowedAuthors.includes(pr.user?.login || ''))
-            return skip(`PR author '${pr.user?.login || ''}' is not in allowlist (${allowedAuthors.join(', ')})`);
 
           const resolveReviewCommentThreadNodeId = async () =>
           {

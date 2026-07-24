@@ -15,10 +15,6 @@ jobs:
         format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
         format(',{0},', github.event.pull_request.user.login)
       )
-      || contains(
-        format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-        format(', {0},', github.event.pull_request.user.login)
-      )
     runs-on: ubuntu-22.04
     permissions:
       contents: read

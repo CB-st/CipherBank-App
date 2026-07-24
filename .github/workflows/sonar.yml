@@ -60,10 +60,6 @@ jobs:
           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
           format(',{0},', github.event.pull_request.user.login)
         )
-        || contains(
-          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-          format(', {0},', github.event.pull_request.user.login)
-        )
       )
     permissions:
       contents: read
@@ -98,10 +94,6 @@ jobs:
             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
             format(',{0},', github.event.pull_request.user.login)
           )
-          || contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(', {0},', github.event.pull_request.user.login)
-          )
         )
       )
       ||
@@ -112,20 +104,12 @@ jobs:
             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
             format(',{0},', github.actor)
           )
-          || contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(', {0},', github.actor)
-          )
           || (
             github.event.head_commit.author.username != ''
             && (
               contains(
                 format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
                 format(',{0},', github.event.head_commit.author.username)
-              )
-              || contains(
-                format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-                format(', {0},', github.event.head_commit.author.username)
               )
             )
           )
