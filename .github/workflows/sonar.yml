@@ -1,0 +1,131 @@
+name: Sonar and AI Review
+
+on:
+  push:
+    branches: [main, release, sandbox]
+  pull_request:
+    # ready_for_review is added so flipping a draft PR to ready triggers a
+    # fresh Sonar scan + AI review without requiring a no-op commit.
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: sonar-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+# No build job yet. When a pipeline build lands, wire `sonar` (and optionally
+# `context`) to `needs: build` and upload a coverage artifact the reusable
+# Sonar workflow already knows how to consume softly.
+
+jobs:
+  # PR context snapshot -- runs once per push and produces the
+  # ai-context-bundle artifact consumed by central review/reply workflows.
+  # Model providers and trusted persona/task assets live in CipherBank.AI;
+  # this repo only packages PR facts and Sonar for this app (no siblings).
+  #
+  # The draft / non-PR skip gate lives here (not on `review`) so a draft PR
+  # never spends context-build cost either.
+  context:
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      actions: write   # ai-context cancels in-flight reply-trigger runs on its first step
+    uses: ./.github/workflows/ai-context.yml
+    with:
+      pr_number:   ${{ github.event.pull_request.number }}
+      pr_head_sha: ${{ github.event.pull_request.head.sha }}
+      pr_base_sha: ${{ github.event.pull_request.base.sha }}
+      pr_head_ref: ${{ github.event.pull_request.head.ref }}
+      pr_base_ref: ${{ github.event.pull_request.base.ref }}
+      pr_title:    ${{ github.event.pull_request.title }}
+      pr_author:   ${{ github.event.pull_request.user.login }}
+
+  # SonarQube static analysis -- runs in parallel with `context`. Produces:
+  #   * SonarQube's own GitHub check for quality gate + issue annotations
+  #   * `sonar-context-<full_sha>` + `sonar-report-task-<full_sha>` artifacts
+  #     (gate + issues JSON) that central AI Review merges into REVIEW_DIR/sonar/
+  #
+  # Runs on non-draft PRs and on pushes to the same branches as above.
+  # Artifact names are keyed only by the scanned commit SHA so consumers
+  # resolve Sonar the same way they resolve commits.
+  sonar:
+    if: ${{ (github.event_name == 'pull_request' && !github.event.pull_request.draft) || github.event_name == 'push' }}
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
+    uses: ./.github/workflows/sonarqube.yml
+    with:
+      scan_commit_sha:     ${{ github.event.pull_request.head.sha || github.sha }}
+      sonar_branch_name:   ${{ github.event.pull_request.head.ref || github.ref_name }}
+      pull_request_number: ${{ github.event.pull_request.number || 0 }}
+    secrets: inherit
+
+  review:
+    needs: [context, sonar]
+    if: ${{ always() && needs.context.result == 'success' }}
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Mint CipherBank.AI dispatch token
+      id: dispatch_token
+      uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
+      with:
+        app-id: ${{ secrets.CB_AI_DISPATCH_APP_ID }}
+        private-key: ${{ secrets.CB_AI_DISPATCH_APP_KEY }}
+        owner: ${{ vars.CB_AI_OWNER || 'CB-st' }}
+        repositories: ${{ vars.CB_AI_REPO || 'CipherBank.AI' }}
+        permission-actions: write
+
+    - name: Dispatch central AI review batch
+      env:
+        GH_TOKEN: ${{ steps.dispatch_token.outputs.token }}
+        CB_AI_OWNER: ${{ vars.CB_AI_OWNER || 'CB-st' }}
+        CB_AI_REPO: ${{ vars.CB_AI_REPO || 'CipherBank.AI' }}
+        CB_AI_REF: ${{ vars.CB_AI_REF || 'main' }}
+        TARGET_OWNER: ${{ github.repository_owner }}
+        TARGET_REPO: ${{ github.event.repository.name }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        BUNDLE_RUN_ID: ${{ github.run_id }}
+        BUNDLE_ARTIFACT_NAME: ${{ needs.context.outputs.artifact_name }}
+        PERSONA_IDS: '["conman", "gifany", "cave"]'
+        SONAR_AVAILABLE: ${{ needs.sonar.result == 'success' }}
+        SONAR_RUN_ID: ${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        payload_json="$(
+          jq -n '{
+            target: {
+              owner: env.TARGET_OWNER,
+              repo: env.TARGET_REPO
+            },
+            pull_request: {
+              number: (env.PR_NUMBER | tonumber),
+              head_sha: env.PR_HEAD_SHA,
+              base_sha: env.PR_BASE_SHA,
+              head_ref: env.PR_HEAD_REF,
+              base_ref: env.PR_BASE_REF,
+              title: env.PR_TITLE,
+              author: env.PR_AUTHOR
+            },
+            bundle: {
+              run_id: env.BUNDLE_RUN_ID,
+              artifact_name: env.BUNDLE_ARTIFACT_NAME
+            },
+            agent: {
+              persona_ids: (env.PERSONA_IDS | fromjson)
+            },
+            sonar: {
+              available: (env.SONAR_AVAILABLE == "true"),
+              run_id: env.SONAR_RUN_ID
+            }
+          }'
+        )"
+        dispatch_body="$(jq -n --arg ref "$CB_AI_REF" --arg payload_json "$payload_json" '{ ref: $ref, inputs: { payload_json: $payload_json } }')"
+        gh api "repos/${CB_AI_OWNER}/${CB_AI_REPO}/actions/workflows/ai-review.yml/dispatches" --method POST --input - <<<"$dispatch_body"
