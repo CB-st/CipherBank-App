@@ -159,21 +159,12 @@ jobs:
             exit 1
           fi
 
-      ### 3. Optional coverage artifact (future build job) ######################
-      # When a build job uploads `coverage-report`, materialise it here.
-      # Failure is soft -- a scan without coverage is better than no scan.
-      - name: Download coverage artifact
-        id: download_coverage
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        continue-on-error: true
-        with:
-          name: coverage-report
-          path: .
-
+      ### 3. Optional coverage (future build job) ###############################
+      # When a pipeline build job uploads `coverage-report`, download it here
+      # (continue-on-error) and verify the paths below. Until that job exists,
+      # skip download so the run is not filled with "Artifact not found" noise.
       - name: Verify optional coverage report
         run: |
-          # Prefer OpenCover/Cobertura paths declared in sonar-project.properties
-          # once a build job starts emitting them. Until then, warn and continue.
           found=0
           for target in \
             reports/coverage.opencover.xml \
@@ -186,7 +177,7 @@ jobs:
             fi
           done
           if [ "$found" -eq 0 ]; then
-            echo "::warning::No coverage report found; SonarQube will report 0% coverage on this scan until a build job uploads one."
+            echo "No coverage report on this run; SonarQube will report 0% coverage until a build job uploads one."
           fi
 
       ### 4. Toolchain ##########################################################
@@ -207,9 +198,10 @@ jobs:
 
       ### 5. Begin / build / end ################################################
       # C# analysis requires SonarScanner for .NET wrapping a real compile.
-      # Until MAUI/Android CI exists, scan the portable library + unit-test
-      # projects only. The MAUI host (CipherBank-app) is excluded from the
-      # build list so Linux runners do not need Android workloads.
+      # Until MAUI/Android CI exists, scan portable library + unit-test
+      # projects that exist on this branch. Skip missing .csproj paths so a
+      # feature project (e.g. ChallengePass) absent from main does not fail
+      # the scan. MAUI host is excluded so Linux runners need no Android workloads.
       - name: Begin SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -255,11 +247,21 @@ jobs:
             CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
             CipherBank-app.Tests/CipherBank-app.Tests.csproj
           )
+          built=0
           for project in "${projects[@]}"; do
+            if [ ! -f "${project}" ]; then
+              echo "Skipping missing project: ${project}"
+              continue
+            fi
             echo "Building ${project}"
             dotnet restore "${project}"
             dotnet build "${project}" --no-restore -c Release
+            built=$((built + 1))
           done
+          if [ "${built}" -eq 0 ]; then
+            echo "No analyzable projects found to build." >&2
+            exit 1
+          fi
 
       - name: End SonarQube analysis
         id: scan
