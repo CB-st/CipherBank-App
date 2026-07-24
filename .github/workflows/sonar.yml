@@ -217,6 +217,17 @@ jobs:
           PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
+          # SonarScanner for .NET requires /k: on begin; it does not load
+          # sonar.projectKey from sonar-project.properties the way the CLI does.
+          sonar_project_key="$(
+            sed -n 's/^[[:space:]]*sonar\.projectKey[[:space:]]*=[[:space:]]*//p' sonar-project.properties \
+              | head -n1 \
+              | tr -d '\r'
+          )"
+          if [ -z "${sonar_project_key}" ]; then
+            echo "sonar.projectKey missing from sonar-project.properties" >&2
+            exit 1
+          fi
           extra_args=()
           if [ "${IS_PR}" = "true" ]; then
             extra_args+=(
@@ -229,6 +240,7 @@ jobs:
           fi
           # shellcheck disable=SC2086
           dotnet sonarscanner begin \
+            /k:"${sonar_project_key}" \
             /d:sonar.token="${SONAR_TOKEN}" \
             /d:sonar.host.url="${SONAR_HOST_URL}" \
             /d:sonar.scanner.skipJreProvisioning=true \
