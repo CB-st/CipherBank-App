@@ -4,8 +4,17 @@ on:
   pull_request:
     types: [closed]
 
+# Author gate: only consolidate tickets for allowlisted PR authors.
+# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins (spaces optional).
+# Defaults to RED-FLAG-DEVELOPMENT when unset.
+
 jobs:
   dispatch-ticket-consolidation:
+    if: >-
+      contains(
+        format(',{0},', replace(vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT', ' ', '')),
+        format(',{0},', github.event.pull_request.user.login)
+      )
     runs-on: ubuntu-22.04
     permissions:
       contents: read
