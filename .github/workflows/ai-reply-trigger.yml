@@ -9,10 +9,8 @@ on:
     types: [submitted]
 
 # Author gate: only reply on PRs authored by an allowlisted login.
-# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob" or
-# "alice, bob". Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions
-# have no split()/replace(), so membership uses comma-padded contains()
-# (with and without a space after each comma).
+# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob". Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions
+# have no split()/replace(), so membership uses comma-padded contains().
 
 concurrency:
   group: ai-reply-${{ github.event.issue.number || github.event.pull_request.number }}

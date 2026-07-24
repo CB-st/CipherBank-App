@@ -5,8 +5,8 @@ on:
     types: [closed]
 
 # Author gate: only consolidate tickets for allowlisted PR authors.
-# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob" or
-# "alice, bob". Defaults to RED-FLAG-DEVELOPMENT when unset.
+# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob". Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions
+# have no split()/replace(), so membership uses comma-padded contains().
 
 jobs:
   dispatch-ticket-consolidation:
