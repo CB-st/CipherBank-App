@@ -14,12 +14,10 @@ concurrency:
 
 # Author gate: only run for allowlisted PR authors, or when an allowlisted
 # user pushes to main/release/sandbox. PIPELINE_ALLOWED_AUTHOR is a CSV of
-# GitHub logins (spaces optional), e.g. "alice,bob". Defaults to
-# RED-FLAG-DEVELOPMENT when unset. GHA expressions have no split(), so
-# membership uses comma-padded contains() (equivalent to CSV includes).
-
-env:
-  PIPELINE_ALLOWED_AUTHOR_CSV: ${{ vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT' }}
+# GitHub logins, e.g. "alice,bob" or "alice, bob". Defaults to
+# RED-FLAG-DEVELOPMENT when unset. GHA expressions have no split()/replace(),
+# so membership uses comma-padded contains() (with and without a space after
+# each comma).
 
 # No build job yet. When a pipeline build lands, wire `sonar` (and optionally
 # `context`) to `needs: build` and upload a coverage artifact the Sonar job
@@ -57,10 +55,16 @@ jobs:
     if: >-
       github.event_name == 'pull_request'
       && !github.event.pull_request.draft
-      && contains(
-           format(',{0},', replace(env.PIPELINE_ALLOWED_AUTHOR_CSV, ' ', '')),
-           format(',{0},', github.event.pull_request.user.login)
-         )
+      && (
+        contains(
+          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+          format(',{0},', github.event.pull_request.user.login)
+        )
+        || contains(
+          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+          format(', {0},', github.event.pull_request.user.login)
+        )
+      )
     permissions:
       contents: read
       pull-requests: read
@@ -89,25 +93,41 @@ jobs:
       (
         github.event_name == 'pull_request'
         && !github.event.pull_request.draft
-        && contains(
-             format(',{0},', replace(env.PIPELINE_ALLOWED_AUTHOR_CSV, ' ', '')),
-             format(',{0},', github.event.pull_request.user.login)
-           )
+        && (
+          contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.event.pull_request.user.login)
+          )
+          || contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(', {0},', github.event.pull_request.user.login)
+          )
+        )
       )
       ||
       (
         github.event_name == 'push'
         && (
           contains(
-            format(',{0},', replace(env.PIPELINE_ALLOWED_AUTHOR_CSV, ' ', '')),
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
             format(',{0},', github.actor)
+          )
+          || contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(', {0},', github.actor)
           )
           || (
             github.event.head_commit.author.username != ''
-            && contains(
-                 format(',{0},', replace(env.PIPELINE_ALLOWED_AUTHOR_CSV, ' ', '')),
-                 format(',{0},', github.event.head_commit.author.username)
-               )
+            && (
+              contains(
+                format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+                format(',{0},', github.event.head_commit.author.username)
+              )
+              || contains(
+                format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+                format(', {0},', github.event.head_commit.author.username)
+              )
+            )
           )
         )
       )
