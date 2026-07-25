@@ -4,6 +4,8 @@
 
 End-to-end tests for critical user journeys using Appium. Requires a running Appium server and a device or emulator.
 
+**Coding standards** for E2E and Shell work: repo-root [AGENTS.md](../../AGENTS.md) — Function documentation (Use High/Medium/Low + Scope), Object ownership & process boundaries, Complexity limits (max 2 loop layers; prefer ternary / dictionary dispatch).
+
 ## Structure
 
 ```
