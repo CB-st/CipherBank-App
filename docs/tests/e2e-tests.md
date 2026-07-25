@@ -50,6 +50,26 @@ CipherBank-app.E2ETests/
 | IOS_VERSION | iOS version | 17.0 |
 | E2E_TEST_PIN | Unlock PIN for sealed test wallet | 123456 |
 
+## Local Android harness (`scripts/e2e-android.sh`)
+
+Wave 0 one-shot runner for `CipherBank_API34`. Boots the AVD if not already
+attached, builds the MAUI app (`-f net10.0-android -c Debug
+-p:EmbedAssembliesIntoApk=true`), installs the APK, starts Appium on `:4723`
+if it isn't already up, then runs the requested slice of
+`CipherBank-app.E2ETests`.
+
+```bash
+./scripts/e2e-android.sh --story CB-ACCOUNT-001   # one story
+./scripts/e2e-android.sh --wave account           # one wave (account|market|wallets|fund|pay|cards)
+./scripts/e2e-android.sh --all                    # full suite
+./scripts/e2e-android.sh --help                   # usage
+```
+
+Env/path setup (`ANDROID_HOME`, `ANDROID_SDK_ROOT`, `DOTNET_ROOT`, `CB_MAUI_PACKAGE`,
+`CB_AVD`) lives in `scripts/lib/android-env.sh` and is sourced automatically.
+MAUI package id for this harness: `com.companyname.cipherbankapp` (not Expo's
+`com.cipherbank.app` — see repo-root [AGENTS.md](../../AGENTS.md)).
+
 ## CoraShellSmokeTests
 
 | Test | Flow |
