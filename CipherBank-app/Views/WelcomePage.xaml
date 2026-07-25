@@ -4,7 +4,8 @@
              x:Class="CipherBank_app.Views.WelcomePage"
              Title="Welcome"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{StaticResource DeepPurple}">
+             BackgroundColor="{StaticResource DeepPurple}"
+             AutomationId="WelcomePage">
   <ScrollView>
     <VerticalStackLayout Padding="24,48,24,32" Spacing="18">
 

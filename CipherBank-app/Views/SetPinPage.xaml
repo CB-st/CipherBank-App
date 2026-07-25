@@ -4,7 +4,8 @@
              xmlns:controls="clr-namespace:CipherBank_app.Controls"
              x:Class="CipherBank_app.Views.SetPinPage"
              Title="Set PIN"
-             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}"
+             AutomationId="SetPinPage">
   <ScrollView>
     <VerticalStackLayout Padding="24" Spacing="16">
       <Label Text="Choose a PIN to seal your wallet." Style="{StaticResource CoraMuted}" />
@@ -12,16 +13,19 @@
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="14">
             <Entry Text="{Binding Pin}" IsPassword="True" Keyboard="Numeric" Placeholder="PIN"
-                   FontFamily="SpaceMonoBold" FontSize="20" HorizontalTextAlignment="Center" />
+                   FontFamily="SpaceMonoBold" FontSize="20" HorizontalTextAlignment="Center"
+                   AutomationId="SetPinEntry" />
             <Entry Text="{Binding ConfirmPin}" IsPassword="True" Keyboard="Numeric" Placeholder="Confirm PIN"
-                   FontFamily="SpaceMonoBold" FontSize="20" HorizontalTextAlignment="Center" />
+                   FontFamily="SpaceMonoBold" FontSize="20" HorizontalTextAlignment="Center"
+                   AutomationId="SetPinConfirmEntry" />
             <Label Text="{Binding Error}"
                    TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
-                   HorizontalTextAlignment="Center" />
+                   HorizontalTextAlignment="Center"
+                   AutomationId="SetPinErrorLabel" />
           </VerticalStackLayout>
         </controls:GlassCard.Body>
       </controls:GlassCard>
-      <Button Text="Seal wallet" Command="{Binding SealCommand}" />
+      <Button Text="Seal wallet" Command="{Binding SealCommand}" AutomationId="SetPinSealButton" />
     </VerticalStackLayout>
   </ScrollView>
 </ContentPage>

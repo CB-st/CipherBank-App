@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CipherBank_app.Views.BackupQuizPage"
              Title="Confirm backup"
-             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}"
+             AutomationId="BackupQuizPage">
   <ScrollView>
     <VerticalStackLayout Padding="20" Spacing="14">
 
@@ -11,19 +12,21 @@
              FontFamily="ManropeSemiBold"
              FontSize="18" />
 
-      <CollectionView ItemsSource="{Binding Rows}">
+      <CollectionView ItemsSource="{Binding Rows}" AutomationId="BackupQuizRows">
         <CollectionView.ItemTemplate>
           <DataTemplate>
             <VerticalStackLayout Spacing="6" Padding="0,0,0,10">
-              <Label Text="{Binding Prompt}" FontFamily="ManropeSemiBold" />
-              <Entry Text="{Binding Answer}" Placeholder="word" />
+              <Label Text="{Binding Prompt}" FontFamily="ManropeSemiBold" AutomationId="BackupQuizPrompt" />
+              <Entry Text="{Binding Answer}" Placeholder="word" AutomationId="BackupQuizAnswerEntry" />
             </VerticalStackLayout>
           </DataTemplate>
         </CollectionView.ItemTemplate>
       </CollectionView>
 
-      <Label Text="{Binding Error}" TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
-      <Button Text="Verify" Command="{Binding VerifyCommand}" />
+      <Label Text="{Binding Error}"
+             TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
+             AutomationId="BackupQuizErrorLabel" />
+      <Button Text="Verify" Command="{Binding VerifyCommand}" AutomationId="BackupQuizVerifyButton" />
 
     </VerticalStackLayout>
   </ScrollView>
