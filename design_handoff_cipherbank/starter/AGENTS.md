@@ -24,6 +24,34 @@ A **starter scaffold** for the Cipherbank mobile app: Expo + React Native + Type
 
 Secrets stay in SecureStore. Public meta / market snapshots live in `expo-sqlite` (`features/persist`). Bootstrap: `features/bootstrap`.
 
+## Coding standards (shared with MAUI shipping Shell)
+
+Also mandated by repo-root [`AGENTS.md`](../../../AGENTS.md). Apply to **new and touched** TypeScript; do not mass-rewrite untouched files.
+
+### Function documentation
+
+Every function (including private helpers / hooks) gets a brief comment that states:
+
+1. **What it does logically** (purpose, not a line-by-line restatement)
+2. **Call frequency:** `High` | `Medium` | `Low`
+3. **Scope:** how far it applies (screen, feature hook, process-wide client, test helper)
+
+```ts
+/** Fills quiz Word #N fields from the journaled mnemonic. Use: High. Scope: onboarding e2e. */
+```
+
+### Object ownership & process boundaries
+
+- Keep **in-memory state** on dedicated owners (session, query cache, custody unlock window) — not ad-hoc module globals.
+- Blocking / independent work (Metro, emulator scripts, long sync jobs) lives in **separate modules/processes** behind a small façade.
+- One clear owner per concern.
+
+### Complexity limits
+
+- Loops at most **two layers deep**; extract named helpers beyond that.
+- Prefer **ternary** and **Record/Map dispatch** over long `if`/`else if`/`switch` chains when the mapping is stable.
+- One job per function.
+
 ## Golden rules
 1. **Shell renders synchronously; data streams in; actions are optimistic.** Never block a tap on the network. (Full rationale in `ARCHITECTURE.md §1`.)
 2. **Tokens only — no magic values.** Colors, spacing, radii, type come from `src/theme` (generated from `../tokens/tokens.json`). If you need a value that isn't a token, add it to the token source, don't inline a hex.

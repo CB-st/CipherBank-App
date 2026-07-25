@@ -74,6 +74,7 @@ out/
 
 # Top-level docs (architecture, summaries)
 /*.md
+!/AGENTS.md
 /*.mmd
 
 # Test results
