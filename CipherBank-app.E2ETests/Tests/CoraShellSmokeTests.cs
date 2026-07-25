@@ -1,93 +1,67 @@
 using CipherBank_app.E2ETests.PageObjects;
+using CipherBank_app.E2ETests.Stories;
+using CipherBank_app.E2ETests.Support;
 using FluentAssertions;
-using OpenQA.Selenium.Appium;
-using OpenQA.Selenium.Appium.Android;
-using OpenQA.Selenium.Appium.iOS;
+using OpenQA.Selenium;
 using Xunit;
 
 namespace CipherBank_app.E2ETests.Tests;
 
 /// <summary>
-/// Cora Shell smoke path: Unlock → Home parity → Convert → Send ACH → Receive → PosLab Simulate.
-/// Requires Appium + a DEBUG build with a sealed wallet (or pre-seeded test PIN).
+/// Cora Shell smoke mapped to shared story IDs (US-* / CB-*), run against an already-sealed device.
+/// Requires <c>E2E_RUN=1</c>, an Appium server (default <c>http://localhost:4723</c>, override with
+/// <c>APPIUM_SERVER_URL</c>), and a DEBUG APK/app with a sealed wallet already on the device.
+/// Skips (not a soft-pass) when E2E_RUN is unset; fails with a gap note when the device boots to Welcome
+/// instead of Unlock (wrong precondition for this suite). Fresh-install account stories (CB-ACCOUNT-001,
+/// US-ONB-04) live in <see cref="AccountStories"/>.
 /// </summary>
 [Collection("E2E Tests")]
 public class CoraShellSmokeTests : IDisposable
 {
-    // --- Test credentials / Appium defaults ---
-    private const string DefaultTestPin = "123456";
-    private const string DefaultAppiumUri = "http://localhost:4723";
-    private const int ImplicitWaitSeconds = 10;
+    private readonly AppiumFixture? _fixture;
 
-    private readonly AppiumDriver _driver;
-    private readonly string _testPin;
-
+    /// <summary>
+    /// Builds (or, when E2E_RUN is unset, leaves null) the shared Appium session for this run.
+    /// Use: High (once per test instance). Scope: CoraShellSmokeTests session.
+    /// </summary>
     public CoraShellSmokeTests()
     {
-        _testPin = Environment.GetEnvironmentVariable("E2E_TEST_PIN") ?? DefaultTestPin;
-        string platform = Environment.GetEnvironmentVariable("TEST_PLATFORM") ?? "android";
-
-        if (platform.Equals("ios", StringComparison.OrdinalIgnoreCase))
-        {
-            var options = new AppiumOptions
-            {
-                PlatformName = "iOS",
-                AutomationName = "XCUITest",
-                App = Environment.GetEnvironmentVariable("IOS_APP_PATH") ?? "/path/to/CipherBank.app",
-            };
-            options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("IOS_DEVICE") ?? "iPhone 15");
-            options.AddAdditionalAppiumOption("platformVersion", Environment.GetEnvironmentVariable("IOS_VERSION") ?? "17.0");
-            _driver = new IOSDriver(new Uri(DefaultAppiumUri), options);
-        }
-        else
-        {
-            var options = new AppiumOptions
-            {
-                PlatformName = "Android",
-                AutomationName = "UiAutomator2",
-                App = Environment.GetEnvironmentVariable("ANDROID_APK_PATH") ?? "/path/to/CipherBank.apk",
-            };
-            options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator");
-            _driver = new AndroidDriver(new Uri(DefaultAppiumUri), options);
-        }
-
-        _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(ImplicitWaitSeconds);
+        _fixture = AppiumFixture.CreateOrThrow();
     }
 
-    [Fact]
-    public void Smoke_UnlockHomeConvertReceive_ShouldSucceed()
+    [SkippableFact]
+    [Trait("Story", StoryIds.UsLck01)]
+    [Trait("Story", StoryIds.UsCnv01)]
+    [Trait("Story", StoryIds.UsRcv01)]
+    public void US_LCK_01_CNV_01_RCV_01_Unlock_ConvertQuote_ReceiveQr()
     {
-        var unlock = new UnlockPage(_driver);
-        unlock.WaitForPageLoad();
+        Skip.If(_fixture is null, "E2E_RUN not set");
 
-        var home = unlock.UnlockWithPin(_testPin);
-        home.WaitForPageLoad();
-        home.IsLoaded().Should().BeTrue();
+        var home = UnlockToHome(StoryIds.UsLck01);
 
         var convert = home.GoToConvert();
         convert.WaitForPageLoad();
         convert.LockQuote();
-        convert.IsConvertEnabled().Should().BeTrue("quote lock should enable Convert");
+        convert.IsConvertEnabled().Should().BeTrue("US-CNV-01: quote lock should enable Convert");
 
-        // Shell may still show Home; reopen Receive via Home shortcut if still on stack
         var receive = home.GoToReceive();
         receive.WaitForPageLoad();
         receive.RefreshQr();
-        receive.IsQrVisible().Should().BeTrue();
+        receive.IsQrVisible().Should().BeTrue("US-RCV-01 / CB-FUND-001: QR visible");
         receive.GetAddress().Should().NotBeNullOrWhiteSpace();
     }
 
-    [Fact]
-    public void Smoke_ParitySurfaces_ChartHideConvertAch_ShouldExist()
+    [SkippableFact]
+    [Trait("Story", StoryIds.UsHom05)]
+    [Trait("Story", StoryIds.CbMarket001)]
+    [Trait("Story", StoryIds.UsSnd01)]
+    public void US_HOM_05_SND_01_HomeChart_ConvertPickers_SendAch()
     {
-        var unlock = new UnlockPage(_driver);
-        unlock.WaitForPageLoad();
+        Skip.If(_fixture is null, "E2E_RUN not set");
 
-        var home = unlock.UnlockWithPin(_testPin);
-        home.WaitForPageLoad();
-        home.IsLoaded().Should().BeTrue();
+        var home = UnlockToHome(StoryIds.UsHom05);
         home.HasHideBalancesToggle().Should().BeTrue("hide-balances control is a Home parity surface");
-        home.HasChartRangeChips().Should().BeTrue("1D/1W/1M/1Y range chips are Home parity surfaces");
+        home.HasChartRangeChips().Should().BeTrue("US-HOM-05 / CB-MARKET-001: range chips");
         home.SelectRange1w();
         home.ToggleHideBalances();
 
@@ -97,35 +71,75 @@ public class CoraShellSmokeTests : IDisposable
 
         var send = home.GoToSendTab();
         send.WaitForPageLoad();
-        send.HasParitySurfaces().Should().BeTrue("ACH payee fields + amount/speed/send are Send parity surfaces");
+        send.HasParitySurfaces().Should().BeTrue("US-SND-01: ACH payee fields + amount/speed/send");
     }
 
-    [Fact]
-    public void Smoke_PosLabSimulate_ShouldRun()
+    [SkippableFact]
+    [Trait("Story", StoryIds.UsPos01)]
+    [Trait("Story", StoryIds.CbPay003)]
+    public void US_POS_01_CB_PAY_003_PosLabSimulate()
     {
-        var unlock = new UnlockPage(_driver);
-        unlock.WaitForPageLoad();
-        unlock.UnlockWithPin(_testPin).WaitForPageLoad();
+        Skip.If(_fixture is null, "E2E_RUN not set");
 
-        // Navigate via accessibility id when Shell route is open (set ANDROID_POS_LAB=1 + deep link in CI if needed)
-        var pos = new PosLabPage(_driver);
-        try
-        {
-            pos.WaitForPageLoad();
-        }
-        catch
-        {
-            // PosLab may not be the landing route; skip soft when AutomationId not on screen
-            return;
-        }
+        UnlockToHome(StoryIds.UsPos01);
+
+        var pos = new PosLabPage(_fixture!.Driver);
+        RequirePosLabReachable(pos);
 
         pos.StartSession();
         pos.Simulate();
     }
 
+    /// <summary>
+    /// Unlocks the sealed device with the journaled PIN and returns Home; fails with a gap note (instead of
+    /// a bare Appium timeout) when Welcome shows up instead of Unlock, i.e. the device isn't sealed as this
+    /// smoke suite requires.
+    /// Use: High (every sealed-device smoke Fact). Scope: this test class session.
+    /// </summary>
+    private HomePage UnlockToHome(string storyId)
+    {
+        var driver = _fixture!.Driver;
+        var unlock = new UnlockPage(driver);
+        var welcome = new WelcomePage(driver);
+        StoryGuard.RequireScreen(
+            unlock.IsLoaded(),
+            storyId,
+            expected: "Unlock screen (sealed-wallet precondition for this smoke suite)",
+            actual: welcome.IsLoaded() ? "Welcome screen (device is not sealed)" : "neither Unlock nor Welcome visible",
+            proposedFix: "Seal the E2E device first (e.g. run AccountStories.CB_ACCOUNT_001 or DeviceState.SealedAsync) before running CoraShellSmokeTests.");
+
+        var home = unlock.UnlockWithPin(_fixture.Journal.Pin);
+        home.WaitForPageLoad();
+        home.IsLoaded().Should().BeTrue();
+        return home;
+    }
+
+    /// <summary>
+    /// Fails with a gap note when PosLab isn't reachable from Home, instead of the previous silent
+    /// soft-return — POS navigation from Home is not yet modeled in the page objects.
+    /// Use: Medium (POS smoke Fact only). Scope: US-POS-01 / CB-PAY-003.
+    /// </summary>
+    private static void RequirePosLabReachable(PosLabPage pos)
+    {
+        try
+        {
+            pos.WaitForPageLoad();
+        }
+        catch (WebDriverTimeoutException ex)
+        {
+            GapNotes.Write(
+                StoryIds.UsPos01,
+                step: "PosLab landing after Home unlock",
+                expected: "PosLab Simulate button (PosSimulateButton) reachable from Home",
+                actual: $"PosLab AutomationId not found: {ex.Message}",
+                proposedFix: "Add a HomePage.GoToPosLab() route (or equivalent Shell navigation) once the POS entry point is confirmed.");
+            throw new InvalidOperationException($"{StoryIds.UsPos01}: PosLab not reachable; gap note written.", ex);
+        }
+    }
+
+    /// <summary>Quits and disposes the owned Appium session (no-op when E2E_RUN is unset). Use: High. Scope: this fixture.</summary>
     public void Dispose()
     {
-        _driver?.Quit();
-        _driver?.Dispose();
+        _fixture?.Dispose();
     }
 }

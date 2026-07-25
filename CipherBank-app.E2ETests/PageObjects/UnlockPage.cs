@@ -14,6 +14,12 @@ public class UnlockPage : BasePage
     {
     }
 
+    /// <summary>
+    /// Whether the Unlock PIN button is visible (device already has a sealed wallet).
+    /// Use: Medium (wrong-screen boot checks). Scope: single page object.
+    /// </summary>
+    public bool IsLoaded() => IsElementDisplayed(UnlockButton);
+
     public UnlockPage EnterPin(string pin)
     {
         EnterText(PinField, pin);
