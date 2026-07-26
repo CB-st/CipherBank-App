@@ -22,7 +22,13 @@ public class BackupQuizPage : BasePage
 
     public bool IsLoaded() => IsElementDisplayed(PageRoot) || IsElementDisplayed(VerifyButton);
 
-    public bool IsErrorDisplayed() => IsElementDisplayed(ErrorLabel);
+    /// <summary>
+    /// Confirms the quiz error actually surfaced: the label is visible (per its XAML IsVisible
+    /// binding) AND carries non-empty text. Guards against a regression that leaves the always-in-tree
+    /// label falsely ".Displayed" while ViewModel.Error was never set.
+    /// Use: Medium (US-ONB-03 negative-path assertion). Scope: BackupQuizPage.
+    /// </summary>
+    public bool IsErrorDisplayed() => IsElementDisplayed(ErrorLabel) && !string.IsNullOrWhiteSpace(GetElementText(ErrorLabel));
 
     /// <summary>
     /// Fills each "Word #N" prompt with the matching word from the shown mnemonic.

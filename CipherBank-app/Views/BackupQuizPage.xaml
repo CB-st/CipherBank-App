@@ -25,6 +25,7 @@
 
       <Label Text="{Binding Error}"
              TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
+             IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
              AutomationId="BackupQuizErrorLabel" />
       <Button Text="Verify" Command="{Binding VerifyCommand}" AutomationId="BackupQuizVerifyButton" />
 

@@ -45,5 +45,11 @@ public class SetPinPage : BasePage
         return this;
     }
 
-    public bool IsErrorDisplayed() => IsElementDisplayed(ErrorLabel);
+    /// <summary>
+    /// Confirms the set-PIN error actually surfaced: the label is visible (per its XAML IsVisible
+    /// binding) AND carries non-empty text. Guards against a regression that leaves the always-in-tree
+    /// label falsely ".Displayed" while ViewModel.Error was never set.
+    /// Use: Medium (US-ONB-04 negative-path assertion). Scope: SetPinPage.
+    /// </summary>
+    public bool IsErrorDisplayed() => IsElementDisplayed(ErrorLabel) && !string.IsNullOrWhiteSpace(GetElementText(ErrorLabel));
 }

@@ -108,3 +108,69 @@ than a fake pass — consistent with the rest of the suite.
 - Concerns: none — both negatives assert against real ViewModel guards and error-label
   AutomationIds that already existed in the Shell.
 - Report file: `.superpowers/sdd/task-8-report.md`
+
+## Fix follow-up (Task 8 review — Important finding)
+
+**Finding:** `IsErrorDisplayed()` on `BackupQuizPage`/`SetPinPage` was not a reliable proxy for
+"the guard fired." `BackupQuizErrorLabel` and `SetPinErrorLabel` were plain `Label`s bound only to
+`Text="{Binding Error}"` with no `IsVisible` binding, so Selenium's `.Displayed` returned `true`
+even for an empty-text label always present in the visual tree. A regression that silently
+returned without navigating and without setting `Error` could still leave `IsErrorDisplayed()`
+returning `true` — a false-negative-proof gap in US-ONB-03 / US-ONB-04.
+
+### What changed
+
+- `CipherBank-app/Views/BackupQuizPage.xaml` — added
+  `IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"` to
+  `BackupQuizErrorLabel`.
+- `CipherBank-app/Views/SetPinPage.xaml` — added the same `IsVisible` binding to
+  `SetPinErrorLabel`.
+- Reused the pre-existing `StringToBoolConverter` (`CipherBank-app/Converters/StringToBoolConverter.cs`,
+  registered in `App.xaml` as `StringToBoolConverter`) already used for this exact
+  "hide when empty" pattern on `LoginPage`, `DashboardPage`, `WalletPage`, `PurchasePage`, and
+  `SettingsPage` — no new converter needed.
+- `CipherBank-app.E2ETests/PageObjects/BackupQuizPage.cs` /
+  `CipherBank-app.E2ETests/PageObjects/SetPinPage.cs` — strengthened `IsErrorDisplayed()` to also
+  assert non-empty error text (`IsElementDisplayed(ErrorLabel) && !string.IsNullOrWhiteSpace(GetElementText(ErrorLabel))`),
+  short-circuiting on the visibility check so no extra wait is incurred when the label is hidden.
+  Added AGENTS.md-style doc comments (purpose, `Use: Medium`, `Scope:`) to both.
+
+With the `IsVisible` binding in place, `.Displayed` now reflects the real MAUI visibility state
+(Android maps `IsVisible=false` to `View.GONE`), so the label is genuinely absent from the visual
+tree when `Error` is null/empty — `.Displayed` becomes a true signal, and the page-object text
+check is a second, defense-in-depth layer.
+
+### Covering-test results
+
+Device (`CipherBank_API34`, `emulator-5554`, already booted; `scripts/lib/android-env.sh` sourced):
+
+```
+$ ./scripts/e2e-android.sh --story US-ONB-03
+==> Running: dotnet test ... --filter FullyQualifiedName~US_ONB_03
+Passed!  - Failed: 0, Passed: 1, Skipped: 0, Total: 1, Duration: 17 s
+
+$ ./scripts/e2e-android.sh --story US-ONB-04
+==> Running: dotnet test ... --filter FullyQualifiedName~US_ONB_04
+Passed!  - Failed: 0, Passed: 1, Skipped: 0, Total: 1, Duration: 20 s
+```
+
+Non-device (no `E2E_RUN`):
+
+```
+$ dotnet test CipherBank-app.E2ETests --nologo
+Skipped! - Failed: 0, Passed: 0, Skipped: 13, Total: 13, Duration: 46 ms
+```
+
+0 failed in both device runs and the non-device run; the strengthened `IsErrorDisplayed()` still
+passes against the real ViewModel guards, confirming the negative assertions were not weakened.
+
+### Report back
+
+- **Status:** DONE
+- Commit subject: `fix(e2e): bind onboarding error-label visibility for negative stories` (new
+  commit, does not amend `ed60b1b`)
+- US-ONB-03: **PASS** (1 passed / 0 failed) on `CipherBank_API34`
+- US-ONB-04: **PASS** (1 passed / 0 failed) on `CipherBank_API34`
+- Non-device: **PASS** (0 failed / 13 skipped, no `E2E_RUN`)
+- Concerns: none — `IsVisible` binding reuses an existing, already-battle-tested converter; the
+  page-object strengthening is additive (AND, not OR) so it cannot mask a real failure.

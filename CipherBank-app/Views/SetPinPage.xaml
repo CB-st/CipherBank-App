@@ -21,6 +21,7 @@
             <Label Text="{Binding Error}"
                    TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
                    HorizontalTextAlignment="Center"
+                   IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
                    AutomationId="SetPinErrorLabel" />
           </VerticalStackLayout>
         </controls:GlassCard.Body>
