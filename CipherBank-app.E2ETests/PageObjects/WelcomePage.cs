@@ -30,5 +30,13 @@ public class WelcomePage : BasePage
         return new KeysPage(Driver);
     }
 
-    public void OpenRestoreFromBackup() => ClickElement(RestoreBackupButton);
+    /// <summary>
+    /// Enters the restore-from-backup flow from a wallet-less install (CB-ACCOUNT-002 step "open").
+    /// Use: Medium (recovery stories). Scope: this page object.
+    /// </summary>
+    public RestoreBackupPage OpenRestoreFromBackup()
+    {
+        ClickElement(RestoreBackupButton);
+        return new RestoreBackupPage(Driver);
+    }
 }

@@ -1,3 +1,4 @@
+using CipherBank_app.Custody;
 using CipherBank_app.E2ETests.PageObjects;
 using CipherBank_app.E2ETests.Stories;
 using CipherBank_app.E2ETests.Support;
@@ -18,6 +19,8 @@ namespace CipherBank_app.E2ETests.Tests;
 [Collection("E2E Tests")]
 public class AccountStories : IDisposable
 {
+    private const string RecoveryHint = "e2e run";
+
     private readonly AppiumFixture? _fixture;
 
     /// <summary>
@@ -147,7 +150,7 @@ public class AccountStories : IDisposable
 
         var journal = _fixture!.Journal;
         var deviceState = new DeviceState(_fixture.Driver, journal);
-        var home = await SealedHomeOrFail(deviceState);
+        var home = await SealedHomeOrFail(deviceState, StoryIds.CbAccountPinChange);
 
         var profile = home.GoToProfileTab();
         profile.WaitForPageLoad();
@@ -200,6 +203,90 @@ public class AccountStories : IDisposable
     }
 
     /// <summary>
+    /// CB-ACCOUNT-002 / US-ONB-02: exports a real ciphered recovery file from a sealed wallet through the
+    /// Profile backup card, wipes the device, then recovers the *same* custody from that file through the
+    /// Shell's own restore flow (Welcome → Restore from backup → system document picker → recovery password
+    /// → SetPin → Home). Proof of same custody is the phrase revealed by the app's own Vault card on the
+    /// recovered wallet, compared with the phrase the Keys screen showed before the wipe — landing on Home
+    /// alone would not distinguish a recovery from a fresh wallet.
+    /// Use: High (Wave 1 recovery gate). Scope: this Fact's device session.
+    /// </summary>
+    [SkippableFact]
+    [Trait("Story", StoryIds.CbAccount002)]
+    [Trait("Story", StoryIds.UsOnb02)]
+    public async Task CB_ACCOUNT_002_RecoverAccount()
+    {
+        Skip.If(_fixture is null, "E2E_RUN not set");
+
+        var journal = _fixture!.Journal;
+        var deviceState = new DeviceState(_fixture.Driver, journal);
+        var vault = new RecoveryFileVault();
+        vault.ClearDeviceExports();
+
+        var home = await SealedHomeOrFail(deviceState, StoryIds.CbAccount002);
+        string originalMnemonic = journal.Mnemonic
+            ?? throw new InvalidOperationException("Sealed precondition did not journal the original mnemonic.");
+
+        var profile = home.GoToProfileTab();
+        profile.WaitForPageLoad();
+        profile.ExportRecoveryFile(journal.RecoveryPassword, RecoveryHint, journal.Pin);
+        RecoveryExport export = vault.CaptureExport();
+        journal.RecordStep(
+            $"device: app exported {export.FileName} ({export.Length} bytes, sha256={export.Sha256}) "
+            + $"under recovery password={journal.RecoveryPassword}");
+
+        var welcome = await FreshWelcomeOrFail(StoryIds.CbAccount002);
+        journal.RecordStep(
+            $"device: wiped the wallet; recovery file restored to picker by harness={vault.EnsureOnDevice()}");
+
+        var restore = welcome.OpenRestoreFromBackup();
+        restore.WaitForPageLoad();
+        restore.IsLoaded().Should().BeTrue("CB-ACCOUNT-002: a wallet-less install offers restore-from-backup");
+        JournalProcedureStep(StoryProcedures.Account002Steps, "open");
+
+        restore.OpenFilePicker().SelectFileFromDownloads(export.FileName);
+        restore.WaitForPageLoad();
+        restore.IsFileSelected().Should().BeTrue(
+            "CB-ACCOUNT-002: the app must ingest the file picked from Android's own document picker");
+        JournalProcedureStep(StoryProcedures.Account002Steps, "enter");
+
+        string wrongPassword = ReversePassword(journal.RecoveryPassword);
+        wrongPassword.Should().NotBe(journal.RecoveryPassword, "the rejection leg needs a genuinely wrong password");
+        restore.RestoreExpectingError(wrongPassword);
+        restore.IsErrorDisplayed().Should().BeTrue(
+            "CB-ACCOUNT-002: a wrong recovery password must surface a visible, non-empty RestoreBackupErrorLabel");
+        restore.IsLoaded().Should().BeTrue("a rejected password keeps the user on Restore from backup");
+        journal.RecordStep($"device: rejected restore with wrong recovery password={wrongPassword}");
+
+        var setPin = restore.Restore(journal.RecoveryPassword);
+        setPin.WaitForPageLoad();
+        JournalProcedureStep(StoryProcedures.Account002Steps, "submit");
+
+        var recoveredHome = setPin.SealMatching(journal.Pin);
+        recoveredHome.WaitForPageLoad();
+        recoveredHome.IsLoaded().Should().BeTrue("CB-ACCOUNT-002: sealing the recovered wallet lands on Home");
+        JournalProcedureStep(StoryProcedures.Account002Steps, "restore");
+
+        var recoveredProfile = recoveredHome.GoToProfileTab();
+        recoveredProfile.WaitForPageLoad();
+        string revealed = recoveredProfile.RevealMnemonic(journal.Pin);
+        MnemonicHelper.Normalize(revealed).Should().Be(
+            MnemonicHelper.Normalize(originalMnemonic),
+            "CB-ACCOUNT-002: the recovered device must hold the original custody, not a new wallet");
+        journal.RecordStep("device: revealed phrase on the recovered wallet matches the pre-wipe custody");
+        JournalProcedureStep(StoryProcedures.Account002Steps, "complete");
+
+        journal.Flush(StoryIds.CbAccount002);
+    }
+
+    /// <summary>
+    /// Derives a wrong-but-well-formed recovery password from the journaled one, so the rejection leg never
+    /// hard-codes a second secret and stays at the 12-character minimum the app enforces.
+    /// Use: Low (once per recovery story). Scope: this test class.
+    /// </summary>
+    private static string ReversePassword(string password) => new(password.Reverse().ToArray());
+
+    /// <summary>
     /// Derives a same-length PIN that shares no digit with <paramref name="pin"/>, giving the rejection leg a
     /// deliberately wrong current PIN without hard-coding one alongside the journaled values.
     /// Use: Low (once per PIN-change story). Scope: this test class.
@@ -212,7 +299,7 @@ public class AccountStories : IDisposable
     /// gap note plus a loud failure so a broken Sealed precondition is never mistaken for a story failure.
     /// Use: Medium (Sealed-profile account stories). Scope: this test class session.
     /// </summary>
-    private async Task<HomePage> SealedHomeOrFail(DeviceState deviceState)
+    private async Task<HomePage> SealedHomeOrFail(DeviceState deviceState, string storyId)
     {
         try
         {
@@ -221,13 +308,13 @@ public class AccountStories : IDisposable
         catch (WebDriverTimeoutException ex)
         {
             GapNotes.Write(
-                StoryIds.CbAccountPinChange,
+                storyId,
                 step: "DeviceState.SealedAsync precondition",
                 expected: "Home after Welcome→Keys→Quiz→SetPin with the journaled PIN",
                 actual: $"onboarding did not reach Home: {ex.Message}",
-                proposedFix: "Re-check the create-account flow (CB-ACCOUNT-001) before diagnosing the PIN-change story.");
+                proposedFix: "Re-check the create-account flow (CB-ACCOUNT-001) before diagnosing this story.");
             throw new InvalidOperationException(
-                $"{StoryIds.CbAccountPinChange}: Sealed precondition failed; gap note written.", ex);
+                $"{storyId}: Sealed precondition failed; gap note written.", ex);
         }
     }
 
@@ -264,7 +351,15 @@ public class AccountStories : IDisposable
     /// Use: High (every CB-ACCOUNT-001 screen transition). Scope: this Fact's device session.
     /// </summary>
     private void JournalProcedureStep(string stepId) =>
-        _fixture!.Journal.RecordStep($"step:{stepId} - {StoryProcedures.Account001Steps[stepId]}");
+        JournalProcedureStep(StoryProcedures.Account001Steps, stepId);
+
+    /// <summary>
+    /// Journals one step of any imported <see cref="StoryProcedures"/> map, so each story's Fact traces the
+    /// named scaffold steps it actually reached rather than ad-hoc prose.
+    /// Use: High (every journaled screen transition). Scope: this Fact's device session.
+    /// </summary>
+    private void JournalProcedureStep(IReadOnlyDictionary<string, string> procedure, string stepId) =>
+        _fixture!.Journal.RecordStep($"step:{stepId} - {procedure[stepId]}");
 
     /// <summary>Quits and disposes the owned Appium session (no-op when E2E_RUN is unset). Use: High. Scope: this fixture.</summary>
     public void Dispose()

@@ -308,6 +308,12 @@ public partial class ProfileViewModel : ObservableObject
         ScheduleMnemonicClear();
     }
 
+    /// <summary>
+    /// Creates the ciphered recovery file for the unlocked wallet (step-up → password checks → Core
+    /// <see cref="IMnemonicBackupService"/>), saves it to durable device storage and then offers the user a
+    /// share copy. Recovery passwords never leave the entry fields.
+    /// Use: Low (user-initiated export). Scope: Profile backup card.
+    /// </summary>
     [RelayCommand]
     private async Task ExportBackupAsync()
     {
@@ -352,10 +358,8 @@ public partial class ProfileViewModel : ObservableObject
                 string? hint = string.IsNullOrWhiteSpace(BackupHint) ? null : BackupHint.Trim();
                 byte[] file = await _backup.CreateBackupFileAsync(mnemonic, BackupPassword, hint);
                 string fileName = $"cipherbank-recovery-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.cbr.json";
-                await _backupFiles.SaveAndShareAsync(file, fileName);
-                await _dialogs.ShowAlertAsync(
-                    "Backup created",
-                    "Store this file offline in a safe place. CipherBank never receives a copy.");
+                string? savedTo = await _backupFiles.SaveRecoveryFileAsync(file, fileName);
+                await OfferShareCopyAsync(file, fileName, savedTo);
             }
             catch (Exception ex)
             {
@@ -369,6 +373,26 @@ public partial class ProfileViewModel : ObservableObject
         finally
         {
             ClearBackupFields();
+        }
+    }
+
+    /// <summary>
+    /// Tells the user where the export landed and lets them hand a copy to the OS share sheet. Sharing is
+    /// opt-in so the encrypted phrase is never pushed into another app without being asked for.
+    /// Use: Low (once per successful export). Scope: Profile backup card.
+    /// </summary>
+    private async Task OfferShareCopyAsync(byte[] file, string fileName, string? savedTo)
+    {
+        string where = savedTo is null ? "Recovery file created." : $"Saved to {savedTo}.";
+        bool share = await _dialogs.ShowConfirmAsync(
+            "Backup created",
+            $"{where} Store it offline in a safe place — CipherBank never receives a copy. Share a copy now?",
+            "Share",
+            "Done");
+
+        if (share)
+        {
+            await _backupFiles.ShareRecoveryFileAsync(file, fileName);
         }
     }
 

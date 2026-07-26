@@ -8,20 +8,34 @@ public sealed class StoryJournal
 {
     public string Pin { get; private set; }
     public string AlternatePin { get; private set; }
+
+    /// <summary>
+    /// Recovery-file password for backup export/restore stories. Known and journaled on purpose so a device
+    /// run is reproducible; it is a synthetic dev/test value that never ships with the app.
+    /// </summary>
+    public string RecoveryPassword { get; }
+
     public string? Mnemonic { get; private set; }
     private readonly List<string> _steps = new();
     private readonly string _dir;
 
     /// <summary>
-    /// Initializes PINs and journal output dir from args or E2E env vars.
+    /// Initializes PINs, the recovery-file password and the journal output dir from args or E2E env vars.
     /// Use: High. Scope: per-test / per-fixture session.
     /// </summary>
-    public StoryJournal(string? pin = null, string? alternatePin = null, string? dir = null)
+    public StoryJournal(
+        string? pin = null,
+        string? alternatePin = null,
+        string? dir = null,
+        string? recoveryPassword = null)
     {
         Pin = pin ?? Environment.GetEnvironmentVariable("E2E_TEST_PIN") ?? "246810";
         AlternatePin = alternatePin
             ?? Environment.GetEnvironmentVariable("E2E_TEST_PIN_ALT")
             ?? "135791";
+        RecoveryPassword = recoveryPassword
+            ?? Environment.GetEnvironmentVariable("E2E_RECOVERY_PASSWORD")
+            ?? "Cb-Emu-Recovery-2026";
         _dir = RepoPaths.ResolveFromRoot(
             dir ?? Environment.GetEnvironmentVariable("E2E_JOURNAL_DIR") ?? "artifacts/e2e-journal");
     }
@@ -45,6 +59,7 @@ public sealed class StoryJournal
             $"story={storyId}",
             $"pin={Pin}",
             $"altPin={AlternatePin}",
+            $"recoveryPassword={RecoveryPassword}",
             $"mnemonic={Mnemonic ?? "(none)"}",
         }.Concat(_steps));
     }

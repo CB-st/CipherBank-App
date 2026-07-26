@@ -1,0 +1,5 @@
+# Recovery files pulled off the device during backup/restore stories. They are real ciphered exports and
+# their password is journaled next to them for local diagnosis (dev/test only).
+# Never commit run output — only this placeholder file should be tracked.
+*
+!.gitignore

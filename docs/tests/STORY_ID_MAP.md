@@ -25,6 +25,7 @@ flowchart LR
 | US-ONB-03 | `US_ONB_03_WrongQuizWords_BlocksAdvance` | **Executable** — passed on `CipherBank_API34` (Task 8); wrong backup-quiz words surface `BackupQuizErrorLabel` and block advance to SetPin |
 | US-ONB-04 | `US_ONB_04_PinMismatch_BlocksSeal` | **Executable** — passed on `CipherBank_API34` (Task 8); confirm ≠ PIN surfaces `SetPinErrorLabel` and blocks seal; same Fresh-device fixture as CB-ACCOUNT-001 |
 | CB-ACCOUNT-PIN-CHANGE | `CB_ACCOUNT_PIN_CHANGE_DynamicPin` | **Executable** — passed on `CipherBank_API34` (Task 9); Sealed → Profile → Security → Change PIN, journal `AlternatePin` promoted, replaced PIN rejected on Unlock, new PIN reaches Home. Covers the wrong-PIN-error half of US-LCK-02; lockout-after-N-fails still uncovered |
+| CB-ACCOUNT-002 / US-ONB-02 | `CB_ACCOUNT_002_RecoverAccount` | **Executable** — passed on `CipherBank_API34` (Task 10); Sealed → Profile export (real `IMnemonicBackupService` file saved to Downloads) → `pm clear` → Welcome → Restore from backup → Android document picker → wrong password rejected → recovery password → SetPin → Home. Same custody proven by revealing the phrase on the recovered wallet through Profile's Vault card and comparing it with the pre-wipe phrase |
 
 ## Backlog
 
@@ -42,6 +43,9 @@ See `Stories/AutomationIdMap.cs`. New controls should prefer **identical** strin
 | quiz-continue | BackupQuizVerifyButton |
 | pin-input / pin-confirm / pin-finish | SetPinEntry / SetPinConfirmEntry / SetPinSealButton |
 | _(MAUI-only)_ change PIN | ProfileChangePinButton / ChangePinCurrentEntry / ChangePinEntry / ChangePinConfirmEntry / ChangePinSubmitButton |
+| _(MAUI-only)_ export recovery file | ProfileBackupPasswordEntry / ProfileBackupPasswordConfirmEntry / ProfileBackupHintEntry / ProfileExportBackupButton |
+| _(MAUI-only)_ restore from backup | WelcomeRestoreFromBackupButton / RestoreBackupPickFileButton / RestoreBackupFileStatusLabel / RestoreBackupPasswordEntry / RestoreBackupOpenButton / RestoreBackupErrorLabel |
+| _(MAUI-only)_ reveal phrase | ProfileRevealMnemonicButton / ProfileMnemonicRevealLabel |
 
 ## Run
 
@@ -64,7 +68,13 @@ E2E_RUN=1 TEST_PLATFORM=android ANDROID_APK_PATH=/path/to/app.apk \
 ./scripts/e2e-android.sh --story US-ONB-03
 ./scripts/e2e-android.sh --story US-ONB-04
 ./scripts/e2e-android.sh --story CB-ACCOUNT-PIN-CHANGE
+./scripts/e2e-android.sh --story CB-ACCOUNT-002
 ```
+
+`CB-ACCOUNT-002` drives Android's own document picker. The recovery password comes from
+`E2E_RECOVERY_PASSWORD` (default `Cb-Emu-Recovery-2026`, 12+ characters as the app requires), and the file the
+app exports is pulled to `artifacts/e2e-recovery/` for diagnosis. Both that directory and
+`artifacts/e2e-diagnostics/` (page-source dumps on unexpected screens) are gitignored.
 
 Appium server: `http://localhost:4723`.
 

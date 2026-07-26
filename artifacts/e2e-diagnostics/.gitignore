@@ -1,0 +1,5 @@
+# Appium page-source dumps captured when a story hits an unexpected screen. They mirror whatever was on the
+# device at the time (dev/test only).
+# Never commit run output — only this placeholder file should be tracked.
+*
+!.gitignore

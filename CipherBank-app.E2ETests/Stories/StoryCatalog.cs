@@ -52,8 +52,14 @@ public static class StoryCatalog
             "on CipherBank_API34 (./scripts/e2e-android.sh --story CB-ACCOUNT-PIN-CHANGE). Covers the " +
             "wrong-PIN-error half of US-LCK-02; the lockout-after-N-fails half is still uncovered",
             DeviceProfile.Sealed),
-        new(StoryIds.CbAccount002, StoryIds.UsOnb02, "Recover / returning device", StoryRunnerStatus.Backlog,
-            "WelcomeReturningButton + RestoreBackup; StoryProcedures.Account002Steps imported, page objects pending",
+        new(StoryIds.CbAccount002, StoryIds.UsOnb02, "Recover / returning device", StoryRunnerStatus.Executable,
+            "CB_ACCOUNT_002_RecoverAccount seals a wallet, exports a real ciphered recovery file through " +
+            "Profile → Backup recovery file (Core IMnemonicBackupService, saved to the device's Downloads " +
+            "collection), wipes the device, then restores through Welcome → Restore from backup → Android's " +
+            "own document picker → recovery password → SetPin → Home, journaling every " +
+            "StoryProcedures.Account002Steps id. A wrong recovery password is rejected first, and same-custody " +
+            "is proven by revealing the phrase on the recovered wallet (Profile → Vault) and comparing it with " +
+            "the pre-wipe phrase; passed on CipherBank_API34 (./scripts/e2e-android.sh --story CB-ACCOUNT-002)",
             DeviceProfile.Fresh),
         new(StoryIds.CbWallet001, "US-WLT-01", "Create user-controlled wallet", StoryRunnerStatus.Backlog, "Home / wallets"),
         new(StoryIds.CbWallet002, "US-WLT-02", "Create CipherBank checking wallet", StoryRunnerStatus.Backlog, "Hybrid checking"),

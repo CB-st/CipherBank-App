@@ -105,9 +105,13 @@
                 </DataTemplate>
               </CollectionView.ItemTemplate>
             </CollectionView>
-            <Entry Text="{Binding RevealPin}" IsPassword="True" Keyboard="Numeric" Placeholder="PIN to reveal mnemonic" />
-            <Button Text="Reveal mnemonic" Command="{Binding RevealMnemonicCommand}" />
-            <Label Text="{Binding MnemonicReveal}" LineBreakMode="WordWrap" FontFamily="ManropeSemiBold" />
+            <Entry Text="{Binding RevealPin}" IsPassword="True" Keyboard="Numeric" Placeholder="PIN to reveal mnemonic"
+                   AutomationId="ProfileRevealPinEntry" />
+            <Button Text="Reveal mnemonic" Command="{Binding RevealMnemonicCommand}"
+                    AutomationId="ProfileRevealMnemonicButton" />
+            <Label Text="{Binding MnemonicReveal}" LineBreakMode="WordWrap" FontFamily="ManropeSemiBold"
+                   IsVisible="{Binding MnemonicReveal, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="ProfileMnemonicRevealLabel" />
           </VerticalStackLayout>
         </controls:GlassCard.Body>
       </controls:GlassCard>

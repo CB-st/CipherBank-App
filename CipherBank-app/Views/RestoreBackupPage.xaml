@@ -17,11 +17,14 @@
             <Button Text="Choose recovery file" Command="{Binding PickFileCommand}"
                     AutomationId="RestoreBackupPickFileButton" />
             <Label Text="{Binding FileStatus}" FontSize="12"
-                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}"
+                   IsVisible="{Binding FileStatus, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="RestoreBackupFileStatusLabel" />
             <Entry Text="{Binding RecoveryPassword}" IsPassword="True" Placeholder="Recovery password"
                    AutomationId="RestoreBackupPasswordEntry" />
             <Label Text="{Binding Error}"
                    TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
+                   IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
                    AutomationId="RestoreBackupErrorLabel" />
           </VerticalStackLayout>
         </controls:GlassCard.Body>
