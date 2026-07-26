@@ -1,0 +1,299 @@
+name: AI Reply Trigger
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+
+concurrency:
+  group: ai-reply-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: write
+
+jobs:
+  resolve:
+    if: >-
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null) ||
+      github.event_name == 'pull_request_review_comment' ||
+      github.event_name == 'pull_request_review'
+    runs-on: ubuntu-22.04
+    outputs:
+      proceed: ${{ steps.resolve.outputs.proceed }}
+      personas: ${{ steps.resolve.outputs.personas }}
+      pr_number: ${{ steps.resolve.outputs.pr_number }}
+      pr_head_sha: ${{ steps.resolve.outputs.pr_head_sha }}
+      pr_base_sha: ${{ steps.resolve.outputs.pr_base_sha }}
+      pr_head_ref: ${{ steps.resolve.outputs.pr_head_ref }}
+      pr_base_ref: ${{ steps.resolve.outputs.pr_base_ref }}
+      pr_title: ${{ steps.resolve.outputs.pr_title }}
+      pr_author: ${{ steps.resolve.outputs.pr_author }}
+      comment_id: ${{ steps.resolve.outputs.comment_id }}
+      comment_kind: ${{ steps.resolve.outputs.comment_kind }}
+      commenter_login: ${{ steps.resolve.outputs.commenter_login }}
+      thread_node_id: ${{ steps.resolve.outputs.thread_node_id }}
+    steps:
+    - name: Resolve reply trigger
+      id: resolve
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const eventName = context.eventName;
+          const payload = context.payload;
+          const skip = (reason) =>
+          {
+            core.info(`Skipping reply trigger: ${reason}`);
+            core.setOutput('proceed', 'false');
+          };
+
+          let pr;
+          let comment;
+          let kind;
+          let threadNodeId = '';
+          if (eventName === 'issue_comment')
+          {
+            if (!payload.issue?.pull_request)
+              return skip('issue_comment is not on a pull request');
+            const r = await github.rest.pulls.get({ owner, repo, pull_number: payload.issue.number });
+            pr = r.data;
+            comment = payload.comment;
+            kind = 'issue_comment';
+          }
+          else if (eventName === 'pull_request_review_comment')
+          {
+            pr = payload.pull_request;
+            comment = payload.comment;
+            kind = 'review_comment';
+          }
+          else if (eventName === 'pull_request_review')
+          {
+            pr = payload.pull_request;
+            comment = payload.review;
+            kind = 'review';
+          }
+          else
+          {
+            return skip(`unsupported event ${eventName}`);
+          }
+
+          if (!pr || !comment)
+            return skip('missing pull request or comment payload');
+          if (pr.draft)
+            return skip('pull request is draft');
+
+          const resolveReviewCommentThreadNodeId = async () =>
+          {
+            const commentId = Number(comment.id);
+            if (!Number.isInteger(commentId) || commentId < 1)
+              throw new Error(`invalid review comment id '${comment.id}'`);
+
+            let cursor = null;
+            do
+            {
+              const r = await github.graphql(`
+                query($owner:String!, $name:String!, $number:Int!, $cursor:String)
+                {
+                  repository(owner:$owner, name:$name)
+                  {
+                    pullRequest(number:$number)
+                    {
+                      reviewThreads(first:100, after:$cursor)
+                      {
+                        pageInfo { hasNextPage endCursor }
+                        nodes
+                        {
+                          id
+                          comments(first:100)
+                          {
+                            nodes { databaseId }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`, { owner, name: repo, number: Number(pr.number), cursor });
+              const threads = r.repository?.pullRequest?.reviewThreads;
+              for (const thread of threads?.nodes ?? [])
+              {
+                const comments = thread.comments?.nodes ?? [];
+                if (comments.some(c => Number(c.databaseId) === commentId))
+                  return String(thread.id || '').trim();
+              }
+              cursor = threads?.pageInfo?.hasNextPage ? threads.pageInfo.endCursor : null;
+            }
+            while (cursor);
+
+            return '';
+          };
+
+          if (kind === 'review_comment')
+          {
+            try
+            {
+              threadNodeId = await resolveReviewCommentThreadNodeId();
+            }
+            catch (e)
+            {
+              return skip(`Could not resolve review comment thread: ${e.message}`);
+            }
+            if (!threadNodeId)
+              return skip(`Could not find review thread for comment ${comment.id}`);
+          }
+
+          try
+          {
+            const runs = await github.paginate(github.rest.actions.listWorkflowRuns,
+            {
+              owner,
+              repo,
+              workflow_id: 'sonar.yml',
+              event: 'pull_request',
+              branch: pr.head.ref,
+              status: 'in_progress',
+              per_page: 100,
+            });
+            if (runs.some(r => r.head_sha === pr.head.sha))
+              return skip('Sonar and AI Review is still running for this PR head');
+          }
+          catch (e)
+          {
+            return skip(`Could not inspect active review runs: ${e.message}`);
+          }
+
+          const body = comment.body || '';
+          const author = comment.user?.login || '';
+          if (!author)
+            return skip('comment author is missing');
+          if (comment.user?.type === 'Bot')
+            return skip(`comment author is a bot (${author})`);
+          if (kind === 'review' && !body.trim())
+            return skip('submitted review body is empty');
+
+          const markerSignatures =
+          [
+            '<!-- ai-review:fingerprint=',
+            '<!-- ai-review:meta ',
+            '<!-- cb-ai-summary:meta ',
+            '<!-- cb-ai-failure ',
+            '<!-- cb-ai-reply:meta ',
+            '<!-- ticket-intent: ',
+            '<!-- claude-review:fingerprint=',
+            '<!-- claude-review:meta ',
+            '<!-- conman-summary:meta ',
+            '<!-- conman-failure ',
+            '<!-- conman-reply:meta ',
+          ];
+          for (const marker of markerSignatures)
+          {
+            if (body.includes(marker))
+              return skip(`comment carries marker ${marker}`);
+          }
+
+          const personas = ['conman', 'gifany', 'cave'];
+          core.setOutput('proceed', 'true');
+          core.setOutput('personas', JSON.stringify(personas));
+          core.setOutput('pr_number', String(pr.number));
+          core.setOutput('pr_head_sha', pr.head.sha);
+          core.setOutput('pr_base_sha', pr.base.sha);
+          core.setOutput('pr_head_ref', pr.head.ref);
+          core.setOutput('pr_base_ref', pr.base.ref);
+          core.setOutput('pr_title', pr.title || '');
+          core.setOutput('pr_author', pr.user?.login || '');
+          core.setOutput('comment_id', String(comment.id));
+          core.setOutput('comment_kind', kind);
+          core.setOutput('commenter_login', author);
+          core.setOutput('thread_node_id', threadNodeId);
+          core.info(`Reply trigger resolved for PR #${pr.number} ${kind} ${comment.id}; personas=${personas.join(', ')}`);
+
+  ai_context:
+    needs: resolve
+    if: needs.resolve.outputs.proceed == 'true'
+    uses: ./.github/workflows/ai-context.yml
+    with:
+      pr_number: ${{ fromJSON(needs.resolve.outputs.pr_number) }}
+      pr_head_sha: ${{ needs.resolve.outputs.pr_head_sha }}
+      pr_base_sha: ${{ needs.resolve.outputs.pr_base_sha }}
+      pr_head_ref: ${{ needs.resolve.outputs.pr_head_ref }}
+      pr_base_ref: ${{ needs.resolve.outputs.pr_base_ref }}
+      pr_title: ${{ needs.resolve.outputs.pr_title }}
+      pr_author: ${{ needs.resolve.outputs.pr_author }}
+
+  dispatch_replies:
+    needs: [resolve, ai_context]
+    if: needs.resolve.outputs.proceed == 'true' && needs.ai_context.result == 'success'
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Mint CipherBank.AI dispatch token
+      id: dispatch_token
+      uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+      with:
+        app-id: ${{ secrets.CB_AI_DISPATCH_APP_ID }}
+        private-key: ${{ secrets.CB_AI_DISPATCH_APP_KEY }}
+        owner: ${{ vars.CB_AI_OWNER || 'CB-st' }}
+        repositories: ${{ vars.CB_AI_REPO || 'CipherBank.AI' }}
+        permission-actions: write
+
+    - name: Dispatch central AI reply batch
+      env:
+        GH_TOKEN: ${{ steps.dispatch_token.outputs.token }}
+        CB_AI_OWNER: ${{ vars.CB_AI_OWNER || 'CB-st' }}
+        CB_AI_REPO: ${{ vars.CB_AI_REPO || 'CipherBank.AI' }}
+        CB_AI_REF: ${{ vars.CB_AI_REF || 'main' }}
+        TARGET_OWNER: ${{ github.repository_owner }}
+        TARGET_REPO: ${{ github.event.repository.name }}
+        PR_NUMBER: ${{ needs.resolve.outputs.pr_number }}
+        PR_HEAD_SHA: ${{ needs.resolve.outputs.pr_head_sha }}
+        PR_BASE_SHA: ${{ needs.resolve.outputs.pr_base_sha }}
+        PR_HEAD_REF: ${{ needs.resolve.outputs.pr_head_ref }}
+        PR_BASE_REF: ${{ needs.resolve.outputs.pr_base_ref }}
+        PR_TITLE: ${{ needs.resolve.outputs.pr_title }}
+        PR_AUTHOR: ${{ needs.resolve.outputs.pr_author }}
+        BUNDLE_RUN_ID: ${{ github.run_id }}
+        BUNDLE_ARTIFACT_NAME: ${{ needs.ai_context.outputs.artifact_name }}
+        PERSONA_IDS: ${{ needs.resolve.outputs.personas }}
+        COMMENT_ID: ${{ needs.resolve.outputs.comment_id }}
+        COMMENT_KIND: ${{ needs.resolve.outputs.comment_kind }}
+        COMMENTER_LOGIN: ${{ needs.resolve.outputs.commenter_login }}
+        THREAD_NODE_ID: ${{ needs.resolve.outputs.thread_node_id }}
+      run: |
+        set -euo pipefail
+        payload_json="$(
+          jq -n '{
+            target: {
+              owner: env.TARGET_OWNER,
+              repo: env.TARGET_REPO
+            },
+            pull_request: {
+              number: (env.PR_NUMBER | tonumber),
+              head_sha: env.PR_HEAD_SHA,
+              base_sha: env.PR_BASE_SHA,
+              head_ref: env.PR_HEAD_REF,
+              base_ref: env.PR_BASE_REF,
+              title: env.PR_TITLE,
+              author: env.PR_AUTHOR
+            },
+            bundle: {
+              run_id: env.BUNDLE_RUN_ID,
+              artifact_name: env.BUNDLE_ARTIFACT_NAME
+            },
+            agent: {
+              persona_ids: (env.PERSONA_IDS | fromjson)
+            },
+            comment: {
+              id: env.COMMENT_ID,
+              kind: env.COMMENT_KIND,
+              author: env.COMMENTER_LOGIN,
+              thread_node_id: env.THREAD_NODE_ID
+            }
+          }'
+        )"
+        dispatch_body="$(jq -n --arg ref "$CB_AI_REF" --arg payload_json "$payload_json" '{ ref: $ref, inputs: { payload_json: $payload_json } }')"
+        gh api "repos/${CB_AI_OWNER}/${CB_AI_REPO}/actions/workflows/ai-reply.yml/dispatches" --method POST --input - <<<"$dispatch_body"

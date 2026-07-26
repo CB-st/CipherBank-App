@@ -1,0 +1,55 @@
+name: AI Ticket Consolidation
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  dispatch-ticket-consolidation:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+    - name: Mint CipherBank.AI dispatch token
+      id: dispatch_token
+      uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+      with:
+        app-id: ${{ secrets.CB_AI_DISPATCH_APP_ID }}
+        private-key: ${{ secrets.CB_AI_DISPATCH_APP_KEY }}
+        owner: ${{ vars.CB_AI_OWNER || 'CB-st' }}
+        repositories: ${{ vars.CB_AI_REPO || 'CipherBank.AI' }}
+        permission-actions: write
+
+    - name: Dispatch central AI ticket consolidation
+      run: |
+        set -euo pipefail
+        payload_json="$(
+          jq -n '{
+            target: {
+              owner: env.GITHUB_REPOSITORY_OWNER,
+              repo: env.GITHUB_REPOSITORY | split("/")[1]
+            },
+            pull_request: {
+              number: (env.PR_NUMBER | tonumber)
+            },
+            source: {
+              workflow_run_id: env.GITHUB_RUN_ID,
+              event: env.GITHUB_EVENT_NAME,
+              action: env.PR_ACTION,
+              merged: (env.PR_MERGED == "true")
+            },
+            agent: {
+              persona_ids: ["conman", "gifany", "cave"]
+            }
+          }'
+        )"
+        dispatch_body="$(jq -n --arg ref "$CB_AI_REF" --arg payload_json "$payload_json" '{ ref: $ref, inputs: { payload_json: $payload_json } }')"
+        gh api "repos/${CB_AI_OWNER}/${CB_AI_REPO}/actions/workflows/ai-ticket-consolidate.yml/dispatches" --method POST --input - <<<"$dispatch_body"
+      env:
+        GH_TOKEN: ${{ steps.dispatch_token.outputs.token }}
+        CB_AI_OWNER: ${{ vars.CB_AI_OWNER || 'CB-st' }}
+        CB_AI_REPO: ${{ vars.CB_AI_REPO || 'CipherBank.AI' }}
+        CB_AI_REF: ${{ vars.CB_AI_REF || 'main' }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_ACTION: ${{ github.event.action }}
+        PR_MERGED: ${{ github.event.pull_request.merged }}

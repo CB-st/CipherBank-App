@@ -1,0 +1,379 @@
+name: SonarQube Analysis
+
+# Reusable workflow invoked by sonar.yml alongside `context`. Runs
+# SonarScanner for .NET against library/test projects (MAUI host deferred
+# until a full build stage exists), polls the server until analysis
+# finishes, fetches the quality gate + PR- or branch-scoped issues, and
+# uploads them as `sonar-context-<full_git_sha>` (and
+# `sonar-report-task-<full_git_sha>`) so consumers resolve artifacts by
+# the scanned commit only.
+#
+# Two deliverables, both consumed downstream:
+#   1. `sonar-report-task-<sha>` artifact -- the raw report-task.txt from the
+#      scanner. Small; useful for debugging a failed run.
+#   2. `sonar-context-<sha>` artifact -- normalised JSON (quality-gate.json +
+#      issues.json + sonar-env.json) that the central AI review workflow
+#      merges into REVIEW_DIR/sonar/.
+#
+# Quality gate pass/fail is surfaced by SonarQube's own GitHub check
+# (e.g. "SonarQube Code Analysis"); this job does not exit non-zero on a
+# red gate so PRs are not double-marked. `sonar-env.json` still records
+# `gate_status` for central AI review policy.
+
+on:
+  workflow_call:
+    inputs:
+      scan_commit_sha:
+        type: string
+        required: true
+      sonar_branch_name:
+        type: string
+        required: true
+      pull_request_number:
+        type: number
+        required: false
+        default: 0
+    secrets:
+      # Authentication token for SonarQube -- user-scoped or project-scoped
+      # (project-scoped preferred). Provisioned by the SRE on the server
+      # side; loaded into the repo secret of the same name.
+      SONAR_TOKEN:
+        required: true
+
+# NB: SONAR_HOST_URL is read from `vars.SONAR_HOST_URL`, not from a secret.
+# The URL itself isn't sensitive (it's just where the SonarQube instance
+# lives), so burning a secret slot on it isn't worth it. `vars` also
+# renders the URL cleanly in logs, which makes reachability failures
+# easier to triage than a masked `***`. Reusable workflows inherit
+# `vars` from the calling workflow automatically -- no extra plumbing
+# needed in sonar.yml.
+
+jobs:
+  sonar:
+    runs-on: ubuntu-22.04
+    # Restore + library build + scan + poll. 30 leaves headroom for cold NuGet.
+    timeout-minutes: 30
+    permissions:
+      contents: read          # scanner reads the tree + git blame
+      pull-requests: read     # scanner decorates PR metadata
+      checks: write           # scanner posts a check run via its own token
+    env:
+      IS_PR:                ${{ inputs.pull_request_number != 0 && 'true' || 'false' }}
+      PULL_REQUEST_NUMBER:  ${{ inputs.pull_request_number }}
+      SONAR_BRANCH_NAME:    ${{ inputs.sonar_branch_name }}
+      SCAN_COMMIT_SHA:      ${{ inputs.scan_commit_sha }}
+      SONAR_DIR:            bin/sonar
+      # SonarScanner for .NET writes report-task under .sonarqube/, not .scannerwork/.
+      REPORT_TASK:          .sonarqube/out/.sonar/report-task.txt
+      DOTNET_NOLOGO:        true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+
+      ### 1. Checkout ###########################################################
+      # fetch-depth: 0 is required by SonarQube's blame-based "new code"
+      # metric. Every shallow clone makes the server mark the whole file
+      # as "new" and the gate becomes uselessly strict.
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.scan_commit_sha }}
+          fetch-depth: 0
+
+      ### 2. Reachability probe #################################################
+      - name: Probe SonarQube reachability
+        env:
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        run: |
+          set -e
+          if [ -z "${SONAR_HOST_URL}" ]; then
+            echo "vars.SONAR_HOST_URL is unset. Set it via Settings -> Secrets and variables -> Actions -> Variables." >&2
+            exit 1
+          fi
+          if ! curl -sf --max-time 10 -o /dev/null "${SONAR_HOST_URL}/api/system/status"; then
+            echo "SonarQube at ${SONAR_HOST_URL}/api/system/status is not reachable from this runner." >&2
+            echo "Possible causes: VPN/SRE routing issue, instance down, stale SONAR_HOST_URL variable." >&2
+            exit 1
+          fi
+
+      ### 3. Optional coverage artifact (future build job) ######################
+      # When a build job uploads `coverage-report`, materialise it here.
+      # Failure is soft -- a scan without coverage is better than no scan.
+      - name: Download coverage artifact
+        id: download_coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
+        with:
+          name: coverage-report
+          path: .
+
+      - name: Verify optional coverage report
+        run: |
+          # Prefer OpenCover/Cobertura paths declared in sonar-project.properties
+          # once a build job starts emitting them. Until then, warn and continue.
+          found=0
+          for target in \
+            reports/coverage.opencover.xml \
+            reports/coverage.cobertura.xml \
+            CipherBank-app.Tests/coverage/coverage.cobertura.xml
+          do
+            if [ -f "$target" ]; then
+              echo "Coverage report ($(wc -c < "$target") bytes) at $target."
+              found=1
+            fi
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "::warning::No coverage report found; SonarQube will report 0% coverage on this scan until a build job uploads one."
+          fi
+
+      ### 4. Toolchain ##########################################################
+      - name: Set up .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Set up Java (SonarScanner end step)
+        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      ### 5. Begin / build / end ################################################
+      # C# analysis requires SonarScanner for .NET wrapping a real compile.
+      # Until MAUI/Android CI exists, scan the portable library + unit-test
+      # projects only. The MAUI host (CipherBank-app) is excluded from the
+      # build list so Linux runners do not need Android workloads.
+      - name: Begin SonarQube analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+          extra_args=()
+          if [ "${IS_PR}" = "true" ]; then
+            extra_args+=(
+              "/d:sonar.pullrequest.key=${PULL_REQUEST_NUMBER}"
+              "/d:sonar.pullrequest.branch=${SONAR_BRANCH_NAME}"
+              "/d:sonar.pullrequest.base=${PR_BASE_REF}"
+            )
+          else
+            extra_args+=("/d:sonar.branch.name=${SONAR_BRANCH_NAME}")
+          fi
+          # shellcheck disable=SC2086
+          dotnet sonarscanner begin \
+            /d:sonar.token="${SONAR_TOKEN}" \
+            /d:sonar.host.url="${SONAR_HOST_URL}" \
+            /d:sonar.scanner.skipJreProvisioning=true \
+            /d:sonar.verbose=true \
+            "${extra_args[@]}"
+
+      - name: Build analyzable projects
+        run: |
+          set -euo pipefail
+          projects=(
+            CipherBank-app.Core/CipherBank-app.Core.csproj
+            CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
+            CipherBank-app.Tests/CipherBank-app.Tests.csproj
+          )
+          for project in "${projects[@]}"; do
+            echo "Building ${project}"
+            dotnet restore "${project}"
+            dotnet build "${project}" --no-restore -c Release
+          done
+
+      - name: End SonarQube analysis
+        id: scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+          dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+
+      ### 6. Capture report-task.txt ############################################
+      - name: Upload report-task artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sonar-report-task-${{ inputs.scan_commit_sha }}
+          path: ${{ env.REPORT_TASK }}
+          if-no-files-found: warn
+          retention-days: 14
+          overwrite: true
+
+      ### 7. Poll analysis task + fetch quality gate + fetch issues #############
+      - name: Poll Sonar API and normalise results
+        id: poll
+        env:
+          SONAR_TOKEN:           ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL:        ${{ vars.SONAR_HOST_URL }}
+          IS_PR:                 ${{ env.IS_PR }}
+          PULL_REQUEST_NUMBER:   ${{ env.PULL_REQUEST_NUMBER }}
+          SONAR_BRANCH_NAME:     ${{ env.SONAR_BRANCH_NAME }}
+          SCAN_COMMIT_SHA:       ${{ env.SCAN_COMMIT_SHA }}
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+
+            const SONAR_DIR = process.env.SONAR_DIR;
+            fs.mkdirSync(SONAR_DIR, { recursive: true });
+
+            const hostUrl = (process.env.SONAR_HOST_URL || '').replace(/\/+$/, '');
+            const token   = process.env.SONAR_TOKEN;
+            if (!hostUrl || !token)
+            {
+              core.setFailed('vars.SONAR_HOST_URL (variable) or secrets.SONAR_TOKEN (secret) is unset; cannot poll Sonar.');
+              return;
+            }
+            // Basic auth with the token as username + empty password is
+            // what SonarQube's API docs recommend over Authorization:
+            // Bearer (which only works for "user tokens of type PROJECT_-
+            // ANALYSIS_TOKEN" on newer servers). Basic works everywhere.
+            const authHeader = 'Basic ' + Buffer.from(`${token}:`).toString('base64');
+            const headers = { Authorization: authHeader, Accept: 'application/json' };
+
+            const report = fs.readFileSync(process.env.REPORT_TASK, 'utf8');
+            const parseKV = (txt) =>
+            {
+              const out = {};
+              for (const line of txt.split('\n'))
+              {
+                const m = line.match(/^([^=]+)=(.*)$/);
+                if (m) out[m[1].trim()] = m[2].trim();
+              }
+              return out;
+            };
+            const rt = parseKV(report);
+            const ceTaskId  = rt.ceTaskId;
+            const ceTaskUrl = rt.ceTaskUrl;
+            const projectKey = rt.projectKey;
+            if (!ceTaskId || !ceTaskUrl || !projectKey)
+            {
+              core.setFailed(`Malformed report-task.txt; missing ceTaskId/ceTaskUrl/projectKey. Content: ${JSON.stringify(rt)}`);
+              return;
+            }
+            core.info(`Polling Sonar task ${ceTaskId} at ${hostUrl}`);
+
+            const fetchJson = async (url) =>
+            {
+              const r = await fetch(url, { headers });
+              const txt = await r.text();
+              if (!r.ok) throw new Error(`${r.status} ${r.statusText} on ${url}: ${txt.slice(0, 400)}`);
+              try { return JSON.parse(txt); }
+              catch { throw new Error(`Non-JSON response from ${url}: ${txt.slice(0, 400)}`); }
+            };
+
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+            let analysisId = null;
+            let task = null;
+            const started = Date.now();
+            const MAX_WAIT_MS = 5 * 60 * 1000;
+            let delay = 2000;
+            for (;;)
+            {
+              const p = await fetchJson(`${hostUrl}/api/ce/task?id=${encodeURIComponent(ceTaskId)}`);
+              task = p.task;
+              if (!task) throw new Error(`Unexpected ce/task payload: ${JSON.stringify(p).slice(0, 400)}`);
+              if (task.status === 'SUCCESS') { analysisId = task.analysisId; break; }
+              if (task.status === 'FAILED' || task.status === 'CANCELED')
+                throw new Error(`SonarQube CE task ${ceTaskId} terminated with status ${task.status}`);
+              if (Date.now() - started > MAX_WAIT_MS)
+                throw new Error(`SonarQube CE task ${ceTaskId} still ${task.status} after ${Math.round(MAX_WAIT_MS / 1000)}s; giving up.`);
+              core.info(`Task status: ${task.status}; sleeping ${delay}ms`);
+              await sleep(delay);
+              delay = Math.min(delay * 2, 15000);
+            }
+            core.info(`Analysis ${analysisId} complete; fetching quality gate`);
+
+            const qg = await fetchJson(`${hostUrl}/api/qualitygates/project_status?analysisId=${encodeURIComponent(analysisId)}`);
+            const projectStatus = qg.projectStatus || {};
+            fs.writeFileSync(`${SONAR_DIR}/quality-gate.json`, JSON.stringify(projectStatus, null, 2));
+            const gateStatus = projectStatus.status || 'UNKNOWN';
+            core.info(`Quality gate: ${gateStatus} (conditions: ${(projectStatus.conditions || []).length})`);
+
+            const scope = process.env.IS_PR === 'true'
+              ? `&pullRequest=${encodeURIComponent(process.env.PULL_REQUEST_NUMBER)}`
+              : `&branch=${encodeURIComponent(process.env.SONAR_BRANCH_NAME || '')}`;
+            const MAX_PAGES = 10;
+            const PAGE_SIZE = 500;
+            let issues = [];
+            for (let p = 1; p <= MAX_PAGES; p++)
+            {
+              const url = `${hostUrl}/api/issues/search?componentKeys=${encodeURIComponent(projectKey)}${scope}&ps=${PAGE_SIZE}&p=${p}&resolved=false`;
+              const page = await fetchJson(url);
+              issues = issues.concat(page.issues || []);
+              const total = page.paging?.total ?? issues.length;
+              if (issues.length >= total || (page.issues || []).length === 0) break;
+            }
+            fs.writeFileSync(`${SONAR_DIR}/issues.json`, JSON.stringify(issues, null, 2));
+            core.info(`Fetched ${issues.length} unresolved issue(s) in scope`);
+
+            const prNum = process.env.IS_PR === 'true' ? Number(process.env.PULL_REQUEST_NUMBER) : null;
+            const env =
+            {
+              sonar_present:  true,
+              host_url:       hostUrl,
+              project_key:    projectKey,
+              analysis_id:    analysisId,
+              ce_task_id:     ceTaskId,
+              ce_task_url:    ceTaskUrl,
+              gate_status:    gateStatus,
+              issue_count:    issues.length,
+              is_pr:          process.env.IS_PR === 'true',
+              pr_number:      prNum,
+              scan_commit_sha: process.env.SCAN_COMMIT_SHA,
+              fetched_at_iso: new Date().toISOString(),
+              run_id:         process.env.GITHUB_RUN_ID,
+            };
+            fs.writeFileSync(`${SONAR_DIR}/sonar-env.json`, JSON.stringify(env, null, 2));
+
+            const rows = (projectStatus.conditions || []).map(c =>
+              `| \`${c.metricKey}\` | ${c.status} | ${c.actualValue ?? ''} | ${c.comparator ?? ''} ${c.errorThreshold ?? ''} |`,
+            ).join('\n');
+            await core.summary
+              .addHeading(`SonarQube gate: ${gateStatus}`, 2)
+              .addRaw(`Project: \`${projectKey}\` · ${issues.length} unresolved issue(s) in scope\n\n`)
+              .addRaw(rows
+                ? `| Metric | Status | Actual | Threshold |\n|---|---|---|---|\n${rows}\n`
+                : `_No gate conditions returned._\n`)
+              .write();
+
+            core.setOutput('gate_status', gateStatus);
+            core.setOutput('issue_count', String(issues.length));
+
+      ### 8. Upload normalised sonar-context artifact ###########################
+      - name: Upload sonar-context artifact
+        if: ${{ !cancelled() && steps.poll.outcome == 'success' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sonar-context-${{ inputs.scan_commit_sha }}
+          path: ${{ env.SONAR_DIR }}/**
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
+
+      ### 9. Log quality gate (no exit-code enforcement) ########################
+      - name: Report quality gate outcome
+        if: steps.poll.outputs.gate_status != ''
+        env:
+          GATE: ${{ steps.poll.outputs.gate_status }}
+        run: |
+          case "$GATE" in
+            OK|NONE)
+              echo "Quality gate: $GATE -- pass."
+              ;;
+            WARN)
+              echo "::notice::Quality gate: WARN -- legacy status from some CE builds; see job summary + sonar-context artifact."
+              ;;
+            ERROR)
+              echo "::notice::Quality gate: ERROR -- SonarQube's own PR check should show the failure; see job summary + sonar-context artifact."
+              ;;
+            *)
+              echo "::error::Unknown quality gate status '$GATE'; fail closed until the poll script recognises this value." >&2
+              exit 1
+              ;;
+          esac

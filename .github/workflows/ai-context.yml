@@ -1,0 +1,46 @@
+name: AI Context
+
+# Thin wrapper around CipherBank.AI's reusable context builder.
+# This app reviews itself only -- no sibling repos, so no automerge
+# GitHub App token is required. Central ai-context treats
+# sibling_fetch_token as optional and falls back to github.token.
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:   { type: number, required: true }
+      pr_head_sha: { type: string, required: true }
+      pr_base_sha: { type: string, required: true }
+      pr_head_ref: { type: string, required: true }
+      pr_base_ref: { type: string, required: true }
+      pr_title:    { type: string, required: false, default: '' }
+      pr_author:   { type: string, required: false, default: '' }
+    outputs:
+      head_sha_snapshotted:
+        description: "The PR head SHA this context snapshot was built against."
+        value: ${{ jobs.context.outputs.head_sha_snapshotted }}
+      artifact_name:
+        description: "The uploaded context bundle artifact name."
+        value: ${{ jobs.context.outputs.artifact_name }}
+      preflight_failed:
+        description: "'true' when the PR exceeded preflight size caps."
+        value: ${{ jobs.context.outputs.preflight_failed }}
+
+jobs:
+  context:
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      actions: write
+    uses: CB-st/CipherBank.AI/.github/workflows/ai-context.yml@main
+    with:
+      pr_number: ${{ inputs.pr_number }}
+      pr_head_sha: ${{ inputs.pr_head_sha }}
+      pr_base_sha: ${{ inputs.pr_base_sha }}
+      pr_head_ref: ${{ inputs.pr_head_ref }}
+      pr_base_ref: ${{ inputs.pr_base_ref }}
+      pr_title: ${{ inputs.pr_title }}
+      pr_author: ${{ inputs.pr_author }}
+      # Empty sibling list -- review this repository only.
+      sibling_repositories_json: '[]'
