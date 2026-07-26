@@ -37,7 +37,7 @@ public class RateLimitingHandlerTests
         successCount.Should().Be(100);
 
         // 101st request should fail
-        var overLimit = await rateLimiter.TryAcquireAsync(default);
+        bool overLimit = await rateLimiter.TryAcquireAsync(default);
         overLimit.Should().BeFalse();
     }
 
@@ -81,7 +81,7 @@ public class RateLimitingHandlerTests
         await Task.Delay(250);
 
         // Should be able to make requests again
-        var afterWait = await rateLimiter.TryAcquireAsync(default);
+        bool afterWait = await rateLimiter.TryAcquireAsync(default);
         afterWait.Should().BeTrue();
     }
 
@@ -94,7 +94,7 @@ public class RateLimitingHandlerTests
 
         // Act
         await rateLimiter.TryAcquireAsync(default);
-        var waitTime = await rateLimiter.GetWaitTimeAsync(default);
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync(default);
 
         // Assert - Wait time should be close to window duration
         waitTime.Should().BeGreaterThan(TimeSpan.Zero);

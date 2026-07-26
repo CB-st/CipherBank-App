@@ -4,6 +4,7 @@
 
 using CipherBank_app.Persist;
 using FluentAssertions;
+using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace CipherBank_app.Tests.Persist;
@@ -18,7 +19,7 @@ public class RecipientRepositoryTests
         await db.InitializeAsync();
         var repo = new RecipientRepository(db);
         await repo.SeedDefaultsIfEmptyAsync();
-        var list = await repo.ListAsync();
+        IReadOnlyList<AchRecipientRow> list = await repo.ListAsync();
         list.Should().HaveCountGreaterThanOrEqualTo(2);
         await repo.SeedDefaultsIfEmptyAsync();
         (await repo.ListAsync()).Should().HaveCount(list.Count);
@@ -43,7 +44,7 @@ public class RecipientRepositoryTests
             null,
             null,
             DateTimeOffset.UtcNow);
-        var recipientToKeep = recipientToDelete with { Id = "keep-me", Name = "Keep me" };
+        AchRecipientRow recipientToKeep = recipientToDelete with { Id = "keep-me", Name = "Keep me" };
         await repo.UpsertAsync(recipientToDelete);
         await repo.UpsertAsync(recipientToKeep);
 
@@ -72,18 +73,18 @@ public class RecipientRepositoryTests
             null,
             DateTimeOffset.UtcNow));
 
-        var listed = await repo.ListAsync();
+        IReadOnlyList<AchRecipientRow> listed = await repo.ListAsync();
         listed.Should().ContainSingle();
         listed[0].Account.Should().BeNull();
         listed[0].Routing.Should().BeNull();
         listed[0].AccountMask.Should().Be(AchRecipientValidation.MaskAccount("88210001"));
         listed[0].RoutingMask.Should().Be(AchRecipientValidation.MaskRouting("021000021"));
 
-        await using var conn = db.Open();
+        await using SqliteConnection conn = db.Open();
         await conn.OpenAsync();
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT account, routing, account_mask, routing_mask FROM recipients WHERE id='payee-1'";
-        await using var reader = await cmd.ExecuteReaderAsync();
+        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync();
         (await reader.ReadAsync()).Should().BeTrue();
         reader.IsDBNull(0).Should().BeTrue();
         reader.IsDBNull(1).Should().BeTrue();

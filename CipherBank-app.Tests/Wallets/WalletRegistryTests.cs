@@ -14,7 +14,7 @@ public class WalletRegistryTests
     [Fact]
     public void BtcModule_CanDerive()
     {
-        var mod = WalletRegistry.Get("BTC");
+        WalletModule mod = WalletRegistry.Get("BTC");
         mod.CanDerive.Should().BeTrue();
         mod.AddModes.Should().Contain(WalletUiMode.Derive);
         mod.UsesServerWallets.Should().BeFalse();
@@ -23,7 +23,7 @@ public class WalletRegistryTests
     [Fact]
     public void XmrModule_UsesServerWallets()
     {
-        var mod = WalletRegistry.Get("XMR");
+        WalletModule mod = WalletRegistry.Get("XMR");
         mod.CanDerive.Should().BeFalse();
         mod.UsesServerWallets.Should().BeTrue();
         mod.AddModes.Should().Contain(WalletUiMode.Managed);
@@ -34,7 +34,7 @@ public class WalletRegistryTests
     {
         const string mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
         MnemonicHelper.Validate(mnemonic).Should().BeTrue();
-        var btc = AddressDerive.DeriveBtc(mnemonic, 0);
+        DerivedAddress btc = AddressDerive.DeriveBtc(mnemonic, 0);
         btc.Address.Should().StartWith("bc1");
         btc.Path.Should().Be("m/84'/0'/0'/0/0");
     }
@@ -43,7 +43,7 @@ public class WalletRegistryTests
     public void DeriveEth_IsChecksummed()
     {
         const string mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-        var eth = AddressDerive.DeriveEth(mnemonic, 0);
+        DerivedAddress eth = AddressDerive.DeriveEth(mnemonic, 0);
         eth.Address.Should().StartWith("0x");
         eth.Address.Length.Should().Be(42);
     }

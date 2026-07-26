@@ -31,7 +31,7 @@ public sealed class LocalDb : ILocalDb
     public async Task InitializeAsync()
     {
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
-        await using var conn = Open();
+        await using SqliteConnection conn = Open();
         await conn.OpenAsync().ConfigureAwait(false);
         const string sql = """
             CREATE TABLE IF NOT EXISTS wallets (
@@ -73,7 +73,7 @@ public sealed class LocalDb : ILocalDb
               updated_at INTEGER NOT NULL
             );
             """;
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = sql;
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
     }

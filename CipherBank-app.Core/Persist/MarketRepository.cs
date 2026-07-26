@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using Microsoft.Data.Sqlite;
+
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
@@ -18,12 +20,12 @@ public sealed class MarketRepository : IMarketRepository
         CancellationToken ct)
     {
         string normalizedSymbol = symbol.ToUpperInvariant();
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);
         await using var transaction = (Microsoft.Data.Sqlite.SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
         foreach ((long timestamp, double value) in points)
         {
-            await using var cmd = conn.CreateCommand();
+            await using SqliteCommand cmd = conn.CreateCommand();
             cmd.Transaction = transaction;
             cmd.CommandText = """
                 INSERT INTO ohlc (symbol, t, v)
@@ -57,9 +59,9 @@ public sealed class MarketRepository : IMarketRepository
         long? fromT,
         CancellationToken ct)
     {
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = """
             SELECT t, v
             FROM ohlc
@@ -70,7 +72,7 @@ public sealed class MarketRepository : IMarketRepository
         cmd.Parameters.AddWithValue("$fromT", (object?)fromT ?? DBNull.Value);
 
         var points = new List<(long T, double V)>();
-        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
         {
             points.Add((reader.GetInt64(0), reader.GetDouble(1)));

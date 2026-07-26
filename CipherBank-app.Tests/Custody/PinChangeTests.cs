@@ -60,9 +60,9 @@ public class PinChangeTests
     [Fact]
     public async Task Change_RejectsConfirmMismatch_WithoutTouchingStoredPin()
     {
-        var (pin, coordinator) = await SeededAsync();
+        (PinService? pin, PinChangeCoordinator? coordinator) = await SeededAsync();
 
-        var outcome = await coordinator.ChangeAsync(CurrentPin, NextPin, NextPin + "9");
+        PinChangeOutcome outcome = await coordinator.ChangeAsync(CurrentPin, NextPin, NextPin + "9");
 
         outcome.Status.Should().Be(PinChangeStatus.Mismatch);
         outcome.Succeeded.Should().BeFalse();
@@ -73,9 +73,9 @@ public class PinChangeTests
     [Fact]
     public async Task Change_RejectsTooShortNewPin()
     {
-        var (pin, coordinator) = await SeededAsync();
+        (PinService? pin, PinChangeCoordinator? coordinator) = await SeededAsync();
 
-        var outcome = await coordinator.ChangeAsync(CurrentPin, "1234", "1234");
+        PinChangeOutcome outcome = await coordinator.ChangeAsync(CurrentPin, "1234", "1234");
 
         outcome.Status.Should().Be(PinChangeStatus.TooShort);
         (await pin.VerifyPinAsync(CurrentPin)).Should().BeTrue();
@@ -84,9 +84,9 @@ public class PinChangeTests
     [Fact]
     public async Task Change_RejectsWrongCurrentPin()
     {
-        var (pin, coordinator) = await SeededAsync();
+        (PinService? pin, PinChangeCoordinator? coordinator) = await SeededAsync();
 
-        var outcome = await coordinator.ChangeAsync("999999", NextPin, NextPin);
+        PinChangeOutcome outcome = await coordinator.ChangeAsync("999999", NextPin, NextPin);
 
         outcome.Status.Should().Be(PinChangeStatus.WrongCurrentPin);
         (await pin.VerifyPinAsync(NextPin)).Should().BeFalse("the new PIN must not be armed when the old one fails");
@@ -96,9 +96,9 @@ public class PinChangeTests
     [Fact]
     public async Task Change_RejectsReusingCurrentPin()
     {
-        var (_, coordinator) = await SeededAsync();
+        (PinService _, PinChangeCoordinator? coordinator) = await SeededAsync();
 
-        var outcome = await coordinator.ChangeAsync(CurrentPin, CurrentPin, CurrentPin);
+        PinChangeOutcome outcome = await coordinator.ChangeAsync(CurrentPin, CurrentPin, CurrentPin);
 
         outcome.Status.Should().Be(PinChangeStatus.SameAsCurrent);
     }
@@ -106,9 +106,9 @@ public class PinChangeTests
     [Fact]
     public async Task Change_SucceedsAndSwapsActivePin()
     {
-        var (pin, coordinator) = await SeededAsync();
+        (PinService? pin, PinChangeCoordinator? coordinator) = await SeededAsync();
 
-        var outcome = await coordinator.ChangeAsync(CurrentPin, NextPin, NextPin);
+        PinChangeOutcome outcome = await coordinator.ChangeAsync(CurrentPin, NextPin, NextPin);
 
         outcome.Succeeded.Should().BeTrue();
         outcome.Status.Should().Be(PinChangeStatus.Success);
@@ -142,7 +142,7 @@ public class PinChangeTests
         var custody = new CustodyService(store, pin);
         string mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
 
-        var outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
+        PinChangeOutcome outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
 
         outcome.Succeeded.Should().BeFalse();
         outcome.Status.Should().Be(PinChangeStatus.VaultNotReady);
@@ -165,7 +165,7 @@ public class PinChangeTests
         string mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
         (await custody.UnlockAsync(CurrentPin)).Should().BeTrue();
 
-        var outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
+        PinChangeOutcome outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
 
         outcome.Succeeded.Should().BeTrue();
         custody.Lock();
@@ -205,9 +205,9 @@ public class PinChangeTests
     [Fact]
     public async Task ChangeAsync_WithNullNewPin_IsRejectedWithoutTouchingStoredPin()
     {
-        var (pin, coordinator) = await SeededAsync();
+        (PinService? pin, PinChangeCoordinator? coordinator) = await SeededAsync();
 
-        var outcome = await coordinator.ChangeAsync(CurrentPin, null, null);
+        PinChangeOutcome outcome = await coordinator.ChangeAsync(CurrentPin, null, null);
 
         outcome.Status.Should().Be(PinChangeStatus.TooShort);
         (await pin.VerifyPinAsync(CurrentPin)).Should().BeTrue();

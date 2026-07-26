@@ -46,7 +46,7 @@ public class TransactionServiceTests
             .ReturnsAsync(expectedTransactions);
 
         // Act
-        var result = await mockService.Object.GetTransactionHistoryAsync("wallet1", default);
+        List<Transaction> result = await mockService.Object.GetTransactionHistoryAsync("wallet1", default);
 
         // Assert
         result.Should().HaveCount(2);
@@ -75,7 +75,7 @@ public class TransactionServiceTests
             .ReturnsAsync(expectedTransaction);
 
         // Act
-        var result = await mockService.Object.PurchaseCryptoAsync("ETH", 0.5m, default);
+        Transaction result = await mockService.Object.PurchaseCryptoAsync("ETH", 0.5m, default);
 
         // Assert
         result.Type.Should().Be(TransactionType.Purchase);
@@ -94,7 +94,7 @@ public class TransactionServiceTests
             .ThrowsAsync(new ArgumentException("Amount must be positive"));
 
         // Act
-        var act = async () => await mockService.Object.PurchaseCryptoAsync("BTC", 0m, default);
+        Func<Task<Transaction>> act = async () => await mockService.Object.PurchaseCryptoAsync("BTC", 0m, default);
 
         // Assert
         await act.Should().ThrowAsync<ArgumentException>()
@@ -122,7 +122,7 @@ public class TransactionServiceTests
             .ReturnsAsync(expectedTransaction);
 
         // Act
-        var result = await mockService.Object.SendCryptoAsync("wallet1", "bc1qto", 0.1m, default);
+        Transaction result = await mockService.Object.SendCryptoAsync("wallet1", "bc1qto", 0.1m, default);
 
         // Assert
         result.Type.Should().Be(TransactionType.Send);
@@ -140,7 +140,7 @@ public class TransactionServiceTests
             .ThrowsAsync(new InvalidOperationException("Insufficient balance"));
 
         // Act
-        var act = async () => await mockService.Object.SendCryptoAsync("wallet1", "bc1qto", 100m, default);
+        Func<Task<Transaction>> act = async () => await mockService.Object.SendCryptoAsync("wallet1", "bc1qto", 100m, default);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -157,7 +157,7 @@ public class TransactionServiceTests
             .ReturnsAsync(TransactionStatus.Confirmed);
 
         // Act
-        var result = await mockService.Object.GetTransactionStatusAsync("tx123", default);
+        TransactionStatus result = await mockService.Object.GetTransactionStatusAsync("tx123", default);
 
         // Assert
         result.Should().Be(TransactionStatus.Confirmed);
@@ -173,7 +173,7 @@ public class TransactionServiceTests
             .ThrowsAsync(new KeyNotFoundException("Transaction 'invalid' not found"));
 
         // Act
-        var act = async () => await mockService.Object.GetTransactionStatusAsync("invalid", default);
+        Func<Task<TransactionStatus>> act = async () => await mockService.Object.GetTransactionStatusAsync("invalid", default);
 
         // Assert
         await act.Should().ThrowAsync<KeyNotFoundException>();

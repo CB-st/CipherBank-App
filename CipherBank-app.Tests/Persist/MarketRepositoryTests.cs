@@ -21,7 +21,7 @@ public class MarketRepositoryTests
         await repository.UpsertOhlcAsync("BTC", [(300, 3.0), (100, 1.0), (200, 2.0)], default);
         await repository.UpsertOhlcAsync("BTC", [(200, 2.5)], default);
 
-        var points = await repository.GetOhlcAsync("BTC", 200, default);
+        IReadOnlyList<(long T, double V)> points = await repository.GetOhlcAsync("BTC", 200, default);
 
         points.Should().Equal((200L, 2.5), (300L, 3.0));
     }

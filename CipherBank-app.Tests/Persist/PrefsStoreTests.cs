@@ -17,13 +17,13 @@ public class PrefsStoreTests
         var db = new LocalDb(path);
         await db.InitializeAsync();
         var store = new PrefsStore(db);
-        var prefs = await store.LoadAsync();
+        UserPrefs prefs = await store.LoadAsync();
         prefs.LockIdleSeconds = 90;
         prefs.Appearance = "light";
         prefs.HomeVisible["cora"] = false;
         await store.SaveAsync(prefs);
 
-        var loaded = await store.LoadAsync();
+        UserPrefs loaded = await store.LoadAsync();
         loaded.LockIdleSeconds.Should().Be(90);
         loaded.Appearance.Should().Be("light");
         loaded.HomeVisible["cora"].Should().BeFalse();

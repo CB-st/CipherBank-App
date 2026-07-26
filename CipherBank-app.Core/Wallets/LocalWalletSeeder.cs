@@ -29,10 +29,10 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     public async Task EnsureDerivedAsync(string mnemonic, IEnumerable<string> symbols)
     {
         ArgumentNullException.ThrowIfNull(symbols);
-        var existing = await _wallets.ListAsync().ConfigureAwait(false);
+        IReadOnlyList<LocalWalletRow> existing = await _wallets.ListAsync().ConfigureAwait(false);
         foreach (string sym in symbols)
         {
-            var module = WalletRegistry.Get(sym);
+            WalletModule module = WalletRegistry.Get(sym);
             if (!module.CanDerive)
             {
                 continue;
@@ -44,7 +44,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
                 continue;
             }
 
-            var derived = AddressDerive.Derive(sym, mnemonic);
+            DerivedAddress? derived = AddressDerive.Derive(sym, mnemonic);
             if (derived is null)
             {
                 continue;

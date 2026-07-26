@@ -56,7 +56,7 @@ public sealed class MockProductApi : IProductApi
     public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
     {
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var (points, stepSeconds) = ResolveHistoryShape(range);
+        (int points, int stepSeconds) = ResolveHistoryShape(range);
         var pts = new List<HistoryPointDto>(points + 1);
         double v = HistoryBaseValue;
         for (int i = points; i >= 0; i--)

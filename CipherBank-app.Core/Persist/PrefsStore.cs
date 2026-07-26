@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Text.Json;
+using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Persist;
 
@@ -154,9 +155,9 @@ public sealed class PrefsStore : IPrefsStore
 
     public async Task<UserPrefs> LoadAsync()
     {
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT value FROM prefs WHERE key=$k";
         cmd.Parameters.AddWithValue("$k", Key);
         object? val = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
@@ -178,9 +179,9 @@ public sealed class PrefsStore : IPrefsStore
     {
         prefs.NormalizeHomeSections();
         string json = JsonSerializer.Serialize(prefs);
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO prefs (key, value) VALUES ($k, $v)
             ON CONFLICT(key) DO UPDATE SET value=$v

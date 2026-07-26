@@ -35,7 +35,7 @@ public static class CurrencySymbolMap
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(appSymbol);
 
-        if (AppToApi.TryGetValue(appSymbol.Trim(), out var api))
+        if (AppToApi.TryGetValue(appSymbol.Trim(), out string? api))
         {
             return api;
         }
@@ -52,8 +52,8 @@ public static class CurrencySymbolMap
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(apiCurrency);
 
-        var key = apiCurrency.Trim().ToUpperInvariant();
-        return ApiToApp.TryGetValue(key, out var app) ? app : key;
+        string key = apiCurrency.Trim().ToUpperInvariant();
+        return ApiToApp.TryGetValue(key, out string? app) ? app : key;
     }
 
     /// <summary>

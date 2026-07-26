@@ -105,7 +105,7 @@ public sealed class PrefsWireDto
         Dictionary<string, bool>? visible = HomeVisible ?? HomeVisibleCamel;
         if (visible is not null)
         {
-            foreach (var kv in visible)
+            foreach (KeyValuePair<string, bool> kv in visible)
             {
                 target.HomeVisible[kv.Key] = kv.Value;
             }

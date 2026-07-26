@@ -53,7 +53,7 @@ public sealed class RecipientRepository : IRecipientRepository
             return;
         }
 
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
         await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN holder TEXT").ConfigureAwait(false);
         await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN bank TEXT").ConfigureAwait(false);
@@ -74,7 +74,7 @@ public sealed class RecipientRepository : IRecipientRepository
     {
         try
         {
-            await using var alter = conn.CreateCommand();
+            await using SqliteCommand alter = conn.CreateCommand();
             alter.CommandText = ddl;
             await alter.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
@@ -99,7 +99,7 @@ public sealed class RecipientRepository : IRecipientRepository
         {
             try
             {
-                await using var cmd = conn.CreateCommand();
+                await using SqliteCommand cmd = conn.CreateCommand();
                 cmd.CommandText = sql;
                 await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
@@ -121,16 +121,16 @@ public sealed class RecipientRepository : IRecipientRepository
     public async Task<IReadOnlyList<AchRecipientRow>> ListAsync()
     {
         await EnsureSchemaAsync().ConfigureAwait(false);
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = """
             SELECT id, name, holder, bank, account_type, memo,
                    account_mask, routing_mask, created_at
             FROM recipients ORDER BY name
             """;
         var list = new List<AchRecipientRow>();
-        await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
         int ordId = reader.GetOrdinal("id");
         int ordName = reader.GetOrdinal("name");
         int ordHolder = reader.GetOrdinal("holder");
@@ -193,9 +193,9 @@ public sealed class RecipientRepository : IRecipientRepository
         string? routingMask = row.RoutingMask
             ?? (string.IsNullOrWhiteSpace(row.Routing) ? null : AchRecipientValidation.MaskRouting(row.Routing));
 
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO recipients (
               id, name, holder, bank, routing, account, account_type, memo,
@@ -220,9 +220,9 @@ public sealed class RecipientRepository : IRecipientRepository
     public async Task DeleteAsync(string id)
     {
         await EnsureSchemaAsync().ConfigureAwait(false);
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "DELETE FROM recipients WHERE id=$id";
         cmd.Parameters.AddWithValue("$id", id);
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
@@ -230,7 +230,7 @@ public sealed class RecipientRepository : IRecipientRepository
 
     public async Task SeedDefaultsIfEmptyAsync()
     {
-        var existing = await ListAsync().ConfigureAwait(false);
+        IReadOnlyList<AchRecipientRow> existing = await ListAsync().ConfigureAwait(false);
         if (existing.Count > 0)
         {
             return;

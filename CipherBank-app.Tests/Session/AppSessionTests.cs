@@ -196,7 +196,7 @@ public class AppSessionTests
         var custody = new CustodyService(store, pin);
         var wallets = new FakeWallets();
         var productSessions = new InMemoryProductSessionStore();
-        var session = CreateSession(custody, wallets, productSessions: productSessions);
+        AppSession session = CreateSession(custody, wallets, productSessions: productSessions);
 
         string mnemonic = MnemonicHelper.Generate();
         await session.FinishCustodySetupAsync(mnemonic, "123456");
@@ -215,7 +215,7 @@ public class AppSessionTests
         var store = new MemStore();
         var pin = new PinService(store);
         var custody = new CustodyService(store, pin);
-        var session = CreateSession(custody, new FakeWallets());
+        AppSession session = CreateSession(custody, new FakeWallets());
         await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         session.IdleMs = 1;
         await Task.Delay(20);
@@ -231,7 +231,7 @@ public class AppSessionTests
         var custody = new CustodyService(store, pin);
         var recipients = new MemRecipients();
         var prefs = new FakePrefs();
-        var session = CreateSession(custody, new FakeWallets(), prefs, recipients);
+        AppSession session = CreateSession(custody, new FakeWallets(), prefs, recipients);
         await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         session.Lock();
 
@@ -249,11 +249,11 @@ public class AppSessionTests
         var pin = new PinService(store);
         var custody = new CustodyService(store, pin);
         var productSessions = new InMemoryProductSessionStore();
-        var okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
+        AppSession okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
         await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         okSession.Lock();
 
-        var failing = CreateSession(
+        AppSession failing = CreateSession(
             custody,
             new FakeWallets(),
             api: new FailingSessionApi(),

@@ -14,11 +14,11 @@ public class BackupQuizTests
     public void PickRandom_ReturnsUniqueSortedIndices()
     {
         string[] words = Enumerable.Range(0, 12).Select(i => $"w{i}").ToArray();
-        var picks = BackupQuiz.PickRandom(words, 3, new Random(42));
+        IReadOnlyList<(int Index, string Word)> picks = BackupQuiz.PickRandom(words, 3, new Random(42));
         picks.Should().HaveCount(3);
         picks.Select(p => p.Index).Should().OnlyHaveUniqueItems();
         picks.Select(p => p.Index).Should().BeInAscendingOrder();
-        foreach (var (index, word) in picks)
+        foreach ((int index, string? word) in picks)
         {
             word.Should().Be(words[index]);
         }
@@ -28,8 +28,8 @@ public class BackupQuizTests
     public void PickRandom_IsDeterministicForSeed()
     {
         string[] words = Enumerable.Range(0, 12).Select(i => $"w{i}").ToArray();
-        var a = BackupQuiz.PickRandom(words, 3, new Random(7)).Select(p => p.Index).ToArray();
-        var b = BackupQuiz.PickRandom(words, 3, new Random(7)).Select(p => p.Index).ToArray();
+        int[] a = BackupQuiz.PickRandom(words, 3, new Random(7)).Select(p => p.Index).ToArray();
+        int[] b = BackupQuiz.PickRandom(words, 3, new Random(7)).Select(p => p.Index).ToArray();
         a.Should().Equal(b);
     }
 }

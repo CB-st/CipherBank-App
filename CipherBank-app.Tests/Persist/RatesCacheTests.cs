@@ -26,7 +26,7 @@ public class RatesCacheTests
             default);
         await cache.UpsertAsync([new RateRow("BTC", 68000, 2.5, 1002)], default);
 
-        var rows = await cache.GetAsync(["BTC"], default);
+        IReadOnlyList<RateRow> rows = await cache.GetAsync(["BTC"], default);
 
         rows.Should().Equal(new RateRow("BTC", 68000, 2.5, 1002));
     }

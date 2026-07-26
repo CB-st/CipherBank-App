@@ -101,7 +101,7 @@ public sealed class AppSession : IAppSession
         try
         {
             HasWallet = await _custody.HasSealedWalletAsync().ConfigureAwait(false);
-            var prefs = await _prefs.LoadAsync().ConfigureAwait(false);
+            UserPrefs prefs = await _prefs.LoadAsync().ConfigureAwait(false);
             IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * MillisecondsPerSecond : DefaultIdleMs;
         }
         finally
@@ -144,7 +144,7 @@ public sealed class AppSession : IAppSession
     {
         try
         {
-            var session = await _api.CreateSessionAsync(CancellationToken.None).ConfigureAwait(false);
+            SessionDto session = await _api.CreateSessionAsync(CancellationToken.None).ConfigureAwait(false);
             AccessToken = session.AccessToken;
             await _productSessions.SaveAsync(session).ConfigureAwait(false);
             await _stream.ConnectAsync(CancellationToken.None).ConfigureAwait(false);
@@ -158,7 +158,7 @@ public sealed class AppSession : IAppSession
                     await _bootstrap.ApplyAsync(CancellationToken.None).ConfigureAwait(false);
                 }
 
-                var prefs = await _prefs.LoadAsync().ConfigureAwait(false);
+                UserPrefs prefs = await _prefs.LoadAsync().ConfigureAwait(false);
                 IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * MillisecondsPerSecond : DefaultIdleMs;
             }
             catch

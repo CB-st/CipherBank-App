@@ -24,7 +24,7 @@ public class CurrencySymbolMapTests
     [Fact]
     public void ToApiCurrency_RejectsUnsupportedSymbols()
     {
-        var act = () => CurrencySymbolMap.ToApiCurrency("ETH");
+        Func<string> act = () => CurrencySymbolMap.ToApiCurrency("ETH");
         act.Should().Throw<ArgumentException>();
     }
 

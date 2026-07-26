@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using Microsoft.Data.Sqlite;
+
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
@@ -14,12 +16,12 @@ public sealed class RatesCache : IRatesCache
     /// <inheritdoc />
     public async Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct)
     {
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);
         await using var transaction = (Microsoft.Data.Sqlite.SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
         foreach (RateRow row in rows)
         {
-            await using var cmd = conn.CreateCommand();
+            await using SqliteCommand cmd = conn.CreateCommand();
             cmd.Transaction = transaction;
             cmd.CommandText = """
                 INSERT INTO rates_snapshot (symbol, usd, change24h, updated_at)
@@ -47,16 +49,16 @@ public sealed class RatesCache : IRatesCache
             .Distinct(StringComparer.Ordinal)
             .ToArray() ?? [];
 
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT symbol, usd, change24h, updated_at FROM rates_snapshot ORDER BY symbol";
 
         var rows = new List<RateRow>();
         HashSet<string>? requestedSet = requestedSymbols.Length == 0
             ? null
             : requestedSymbols.ToHashSet(StringComparer.Ordinal);
-        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
         int ordSymbol = reader.GetOrdinal("symbol");
         int ordUsd = reader.GetOrdinal("usd");
         int ordChange24h = reader.GetOrdinal("change24h");

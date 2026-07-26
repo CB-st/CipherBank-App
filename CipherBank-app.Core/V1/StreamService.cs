@@ -140,11 +140,11 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     /// </summary>
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
-        var buffer = new byte[ReceiveBufferBytes];
+        byte[] buffer = new byte[ReceiveBufferBytes];
         using var message = new MemoryStream();
         while (_ws is { State: WebSocketState.Open } && !ct.IsCancellationRequested)
         {
-            var result = await _ws.ReceiveAsync(buffer, ct).ConfigureAwait(false);
+            WebSocketReceiveResult result = await _ws.ReceiveAsync(buffer, ct).ConfigureAwait(false);
             if (result.MessageType == WebSocketMessageType.Close)
             {
                 break;
@@ -202,12 +202,12 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
     private static string ExtractEventType(JsonElement root)
     {
-        if (root.TryGetProperty("TYPE", out var upperType))
+        if (root.TryGetProperty("TYPE", out JsonElement upperType))
         {
             return upperType.GetString() ?? string.Empty;
         }
 
-        if (root.TryGetProperty("type", out var lowerType))
+        if (root.TryGetProperty("type", out JsonElement lowerType))
         {
             return lowerType.GetString() ?? string.Empty;
         }

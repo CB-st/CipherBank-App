@@ -36,12 +36,12 @@ public sealed class WalletRepository : IWalletRepository
 
     public async Task<IReadOnlyList<LocalWalletRow>> ListAsync()
     {
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT id, symbol, label, address, path, account_index, kind, created_at FROM wallets ORDER BY created_at";
         var list = new List<LocalWalletRow>();
-        await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
         int ordId = reader.GetOrdinal("id");
         int ordSymbol = reader.GetOrdinal("symbol");
         int ordLabel = reader.GetOrdinal("label");
@@ -75,9 +75,9 @@ public sealed class WalletRepository : IWalletRepository
 
     public async Task UpsertAsync(LocalWalletRow row)
     {
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO wallets (id, symbol, label, address, path, account_index, kind, created_at)
             VALUES ($id, $symbol, $label, $address, $path, $idx, $kind, $created)
@@ -97,9 +97,9 @@ public sealed class WalletRepository : IWalletRepository
 
     public async Task DeleteAsync(string id)
     {
-        await using var conn = _db.Open();
+        await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "DELETE FROM wallets WHERE id=$id";
         cmd.Parameters.AddWithValue("$id", id);
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);

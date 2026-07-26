@@ -4,6 +4,7 @@
 
 using CipherBank_app.Persist;
 using FluentAssertions;
+using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace CipherBank_app.Tests.Persist;
@@ -17,12 +18,12 @@ public class LocalDbMigrationTests
         var db = new LocalDb(path);
         await db.InitializeAsync();
 
-        await using var conn = db.Open();
+        await using SqliteConnection conn = db.Open();
         await conn.OpenAsync();
-        await using var cmd = conn.CreateCommand();
+        await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name";
         var tables = new List<string>();
-        await using var reader = await cmd.ExecuteReaderAsync();
+        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
             tables.Add(reader.GetString(0));

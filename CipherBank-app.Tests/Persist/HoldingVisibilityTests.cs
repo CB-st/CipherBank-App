@@ -14,7 +14,7 @@ public class HoldingVisibilityTests
     [Fact]
     public void Split_PlacesEnabledSymbolsCaseInsensitivelyInVisibleHoldings()
     {
-        var holdings = new[]
+        HoldingDto[] holdings = new[]
         {
             new HoldingDto { Symbol = "btc" },
             new HoldingDto { Symbol = "ETH" },
@@ -30,7 +30,7 @@ public class HoldingVisibilityTests
     [Fact]
     public void Split_UsesDefaultEnabledCurrenciesWhenNoneAreConfigured()
     {
-        var holdings = new[]
+        HoldingDto[] holdings = new[]
         {
             new HoldingDto { Symbol = "BTC" },
             new HoldingDto { Symbol = "XMR" },

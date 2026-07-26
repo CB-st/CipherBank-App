@@ -127,7 +127,7 @@ public class SyncJobQueueTests
 
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)
     {
-        var deadline = Environment.TickCount64 + timeoutMs;
+        long deadline = Environment.TickCount64 + timeoutMs;
         while (!predicate())
         {
             if (Environment.TickCount64 >= deadline)

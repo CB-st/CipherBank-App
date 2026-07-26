@@ -39,11 +39,11 @@ public static class AddressDerive
 
     public static DerivedAddress DeriveBtc(string mnemonic, int accountIndex)
     {
-        var m = MnemonicHelper.Parse(mnemonic);
-        var root = m.DeriveExtKey();
+        Mnemonic m = MnemonicHelper.Parse(mnemonic);
+        ExtKey root = m.DeriveExtKey();
         string path = $"m/84'/0'/0'/0/{accountIndex}";
-        var key = root.Derive(new KeyPath(path));
-        var addr = key.Neuter().PubKey.GetAddress(ScriptPubKeyType.Segwit, Network.Main);
+        ExtKey key = root.Derive(new KeyPath(path));
+        BitcoinAddress addr = key.Neuter().PubKey.GetAddress(ScriptPubKeyType.Segwit, Network.Main);
         return new DerivedAddress(addr.ToString(), path, accountIndex);
     }
 
@@ -53,12 +53,12 @@ public static class AddressDerive
     public static DerivedAddress DeriveLtc(string mnemonic, int accountIndex)
     {
         // Litecoin mainnet via NBitcoin Litecoin networks if available; fallback bech32 manually via BTC path style
-        var m = MnemonicHelper.Parse(mnemonic);
-        var root = m.DeriveExtKey();
+        Mnemonic m = MnemonicHelper.Parse(mnemonic);
+        ExtKey root = m.DeriveExtKey();
         string path = $"m/84'/2'/0'/0/{accountIndex}";
-        var key = root.Derive(new KeyPath(path));
+        ExtKey key = root.Derive(new KeyPath(path));
         // Use Litecoin network if registered; otherwise encode wit program with ltc HRP via BTC segwit then rewrite
-        var wit = key.Neuter().PubKey.WitHash;
+        WitKeyId wit = key.Neuter().PubKey.WitHash;
         string address = new BitcoinWitPubKeyAddress(wit, NBitcoin.Altcoins.Litecoin.Instance.Mainnet).ToString();
         return new DerivedAddress(address, path, accountIndex);
     }
@@ -68,11 +68,11 @@ public static class AddressDerive
 
     public static DerivedAddress DeriveDoge(string mnemonic, int accountIndex)
     {
-        var m = MnemonicHelper.Parse(mnemonic);
-        var root = m.DeriveExtKey();
+        Mnemonic m = MnemonicHelper.Parse(mnemonic);
+        ExtKey root = m.DeriveExtKey();
         string path = $"m/44'/3'/0'/0/{accountIndex}";
-        var key = root.Derive(new KeyPath(path));
-        var addr = key.Neuter().PubKey.GetAddress(ScriptPubKeyType.Legacy, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet);
+        ExtKey key = root.Derive(new KeyPath(path));
+        BitcoinAddress addr = key.Neuter().PubKey.GetAddress(ScriptPubKeyType.Legacy, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet);
         return new DerivedAddress(addr.ToString(), path, accountIndex);
     }
 
@@ -82,7 +82,7 @@ public static class AddressDerive
     public static DerivedAddress DeriveEth(string mnemonic, int accountIndex)
     {
         var wallet = new Wallet(MnemonicHelper.Normalize(mnemonic), null);
-        var account = wallet.GetAccount(accountIndex);
+        Nethereum.Web3.Accounts.Account account = wallet.GetAccount(accountIndex);
         string path = $"m/44'/60'/0'/0/{accountIndex}";
         string checksum = new AddressUtil().ConvertToChecksumAddress(account.Address);
         return new DerivedAddress(checksum, path, accountIndex);

@@ -31,13 +31,13 @@ public sealed class NfcPresentmentPayload
         try
         {
             using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
+            JsonElement root = doc.RootElement;
             return new NfcPresentmentPayload
             {
-                V = root.TryGetProperty("v", out var v) ? v.GetInt32() : 1,
-                SessionId = root.TryGetProperty("sessionId", out var s) ? s.GetString() ?? string.Empty : string.Empty,
-                TokenRef = root.TryGetProperty("tokenRef", out var t) ? t.GetString() ?? string.Empty : string.Empty,
-                MerchantId = root.TryGetProperty("merchantId", out var m) ? m.GetString() : null,
+                V = root.TryGetProperty("v", out JsonElement v) ? v.GetInt32() : 1,
+                SessionId = root.TryGetProperty("sessionId", out JsonElement s) ? s.GetString() ?? string.Empty : string.Empty,
+                TokenRef = root.TryGetProperty("tokenRef", out JsonElement t) ? t.GetString() ?? string.Empty : string.Empty,
+                MerchantId = root.TryGetProperty("merchantId", out JsonElement m) ? m.GetString() : null,
             };
         }
         catch
