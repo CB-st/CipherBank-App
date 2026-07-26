@@ -18,10 +18,10 @@ public class StepUpAuthTests
 
         public string? PinPromptResult { get; set; }
 
-        public Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct = default)
+        public Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct)
             => Task.FromResult(BioSucceed);
 
-        public Task<string?> PromptForPinAsync(string prompt, CancellationToken ct = default)
+        public Task<string?> PromptForPinAsync(string prompt, CancellationToken ct)
             => Task.FromResult(PinPromptResult);
     }
 
@@ -54,7 +54,7 @@ public class StepUpAuthTests
         var challenges = new FakeChallenges { BiometricsPreferred = false, PinPromptResult = null };
         var step = new StepUpAuthService(challenges, pin);
 
-        (await step.RequireAsync(AuthReason.Payment)).Should().BeFalse();
+        (await step.RequireAsync(AuthReason.Payment, default)).Should().BeFalse();
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class StepUpAuthTests
         var challenges = new FakeChallenges { BiometricsPreferred = true, BioSucceed = true };
         var step = new StepUpAuthService(challenges, pin);
 
-        (await step.RequireAsync(AuthReason.Convert)).Should().BeTrue();
+        (await step.RequireAsync(AuthReason.Convert, default)).Should().BeTrue();
     }
 
     [Fact]
@@ -77,6 +77,6 @@ public class StepUpAuthTests
         var challenges = new FakeChallenges { BiometricsPreferred = false, PinPromptResult = "222222" };
         var step = new StepUpAuthService(challenges, pin);
 
-        (await step.RequireAsync(AuthReason.RevealKeys)).Should().BeTrue();
+        (await step.RequireAsync(AuthReason.RevealKeys, default)).Should().BeTrue();
     }
 }

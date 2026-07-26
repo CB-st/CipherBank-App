@@ -33,10 +33,10 @@ public class PrefsSyncAndStreamTests
 
         store.Current.CoraEnabled = false;
         store.Current.AssetsLayout = "combined";
-        (await sync.SaveAndPushAsync(store.Current)).Should().BeTrue();
+        (await sync.SaveAndPushAsync(store.Current, default)).Should().BeTrue();
 
         store.Current = new UserPrefs { CoraEnabled = true, AssetsLayout = "separate" };
-        await sync.PullMergeAsync();
+        await sync.PullMergeAsync(default);
         store.Current.CoraEnabled.Should().BeFalse();
         store.Current.AssetsLayout.Should().Be("combined");
     }
@@ -73,9 +73,9 @@ public class PrefsSyncAndStreamTests
         var debounce = new EventDebouncer(TimeSpan.FromMilliseconds(40));
         int runs = 0;
         await Task.WhenAll(
-            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }),
-            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }),
-            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }));
+            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }, default),
+            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }, default),
+            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }, default));
         await Task.Delay(80);
         runs.Should().Be(1);
         debounce.FireCount.Should().Be(1);

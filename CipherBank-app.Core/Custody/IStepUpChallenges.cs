@@ -9,7 +9,7 @@ public interface IStepUpChallenges
 {
     bool BiometricsPreferred { get; }
 
-    Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct = default);
+    Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct);
 
-    Task<string?> PromptForPinAsync(string prompt, CancellationToken ct = default);
+    Task<string?> PromptForPinAsync(string prompt, CancellationToken ct);
 }

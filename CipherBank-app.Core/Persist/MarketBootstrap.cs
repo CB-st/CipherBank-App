@@ -21,7 +21,7 @@ public static class MarketBootstrap
         IRatesCache cache,
         IPublicQuoteService publicQuotes,
         IEnumerable<string> symbols,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         string[] requestedSymbols = symbols
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))

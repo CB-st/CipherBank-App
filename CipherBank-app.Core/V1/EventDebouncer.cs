@@ -20,7 +20,7 @@ public sealed class EventDebouncer
     /// Schedules <paramref name="action"/> after the debounce delay, cancelling any prior pending fire.
     /// Use: High (stream bursts). Scope: this debouncer instance; CTS swap is serialized.
     /// </summary>
-    public async Task DebounceAsync(Func<Task> action, CancellationToken outer = default)
+    public async Task DebounceAsync(Func<Task> action, CancellationToken outer)
     {
         ArgumentNullException.ThrowIfNull(action);
         CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(outer);

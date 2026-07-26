@@ -19,13 +19,14 @@ public class RatesCacheTests
         var cache = new RatesCache(db);
 
         await cache.UpsertAsync(
-        [
-            new RateRow("BTC", 67000, 1.5, 1000),
-            new RateRow("ETH", 3500, -0.5, 1001),
-        ]);
-        await cache.UpsertAsync([new RateRow("BTC", 68000, 2.5, 1002)]);
+            [
+                new RateRow("BTC", 67000, 1.5, 1000),
+                new RateRow("ETH", 3500, -0.5, 1001),
+            ],
+            default);
+        await cache.UpsertAsync([new RateRow("BTC", 68000, 2.5, 1002)], default);
 
-        var rows = await cache.GetAsync(["BTC"]);
+        var rows = await cache.GetAsync(["BTC"], default);
 
         rows.Should().Equal(new RateRow("BTC", 68000, 2.5, 1002));
     }

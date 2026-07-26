@@ -17,14 +17,14 @@ public interface IPublicQuoteService
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True when the API accepts the connectivity test.</returns>
-    Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default);
+    Task<bool> TestConnectionAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns supported currency codes as app tickers (BTC, XMR, USD, …).
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Ordered app symbols.</returns>
-    Task<IReadOnlyList<string>> GetCurrenciesAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<string>> GetCurrenciesAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// Calculates output for a fixed input amount (<c>POST /iquote</c>).
@@ -38,7 +38,7 @@ public interface IPublicQuoteService
         string inputSymbol,
         decimal inputAmount,
         string outputSymbol,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// Calculates input required for a fixed output amount (<c>POST /quote</c>).
@@ -52,5 +52,5 @@ public interface IPublicQuoteService
         string inputSymbol,
         decimal outputAmount,
         string outputSymbol,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken);
 }

@@ -10,11 +10,16 @@ public interface IMnemonicBackupService
     Task<byte[]> CreateBackupFileAsync(
         string mnemonic,
         string recoveryPassword,
-        string? hint = null,
-        CancellationToken ct = default);
+        CancellationToken ct);
+
+    Task<byte[]> CreateBackupFileAsync(
+        string mnemonic,
+        string recoveryPassword,
+        string hint,
+        CancellationToken ct);
 
     Task<string> OpenBackupFileAsync(
         ReadOnlyMemory<byte> fileBytes,
         string recoveryPassword,
-        CancellationToken ct = default);
+        CancellationToken ct);
 }

@@ -24,8 +24,14 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
     public Task<byte[]> CreateBackupFileAsync(
         string mnemonic,
         string recoveryPassword,
-        string? hint = null,
-        CancellationToken ct = default)
+        CancellationToken ct)
+        => CreateBackupFileAsync(mnemonic, recoveryPassword, null, ct);
+
+    public Task<byte[]> CreateBackupFileAsync(
+        string mnemonic,
+        string recoveryPassword,
+        string? hint,
+        CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         ValidatePassword(recoveryPassword);
@@ -71,7 +77,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
     public Task<string> OpenBackupFileAsync(
         ReadOnlyMemory<byte> fileBytes,
         string recoveryPassword,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         ValidatePassword(recoveryPassword);

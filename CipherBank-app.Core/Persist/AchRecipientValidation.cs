@@ -7,6 +7,20 @@ namespace CipherBank_app.Persist;
 /// <summary>ACH recipient field validation (Cora RecipientPickerModal parity).</summary>
 public static class AchRecipientValidation
 {
+    public const int RoutingNumberDigitCount = 9;
+    public const int AccountNumberMinDigits = 4;
+    public const int MaskVisibleTrailingDigits = 4;
+    public const int MemoMaxLength = 140;
+
+    public static string? Validate(
+        string name,
+        string holder,
+        string bank,
+        string routing,
+        string account,
+        string accountType)
+        => Validate(name, holder, bank, routing, account, accountType, null);
+
     public static string? Validate(
         string name,
         string holder,
@@ -14,7 +28,7 @@ public static class AchRecipientValidation
         string routing,
         string account,
         string accountType,
-        string? memo = null)
+        string? memo)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -32,12 +46,12 @@ public static class AchRecipientValidation
         }
 
         string digits = new string(routing.Where(char.IsDigit).ToArray());
-        if (digits.Length != 9)
+        if (digits.Length != RoutingNumberDigitCount)
         {
             return "Routing number must be 9 digits.";
         }
 
-        if (string.IsNullOrWhiteSpace(account) || account.Trim().Length < 4)
+        if (string.IsNullOrWhiteSpace(account) || account.Trim().Length < AccountNumberMinDigits)
         {
             return "Enter a valid account number.";
         }
@@ -48,7 +62,7 @@ public static class AchRecipientValidation
             return "Account type must be checking or savings.";
         }
 
-        if (memo is { Length: > 140 })
+        if (memo is { Length: > MemoMaxLength })
         {
             return "Memo must be 140 characters or fewer.";
         }
@@ -59,22 +73,22 @@ public static class AchRecipientValidation
     public static string MaskAccount(string account)
     {
         string trimmed = account.Trim();
-        if (trimmed.Length <= 4)
+        if (trimmed.Length <= MaskVisibleTrailingDigits)
         {
             return "•••• " + trimmed;
         }
 
-        return "•••• " + trimmed[^4..];
+        return "•••• " + trimmed[^MaskVisibleTrailingDigits..];
     }
 
     public static string MaskRouting(string routing)
     {
         string digits = new string(routing.Where(char.IsDigit).ToArray());
-        if (digits.Length < 4)
+        if (digits.Length < MaskVisibleTrailingDigits)
         {
             return "••••";
         }
 
-        return "•••• " + digits[^4..];
+        return "•••• " + digits[^MaskVisibleTrailingDigits..];
     }
 }

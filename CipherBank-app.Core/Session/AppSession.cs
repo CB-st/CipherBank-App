@@ -46,7 +46,8 @@ public interface IAppSession
 /// <inheritdoc />
 public sealed class AppSession : IAppSession
 {
-    public const int DefaultIdleMs = 60_000;
+    public static readonly int DefaultIdleMs = 60_000;
+    private const int MillisecondsPerSecond = 1000;
 
     private readonly ICustodyService _custody;
     private readonly IProductApi _api;
@@ -101,7 +102,7 @@ public sealed class AppSession : IAppSession
         {
             HasWallet = await _custody.HasSealedWalletAsync().ConfigureAwait(false);
             var prefs = await _prefs.LoadAsync().ConfigureAwait(false);
-            IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * 1000 : DefaultIdleMs;
+            IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * MillisecondsPerSecond : DefaultIdleMs;
         }
         finally
         {
@@ -143,22 +144,22 @@ public sealed class AppSession : IAppSession
     {
         try
         {
-            var session = await _api.CreateSessionAsync().ConfigureAwait(false);
+            var session = await _api.CreateSessionAsync(CancellationToken.None).ConfigureAwait(false);
             AccessToken = session.AccessToken;
             await _productSessions.SaveAsync(session).ConfigureAwait(false);
-            await _stream.ConnectAsync().ConfigureAwait(false);
+            await _stream.ConnectAsync(CancellationToken.None).ConfigureAwait(false);
             _streamHub.Start();
 
             try
             {
-                await _prefsSync.PullMergeAsync().ConfigureAwait(false);
+                await _prefsSync.PullMergeAsync(CancellationToken.None).ConfigureAwait(false);
                 if (applyBootstrap)
                 {
-                    await _bootstrap.ApplyAsync().ConfigureAwait(false);
+                    await _bootstrap.ApplyAsync(CancellationToken.None).ConfigureAwait(false);
                 }
 
                 var prefs = await _prefs.LoadAsync().ConfigureAwait(false);
-                IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * 1000 : DefaultIdleMs;
+                IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * MillisecondsPerSecond : DefaultIdleMs;
             }
             catch
             {

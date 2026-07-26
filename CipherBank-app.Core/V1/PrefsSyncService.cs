@@ -10,10 +10,10 @@ namespace CipherBank_app.V1;
 public interface IPrefsSyncService
 {
     /// <summary>GET remote prefs and merge into local store.</summary>
-    Task PullMergeAsync(CancellationToken ct = default);
+    Task PullMergeAsync(CancellationToken ct);
 
     /// <summary>Save local prefs then PUT remote. Local write always kept even if PUT fails.</summary>
-    Task<bool> SaveAndPushAsync(UserPrefs prefs, CancellationToken ct = default);
+    Task<bool> SaveAndPushAsync(UserPrefs prefs, CancellationToken ct);
 }
 
 /// <inheritdoc />
@@ -28,7 +28,7 @@ public sealed class PrefsSyncService : IPrefsSyncService
         _api = api;
     }
 
-    public async Task PullMergeAsync(CancellationToken ct = default)
+    public async Task PullMergeAsync(CancellationToken ct)
     {
         UserPrefs local = await _store.LoadAsync().ConfigureAwait(false);
         PrefsWireDto? remote = await _api.GetPrefsAsync(ct).ConfigureAwait(false);
@@ -36,7 +36,7 @@ public sealed class PrefsSyncService : IPrefsSyncService
         await _store.SaveAsync(local).ConfigureAwait(false);
     }
 
-    public async Task<bool> SaveAndPushAsync(UserPrefs prefs, CancellationToken ct = default)
+    public async Task<bool> SaveAndPushAsync(UserPrefs prefs, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(prefs);
         prefs.NormalizeHomeSections();

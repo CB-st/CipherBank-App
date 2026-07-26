@@ -9,7 +9,9 @@ namespace CipherBank_app.Wallets;
 /// <summary>Seeds derived wallet rows after custody seal (Cora ensureDerivedWallets).</summary>
 public interface ILocalWalletSeeder
 {
-    Task EnsureDerivedAsync(string mnemonic, IEnumerable<string>? symbols = null);
+    Task EnsureDerivedAsync(string mnemonic);
+
+    Task EnsureDerivedAsync(string mnemonic, IEnumerable<string> symbols);
 }
 
 /// <inheritdoc />
@@ -21,10 +23,14 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     public LocalWalletSeeder(IWalletRepository wallets)
         => _wallets = wallets;
 
-    public async Task EnsureDerivedAsync(string mnemonic, IEnumerable<string>? symbols = null)
+    public Task EnsureDerivedAsync(string mnemonic)
+        => EnsureDerivedAsync(mnemonic, DefaultSymbols);
+
+    public async Task EnsureDerivedAsync(string mnemonic, IEnumerable<string> symbols)
     {
+        ArgumentNullException.ThrowIfNull(symbols);
         var existing = await _wallets.ListAsync().ConfigureAwait(false);
-        foreach (string sym in symbols ?? DefaultSymbols)
+        foreach (string sym in symbols)
         {
             var module = WalletRegistry.Get(sym);
             if (!module.CanDerive)
@@ -38,7 +44,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
                 continue;
             }
 
-            var derived = AddressDerive.Derive(sym, mnemonic, 0);
+            var derived = AddressDerive.Derive(sym, mnemonic);
             if (derived is null)
             {
                 continue;

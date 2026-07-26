@@ -60,15 +60,15 @@ public sealed class SessionPassDto
 /// </summary>
 public interface ISessionProofBuilder
 {
-    Task<object> BuildOpenBodyAsync(CancellationToken ct = default);
+    Task<object> BuildOpenBodyAsync(CancellationToken ct);
 }
 
 /// <summary>Current stub: <c>{ DEVICE_ATTESTATION: "lab" }</c>.</summary>
 public sealed class LabSessionProofBuilder : ISessionProofBuilder
 {
-    public const string LabAttestation = "lab";
+    public static readonly string LabAttestation = "lab";
 
-    public Task<object> BuildOpenBodyAsync(CancellationToken ct = default)
+    public Task<object> BuildOpenBodyAsync(CancellationToken ct)
         => Task.FromResult<object>(new Dictionary<string, string>
         {
             ["DEVICE_ATTESTATION"] = LabAttestation,

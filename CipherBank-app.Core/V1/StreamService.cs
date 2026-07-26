@@ -21,7 +21,7 @@ public interface IStreamService
 {
     event EventHandler<StreamEvent>? EventReceived;
 
-    Task ConnectAsync(CancellationToken ct = default);
+    Task ConnectAsync(CancellationToken ct);
 
     Task DisconnectAsync();
 
@@ -32,6 +32,7 @@ public interface IStreamService
 public sealed class MockStreamService : IStreamService, IAsyncDisposable
 {
     // --- Tick cadence (only fires when subscribers exist) ---
+    private const int BalanceUpdateEveryNthSecond = 2;
     private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(5);
 
     private CancellationTokenSource? _cts;
@@ -44,7 +45,7 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
     /// <summary>Test/helper: raise a stream event for hub wiring.</summary>
     public void Emit(StreamEvent e) => EventReceived?.Invoke(this, e);
 
-    public Task ConnectAsync(CancellationToken ct = default)
+    public Task ConnectAsync(CancellationToken ct)
     {
         _cts?.Cancel();
         _cts?.Dispose();
@@ -58,7 +59,7 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
                 if (handlers is not null)
                 {
                     handlers.Invoke(this, new StreamEvent { Type = "RATE.TICK" });
-                    if (DateTimeOffset.UtcNow.Second % 2 == 0)
+                    if (DateTimeOffset.UtcNow.Second % BalanceUpdateEveryNthSecond == 0)
                     {
                         handlers.Invoke(this, new StreamEvent { Type = "balance.update" });
                     }
@@ -124,7 +125,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
     public bool IsConnected => _ws?.State == WebSocketState.Open;
 
-    public async Task ConnectAsync(CancellationToken ct = default)
+    public async Task ConnectAsync(CancellationToken ct)
     {
         await DisconnectAsync().ConfigureAwait(false);
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -161,28 +162,57 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
                 continue;
             }
 
-            // Skip parse work when nobody is listening.
-            if (EventReceived is null)
-            {
-                message.SetLength(0);
-                continue;
-            }
-
-            string json = Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length);
-            message.SetLength(0);
-            try
-            {
-                using var doc = JsonDocument.Parse(json);
-                string type = doc.RootElement.TryGetProperty("TYPE", out var t)
-                    ? t.GetString() ?? string.Empty
-                    : doc.RootElement.TryGetProperty("type", out var t2) ? t2.GetString() ?? string.Empty : string.Empty;
-                EventReceived?.Invoke(this, new StreamEvent { Type = type, Payload = doc.RootElement.Clone() });
-            }
-            catch
-            {
-                // ignore malformed
-            }
+            TryDispatchMessage(message);
         }
+    }
+
+    private void TryDispatchMessage(MemoryStream message)
+    {
+        if (EventReceived is null)
+        {
+            message.SetLength(0);
+            return;
+        }
+
+        string json = Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length);
+        message.SetLength(0);
+        if (!TryParseStreamEvent(json, out StreamEvent? streamEvent) || streamEvent is null)
+        {
+            return;
+        }
+
+        EventReceived?.Invoke(this, streamEvent);
+    }
+
+    private static bool TryParseStreamEvent(string json, out StreamEvent? streamEvent)
+    {
+        streamEvent = null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            string type = ExtractEventType(doc.RootElement);
+            streamEvent = new StreamEvent { Type = type, Payload = doc.RootElement.Clone() };
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string ExtractEventType(JsonElement root)
+    {
+        if (root.TryGetProperty("TYPE", out var upperType))
+        {
+            return upperType.GetString() ?? string.Empty;
+        }
+
+        if (root.TryGetProperty("type", out var lowerType))
+        {
+            return lowerType.GetString() ?? string.Empty;
+        }
+
+        return string.Empty;
     }
 
     public async Task DisconnectAsync()

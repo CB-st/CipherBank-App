@@ -31,6 +31,7 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 
 | Document | Description |
 |----------|-------------|
+| [SONAR_GATE.md](SONAR_GATE.md) | Sonar quality-gate policy: what we fix vs soften (with reasons) |
 | [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
 | [core/README.md](core/README.md) | Core library overview |
 | [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |

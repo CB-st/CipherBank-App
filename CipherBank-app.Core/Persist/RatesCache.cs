@@ -12,7 +12,7 @@ public sealed class RatesCache : IRatesCache
     public RatesCache(ILocalDb db) => _db = db;
 
     /// <inheritdoc />
-    public async Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct = default)
+    public async Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct)
     {
         await using var conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);
@@ -39,8 +39,8 @@ public sealed class RatesCache : IRatesCache
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<RateRow>> GetAsync(
-        IEnumerable<string>? symbols = null,
-        CancellationToken ct = default)
+        IEnumerable<string>? symbols,
+        CancellationToken ct)
     {
         string[] requestedSymbols = symbols?
             .Select(symbol => symbol.ToUpperInvariant())
@@ -57,9 +57,13 @@ public sealed class RatesCache : IRatesCache
             ? null
             : requestedSymbols.ToHashSet(StringComparer.Ordinal);
         await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        int ordSymbol = reader.GetOrdinal("symbol");
+        int ordUsd = reader.GetOrdinal("usd");
+        int ordChange24h = reader.GetOrdinal("change24h");
+        int ordUpdatedAt = reader.GetOrdinal("updated_at");
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
         {
-            string symbol = reader.GetString(0);
+            string symbol = reader.GetString(ordSymbol);
             if (requestedSet is not null && !requestedSet.Contains(symbol))
             {
                 continue;
@@ -67,9 +71,9 @@ public sealed class RatesCache : IRatesCache
 
             rows.Add(new RateRow(
                 symbol,
-                reader.GetDouble(1),
-                reader.GetDouble(2),
-                reader.GetInt64(3)));
+                reader.GetDouble(ordUsd),
+                reader.GetDouble(ordChange24h),
+                reader.GetInt64(ordUpdatedAt)));
         }
 
         return rows;

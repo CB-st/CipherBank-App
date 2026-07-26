@@ -23,9 +23,10 @@ public sealed class MockVaultCardMutationTests
                 Label = "Travel card",
                 HardwareTest = false,
             },
-            "add-card-1");
+            "add-card-1",
+            default);
 
-        IReadOnlyList<VaultCardDto> cards = await api.GetVaultCardsAsync();
+        IReadOnlyList<VaultCardDto> cards = await api.GetVaultCardsAsync(default);
 
         added.CardId.Should().StartWith("card_");
         cards.Should().ContainSingle(card =>
@@ -42,11 +43,12 @@ public sealed class MockVaultCardMutationTests
         var api = new MockProductApi();
         VaultCardDto added = await api.AddVaultCardAsync(
             new VaultCardDto { Last4 = "9876", Brand = "mastercard", Label = "Travel card", HardwareTest = false },
-            "delete-card-1");
+            "delete-card-1",
+            default);
 
-        await api.DeleteVaultCardAsync(added.CardId);
+        await api.DeleteVaultCardAsync(added.CardId, default);
 
-        IReadOnlyList<VaultCardDto> cards = await api.GetVaultCardsAsync();
+        IReadOnlyList<VaultCardDto> cards = await api.GetVaultCardsAsync(default);
         cards.Should().NotContain(card => card.CardId == added.CardId);
         cards.Should().Contain(card => card.CardId == "card_lab_1");
     }

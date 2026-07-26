@@ -125,66 +125,66 @@ public class AppSessionTests
     {
         private readonly MockProductApi _inner = new();
 
-        public Task<SessionDto> CreateSessionAsync(CancellationToken ct = default)
+        public Task<SessionDto> CreateSessionAsync(CancellationToken ct)
             => Task.FromException<SessionDto>(new InvalidOperationException("offline"));
 
-        public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default) => _inner.GetPortfolioAsync(ct);
+        public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct) => _inner.GetPortfolioAsync(ct);
 
-        public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct = default)
+        public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
             => _inner.GetHistoryAsync(symbol, range, ct);
 
-        public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default)
+        public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
             => _inner.CreateSessionChallengeAsync(accountPublicKeyWire, ct);
 
-        public Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default)
+        public Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct)
             => _inner.EstablishKeyShareAsync(request, ct);
 
-        public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default)
+        public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct)
             => _inner.CreateWalletAsync(request, ct);
 
-        public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct = default)
+        public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct)
             => _inner.GetQuoteAsync(from, to, ct);
 
-        public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct = default)
+        public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct)
             => _inner.ConvertAsync(from, to, amount, idempotencyKey, ct);
 
-        public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct = default)
+        public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct)
             => _inner.TransferAsync(to, amount, speed, idempotencyKey, ct);
 
-        public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct = default)
+        public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct)
             => _inner.PayAsync(amount, mix, idempotencyKey, ct);
 
-        public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct = default)
+        public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct)
             => _inner.GetReceiveAsync(asset, ct);
 
-        public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct = default)
+        public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct)
             => _inner.GetVaultCardsAsync(ct);
 
-        public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct = default)
+        public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct)
             => _inner.AddVaultCardAsync(card, idempotencyKey, ct);
 
-        public Task DeleteVaultCardAsync(string cardId, CancellationToken ct = default)
+        public Task DeleteVaultCardAsync(string cardId, CancellationToken ct)
             => _inner.DeleteVaultCardAsync(cardId, ct);
 
-        public Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct = default)
+        public Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct)
             => _inner.GetVaultBinariesAsync(ct);
 
-        public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct = default)
+        public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct)
             => _inner.CreatePosSessionAsync(ct);
 
-        public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct = default)
+        public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct)
             => _inner.AuthorizePosAsync(sessionId, ct);
 
-        public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct = default)
+        public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct)
             => _inner.ConfirmPosAsync(sessionId, ct);
 
-        public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct = default)
+        public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct)
             => _inner.GetPrefsAsync(ct);
 
-        public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct = default)
+        public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct)
             => _inner.PutPrefsAsync(prefs, ct);
 
-        public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct = default)
+        public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
             => _inner.GetAccountBootstrapAsync(ct);
     }
 

@@ -9,6 +9,10 @@ namespace CipherBank_app.Custody;
 /// <summary>BIP39 helpers (Cora bip39.ts parity).</summary>
 public static class MnemonicHelper
 {
+    private const int BitsPerWordIndex = 11;
+    private const int ChecksumDivisor = 33;
+    private const int BitsPerByte = 8;
+    private const int HighestWordBitIndex = 10;
     public static string Generate()
     {
         var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
@@ -44,19 +48,19 @@ public static class MnemonicHelper
     public static byte[] Entropy(string phrase)
     {
         int[] indices = Parse(phrase).Indices;
-        int totalBits = indices.Length * 11;
-        int checksumBits = totalBits / 33;
+        int totalBits = indices.Length * BitsPerWordIndex;
+        int checksumBits = totalBits / ChecksumDivisor;
         int entropyBits = totalBits - checksumBits;
-        byte[] entropy = new byte[entropyBits / 8];
+        byte[] entropy = new byte[entropyBits / BitsPerByte];
 
         int bitPos = 0;
         foreach (int index in indices)
         {
-            for (int i = 10; i >= 0 && bitPos < entropyBits; i--)
+            for (int i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
             {
                 if (((index >> i) & 1) == 1)
                 {
-                    entropy[bitPos / 8] |= (byte)(1 << (7 - (bitPos % 8)));
+                    entropy[bitPos / BitsPerByte] |= (byte)(1 << (7 - (bitPos % BitsPerByte)));
                 }
 
                 bitPos++;

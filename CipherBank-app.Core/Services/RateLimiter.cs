@@ -61,7 +61,7 @@ public sealed partial class RateLimiter : IDisposable
     /// Attempts to acquire a permit to make a request.
     /// Returns true if the request is allowed, false if rate limited.
     /// </summary>
-    public async Task<bool> TryAcquireAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> TryAcquireAsync(CancellationToken cancellationToken)
     {
         await _lock.WaitAsync(cancellationToken);
         try
@@ -100,7 +100,7 @@ public sealed partial class RateLimiter : IDisposable
     /// Gets the time to wait before the next request can be made.
     /// Returns TimeSpan.Zero if a request can be made immediately.
     /// </summary>
-    public async Task<TimeSpan> GetWaitTimeAsync(CancellationToken cancellationToken = default)
+    public async Task<TimeSpan> GetWaitTimeAsync(CancellationToken cancellationToken)
     {
         await _lock.WaitAsync(cancellationToken);
         try

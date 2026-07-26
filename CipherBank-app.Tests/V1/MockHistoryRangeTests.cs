@@ -18,7 +18,7 @@ public class MockHistoryRangeTests
     public async Task GetHistoryAsync_HonorsRangePointCounts(string range, int expectedCount)
     {
         var api = new MockProductApi();
-        var pts = await api.GetHistoryAsync("BTC", range);
+        var pts = await api.GetHistoryAsync("BTC", range, default);
         pts.Should().HaveCount(expectedCount);
     }
 }

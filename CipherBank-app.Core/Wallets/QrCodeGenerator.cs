@@ -9,7 +9,10 @@ namespace CipherBank_app.Wallets;
 /// <summary>QR matrix / PNG generation for receive URIs.</summary>
 public static class QrCodeGenerator
 {
-    public static byte[] ToPngBytes(string payload, int pixelsPerModule = 8)
+    public static byte[] ToPngBytes(string payload)
+        => ToPngBytes(payload, 8);
+
+    public static byte[] ToPngBytes(string payload, int pixelsPerModule)
     {
         using var gen = new QRCodeGenerator();
         using QRCodeData data = gen.CreateQrCode(payload, QRCodeGenerator.ECCLevel.M);

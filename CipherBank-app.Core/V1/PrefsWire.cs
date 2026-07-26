@@ -87,6 +87,15 @@ public sealed class PrefsWireDto
 
     public void ApplyOnto(UserPrefs target)
     {
+        ApplyHomeSectionsOnto(target);
+        ApplyDisplayPrefsOnto(target);
+        ApplyCurrencyPrefsOnto(target);
+        ApplyLockIdleOnto(target);
+        target.NormalizeHomeSections();
+    }
+
+    private void ApplyHomeSectionsOnto(UserPrefs target)
+    {
         List<string>? order = HomeOrder ?? HomeOrderCamel;
         if (order is { Count: > 0 })
         {
@@ -107,7 +116,10 @@ public sealed class PrefsWireDto
         {
             target.AssetsLayout = layout;
         }
+    }
 
+    private void ApplyDisplayPrefsOnto(UserPrefs target)
+    {
         bool? hide = ValuesHiddenOnLaunch ?? ValuesHiddenOnLaunchCamel;
         if (hide is bool hideValue)
         {
@@ -131,7 +143,10 @@ public sealed class PrefsWireDto
         {
             target.Appearance = appearance;
         }
+    }
 
+    private void ApplyCurrencyPrefsOnto(UserPrefs target)
+    {
         string? currency = BaseCurrency ?? BaseCurrencyCamel;
         if (!string.IsNullOrWhiteSpace(currency))
         {
@@ -143,14 +158,15 @@ public sealed class PrefsWireDto
         {
             target.EnabledCurrencies = new List<string>(enabled);
         }
+    }
 
+    private void ApplyLockIdleOnto(UserPrefs target)
+    {
         int? idle = LockIdleSeconds ?? AppLockIdleSecCamel;
         if (idle is int seconds && seconds > 0)
         {
             target.LockIdleSeconds = seconds;
         }
-
-        target.NormalizeHomeSections();
     }
 }
 

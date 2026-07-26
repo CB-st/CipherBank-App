@@ -131,20 +131,29 @@ public sealed class RecipientRepository : IRecipientRepository
             """;
         var list = new List<AchRecipientRow>();
         await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        int ordId = reader.GetOrdinal("id");
+        int ordName = reader.GetOrdinal("name");
+        int ordHolder = reader.GetOrdinal("holder");
+        int ordBank = reader.GetOrdinal("bank");
+        int ordAccountType = reader.GetOrdinal("account_type");
+        int ordMemo = reader.GetOrdinal("memo");
+        int ordAccountMask = reader.GetOrdinal("account_mask");
+        int ordRoutingMask = reader.GetOrdinal("routing_mask");
+        int ordCreatedAt = reader.GetOrdinal("created_at");
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
             list.Add(new AchRecipientRow(
-                reader.GetString(0),
-                reader.GetString(1),
-                await ReadOptionalStringAsync(reader, 2).ConfigureAwait(false),
-                await ReadOptionalStringAsync(reader, 3).ConfigureAwait(false),
+                reader.GetString(ordId),
+                reader.GetString(ordName),
+                await ReadOptionalStringAsync(reader, ordHolder).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, ordBank).ConfigureAwait(false),
                 Routing: null,
                 Account: null,
-                await ReadAccountTypeAsync(reader, 4).ConfigureAwait(false),
-                await ReadOptionalStringAsync(reader, 5).ConfigureAwait(false),
-                await ReadOptionalStringAsync(reader, 6).ConfigureAwait(false),
-                await ReadOptionalStringAsync(reader, 7).ConfigureAwait(false),
-                DateTimeOffset.Parse(reader.GetString(8), System.Globalization.CultureInfo.InvariantCulture)));
+                await ReadAccountTypeAsync(reader, ordAccountType).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, ordMemo).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, ordAccountMask).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, ordRoutingMask).ConfigureAwait(false),
+                DateTimeOffset.Parse(reader.GetString(ordCreatedAt), System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         return list;

@@ -14,12 +14,14 @@ public sealed class CreateWalletTests
     public async Task Mock_managed_xmr_returns_wallet_without_spend_key_fields()
     {
         var api = new MockProductApi();
-        CreateWalletResultDto result = await api.CreateWalletAsync(new CreateWalletRequestDto
-        {
-            Symbol = "XMR",
-            Label = "Managed",
-            Mode = "managed",
-        });
+        CreateWalletResultDto result = await api.CreateWalletAsync(
+            new CreateWalletRequestDto
+            {
+                Symbol = "XMR",
+                Label = "Managed",
+                Mode = "managed",
+            },
+            default);
 
         result.WalletId.Should().StartWith("wlt_");
         result.Mode.Should().Be("managed");

@@ -54,7 +54,9 @@ public interface INfcPresentmentService
 
     string? LastError { get; }
 
-    Task<bool> PresentAsync(NfcPresentmentPayload payload, TimeSpan? timeout = null, CancellationToken ct = default);
+    Task<bool> PresentAsync(NfcPresentmentPayload payload, CancellationToken ct);
+
+    Task<bool> PresentAsync(NfcPresentmentPayload payload, TimeSpan timeout, CancellationToken ct);
 }
 
 /// <summary>No-op NFC for non-Android / unsupported devices.</summary>
@@ -64,8 +66,19 @@ public sealed class NullNfcPresentmentService : INfcPresentmentService
 
     public string? LastError { get; private set; } = "NFC presentment is only available on Android devices with NFC.";
 
-    public Task<bool> PresentAsync(NfcPresentmentPayload payload, TimeSpan? timeout = null, CancellationToken ct = default)
+    public Task<bool> PresentAsync(NfcPresentmentPayload payload, CancellationToken ct)
+        => PresentCore(payload, ct);
+
+    public Task<bool> PresentAsync(NfcPresentmentPayload payload, TimeSpan timeout, CancellationToken ct)
     {
+        _ = timeout;
+        return PresentCore(payload, ct);
+    }
+
+    private Task<bool> PresentCore(NfcPresentmentPayload payload, CancellationToken ct)
+    {
+        _ = payload;
+        _ = ct;
         LastError = "NFC unavailable on this platform — use Simulate exchange.";
         return Task.FromResult(false);
     }
@@ -74,6 +87,8 @@ public sealed class NullNfcPresentmentService : INfcPresentmentService
 /// <summary>Simulated EMV exchange stages for PosLab UI.</summary>
 public static class EmvExchangeSimulator
 {
+    private const int StageDelayMs = 400;
+
     public static IReadOnlyList<string> Stages { get; } = new[]
     {
         "SELECT PPSE",
@@ -83,12 +98,12 @@ public static class EmvExchangeSimulator
         "OUTCOME: APPROVED",
     };
 
-    public static async IAsyncEnumerable<string> RunAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    public static async IAsyncEnumerable<string> RunAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
         foreach (string stage in Stages)
         {
             ct.ThrowIfCancellationRequested();
-            await Task.Delay(400, ct).ConfigureAwait(false);
+            await Task.Delay(StageDelayMs, ct).ConfigureAwait(false);
             yield return stage;
         }
     }

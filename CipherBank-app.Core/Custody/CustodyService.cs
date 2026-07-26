@@ -68,6 +68,8 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     internal const string StagingDeviceSecretKey = "cb_device_secret_v1_staging";
 
+    private const int DeviceSecretByteLength = 32;
+
     private static readonly TimeSpan SessionTtl = TimeSpan.FromMinutes(5);
 
     private readonly ISecureStore _store;
@@ -294,5 +296,5 @@ public sealed class CustodyService : ICustodyService
     }
 
     private static string CreateDeviceSecret()
-        => Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        => Convert.ToBase64String(RandomNumberGenerator.GetBytes(DeviceSecretByteLength));
 }

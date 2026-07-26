@@ -49,7 +49,7 @@ public readonly record struct PinChangeOutcome(PinChangeStatus Status, string Me
 public sealed class PinChangeCoordinator
 {
     /// <summary>Minimum digits for a new PIN — matches SetPin onboarding.</summary>
-    public const int MinPinLength = 6;
+    public static readonly int MinPinLength = 6;
 
     /// <summary>Status → message table so the caller never grows an if/else chain over statuses.</summary>
     private static readonly IReadOnlyDictionary<PinChangeStatus, string> Messages =

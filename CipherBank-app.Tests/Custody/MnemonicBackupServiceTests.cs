@@ -19,8 +19,8 @@ public class MnemonicBackupServiceTests
         var svc = new MnemonicBackupService();
         string mnemonic = MnemonicHelper.Generate();
 
-        byte[] file = await svc.CreateBackupFileAsync(mnemonic, "correct-horse-battery-staple");
-        string opened = await svc.OpenBackupFileAsync(file, "correct-horse-battery-staple");
+        byte[] file = await svc.CreateBackupFileAsync(mnemonic, "correct-horse-battery-staple", default);
+        string opened = await svc.OpenBackupFileAsync(file, "correct-horse-battery-staple", default);
 
         opened.Should().Be(MnemonicHelper.Normalize(mnemonic));
         Encoding.UTF8.GetString(file).Should().NotContain(MnemonicHelper.Normalize(mnemonic));
@@ -48,9 +48,10 @@ public class MnemonicBackupServiceTests
         var svc = new MnemonicBackupService();
         byte[] file = await svc.CreateBackupFileAsync(
             MnemonicHelper.Generate(),
-            "correct-horse-battery-staple");
+            "correct-horse-battery-staple",
+            default);
 
-        Func<Task> act = async () => await svc.OpenBackupFileAsync(file, "wrong-password-here");
+        Func<Task> act = async () => await svc.OpenBackupFileAsync(file, "wrong-password-here", default);
 
         await act.Should().ThrowAsync<CryptographicException>();
     }
@@ -60,7 +61,7 @@ public class MnemonicBackupServiceTests
     {
         var svc = new MnemonicBackupService();
 
-        Func<Task> act = async () => await svc.CreateBackupFileAsync(MnemonicHelper.Generate(), "short");
+        Func<Task> act = async () => await svc.CreateBackupFileAsync(MnemonicHelper.Generate(), "short", default);
 
         await act.Should().ThrowAsync<ArgumentException>();
     }
@@ -73,7 +74,8 @@ public class MnemonicBackupServiceTests
         var svc = new MnemonicBackupService();
         byte[] validFile = await svc.CreateBackupFileAsync(
             MnemonicHelper.Generate(),
-            "correct-horse-battery-staple");
+            "correct-horse-battery-staple",
+            default);
         using JsonDocument validJson = JsonDocument.Parse(validFile);
         var fields = validJson.RootElement.EnumerateObject()
             .Where(property => property.Name != "CREATED_AT")
@@ -86,7 +88,7 @@ public class MnemonicBackupServiceTests
 
         byte[] invalidFile = JsonSerializer.SerializeToUtf8Bytes(fields);
         Func<Task> act = async () =>
-            await svc.OpenBackupFileAsync(invalidFile, "correct-horse-battery-staple");
+            await svc.OpenBackupFileAsync(invalidFile, "correct-horse-battery-staple", default);
 
         await act.Should().ThrowAsync<CryptographicException>();
     }
@@ -100,7 +102,8 @@ public class MnemonicBackupServiceTests
 
         Func<Task> act = async () => await svc.OpenBackupFileAsync(
             Encoding.UTF8.GetBytes(invalidJson),
-            "correct-horse-battery-staple");
+            "correct-horse-battery-staple",
+            default);
 
         await act.Should().ThrowAsync<CryptographicException>();
     }

@@ -9,7 +9,7 @@ namespace CipherBank_app.V1;
 /// <summary>Import server bootstrap contacts/prefs for returning users. Never touches custody.</summary>
 public interface IAccountBootstrapService
 {
-    Task ApplyAsync(CancellationToken ct = default);
+    Task ApplyAsync(CancellationToken ct);
 }
 
 /// <inheritdoc />
@@ -26,7 +26,7 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
         _recipients = recipients;
     }
 
-    public async Task ApplyAsync(CancellationToken ct = default)
+    public async Task ApplyAsync(CancellationToken ct)
     {
         AccountBootstrapDto bootstrap = await _api.GetAccountBootstrapAsync(ct).ConfigureAwait(false);
 
@@ -43,7 +43,7 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
             }
 
             string digits = new string(routing.Where(char.IsDigit).ToArray());
-            if (digits.Length != 9)
+            if (digits.Length != AchRecipientValidation.RoutingNumberDigitCount)
             {
                 continue;
             }
@@ -54,7 +54,7 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
                 continue;
             }
 
-            string last4 = contact.ResolvedLast4 ?? digits[^4..];
+            string last4 = contact.ResolvedLast4 ?? digits[^AchRecipientValidation.MaskVisibleTrailingDigits..];
             string accountPlaceholder = "****" + last4;
             await _recipients.UpsertAsync(new AchRecipientRow(
                 contact.ResolvedId,

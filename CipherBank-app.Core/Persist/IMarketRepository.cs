@@ -10,10 +10,14 @@ public interface IMarketRepository
     Task UpsertOhlcAsync(
         string symbol,
         IEnumerable<(long T, double V)> points,
-        CancellationToken ct = default);
+        CancellationToken ct);
 
     Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
         string symbol,
-        long? fromT = null,
-        CancellationToken ct = default);
+        CancellationToken ct);
+
+    Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
+        string symbol,
+        long fromT,
+        CancellationToken ct);
 }

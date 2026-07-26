@@ -16,5 +16,5 @@ public interface ISyncJobQueue
 {
     void Enqueue(string key, SyncPriority priority, Func<CancellationToken, Task> work);
 
-    Task DrainAsync(CancellationToken ct = default);
+    Task DrainAsync(CancellationToken ct);
 }

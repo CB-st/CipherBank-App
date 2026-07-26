@@ -12,13 +12,35 @@ public sealed class MockProductApi : IProductApi
     private const string MockRefreshToken = "mock-refresh";
     private const int QuoteTtlSeconds = 30;
     private const int HistoryDayCount = 30;
+    private const int HistoryHourlyPointCount = 24;
+    private const int HistoryWeeklyPointCount = 7;
+    private const int HistoryMonthlyPointCount = 30;
+    private const int HistoryQuarterlyPointCount = 90;
+    private const int HistoryYearlyPointCount = 52;
+    private const int HistoryStepSecondsHourly = 3600;
+    private const int HistoryStepSecondsDaily = 86400;
+    private const int HistoryStepSecondsWeekly = 86400 * 7;
+    private const double HistoryBaseValue = 100;
+    private const int SessionExpiresHours = 1;
+    private const int MockChallengeIdSuffixLength = 8;
+    private const int MockKeyShareIdSuffixLength = 8;
+    private const int MockWalletIdSuffixLength = 12;
+    private const int MockCardIdSuffixLength = 12;
+    private const int MockPosTokenSuffixLength = 12;
+    private const int MockChallengeCiphertextBytes = 48;
+    private const int MockX25519PublicKeyBytes = 32;
+    private const int MockMlKemCiphertextBytes = 1088;
+    private const int MockManagedAddressSuffixLength = 10;
+    private const int PosAuthorizedTtlMs = 60_000;
+    private const int PosReadyTtlMs = 45_000;
+    private const int DefaultAppLockIdleSeconds = 120;
     private const string MockReceiveAddress = "bc1qmockreceiveaddress0000000000000000";
     private readonly List<VaultCardDto> _vaultCards =
     [
         new() { CardId = "card_lab_1", Last4 = "4242", Brand = "visa", Label = "Hardware test", HardwareTest = true },
     ];
 
-    public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default)
+    public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct)
         => Task.FromResult(new PortfolioDto
         {
             TotalUsd = "128450.22",
@@ -31,12 +53,12 @@ public sealed class MockProductApi : IProductApi
             },
         });
 
-    public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct = default)
+    public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
     {
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var (points, stepSeconds) = ResolveHistoryShape(range);
         var pts = new List<HistoryPointDto>(points + 1);
-        double v = 100;
+        double v = HistoryBaseValue;
         for (int i = points; i >= 0; i--)
         {
             v += Math.Sin(i / 3.0) * 2 + 0.3;
@@ -50,59 +72,59 @@ public sealed class MockProductApi : IProductApi
     {
         return range.Trim().ToLowerInvariant() switch
         {
-            "1d" or "1D" => (24, 3600),
-            "1w" or "7d" => (7, 86400),
-            "1m" or "30d" => (30, 86400),
-            "90d" => (90, 86400),
-            "1y" or "all" => (52, 86400 * 7),
-            _ => (HistoryDayCount, 86400),
+            "1d" => (HistoryHourlyPointCount, HistoryStepSecondsHourly),
+            "1w" or "7d" => (HistoryWeeklyPointCount, HistoryStepSecondsDaily),
+            "1m" or "30d" => (HistoryMonthlyPointCount, HistoryStepSecondsDaily),
+            "90d" => (HistoryQuarterlyPointCount, HistoryStepSecondsDaily),
+            "1y" or "all" => (HistoryYearlyPointCount, HistoryStepSecondsWeekly),
+            _ => (HistoryDayCount, HistoryStepSecondsDaily),
         };
     }
 
-    public Task<SessionDto> CreateSessionAsync(CancellationToken ct = default)
+    public Task<SessionDto> CreateSessionAsync(CancellationToken ct)
         => Task.FromResult(new SessionDto
         {
             AccessToken = MockAccessToken,
             RefreshToken = MockRefreshToken,
-            ExpiresAt = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeMilliseconds(),
+            ExpiresAt = DateTimeOffset.UtcNow.AddHours(SessionExpiresHours).ToUnixTimeMilliseconds(),
         });
 
-    public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default)
+    public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
         // Prefer ISessionChallengeClient / IPqChannelChallengeSource in DI for real crypto.
         // This stub satisfies IProductApi for callers that hit MockProductApi directly.
         _ = accountPublicKeyWire;
         return Task.FromResult(new SessionChallengeDto
         {
-            ChallengeId = "ch_mock_" + Guid.NewGuid().ToString("N")[..8],
-            Ciphertext = Convert.ToBase64String(new byte[48]),
-            ApiPublicKey = Convert.ToBase64String(new byte[32]),
+            ChallengeId = "ch_mock_" + Guid.NewGuid().ToString("N")[..MockChallengeIdSuffixLength],
+            Ciphertext = Convert.ToBase64String(new byte[MockChallengeCiphertextBytes]),
+            ApiPublicKey = Convert.ToBase64String(new byte[MockX25519PublicKeyBytes]),
             ApiKeyId = "api_mock",
             Algorithm = "x25519-chacha20poly1305",
         });
     }
 
-    public Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default)
+    public Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct)
     {
         _ = request;
         return Task.FromResult(new KeyShareResponseDto
         {
-            KeyShareId = "ks_mock_" + Guid.NewGuid().ToString("N")[..8],
-            MlKemCiphertext = Convert.ToBase64String(new byte[1088]),
-            ServerX25519PublicKey = Convert.ToBase64String(new byte[32]),
+            KeyShareId = "ks_mock_" + Guid.NewGuid().ToString("N")[..MockKeyShareIdSuffixLength],
+            MlKemCiphertext = Convert.ToBase64String(new byte[MockMlKemCiphertextBytes]),
+            ServerX25519PublicKey = Convert.ToBase64String(new byte[MockX25519PublicKeyBytes]),
             Algorithm = "hybrid-mlkem768-x25519-v1",
         });
     }
 
-    public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default)
+    public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct)
     {
         string mode = string.IsNullOrWhiteSpace(request.Mode) ? "managed" : request.Mode.ToLowerInvariant();
         string symbol = string.IsNullOrWhiteSpace(request.Symbol) ? "XMR" : request.Symbol.ToUpperInvariant();
         string label = string.IsNullOrWhiteSpace(request.Label) ? $"CipherBank {mode}" : request.Label!;
-        string walletId = "wlt_" + Guid.NewGuid().ToString("N")[..12];
+        string walletId = "wlt_" + Guid.NewGuid().ToString("N")[..MockWalletIdSuffixLength];
         string? address = mode switch
         {
-            "managed" => "4" + Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")[..10],
+            "managed" => "4" + Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")[..MockManagedAddressSuffixLength],
             "watch" => request.Address,
             _ => request.Address,
         };
@@ -116,7 +138,7 @@ public sealed class MockProductApi : IProductApi
         });
     }
 
-    public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct = default)
+    public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct)
         => Task.FromResult(new QuoteDto
         {
             From = from.ToUpperInvariant(),
@@ -125,37 +147,37 @@ public sealed class MockProductApi : IProductApi
             ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(QuoteTtlSeconds).ToUnixTimeMilliseconds(),
         });
 
-    public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct = default)
+    public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct)
         => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
 
-    public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct = default)
+    public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct)
         => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
 
-    public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct = default)
+    public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct)
         => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
 
-    public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct = default)
+    public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct)
         => Task.FromResult(new ReceiveDto { Asset = asset.ToUpperInvariant(), Address = MockReceiveAddress, Uri = null });
 
-    public Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct = default)
+    public Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct)
         => Task.FromResult<IReadOnlyList<VaultBinaryDto>>(new[]
         {
             new VaultBinaryDto { BinaryId = "bin_xmr_1", Label = "XMR wallet-rpc shard", Kind = "wallet_rpc" },
         });
 
-    public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct = default)
+    public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         return Task.FromResult<IReadOnlyList<VaultCardDto>>(_vaultCards.ToList());
     }
 
-    public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct = default)
+    public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         _ = idempotencyKey;
         var added = new VaultCardDto
         {
-            CardId = string.IsNullOrWhiteSpace(card.CardId) ? "card_" + Guid.NewGuid().ToString("N")[..12] : card.CardId,
+            CardId = string.IsNullOrWhiteSpace(card.CardId) ? "card_" + Guid.NewGuid().ToString("N")[..MockCardIdSuffixLength] : card.CardId,
             Last4 = card.Last4,
             Brand = card.Brand,
             Label = card.Label,
@@ -165,28 +187,28 @@ public sealed class MockProductApi : IProductApi
         return Task.FromResult(added);
     }
 
-    public Task DeleteVaultCardAsync(string cardId, CancellationToken ct = default)
+    public Task DeleteVaultCardAsync(string cardId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         _vaultCards.RemoveAll(card => card.CardId == cardId);
         return Task.CompletedTask;
     }
 
-    public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct = default)
+    public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct)
         => Task.FromResult(new PosSessionDto { SessionId = Guid.NewGuid().ToString("N"), Status = "pending_auth" });
 
-    public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct = default)
+    public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct)
         => Task.FromResult(new PosSessionDto
         {
             SessionId = sessionId,
             Status = "authorized",
-            TokenRef = "tok_" + Guid.NewGuid().ToString("N")[..12],
+            TokenRef = "tok_" + Guid.NewGuid().ToString("N")[..MockPosTokenSuffixLength],
             Last4 = "4242",
             Brand = "visa",
-            TtlMs = 60_000,
+            TtlMs = PosAuthorizedTtlMs,
         });
 
-    public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct = default)
+    public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct)
         => Task.FromResult(new PosSessionDto
         {
             SessionId = sessionId,
@@ -194,7 +216,7 @@ public sealed class MockProductApi : IProductApi
             TokenRef = "tok_ready",
             Last4 = "4242",
             Brand = "visa",
-            TtlMs = 45_000,
+            TtlMs = PosReadyTtlMs,
         });
 
     private PrefsWireDto _prefs = new()
@@ -214,20 +236,20 @@ public sealed class MockProductApi : IProductApi
         DefaultSendSpeedCamel = "instant",
         AppearanceCamel = "dark",
         BaseCurrencyCamel = "USD",
-        AppLockIdleSecCamel = 120,
+        AppLockIdleSecCamel = DefaultAppLockIdleSeconds,
         AssetsLayoutCamel = "separate",
     };
 
-    public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct = default)
+    public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct)
         => Task.FromResult<PrefsWireDto?>(_prefs);
 
-    public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct = default)
+    public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct)
     {
         _prefs = prefs;
         return Task.CompletedTask;
     }
 
-    public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct = default)
+    public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
         => Task.FromResult(new AccountBootstrapDto
         {
             PrefsCamel = new PrefsWireDto

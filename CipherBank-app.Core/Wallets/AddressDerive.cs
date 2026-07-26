@@ -18,7 +18,10 @@ public static class AddressDerive
         return s is "BTC" or "ETH" or "LTC" or "DOGE";
     }
 
-    public static DerivedAddress? Derive(string symbol, string mnemonic, int accountIndex = 0)
+    public static DerivedAddress? Derive(string symbol, string mnemonic)
+        => Derive(symbol, mnemonic, 0);
+
+    public static DerivedAddress? Derive(string symbol, string mnemonic, int accountIndex)
     {
         string s = symbol.ToUpperInvariant();
         return s switch
@@ -31,7 +34,10 @@ public static class AddressDerive
         };
     }
 
-    public static DerivedAddress DeriveBtc(string mnemonic, int accountIndex = 0)
+    public static DerivedAddress DeriveBtc(string mnemonic)
+        => DeriveBtc(mnemonic, 0);
+
+    public static DerivedAddress DeriveBtc(string mnemonic, int accountIndex)
     {
         var m = MnemonicHelper.Parse(mnemonic);
         var root = m.DeriveExtKey();
@@ -41,7 +47,10 @@ public static class AddressDerive
         return new DerivedAddress(addr.ToString(), path, accountIndex);
     }
 
-    public static DerivedAddress DeriveLtc(string mnemonic, int accountIndex = 0)
+    public static DerivedAddress DeriveLtc(string mnemonic)
+        => DeriveLtc(mnemonic, 0);
+
+    public static DerivedAddress DeriveLtc(string mnemonic, int accountIndex)
     {
         // Litecoin mainnet via NBitcoin Litecoin networks if available; fallback bech32 manually via BTC path style
         var m = MnemonicHelper.Parse(mnemonic);
@@ -54,7 +63,10 @@ public static class AddressDerive
         return new DerivedAddress(address, path, accountIndex);
     }
 
-    public static DerivedAddress DeriveDoge(string mnemonic, int accountIndex = 0)
+    public static DerivedAddress DeriveDoge(string mnemonic)
+        => DeriveDoge(mnemonic, 0);
+
+    public static DerivedAddress DeriveDoge(string mnemonic, int accountIndex)
     {
         var m = MnemonicHelper.Parse(mnemonic);
         var root = m.DeriveExtKey();
@@ -64,7 +76,10 @@ public static class AddressDerive
         return new DerivedAddress(addr.ToString(), path, accountIndex);
     }
 
-    public static DerivedAddress DeriveEth(string mnemonic, int accountIndex = 0)
+    public static DerivedAddress DeriveEth(string mnemonic)
+        => DeriveEth(mnemonic, 0);
+
+    public static DerivedAddress DeriveEth(string mnemonic, int accountIndex)
     {
         var wallet = new Wallet(MnemonicHelper.Normalize(mnemonic), null);
         var account = wallet.GetAccount(accountIndex);

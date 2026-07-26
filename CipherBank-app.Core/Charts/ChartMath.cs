@@ -22,6 +22,7 @@ public static class ChartMath
 {
     private const double DefaultPad = 6;
     private const double Epsilon = 1e-12;
+    private const double PercentScale = 100;
 
     public static ChartPathResult ToPath(IReadOnlyList<ChartPoint> series, double w, double h)
         => ToPath(series, w, h, DefaultPad, min: null, max: null);
@@ -89,7 +90,7 @@ public static class ChartMath
         }
 
         double bas = NearlyZero(series[0].V) ? 1 : series[0].V;
-        return series.Select(p => new ChartPoint(p.T, ((p.V / bas) - 1) * 100)).ToList();
+        return series.Select(p => new ChartPoint(p.T, ((p.V / bas) - 1) * PercentScale)).ToList();
     }
 
     /// <summary>

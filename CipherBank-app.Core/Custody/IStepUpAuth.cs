@@ -7,5 +7,5 @@ namespace CipherBank_app.Custody;
 /// <summary>Cora requireAuth — gate sensitive actions with biometrics or PIN.</summary>
 public interface IStepUpAuth
 {
-    Task<bool> RequireAsync(AuthReason reason, CancellationToken ct = default);
+    Task<bool> RequireAsync(AuthReason reason, CancellationToken ct);
 }

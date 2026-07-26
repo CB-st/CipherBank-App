@@ -16,7 +16,7 @@ public sealed class StepUpAuthService : IStepUpAuth
         _pin = pin;
     }
 
-    public async Task<bool> RequireAsync(AuthReason reason, CancellationToken ct = default)
+    public async Task<bool> RequireAsync(AuthReason reason, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         string prompt = PromptFor(reason);

@@ -42,17 +42,25 @@ public sealed class WalletRepository : IWalletRepository
         cmd.CommandText = "SELECT id, symbol, label, address, path, account_index, kind, created_at FROM wallets ORDER BY created_at";
         var list = new List<LocalWalletRow>();
         await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        int ordId = reader.GetOrdinal("id");
+        int ordSymbol = reader.GetOrdinal("symbol");
+        int ordLabel = reader.GetOrdinal("label");
+        int ordAddress = reader.GetOrdinal("address");
+        int ordPath = reader.GetOrdinal("path");
+        int ordAccountIndex = reader.GetOrdinal("account_index");
+        int ordKind = reader.GetOrdinal("kind");
+        int ordCreatedAt = reader.GetOrdinal("created_at");
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
             list.Add(new LocalWalletRow(
-                reader.GetString(0),
-                reader.GetString(1),
-                await ReadOptionalStringAsync(reader, 2).ConfigureAwait(false),
-                await ReadOptionalStringAsync(reader, 3).ConfigureAwait(false),
-                await ReadOptionalStringAsync(reader, 4).ConfigureAwait(false),
-                reader.GetInt32(5),
-                reader.GetString(6),
-                DateTimeOffset.Parse(reader.GetString(7), System.Globalization.CultureInfo.InvariantCulture)));
+                reader.GetString(ordId),
+                reader.GetString(ordSymbol),
+                await ReadOptionalStringAsync(reader, ordLabel).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, ordAddress).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, ordPath).ConfigureAwait(false),
+                reader.GetInt32(ordAccountIndex),
+                reader.GetString(ordKind),
+                DateTimeOffset.Parse(reader.GetString(ordCreatedAt), System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         return list;

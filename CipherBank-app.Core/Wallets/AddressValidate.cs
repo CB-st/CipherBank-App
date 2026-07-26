@@ -10,6 +10,10 @@ namespace CipherBank_app.Wallets;
 /// <summary>Watch-only address validation helpers.</summary>
 public static partial class AddressValidate
 {
+    private const int XmrAddressMinLength = 95;
+    private const int XmrAddressMaxLength = 106;
+    private const int GenericAddressMinLength = 8;
+
     public static bool IsValid(string symbol, string address)
     {
         string sym = symbol.ToUpperInvariant();
@@ -27,8 +31,8 @@ public static partial class AddressValidate
                 "LTC" => BitcoinAddress.Create(addr, NBitcoin.Altcoins.Litecoin.Instance.Mainnet) is not null,
                 "DOGE" => BitcoinAddress.Create(addr, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet) is not null,
                 "ETH" => EthAddressRegex().IsMatch(addr),
-                "XMR" => addr.Length is >= 95 and <= 106,
-                _ => addr.Length >= 8,
+                "XMR" => addr.Length is >= XmrAddressMinLength and <= XmrAddressMaxLength,
+                _ => addr.Length >= GenericAddressMinLength,
             };
         }
         catch

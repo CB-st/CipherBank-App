@@ -46,7 +46,7 @@ public sealed class SyncJobQueue : ISyncJobQueue
     }
 
     /// <inheritdoc />
-    public async Task DrainAsync(CancellationToken ct = default)
+    public async Task DrainAsync(CancellationToken ct)
     {
         while (true)
         {

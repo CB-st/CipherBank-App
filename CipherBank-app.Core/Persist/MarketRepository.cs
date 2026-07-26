@@ -15,7 +15,7 @@ public sealed class MarketRepository : IMarketRepository
     public async Task UpsertOhlcAsync(
         string symbol,
         IEnumerable<(long T, double V)> points,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         string normalizedSymbol = symbol.ToUpperInvariant();
         await using var conn = _db.Open();
@@ -40,10 +40,22 @@ public sealed class MarketRepository : IMarketRepository
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
+    public Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
         string symbol,
-        long? fromT = null,
-        CancellationToken ct = default)
+        CancellationToken ct)
+        => GetOhlcCoreAsync(symbol, null, ct);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
+        string symbol,
+        long fromT,
+        CancellationToken ct)
+        => GetOhlcCoreAsync(symbol, fromT, ct);
+
+    private async Task<IReadOnlyList<(long T, double V)>> GetOhlcCoreAsync(
+        string symbol,
+        long? fromT,
+        CancellationToken ct)
     {
         await using var conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);

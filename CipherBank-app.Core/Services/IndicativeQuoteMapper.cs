@@ -15,7 +15,13 @@ namespace CipherBank_app.Services;
 public static class IndicativeQuoteMapper
 {
     /// <summary>Default client-side indicative TTL (matches Expo Convert).</summary>
-    public const int DefaultTtlMs = 15_000;
+    public static readonly int DefaultTtlMs = 15_000;
+
+    /// <summary>
+    /// Builds an indicative lock DTO from a public quote using <see cref="DefaultTtlMs"/>.
+    /// </summary>
+    public static QuoteDto ToQuoteDto(PublicQuote quote, long nowMs)
+        => ToQuoteDto(quote, nowMs, DefaultTtlMs);
 
     /// <summary>
     /// Builds an indicative lock DTO from a public quote.
@@ -24,7 +30,7 @@ public static class IndicativeQuoteMapper
     /// <param name="nowMs">Unix epoch milliseconds.</param>
     /// <param name="ttlMs">Client TTL.</param>
     /// <returns>Quote DTO usable by Convert countdown UX.</returns>
-    public static QuoteDto ToQuoteDto(PublicQuote quote, long nowMs, int ttlMs = DefaultTtlMs)
+    public static QuoteDto ToQuoteDto(PublicQuote quote, long nowMs, int ttlMs)
     {
         ArgumentNullException.ThrowIfNull(quote);
 

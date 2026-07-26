@@ -12,7 +12,7 @@ public sealed class SessionProofBuilderTests
     [Fact]
     public async Task Lab_builder_posts_device_attestation_stub()
     {
-        var body = await new LabSessionProofBuilder().BuildOpenBodyAsync();
+        var body = await new LabSessionProofBuilder().BuildOpenBodyAsync(default);
         var map = Assert.IsType<Dictionary<string, string>>(body);
         Assert.Equal(LabSessionProofBuilder.LabAttestation, map["DEVICE_ATTESTATION"]);
         Assert.DoesNotContain(map.Keys, k => k.Contains("MNEMONIC", StringComparison.OrdinalIgnoreCase));

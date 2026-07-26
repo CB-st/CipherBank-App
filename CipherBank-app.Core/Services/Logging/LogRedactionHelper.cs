@@ -150,13 +150,17 @@ public static class LogRedactionHelper
         return $"{transactionId[..8]}{Ellipsis}{transactionId[^4..]}";
     }
 
-    /// <summary>
-    /// Redacts sensitive data from a generic string based on its apparent type.
-    /// </summary>
+    /// <summary>Redacts sensitive data from a generic string based on its apparent type.</summary>
     /// <param name="value">The value to redact</param>
-    /// <param name="showChars">Number of characters to show at start and end (default: 4)</param>
     /// <returns>Redacted value</returns>
-    public static string Redact(string? value, int showChars = 4)
+    public static string Redact(string? value)
+        => Redact(value, 4);
+
+    /// <summary>Redacts sensitive data from a generic string based on its apparent type.</summary>
+    /// <param name="value">The value to redact</param>
+    /// <param name="showChars">Number of characters to show at start and end</param>
+    /// <returns>Redacted value</returns>
+    public static string Redact(string? value, int showChars)
     {
         if (string.IsNullOrEmpty(value))
         {

@@ -18,10 +18,10 @@ public class MarketRepositoryTests
         await db.InitializeAsync();
         var repository = new MarketRepository(db);
 
-        await repository.UpsertOhlcAsync("BTC", [(300, 3.0), (100, 1.0), (200, 2.0)]);
-        await repository.UpsertOhlcAsync("BTC", [(200, 2.5)]);
+        await repository.UpsertOhlcAsync("BTC", [(300, 3.0), (100, 1.0), (200, 2.0)], default);
+        await repository.UpsertOhlcAsync("BTC", [(200, 2.5)], default);
 
-        var points = await repository.GetOhlcAsync("BTC", 200);
+        var points = await repository.GetOhlcAsync("BTC", 200, default);
 
         points.Should().Equal((200L, 2.5), (300L, 3.0));
     }

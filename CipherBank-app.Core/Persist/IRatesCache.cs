@@ -10,9 +10,9 @@ public sealed record RateRow(string Symbol, double Usd, double Change24h, long U
 /// <summary>Stores the latest USD market rates.</summary>
 public interface IRatesCache
 {
-    Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct = default);
+    Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct);
 
     Task<IReadOnlyList<RateRow>> GetAsync(
-        IEnumerable<string>? symbols = null,
-        CancellationToken ct = default);
+        IEnumerable<string>? symbols,
+        CancellationToken ct);
 }

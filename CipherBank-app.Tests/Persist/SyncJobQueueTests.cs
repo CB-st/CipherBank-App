@@ -95,7 +95,7 @@ public class SyncJobQueueTests
         }
 
         gate2.SetResult();
-        await queue.DrainAsync().ConfigureAwait(false);
+        await queue.DrainAsync(default).ConfigureAwait(false);
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public class SyncJobQueueTests
         });
 
         gate.SetResult();
-        await queue.DrainAsync().ConfigureAwait(false);
+        await queue.DrainAsync(default).ConfigureAwait(false);
 
         runCount.Should().Be(1);
     }

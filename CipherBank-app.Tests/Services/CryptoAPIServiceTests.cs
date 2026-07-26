@@ -28,7 +28,7 @@ public class CryptoAPIServiceTests
             .ReturnsAsync(expectedCryptos);
 
         // Act
-        var result = await mockService.Object.GetCryptoPricesAsync();
+        var result = await mockService.Object.GetCryptoPricesAsync(default);
 
         // Assert
         result.Should().HaveCount(2);
@@ -49,7 +49,7 @@ public class CryptoAPIServiceTests
             .ReturnsAsync(expectedCrypto);
 
         // Act
-        var result = await mockService.Object.GetCryptoPriceAsync("BTC");
+        var result = await mockService.Object.GetCryptoPriceAsync("BTC", default);
 
         // Assert
         result.Symbol.Should().Be("BTC");
@@ -67,7 +67,7 @@ public class CryptoAPIServiceTests
             .ThrowsAsync(new KeyNotFoundException("Cryptocurrency 'INVALID' not found"));
 
         // Act
-        var act = async () => await mockService.Object.GetCryptoPriceAsync("INVALID");
+        var act = async () => await mockService.Object.GetCryptoPriceAsync("INVALID", default);
 
         // Assert
         await act.Should().ThrowAsync<KeyNotFoundException>();
@@ -94,7 +94,7 @@ public class CryptoAPIServiceTests
             .ReturnsAsync(expectedHistory);
 
         // Act
-        var result = await mockService.Object.GetPriceHistoryAsync("BTC", "1d");
+        var result = await mockService.Object.GetPriceHistoryAsync("BTC", "1d", default);
 
         // Assert
         result.Symbol.Should().Be("BTC");
@@ -117,7 +117,7 @@ public class CryptoAPIServiceTests
             .ReturnsAsync(expectedResults);
 
         // Act
-        var result = await mockService.Object.SearchCryptoAsync("bit");
+        var result = await mockService.Object.SearchCryptoAsync("bit", default);
 
         // Assert
         result.Should().HaveCount(1);
@@ -134,7 +134,7 @@ public class CryptoAPIServiceTests
             .ReturnsAsync(new List<CryptoCurrency>());
 
         // Act
-        var result = await mockService.Object.SearchCryptoAsync("xyz123");
+        var result = await mockService.Object.SearchCryptoAsync("xyz123", default);
 
         // Assert
         result.Should().BeEmpty();

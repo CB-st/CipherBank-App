@@ -49,22 +49,36 @@ public sealed class UserPrefs
     /// <summary>Migrate legacy Expo-style <c>assets</c> key and ensure holdings/local keys exist.</summary>
     public void NormalizeHomeSections()
     {
-        if (HomeOrder.Contains("assets"))
-        {
-            int idx = HomeOrder.IndexOf("assets");
-            HomeOrder.RemoveAt(idx);
-            if (!HomeOrder.Contains("holdings"))
-            {
-                HomeOrder.Insert(idx, "holdings");
-                idx++;
-            }
+        MigrateLegacyAssetsSection();
+        EnsureHomeSectionKeys();
+        NormalizeAssetsLayout();
+        NormalizeEnabledCurrencies();
+        NormalizeDefaultSendSpeed();
+    }
 
-            if (!HomeOrder.Contains("localWallets"))
-            {
-                HomeOrder.Insert(idx, "localWallets");
-            }
+    private void MigrateLegacyAssetsSection()
+    {
+        if (!HomeOrder.Contains("assets"))
+        {
+            return;
         }
 
+        int idx = HomeOrder.IndexOf("assets");
+        HomeOrder.RemoveAt(idx);
+        if (!HomeOrder.Contains("holdings"))
+        {
+            HomeOrder.Insert(idx, "holdings");
+            idx++;
+        }
+
+        if (!HomeOrder.Contains("localWallets"))
+        {
+            HomeOrder.Insert(idx, "localWallets");
+        }
+    }
+
+    private void EnsureHomeSectionKeys()
+    {
         foreach (string key in DefaultHomeOrder)
         {
             if (!HomeOrder.Contains(key))
@@ -75,34 +89,45 @@ public sealed class UserPrefs
             if (!HomeVisible.ContainsKey(key))
             {
                 bool legacyAssets = HomeVisible.TryGetValue("assets", out bool assetsVisible) && assetsVisible;
-                HomeVisible[key] = key is "holdings" or "localWallets" ? (HomeVisible.ContainsKey("assets") ? legacyAssets : true) : true;
+                HomeVisible[key] = key is "holdings" or "localWallets"
+                    ? (HomeVisible.ContainsKey("assets") ? legacyAssets : true)
+                    : true;
             }
         }
 
         HomeVisible.Remove("assets");
+    }
+
+    private void NormalizeAssetsLayout()
+    {
         if (string.IsNullOrWhiteSpace(AssetsLayout)
             || (AssetsLayout is not "separate" and not "combined"))
         {
             AssetsLayout = "separate";
         }
+    }
 
+    private void NormalizeEnabledCurrencies()
+    {
         if (EnabledCurrencies is null || EnabledCurrencies.Count == 0)
         {
             EnabledCurrencies = new List<string>(DefaultEnabledCurrencies);
-        }
-        else
-        {
-            EnabledCurrencies = EnabledCurrencies
-                .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Select(s => s.Trim().ToUpperInvariant())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            if (EnabledCurrencies.Count == 0)
-            {
-                EnabledCurrencies = new List<string>(DefaultEnabledCurrencies);
-            }
+            return;
         }
 
+        EnabledCurrencies = EnabledCurrencies
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (EnabledCurrencies.Count == 0)
+        {
+            EnabledCurrencies = new List<string>(DefaultEnabledCurrencies);
+        }
+    }
+
+    private void NormalizeDefaultSendSpeed()
+    {
         if (string.IsNullOrWhiteSpace(DefaultSendSpeed)
             || (DefaultSendSpeed is not "instant" and not "ach"))
         {
