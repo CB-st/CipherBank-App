@@ -1,3 +1,5 @@
+using CipherBank_app.E2ETests.Support;
+
 namespace CipherBank_app.E2ETests.Stories;
 
 public enum StoryRunnerStatus
@@ -15,12 +17,18 @@ public enum StoryRunnerStatus
     Skipped,
 }
 
+/// <param name="RequiredProfile">
+/// Device custody profile (<see cref="DeviceProfile"/>) the story's Fact must establish before it runs,
+/// or null when no story-specific device precondition applies. Optional/trailing so existing positional
+/// <c>new(...)</c> catalog entries stay valid without naming every argument.
+/// </param>
 public sealed record StoryEntry(
     string CbId,
     string? UsId,
     string Title,
     StoryRunnerStatus Status,
-    string MauiSurface);
+    string MauiSurface,
+    DeviceProfile? RequiredProfile = null);
 
 /// <summary>
 /// Appium-side catalog. Procedures live in design_handoff USER_STORIES / scaffold catalog;
@@ -31,9 +39,12 @@ public static class StoryCatalog
     public static readonly IReadOnlyList<StoryEntry> All =
     [
         new(StoryIds.CbAccount001, StoryIds.UsOnb01, "Create an account", StoryRunnerStatus.Partial,
-            "Welcome → Keys → BackupQuiz → SetPin → Home wired (run with E2E_FRESH=1)"),
+            "Welcome → Keys → BackupQuiz → SetPin → Home wired; StoryProcedures.Account001Steps imported, " +
+            "Executable pending the Task 7 emulator canary (run with E2E_FRESH=1)",
+            DeviceProfile.Fresh),
         new(StoryIds.CbAccount002, StoryIds.UsOnb02, "Recover / returning device", StoryRunnerStatus.Backlog,
-            "WelcomeReturningButton + RestoreBackup"),
+            "WelcomeReturningButton + RestoreBackup; StoryProcedures.Account002Steps imported, page objects pending",
+            DeviceProfile.Fresh),
         new(StoryIds.CbWallet001, "US-WLT-01", "Create user-controlled wallet", StoryRunnerStatus.Backlog, "Home / wallets"),
         new(StoryIds.CbWallet002, "US-WLT-02", "Create CipherBank checking wallet", StoryRunnerStatus.Backlog, "Hybrid checking"),
         new(StoryIds.CbFund001, StoryIds.UsRcv01, "Fund user-controlled wallet", StoryRunnerStatus.Partial,
