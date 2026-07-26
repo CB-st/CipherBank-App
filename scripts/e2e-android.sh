@@ -25,10 +25,13 @@ APPIUM_LOG="${APPIUM_LOG:-/tmp/cb-e2e-appium.log}"
 EMULATOR_LOG="${EMULATOR_LOG:-/tmp/cb-e2e-emulator.log}"
 BOOT_WAIT_ATTEMPTS="${BOOT_WAIT_ATTEMPTS:-90}"
 
-# Maps a --wave name to the story-id prefix used to build the dotnet test filter.
+# Maps a --wave name to the space-separated FullyQualifiedName substrings that make up that
+# wave's dotnet test filter. Most waves are a single story-id prefix; "account" needs an extra
+# two entries because the US-ONB-03/04 negative Facts live in AccountStories.cs but keep their
+# US_ONB_* method-name prefix instead of CB_ACCOUNT_* (see StoryIds.cs / AccountStories.cs).
 # Use: Medium (once per --wave invocation). Scope: arg -> filter resolution.
-declare -A WAVE_STORY_PREFIX=(
-  [account]="CB_ACCOUNT"
+declare -A WAVE_STORY_PREFIXES=(
+  [account]="CB_ACCOUNT US_ONB_03 US_ONB_04"
   [market]="CB_MARKET"
   [wallets]="CB_WALLET"
   [fund]="CB_FUND"
@@ -104,14 +107,28 @@ resolve_test_filter() {
       echo "FullyQualifiedName~${sanitized}"
       ;;
     wave)
-      local prefix="${WAVE_STORY_PREFIX[$MODE_VALUE]:-}"
-      [[ -n "$prefix" ]] || die "unknown wave '$MODE_VALUE' (known: ${!WAVE_STORY_PREFIX[*]})"
-      echo "FullyQualifiedName~${prefix}"
+      local prefixes="${WAVE_STORY_PREFIXES[$MODE_VALUE]:-}"
+      [[ -n "$prefixes" ]] || die "unknown wave '$MODE_VALUE' (known: ${!WAVE_STORY_PREFIXES[*]})"
+      join_wave_filter "$prefixes"
       ;;
     all)
       echo ""
       ;;
   esac
+}
+
+# Joins a wave's space-separated FullyQualifiedName substrings into a single dotnet test
+# --filter OR-expression, e.g. "CB_ACCOUNT US_ONB_03" -> "FullyQualifiedName~CB_ACCOUNT|FullyQualifiedName~US_ONB_03".
+# Use: Medium (once per --wave invocation). Scope: single filter-string build.
+join_wave_filter() {
+  local prefixes="$1"
+  local -a clauses=()
+  local prefix
+  for prefix in $prefixes; do
+    clauses+=("FullyQualifiedName~${prefix}")
+  done
+  local IFS='|'
+  echo "${clauses[*]}"
 }
 
 # Starts CB_AVD if no emulator- device is already attached, then waits for boot.

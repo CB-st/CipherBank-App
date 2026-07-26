@@ -66,4 +66,18 @@ Task 7: complete (commits 2b59bc4..f351479, review clean — CB-ACCOUNT-001 gree
 Task 8: complete (commits f351479..9ab8090, review clean after Important fix: IsVisible+non-empty text on BackupQuiz/SetPin error labels; US-ONB-03/04 green on device)
 Task 9: complete (commits 9ab8090..f7014cc, review fix-up 10e66e7; CB-ACCOUNT-PIN-CHANGE green on CipherBank_API34; Important fixes: PinChangeCoordinator moved onto ICustodyService.ChangePinAsync to refuse legacy-blob PIN changes, wrong-current-PIN assertion made real (visible+non-empty ChangePinErrorLabel); full unit suite 262/262)
 Task 10: complete (commits 10e66e7..19d4466, review clean; CB-ACCOUNT-002 green on CipherBank_API34 — real BackupFileService export to Downloads/MediaStore replacing the cache-and-delete stub, restore via Android document picker, wrong-password rejection, same-custody proof by comparing revealed mnemonic pre/post wipe and by independently decrypting the pulled `.cbr.json`; full Fresh-device regression 5/5; unit suite 262/262)
-Task 11: docs closeout — polished `docs/tests/README.md` (harness pointer), `docs/README.md` (STORY_ID_MAP link), Expo mirror docs (`design_handoff_cipherbank/starter/docs/{PLAYWRIGHT_PLAN,STORY_ID_MAP}.md` — fixed stale `E2E_FRESH` env var to `E2E_RUN`, added CB-ACCOUNT-002/PIN-CHANGE/US-ONB-03 mirror rows), confirmed `artifacts/e2e-journal|e2e-recovery|e2e-diagnostics` stay gitignored; see `.superpowers/sdd/task-11-report.md` for harness run outcome
+Task 11: complete (commit `3c5fc3a`) — docs closeout — polished `docs/tests/README.md` (harness pointer), `docs/README.md` (STORY_ID_MAP link), Expo mirror docs (`design_handoff_cipherbank/starter/docs/{PLAYWRIGHT_PLAN,STORY_ID_MAP}.md` — fixed stale `E2E_FRESH` env var to `E2E_RUN`, added CB-ACCOUNT-002/PIN-CHANGE/US-ONB-03 mirror rows), confirmed `artifacts/e2e-journal|e2e-recovery|e2e-diagnostics` stay gitignored; see `.superpowers/sdd/task-11-report.md` for harness run outcome
+
+### Task 11 review fix (2026-07-25)
+
+Review of Task 11 (base `3c5fc3a`) found `--wave account` in `scripts/e2e-android.sh` only matched
+`CB_ACCOUNT_*`-named test methods, silently excluding the `US_ONB_03`/`US_ONB_04` negative Facts from
+`AccountStories.cs` despite them being Wave 0–1 account/onboarding stories. Fixed `WAVE_STORY_PREFIXES`
+so the `account` wave's filter is `FullyQualifiedName~CB_ACCOUNT|FullyQualifiedName~US_ONB_03|FullyQualifiedName~US_ONB_04`,
+covering all five Facts: CB-ACCOUNT-001, US-ONB-03, US-ONB-04, CB-ACCOUNT-PIN-CHANGE, CB-ACCOUNT-002.
+Updated `docs/tests/README.md`, `docs/tests/e2e-tests.md`, `docs/tests/STORY_ID_MAP.md` to describe the
+expanded filter, and `docs/tests/README.md`'s test-pyramid inventory to name `AccountStories` as the
+primary executable story suite (previously only `CoraShellSmokeTests + StoryBacklog`). Verified the
+filter expansion with a `bash -x` trace of `resolve_test_filter` (no emulator/dotnet available in this
+sandbox for a full harness re-run); see `.superpowers/sdd/task-11-report.md` follow-up section and the
+fix commit range `3c5fc3a..<this-fix-commit>` (filled in below once committed).

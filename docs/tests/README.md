@@ -7,7 +7,7 @@ CipherBank-app has three test projects following a test pyramid: unit tests (fas
 ```mermaid
 flowchart TB
     subgraph e2e [E2E Tests]
-        E2E[CoraShellSmokeTests + StoryBacklog]
+        E2E[AccountStories + CoraShellSmokeTests + StoryBacklog]
     end
     subgraph integration [Integration Tests]
         API[ApiIntegrationTests]
@@ -31,6 +31,11 @@ flowchart TB
 
 Expo Playwright (`design_handoff_cipherbank/starter`) is the **contract lab** until Shell parity; then Appium owns full `CB-*` / `US-*` coverage — see [STORY_ID_MAP.md](STORY_ID_MAP.md).
 
+`AccountStories` (`CipherBank-app.E2ETests/Tests/AccountStories.cs`) is the primary executable story
+suite today: the Fresh-device account/onboarding Facts (`CB-ACCOUNT-001`, `US-ONB-03`, `US-ONB-04`,
+`CB-ACCOUNT-PIN-CHANGE`, `CB-ACCOUNT-002`). `CoraShellSmokeTests` covers the sealed-device design-spec
+smoke path; `StoryBacklogTests` lists the remaining `CB-*` catalog as skipped Theories.
+
 ## Running Tests
 
 ```bash
@@ -51,6 +56,8 @@ E2E_RUN=1 TEST_PLATFORM=android ANDROID_APK_PATH=path/to/app.apk \
   dotnet test CipherBank-app.E2ETests --filter "FullyQualifiedName~CoraShellSmokeTests"
 
 # Or via the Android harness (boots the AVD, builds/installs the APK, starts Appium):
+# --wave account runs all Wave 0-1 AccountStories Facts: CB-ACCOUNT-001, US-ONB-03, US-ONB-04,
+# CB-ACCOUNT-PIN-CHANGE, CB-ACCOUNT-002 (see scripts/e2e-android.sh WAVE_STORY_PREFIXES).
 ./scripts/e2e-android.sh --wave account
 ```
 

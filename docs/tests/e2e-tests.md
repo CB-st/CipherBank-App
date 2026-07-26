@@ -65,6 +65,11 @@ if it isn't already up, then runs the requested slice of
 ./scripts/e2e-android.sh --help                   # usage
 ```
 
+`--wave account` runs every Wave 0–1 account/onboarding Fact in `AccountStories.cs`: `CB-ACCOUNT-001`,
+`US-ONB-03`, `US-ONB-04`, `CB-ACCOUNT-PIN-CHANGE`, `CB-ACCOUNT-002` — not only the `CB_ACCOUNT_*`-named
+methods, since the two negative Facts (`US-ONB-03`/`04`) keep a `US_ONB_*` method-name prefix. See
+`WAVE_STORY_PREFIXES` in `scripts/e2e-android.sh`.
+
 Env/path setup (`ANDROID_HOME`, `ANDROID_SDK_ROOT`, `DOTNET_ROOT`, `CB_MAUI_PACKAGE`,
 `CB_AVD`) lives in `scripts/lib/android-env.sh` and is sourced automatically.
 MAUI package id for this harness: `com.companyname.cipherbankapp` (not Expo's

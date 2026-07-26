@@ -69,6 +69,9 @@ E2E_RUN=1 TEST_PLATFORM=android ANDROID_APK_PATH=/path/to/app.apk \
 ./scripts/e2e-android.sh --story US-ONB-04
 ./scripts/e2e-android.sh --story CB-ACCOUNT-PIN-CHANGE
 ./scripts/e2e-android.sh --story CB-ACCOUNT-002
+
+# ...or all five Facts above in one run:
+./scripts/e2e-android.sh --wave account
 ```
 
 `CB-ACCOUNT-002` drives Android's own document picker. The recovery password comes from
