@@ -134,31 +134,58 @@ public sealed class AppSession : IAppSession
 
     public void Touch() => _lastTouch = DateTimeOffset.UtcNow;
 
+    /// <summary>
+    /// Creates the product session and starts streams after custody is already unlocked.
+    /// On session/stream failure, re-locks custody so callers never see unlock-failed with an open vault.
+    /// Use: High (every unlock). Scope: AppSession + custody + product session store.
+    /// </summary>
     private async Task<bool> CompleteUnlockAsync(bool applyBootstrap)
     {
-        var session = await _api.CreateSessionAsync().ConfigureAwait(false);
-        AccessToken = session.AccessToken;
-        await _stream.ConnectAsync().ConfigureAwait(false);
-        _streamHub.Start();
-
         try
         {
-            await _prefsSync.PullMergeAsync().ConfigureAwait(false);
-            if (applyBootstrap)
+            var session = await _api.CreateSessionAsync().ConfigureAwait(false);
+            AccessToken = session.AccessToken;
+            await _productSessions.SaveAsync(session).ConfigureAwait(false);
+            await _stream.ConnectAsync().ConfigureAwait(false);
+            _streamHub.Start();
+
+            try
             {
-                await _bootstrap.ApplyAsync().ConfigureAwait(false);
+                await _prefsSync.PullMergeAsync().ConfigureAwait(false);
+                if (applyBootstrap)
+                {
+                    await _bootstrap.ApplyAsync().ConfigureAwait(false);
+                }
+
+                var prefs = await _prefs.LoadAsync().ConfigureAwait(false);
+                IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * 1000 : DefaultIdleMs;
+            }
+            catch
+            {
+                // Prefs/bootstrap are best-effort after a successful product session.
             }
 
-            var prefs = await _prefs.LoadAsync().ConfigureAwait(false);
-            IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * 1000 : DefaultIdleMs;
+            Touch();
+            return true;
         }
         catch
         {
-            // Prefs/bootstrap are best-effort; custody unlock already succeeded.
+            RollbackFailedUnlock();
+            return false;
         }
+    }
 
-        Touch();
-        return true;
+    /// <summary>
+    /// Rolls custody and product tokens back when post-unlock session setup fails.
+    /// Use: Low (failure path). Scope: AppSession unlock teardown.
+    /// </summary>
+    private void RollbackFailedUnlock()
+    {
+        _streamHub.Stop();
+        _custody.Lock();
+        AccessToken = null;
+        _productSessions.Clear();
+        _ = _stream.DisconnectAsync();
     }
 
     public void Lock()
@@ -175,7 +202,11 @@ public sealed class AppSession : IAppSession
     {
         await _custody.SealAsync(mnemonic, pin).ConfigureAwait(false);
         await _seeder.EnsureDerivedAsync(mnemonic).ConfigureAwait(false);
-        await CompleteUnlockAsync(applyBootstrap: false).ConfigureAwait(false);
+        if (!await CompleteUnlockAsync(applyBootstrap: false).ConfigureAwait(false))
+        {
+            throw new InvalidOperationException("Custody sealed but product session setup failed.");
+        }
+
         HasWallet = true;
     }
 

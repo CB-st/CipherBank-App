@@ -97,11 +97,14 @@ public class AppSessionTests
         ICustodyService custody,
         FakeWallets wallets,
         FakePrefs? prefs = null,
-        MemRecipients? recipients = null)
+        MemRecipients? recipients = null,
+        IProductApi? api = null,
+        InMemoryProductSessionStore? productSessions = null)
     {
         prefs ??= new FakePrefs();
         recipients ??= new MemRecipients();
-        var api = new MockProductApi();
+        api ??= new MockProductApi();
+        productSessions ??= new InMemoryProductSessionStore();
         var stream = new MockStreamService();
         var hub = new StreamHub(stream);
         var prefsSync = new PrefsSyncService(prefs, api);
@@ -115,7 +118,74 @@ public class AppSessionTests
             prefs,
             prefsSync,
             bootstrap,
-            new InMemoryProductSessionStore());
+            productSessions);
+    }
+
+    private sealed class FailingSessionApi : IProductApi
+    {
+        private readonly MockProductApi _inner = new();
+
+        public Task<SessionDto> CreateSessionAsync(CancellationToken ct = default)
+            => Task.FromException<SessionDto>(new InvalidOperationException("offline"));
+
+        public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default) => _inner.GetPortfolioAsync(ct);
+
+        public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct = default)
+            => _inner.GetHistoryAsync(symbol, range, ct);
+
+        public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default)
+            => _inner.CreateSessionChallengeAsync(accountPublicKeyWire, ct);
+
+        public Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default)
+            => _inner.EstablishKeyShareAsync(request, ct);
+
+        public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default)
+            => _inner.CreateWalletAsync(request, ct);
+
+        public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct = default)
+            => _inner.GetQuoteAsync(from, to, ct);
+
+        public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct = default)
+            => _inner.ConvertAsync(from, to, amount, idempotencyKey, ct);
+
+        public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct = default)
+            => _inner.TransferAsync(to, amount, speed, idempotencyKey, ct);
+
+        public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct = default)
+            => _inner.PayAsync(amount, mix, idempotencyKey, ct);
+
+        public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct = default)
+            => _inner.GetReceiveAsync(asset, ct);
+
+        public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct = default)
+            => _inner.GetVaultCardsAsync(ct);
+
+        public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct = default)
+            => _inner.AddVaultCardAsync(card, idempotencyKey, ct);
+
+        public Task DeleteVaultCardAsync(string cardId, CancellationToken ct = default)
+            => _inner.DeleteVaultCardAsync(cardId, ct);
+
+        public Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct = default)
+            => _inner.GetVaultBinariesAsync(ct);
+
+        public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct = default)
+            => _inner.CreatePosSessionAsync(ct);
+
+        public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct = default)
+            => _inner.AuthorizePosAsync(sessionId, ct);
+
+        public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct = default)
+            => _inner.ConfirmPosAsync(sessionId, ct);
+
+        public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct = default)
+            => _inner.GetPrefsAsync(ct);
+
+        public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct = default)
+            => _inner.PutPrefsAsync(prefs, ct);
+
+        public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct = default)
+            => _inner.GetAccountBootstrapAsync(ct);
     }
 
     [Fact]
@@ -125,7 +195,8 @@ public class AppSessionTests
         var pin = new PinService(store);
         var custody = new CustodyService(store, pin);
         var wallets = new FakeWallets();
-        var session = CreateSession(custody, wallets);
+        var productSessions = new InMemoryProductSessionStore();
+        var session = CreateSession(custody, wallets, productSessions: productSessions);
 
         string mnemonic = MnemonicHelper.Generate();
         await session.FinishCustodySetupAsync(mnemonic, "123456");
@@ -133,6 +204,7 @@ public class AppSessionTests
         session.IsUnlocked.Should().BeTrue();
         session.HasWallet.Should().BeTrue();
         session.AccessToken.Should().NotBeNullOrEmpty();
+        (await productSessions.GetAsync()).Should().NotBeNull();
         wallets.Rows.Should().Contain(r => r.Symbol == "BTC");
         wallets.Rows.Should().Contain(r => r.Symbol == "ETH");
     }
@@ -165,7 +237,30 @@ public class AppSessionTests
 
         (await session.UnlockAsync("123456")).Should().BeTrue();
         recipients.Rows.Should().Contain(r => r.Name == "Maya Chen");
-        recipients.Rows.Should().Contain(r => r.Routing == "021000021");
+        recipients.Rows.Should().Contain(r => r.RoutingMask == AchRecipientValidation.MaskRouting("021000021")
+            || r.Routing == "021000021");
         custody.IsUnlocked.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Unlock_WhenCreateSessionFails_RelocksCustody()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        var productSessions = new InMemoryProductSessionStore();
+        var okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
+        await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
+        okSession.Lock();
+
+        var failing = CreateSession(
+            custody,
+            new FakeWallets(),
+            api: new FailingSessionApi(),
+            productSessions: productSessions);
+        (await failing.UnlockAsync("123456")).Should().BeFalse();
+        custody.IsUnlocked.Should().BeFalse();
+        failing.AccessToken.Should().BeNull();
+        (await productSessions.GetAsync()).Should().BeNull();
     }
 }

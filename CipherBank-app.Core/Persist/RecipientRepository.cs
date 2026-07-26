@@ -2,9 +2,15 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using Microsoft.Data.Sqlite;
+
 namespace CipherBank_app.Persist;
 
 /// <summary>ACH / payee recipient stored on device.</summary>
+/// <remarks>
+/// Full account/routing digits are accepted on upsert only to compute masks; SQLite (the public
+/// environment) persists masks and metadata — never cleartext PAN/routing.
+/// </remarks>
 public sealed record AchRecipientRow(
     string Id,
     string Name,
@@ -55,11 +61,16 @@ public sealed class RecipientRepository : IRecipientRepository
         await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN account TEXT").ConfigureAwait(false);
         await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN account_type TEXT").ConfigureAwait(false);
         await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN memo TEXT").ConfigureAwait(false);
+        await ClearSensitiveRecipientColumnsAsync(conn).ConfigureAwait(false);
         _schemaReady = true;
     }
 
 #pragma warning disable CA2100 // Constant DDL strings only
-    private static async Task TryAddRecipientColumnAsync(Microsoft.Data.Sqlite.SqliteConnection conn, string ddl)
+    /// <summary>
+    /// Adds a column when missing; rethrows non-duplicate failures so schema-ready is not latched.
+    /// Use: Low (first open). Scope: recipients table migration.
+    /// </summary>
+    private static async Task TryAddRecipientColumnAsync(SqliteConnection conn, string ddl)
     {
         try
         {
@@ -67,12 +78,45 @@ public sealed class RecipientRepository : IRecipientRepository
             alter.CommandText = ddl;
             await alter.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
-        catch
+        catch (SqliteException ex) when (IsDuplicateColumn(ex))
         {
             // Column already exists.
         }
     }
+
+    /// <summary>
+    /// Nulls any legacy cleartext account/routing columns left from older builds.
+    /// Use: Low (schema ensure). Scope: recipients table scrub.
+    /// </summary>
+    private static async Task ClearSensitiveRecipientColumnsAsync(SqliteConnection conn)
+    {
+        foreach (string sql in new[]
+                 {
+                     "UPDATE recipients SET account = NULL WHERE account IS NOT NULL",
+                     "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL",
+                     "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL",
+                 })
+        {
+            try
+            {
+                await using var cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+            }
+            catch (SqliteException)
+            {
+                // Column absent on fresh schemas that never had the legacy column.
+            }
+        }
+    }
 #pragma warning restore CA2100
+
+    /// <summary>
+    /// SQLite reports duplicate-column ALTERs as SqliteException (message contains "duplicate column").
+    /// Use: Low. Scope: schema migration catch filter.
+    /// </summary>
+    private static bool IsDuplicateColumn(SqliteException ex)
+        => ex.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase);
 
     public async Task<IReadOnlyList<AchRecipientRow>> ListAsync()
     {
@@ -81,7 +125,7 @@ public sealed class RecipientRepository : IRecipientRepository
         await conn.OpenAsync().ConfigureAwait(false);
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            SELECT id, name, holder, bank, routing, account, account_type, memo,
+            SELECT id, name, holder, bank, account_type, memo,
                    account_mask, routing_mask, created_at
             FROM recipients ORDER BY name
             """;
@@ -94,21 +138,30 @@ public sealed class RecipientRepository : IRecipientRepository
                 reader.GetString(1),
                 reader.IsDBNull(2) ? null : reader.GetString(2),
                 reader.IsDBNull(3) ? null : reader.GetString(3),
-                reader.IsDBNull(4) ? null : reader.GetString(4),
+                Routing: null,
+                Account: null,
+                reader.IsDBNull(4) || string.IsNullOrEmpty(reader.GetString(4)) ? "checking" : reader.GetString(4),
                 reader.IsDBNull(5) ? null : reader.GetString(5),
-                reader.IsDBNull(6) || string.IsNullOrEmpty(reader.GetString(6)) ? "checking" : reader.GetString(6),
+                reader.IsDBNull(6) ? null : reader.GetString(6),
                 reader.IsDBNull(7) ? null : reader.GetString(7),
-                reader.IsDBNull(8) ? null : reader.GetString(8),
-                reader.IsDBNull(9) ? null : reader.GetString(9),
-                DateTimeOffset.Parse(reader.GetString(10), System.Globalization.CultureInfo.InvariantCulture)));
+                DateTimeOffset.Parse(reader.GetString(8), System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         return list;
     }
 
+    /// <summary>
+    /// Upserts payee metadata and masks only — never binds cleartext account/routing into SQLite.
+    /// Use: Medium (bootstrap / picker save). Scope: recipients table row.
+    /// </summary>
     public async Task UpsertAsync(AchRecipientRow row)
     {
         await EnsureSchemaAsync().ConfigureAwait(false);
+        string? accountMask = row.AccountMask
+            ?? (string.IsNullOrWhiteSpace(row.Account) ? null : AchRecipientValidation.MaskAccount(row.Account));
+        string? routingMask = row.RoutingMask
+            ?? (string.IsNullOrWhiteSpace(row.Routing) ? null : AchRecipientValidation.MaskRouting(row.Routing));
+
         await using var conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
         await using var cmd = conn.CreateCommand();
@@ -116,21 +169,19 @@ public sealed class RecipientRepository : IRecipientRepository
             INSERT INTO recipients (
               id, name, holder, bank, routing, account, account_type, memo,
               account_mask, routing_mask, created_at)
-            VALUES ($id, $name, $holder, $bank, $routing, $account, $type, $memo, $am, $rm, $created)
+            VALUES ($id, $name, $holder, $bank, NULL, NULL, $type, $memo, $am, $rm, $created)
             ON CONFLICT(id) DO UPDATE SET
-              name=$name, holder=$holder, bank=$bank, routing=$routing, account=$account,
+              name=$name, holder=$holder, bank=$bank, routing=NULL, account=NULL,
               account_type=$type, memo=$memo, account_mask=$am, routing_mask=$rm
             """;
         cmd.Parameters.AddWithValue("$id", row.Id);
         cmd.Parameters.AddWithValue("$name", row.Name);
         cmd.Parameters.AddWithValue("$holder", (object?)row.Holder ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$bank", (object?)row.Bank ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$routing", (object?)row.Routing ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$account", (object?)row.Account ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$type", row.AccountType);
         cmd.Parameters.AddWithValue("$memo", (object?)row.Memo ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$am", (object?)row.AccountMask ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$rm", (object?)row.RoutingMask ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$am", (object?)accountMask ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$rm", (object?)routingMask ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$created", row.CreatedAt.ToString("O"));
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
@@ -163,8 +214,8 @@ public sealed class RecipientRepository : IRecipientRepository
             "88210001",
             "checking",
             "Rent",
-            "•••• 0001",
-            "•••• 0021",
+            null,
+            null,
             DateTimeOffset.UtcNow)).ConfigureAwait(false);
         await UpsertAsync(new AchRecipientRow(
             Guid.NewGuid().ToString("N"),
@@ -175,8 +226,8 @@ public sealed class RecipientRepository : IRecipientRepository
             "44102222",
             "checking",
             null,
-            "•••• 2222",
-            "•••• 0000",
+            null,
+            null,
             DateTimeOffset.UtcNow)).ConfigureAwait(false);
     }
 }

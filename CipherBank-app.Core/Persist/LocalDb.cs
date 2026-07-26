@@ -53,7 +53,6 @@ public sealed class LocalDb : ILocalDb
               name TEXT NOT NULL,
               account_mask TEXT,
               routing_mask TEXT,
-              account_full TEXT,
               created_at TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS ohlc (

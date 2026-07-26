@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Globalization;
+
 using CipherBank_app.Charts;
 using FluentAssertions;
 using Xunit;
@@ -18,6 +20,25 @@ public class ChartMathTests
         result.Line.Should().StartWith("M");
         result.Area.Should().EndWith("Z");
         result.Pts.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void ToPath_FormatsCoordinatesWithInvariantCulture()
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+            var series = new[] { new ChartPoint(0, 1.5), new ChartPoint(1, 2.5) };
+            var result = ChartMath.ToPath(series, 100, 40);
+            result.Line.Should().NotContain(",");
+            result.Area.Should().NotContain(",");
+            result.Line.Should().MatchRegex(@"M[\d.]+ [\d.]+");
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 
     [Fact]

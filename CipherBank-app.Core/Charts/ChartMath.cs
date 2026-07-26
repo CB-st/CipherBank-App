@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Globalization;
+
 namespace CipherBank_app.Charts;
 
 /// <summary>Point in a time series chart.</summary>
@@ -58,11 +60,15 @@ public static class ChartMath
         for (int i = 0; i < pts.Count; i++)
         {
             string cmd = i == 0 ? "M" : "L";
-            lineParts.Add($"{cmd}{pts[i].x:0.0} {pts[i].y:0.0}");
+            lineParts.Add(string.Create(
+                CultureInfo.InvariantCulture,
+                $"{cmd}{pts[i].x:0.0} {pts[i].y:0.0}"));
         }
 
         string line = string.Join(" ", lineParts);
-        string area = $"{line} L{w:0.0} {h:0.0} L0 {h:0.0} Z";
+        string area = string.Create(
+            CultureInfo.InvariantCulture,
+            $"{line} L{w:0.0} {h:0.0} L0 {h:0.0} Z");
         return new ChartPathResult { Line = line, Area = area, Pts = pts };
     }
 

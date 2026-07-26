@@ -46,10 +46,13 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
 
     public Task ConnectAsync(CancellationToken ct = default)
     {
+        _cts?.Cancel();
+        _cts?.Dispose();
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        CancellationToken token = _cts.Token;
         _loop = Task.Run(async () =>
         {
-            while (!_cts.Token.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
                 EventHandler<StreamEvent>? handlers = EventReceived;
                 if (handlers is not null)
@@ -63,7 +66,7 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
 
                 try
                 {
-                    await Task.Delay(TickInterval, _cts.Token).ConfigureAwait(false);
+                    await Task.Delay(TickInterval, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -130,9 +133,14 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         _ = Task.Run(() => ReceiveLoopAsync(_cts.Token));
     }
 
+    /// <summary>
+    /// Accumulates WebSocket text fragments until EndOfMessage, then parses one JSON event.
+    /// Use: High (while connected). Scope: ClientWebSocketStreamService receive loop.
+    /// </summary>
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
         var buffer = new byte[ReceiveBufferBytes];
+        using var message = new MemoryStream();
         while (_ws is { State: WebSocketState.Open } && !ct.IsCancellationRequested)
         {
             var result = await _ws.ReceiveAsync(buffer, ct).ConfigureAwait(false);
@@ -141,13 +149,27 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
                 break;
             }
 
-            // Skip parse work when nobody is listening.
-            if (EventReceived is null)
+            if (result.MessageType != WebSocketMessageType.Text)
+            {
+                message.SetLength(0);
+                continue;
+            }
+
+            message.Write(buffer, 0, result.Count);
+            if (!result.EndOfMessage)
             {
                 continue;
             }
 
-            string json = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            // Skip parse work when nobody is listening.
+            if (EventReceived is null)
+            {
+                message.SetLength(0);
+                continue;
+            }
+
+            string json = Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length);
+            message.SetLength(0);
             try
             {
                 using var doc = JsonDocument.Parse(json);
@@ -168,6 +190,8 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         if (_cts is not null)
         {
             await _cts.CancelAsync().ConfigureAwait(false);
+            _cts.Dispose();
+            _cts = null;
         }
 
         if (_ws is not null)

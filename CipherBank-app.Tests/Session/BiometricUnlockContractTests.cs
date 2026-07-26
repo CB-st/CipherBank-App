@@ -64,6 +64,47 @@ public class BiometricUnlockContractTests
     }
 
     [Fact]
+    public async Task InterruptedMigration_DeviceSecretWithoutRewrittenBlob_RecoversViaPin()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        await pin.SetPinAsync("246810");
+        string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
+        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, "246810"));
+
+        // Simulate old bug: device secret persisted, blob still PIN-sealed.
+        await store.SetAsync(CustodyService.DeviceSecretKey, Convert.ToBase64String(new byte[32]));
+
+        var custody = new CustodyService(store, pin);
+        (await custody.UnlockAsync("246810")).Should().BeTrue();
+        custody.ExportMnemonic().Should().Be(mnemonic);
+        custody.Lock();
+
+        (await custody.UnlockWithDeviceSecretAsync()).Should().BeTrue();
+        custody.ExportMnemonic().Should().Be(mnemonic);
+    }
+
+    [Fact]
+    public async Task InterruptedMigration_StagedSecretBeforePromote_UnlocksWithDeviceSecret()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        await pin.SetPinAsync("135791");
+        string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
+        string deviceSecret = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+        await store.SetAsync(CustodyService.StagingDeviceSecretKey, deviceSecret);
+        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, deviceSecret));
+
+        // DeviceSecretKey never promoted.
+        var custody = new CustodyService(store, pin);
+        (await custody.CanUnlockWithDeviceOwnerAsync()).Should().BeTrue();
+        (await custody.UnlockWithDeviceSecretAsync()).Should().BeTrue();
+        custody.ExportMnemonic().Should().Be(mnemonic);
+        (await store.GetAsync(CustodyService.DeviceSecretKey)).Should().Be(deviceSecret);
+        (await store.GetAsync(CustodyService.StagingDeviceSecretKey)).Should().BeNull();
+    }
+
+    [Fact]
     public async Task UnlockWithDeviceSecret_FailsWhenMissing()
     {
         var store = new MemStore();
