@@ -45,6 +45,13 @@ public static class StoryCatalog
             "US-ONB-04 (mismatched PIN confirm blocks SetPin seal) passed the same Task 8 emulator run " +
             "(--story US-ONB-03, --story US-ONB-04)",
             DeviceProfile.Fresh),
+        new(StoryIds.CbAccountPinChange, null, "Change unlock PIN", StoryRunnerStatus.Executable,
+            "Profile → Security → Change PIN (ChangePinPage; PinChangeCoordinator in Core). " +
+            "CB_ACCOUNT_PIN_CHANGE_DynamicPin seals from Fresh with the journaled PIN, changes it to the " +
+            "journaled AlternatePin, then proves the replaced PIN is rejected and the new one unlocks; passed " +
+            "on CipherBank_API34 (./scripts/e2e-android.sh --story CB-ACCOUNT-PIN-CHANGE). Covers the " +
+            "wrong-PIN-error half of US-LCK-02; the lockout-after-N-fails half is still uncovered",
+            DeviceProfile.Sealed),
         new(StoryIds.CbAccount002, StoryIds.UsOnb02, "Recover / returning device", StoryRunnerStatus.Backlog,
             "WelcomeReturningButton + RestoreBackup; StoryProcedures.Account002Steps imported, page objects pending",
             DeviceProfile.Fresh),

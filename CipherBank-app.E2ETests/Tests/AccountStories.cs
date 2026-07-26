@@ -8,8 +8,9 @@ using Xunit;
 namespace CipherBank_app.E2ETests.Tests;
 
 /// <summary>
-/// Account/onboarding stories that need a Fresh (wallet-less) device: CB-ACCOUNT-001 create-account and
-/// US-ONB-04 PIN-mismatch. Kept out of <see cref="CoraShellSmokeTests"/> so the sealed-device smoke suite
+/// Account/onboarding stories that start from a Fresh (wallet-less) device: CB-ACCOUNT-001 create-account,
+/// the US-ONB-03/04 negatives, and CB-ACCOUNT-PIN-CHANGE (which seals from Fresh, then changes the PIN).
+/// Kept out of <see cref="CoraShellSmokeTests"/> so the sealed-device smoke suite
 /// and this Fresh-install suite each fail fast on their own boot precondition instead of soft-returning.
 /// Requires <c>E2E_RUN=1</c> and <c>ANDROID_APK_PATH</c> (or <c>IOS_APP_PATH</c>); skips (not a soft-pass)
 /// when E2E_RUN is unset.
@@ -128,6 +129,85 @@ public class AccountStories : IDisposable
         setPin.IsErrorDisplayed().Should().BeTrue("US-ONB-04: mismatched confirm PIN blocks seal with an error");
         _fixture.Journal.RecordStep("device: confirmed mismatched PIN blocks seal");
         _fixture.Journal.Flush(StoryIds.UsOnb04);
+    }
+
+    /// <summary>
+    /// CB-ACCOUNT-PIN-CHANGE: seals a wallet with the journaled PIN, changes it through the real Shell
+    /// surface (Profile → Security → Change PIN) to the journaled AlternatePin, promotes that alternate to
+    /// the active journal PIN, then locks and unlocks with it. The unlock is the proof: it only succeeds if
+    /// the stored PIN really changed, and the PIN values are never hard-coded here.
+    /// Use: High (Wave 1 PIN-change gate). Scope: this Fact's device session.
+    /// </summary>
+    [SkippableFact]
+    [Trait("Story", StoryIds.CbAccountPinChange)]
+    public async Task CB_ACCOUNT_PIN_CHANGE_DynamicPin()
+    {
+        Skip.If(_fixture is null, "E2E_RUN not set");
+
+        var journal = _fixture!.Journal;
+        var deviceState = new DeviceState(_fixture.Driver, journal);
+        var home = await SealedHomeOrFail(deviceState);
+
+        var profile = home.GoToProfileTab();
+        profile.WaitForPageLoad();
+        profile.IsLoaded().Should().BeTrue("Profile → Security card is the Change PIN entry point");
+
+        var changePin = profile.OpenChangePin();
+        changePin.WaitForPageLoad();
+        journal.RecordStep($"device: opened Change PIN with active PIN={journal.Pin}");
+
+        string oldPin = journal.Pin;
+        string newPin = journal.AlternatePin;
+        changePin.Submit(oldPin, newPin, newPin);
+        changePin.IsStatusDisplayed().Should().BeTrue(
+            "CB-ACCOUNT-PIN-CHANGE: a valid change reports success on ChangePinStatusLabel");
+        changePin.IsErrorDisplayed().Should().BeFalse("a successful change must not surface an error");
+
+        journal.PromoteAlternatePin();
+        journal.RecordStep($"device: changed PIN {oldPin} -> {journal.Pin} (previous PIN journaled as alternate)");
+
+        var backToProfile = changePin.BackToProfile();
+        backToProfile.WaitForPageLoad();
+
+        var unlock = backToProfile.LockApp();
+        unlock.WaitForPageLoad();
+        unlock.IsLoaded().Should().BeTrue("locking from Profile lands on Unlock");
+
+        unlock.AttemptUnlockExpectingRejection(journal.AlternatePin);
+        unlock.IsErrorDisplayed().Should().BeTrue(
+            "CB-ACCOUNT-PIN-CHANGE: the replaced PIN must be rejected with an error");
+        unlock.IsLoaded().Should().BeTrue("a rejected PIN keeps the user on Unlock");
+        journal.RecordStep($"device: confirmed replaced PIN={journal.AlternatePin} no longer unlocks");
+
+        var unlocked = unlock.UnlockWithPin(journal.Pin);
+        unlocked.WaitForPageLoad();
+        unlocked.IsLoaded().Should().BeTrue("CB-ACCOUNT-PIN-CHANGE: the new PIN unlocks the sealed wallet");
+        journal.RecordStep($"device: unlocked with new PIN={journal.Pin}");
+        journal.Flush(StoryIds.CbAccountPinChange);
+    }
+
+    /// <summary>
+    /// Seals a wallet through the real onboarding UI and returns Home; converts a boot/seal timeout into a
+    /// gap note plus a loud failure so a broken Sealed precondition is never mistaken for a story failure.
+    /// Use: Medium (Sealed-profile account stories). Scope: this test class session.
+    /// </summary>
+    private async Task<HomePage> SealedHomeOrFail(DeviceState deviceState)
+    {
+        try
+        {
+            return await deviceState.SealedAsync();
+        }
+        catch (WebDriverTimeoutException ex)
+        {
+            GapNotes.Write(
+                StoryIds.CbAccountPinChange,
+                step: "DeviceState.SealedAsync precondition",
+                expected: "Home after Welcome→Keys→Quiz→SetPin with the journaled PIN",
+                actual: $"onboarding did not reach Home: {ex.Message}",
+                proposedFix: "Re-check the create-account flow (CB-ACCOUNT-001) before diagnosing the PIN-change story.");
+            throw new InvalidOperationException(
+                $"{StoryIds.CbAccountPinChange}: Sealed precondition failed; gap note written.", ex);
+        }
     }
 
     /// <summary>

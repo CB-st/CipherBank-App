@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.ChangePinPage"
+             Title="Change PIN"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}"
+             AutomationId="ChangePinPage">
+  <ScrollView>
+    <VerticalStackLayout Padding="24" Spacing="16">
+      <Label Text="Enter your current PIN, then choose a new one. Your recovery phrase stays sealed on this device."
+             Style="{StaticResource CoraMuted}" LineBreakMode="WordWrap" />
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="14">
+            <Entry Text="{Binding CurrentPin}" IsPassword="True" Keyboard="Numeric" Placeholder="Current PIN"
+                   FontFamily="SpaceMonoBold" FontSize="20" HorizontalTextAlignment="Center"
+                   AutomationId="ChangePinCurrentEntry" />
+            <Entry Text="{Binding NewPin}" IsPassword="True" Keyboard="Numeric" Placeholder="New PIN"
+                   FontFamily="SpaceMonoBold" FontSize="20" HorizontalTextAlignment="Center"
+                   AutomationId="ChangePinEntry" />
+            <Entry Text="{Binding ConfirmPin}" IsPassword="True" Keyboard="Numeric" Placeholder="Confirm new PIN"
+                   FontFamily="SpaceMonoBold" FontSize="20" HorizontalTextAlignment="Center"
+                   AutomationId="ChangePinConfirmEntry" />
+            <Label Text="{Binding Error}"
+                   TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
+                   HorizontalTextAlignment="Center"
+                   IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="ChangePinErrorLabel" />
+            <Label Text="{Binding Status}"
+                   HorizontalTextAlignment="Center"
+                   IsVisible="{Binding Status, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="ChangePinStatusLabel" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+      <Button Text="Update PIN" Command="{Binding SubmitCommand}"
+              IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+              AutomationId="ChangePinSubmitButton" />
+      <Button Text="Back to Profile" Command="{Binding CancelCommand}"
+              Style="{StaticResource GhostButton}"
+              TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"
+              AutomationId="ChangePinCancelButton" />
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

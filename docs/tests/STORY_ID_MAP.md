@@ -24,6 +24,7 @@ flowchart LR
 | CB-ACCOUNT-001 / US-ONB-01 | `CB_ACCOUNT_001_US_ONB_01_CreateAccount` | **Executable** — passed on `CipherBank_API34` (Task 7 canary); Welcome→Keys→Quiz→PIN→Home, procedure steps journaled |
 | US-ONB-03 | `US_ONB_03_WrongQuizWords_BlocksAdvance` | **Executable** — passed on `CipherBank_API34` (Task 8); wrong backup-quiz words surface `BackupQuizErrorLabel` and block advance to SetPin |
 | US-ONB-04 | `US_ONB_04_PinMismatch_BlocksSeal` | **Executable** — passed on `CipherBank_API34` (Task 8); confirm ≠ PIN surfaces `SetPinErrorLabel` and blocks seal; same Fresh-device fixture as CB-ACCOUNT-001 |
+| CB-ACCOUNT-PIN-CHANGE | `CB_ACCOUNT_PIN_CHANGE_DynamicPin` | **Executable** — passed on `CipherBank_API34` (Task 9); Sealed → Profile → Security → Change PIN, journal `AlternatePin` promoted, replaced PIN rejected on Unlock, new PIN reaches Home. Covers the wrong-PIN-error half of US-LCK-02; lockout-after-N-fails still uncovered |
 
 ## Backlog
 
@@ -40,6 +41,7 @@ See `Stories/AutomationIdMap.cs`. New controls should prefer **identical** strin
 | keys-continue | KeysContinueButton |
 | quiz-continue | BackupQuizVerifyButton |
 | pin-input / pin-confirm / pin-finish | SetPinEntry / SetPinConfirmEntry / SetPinSealButton |
+| _(MAUI-only)_ change PIN | ProfileChangePinButton / ChangePinCurrentEntry / ChangePinEntry / ChangePinConfirmEntry / ChangePinSubmitButton |
 
 ## Run
 
@@ -61,6 +63,7 @@ E2E_RUN=1 TEST_PLATFORM=android ANDROID_APK_PATH=/path/to/app.apk \
 ./scripts/e2e-android.sh --story CB-ACCOUNT-001
 ./scripts/e2e-android.sh --story US-ONB-03
 ./scripts/e2e-android.sh --story US-ONB-04
+./scripts/e2e-android.sh --story CB-ACCOUNT-PIN-CHANGE
 ```
 
 Appium server: `http://localhost:4723`.

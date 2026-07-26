@@ -15,6 +15,9 @@ public class HomePage : BasePage
     private static readonly By ConvertButton = By.Id("HomeConvertButton");
     private static readonly By SendButton = By.Id("HomeSendButton");
     private static readonly By ReceiveButton = By.Id("HomeReceiveButton");
+    private static readonly By ProfileTabItem =
+        By.XPath("//*[@text='Profile' or @content-desc='Profile' or @label='Profile']");
+    private const string MoreTabLabel = "More";
 
     public HomePage(AppiumDriver driver) : base(driver)
     {
@@ -65,6 +68,24 @@ public class HomePage : BasePage
     {
         TapByText("Send");
         return new SendPage(Driver);
+    }
+
+    /// <summary>
+    /// Switches to the Profile tab (Profile has no Home shortcut button). AppShell declares six tabs but
+    /// Android's BottomNavigationView only renders five, so Profile sits behind the "More" overflow; the
+    /// overflow is opened only when Profile is not already on the bar, keeping this correct on layouts
+    /// (tablet/desktop, or a future five-tab Shell) where every tab is visible.
+    /// Use: High (Profile-rooted stories such as CB-ACCOUNT-PIN-CHANGE). Scope: this page object.
+    /// </summary>
+    public ProfilePage GoToProfileTab()
+    {
+        if (!IsElementDisplayed(ProfileTabItem))
+        {
+            TapByText(MoreTabLabel);
+        }
+
+        ClickElement(ProfileTabItem);
+        return new ProfilePage(Driver);
     }
 
     public ReceivePage GoToReceive()

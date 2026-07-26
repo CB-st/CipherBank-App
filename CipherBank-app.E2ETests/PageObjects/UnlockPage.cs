@@ -33,7 +33,24 @@ public class UnlockPage : BasePage
         return new HomePage(Driver);
     }
 
-    public bool IsErrorDisplayed() => IsElementDisplayed(ErrorLabel);
+    /// <summary>
+    /// Enters a PIN the caller expects to be rejected and stays on this page object so the caller can assert
+    /// the error surfaced and Unlock is still on screen.
+    /// Use: Medium (revoked/wrong-PIN assertions). Scope: this page object.
+    /// </summary>
+    public UnlockPage AttemptUnlockExpectingRejection(string pin)
+    {
+        EnterPin(pin);
+        ClickElement(UnlockButton);
+        return this;
+    }
+
+    /// <summary>
+    /// Confirms the unlock error actually surfaced: visible per its XAML IsVisible binding AND carrying text,
+    /// so the always-in-tree label cannot fake a pass. Use: Medium. Scope: this page object.
+    /// </summary>
+    public bool IsErrorDisplayed()
+        => IsElementDisplayed(ErrorLabel) && !string.IsNullOrWhiteSpace(GetElementText(ErrorLabel));
 
     public override void WaitForPageLoad() => WaitForElement(UnlockButton);
 }

@@ -121,6 +121,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<ISecureStore, MauiSecureStore>();
         mauiAppBuilder.Services.AddSingleton<IPinService, PinService>();
         mauiAppBuilder.Services.AddSingleton<ICustodyService, CustodyService>();
+        mauiAppBuilder.Services.AddSingleton<PinChangeCoordinator>();
         mauiAppBuilder.Services.AddSingleton<IBiometricService, BiometricService>();
         mauiAppBuilder.Services.AddSingleton<IStepUpChallenges, MauiStepUpChallenges>();
         mauiAppBuilder.Services.AddSingleton<IStepUpAuth, StepUpAuthService>();
@@ -370,6 +371,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddTransient<BackupQuizViewModel>();
         mauiAppBuilder.Services.AddTransient<SetPinViewModel>();
         mauiAppBuilder.Services.AddTransient<UnlockViewModel>();
+        mauiAppBuilder.Services.AddTransient<ChangePinViewModel>();
         mauiAppBuilder.Services.AddTransient<RestoreBackupViewModel>();
         mauiAppBuilder.Services.AddTransient<HomeViewModel>();
         mauiAppBuilder.Services.AddTransient<ConvertViewModel>();
@@ -401,6 +403,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddTransient<BackupQuizPage>();
         mauiAppBuilder.Services.AddTransient<SetPinPage>();
         mauiAppBuilder.Services.AddTransient<UnlockPage>();
+        mauiAppBuilder.Services.AddTransient<ChangePinPage>();
         mauiAppBuilder.Services.AddTransient<RestoreBackupPage>();
         mauiAppBuilder.Services.AddTransient<HomePage>();
         mauiAppBuilder.Services.AddTransient<ConvertPage>();

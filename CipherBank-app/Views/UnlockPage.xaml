@@ -33,6 +33,7 @@
                  HorizontalTextAlignment="Center" />
           <Label Text="{Binding Error}" TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
                  AutomationId="UnlockErrorLabel"
+                 IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
                  HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
       </controls:GlassCard.Body>

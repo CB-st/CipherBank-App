@@ -482,6 +482,17 @@ public partial class ProfileViewModel : ObservableObject
         return _nav.GoToAsync(Routes.PosLab);
     }
 
+    /// <summary>
+    /// Opens the Change PIN surface from Profile → Security.
+    /// Use: Low (user-initiated PIN change). Scope: this Profile page instance.
+    /// </summary>
+    [RelayCommand]
+    private Task OpenChangePinAsync()
+    {
+        _session.Touch();
+        return _nav.GoToAsync(Routes.ChangePin);
+    }
+
     [RelayCommand]
     private async Task SaveAdvancedAsync()
     {

@@ -11,6 +11,18 @@
       <controls:GlassCard>
         <controls:GlassCard.Body>
           <VerticalStackLayout Spacing="10">
+            <Label Text="Security" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
+            <Button Text="Change PIN" Command="{Binding OpenChangePinCommand}"
+                    AutomationId="ProfileChangePinButton" />
+            <Button Text="Lock app" Command="{Binding LockCommand}"
+                    AutomationId="ProfileLockButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
             <Label Text="Preferences" FontFamily="SpaceGroteskSemiBold" FontSize="18" />
             <Grid ColumnDefinitions="*,Auto">
               <Label Text="Cora assistant" VerticalOptions="Center" />
@@ -121,7 +133,6 @@
       </controls:GlassCard>
 
       <Button Text="Tap to pay lab" Command="{Binding OpenPosLabCommand}" />
-      <Button Text="Lock app" Command="{Binding LockCommand}" />
 
       <Button Text="{Binding ShowAdvanced, StringFormat='Advanced ({0})'}" Command="{Binding ToggleAdvancedCommand}" />
       <controls:GlassCard IsVisible="{Binding ShowAdvanced}">

@@ -22,6 +22,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(Routes.PosLab, typeof(PosLabPage));
         Routing.RegisterRoute(Routes.AddWallet, typeof(AddWalletPage));
         Routing.RegisterRoute(Routes.RestoreBackup, typeof(RestoreBackupPage));
+        Routing.RegisterRoute(Routes.ChangePin, typeof(ChangePinPage));
     }
 
     public AppShell(IAppSession session, ILocalDb db, AppIdleLockService idleLock)

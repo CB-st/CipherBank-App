@@ -14,6 +14,13 @@ public interface IPinService
 
     Task<bool> VerifyPinAsync(string pin);
 
+    /// <summary>
+    /// Replaces the stored PIN after verifying <paramref name="oldPin"/>; returns false (leaving the old
+    /// PIN active) when verification fails or the gate is locked out. The custody blob is keyed by a device
+    /// secret, so no re-seal is needed. Use: Low (user-initiated PIN change). Scope: secure-store PIN record.
+    /// </summary>
+    Task<bool> ChangePinAsync(string oldPin, string newPin);
+
     Task<bool> HasPinAsync();
 
     /// <summary>Loads lockout / fail counters from secure storage into in-memory fields.</summary>
@@ -71,6 +78,22 @@ public sealed class PinService : IPinService
 
     public async Task<bool> HasPinAsync()
         => !string.IsNullOrEmpty(await _store.GetAsync(HashKey).ConfigureAwait(false));
+
+    /// <summary>
+    /// Verify-then-replace: only a caller that proves the current PIN can arm a new one, and the failed-attempt
+    /// / lockout counters from <see cref="VerifyPinAsync"/> apply here too.
+    /// Use: Low (user-initiated PIN change). Scope: secure-store PIN record.
+    /// </summary>
+    public async Task<bool> ChangePinAsync(string oldPin, string newPin)
+    {
+        if (!await VerifyPinAsync(oldPin).ConfigureAwait(false))
+        {
+            return false;
+        }
+
+        await SetPinAsync(newPin).ConfigureAwait(false);
+        return true;
+    }
 
     public async Task<bool> VerifyPinAsync(string pin)
     {
