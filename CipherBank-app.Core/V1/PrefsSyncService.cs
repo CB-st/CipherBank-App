@@ -14,6 +14,12 @@ public interface IPrefsSyncService
 
     /// <summary>Save local prefs then PUT remote. Local write always kept even if PUT fails.</summary>
     Task<bool> SaveAndPushAsync(UserPrefs prefs, CancellationToken ct);
+
+    /// <summary>Pull-merge for callers with no ambient token. Use: Medium (startup sync). Scope: IPrefsSyncService consumers.</summary>
+    Task PullMergeAsync() => PullMergeAsync(CancellationToken.None);
+
+    /// <summary>Save-and-push for callers with no ambient token. Use: Medium (Profile toggles). Scope: IPrefsSyncService consumers.</summary>
+    Task<bool> SaveAndPushAsync(UserPrefs prefs) => SaveAndPushAsync(prefs, CancellationToken.None);
 }
 
 /// <inheritdoc />

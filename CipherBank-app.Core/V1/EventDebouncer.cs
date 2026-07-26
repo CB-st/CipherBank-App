@@ -17,6 +17,12 @@ public sealed class EventDebouncer
     public int FireCount => _fireCount;
 
     /// <summary>
+    /// Schedules <paramref name="action"/> for callers with no ambient token.
+    /// Use: High (stream bursts). Scope: this debouncer instance.
+    /// </summary>
+    public Task DebounceAsync(Func<Task> action) => DebounceAsync(action, CancellationToken.None);
+
+    /// <summary>
     /// Schedules <paramref name="action"/> after the debounce delay, cancelling any prior pending fire.
     /// Use: High (stream bursts). Scope: this debouncer instance; CTS swap is serialized.
     /// </summary>

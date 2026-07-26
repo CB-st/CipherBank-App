@@ -53,4 +53,18 @@ public interface IPublicQuoteService
         decimal outputAmount,
         string outputSymbol,
         CancellationToken cancellationToken);
+
+    /// <summary>Connectivity probe for callers with no ambient token. Use: Low (diagnostics). Scope: IPublicQuoteService consumers.</summary>
+    Task<bool> TestConnectionAsync() => TestConnectionAsync(CancellationToken.None);
+
+    /// <summary>Currency list for callers with no ambient token. Use: Medium (Convert load). Scope: IPublicQuoteService consumers.</summary>
+    Task<IReadOnlyList<string>> GetCurrenciesAsync() => GetCurrenciesAsync(CancellationToken.None);
+
+    /// <summary>Fixed-input quote for callers with no ambient token. Use: High (Convert typing). Scope: IPublicQuoteService consumers.</summary>
+    Task<PublicQuote> GetInverseQuoteAsync(string inputSymbol, decimal inputAmount, string outputSymbol)
+        => GetInverseQuoteAsync(inputSymbol, inputAmount, outputSymbol, CancellationToken.None);
+
+    /// <summary>Fixed-output quote for callers with no ambient token. Use: High (Convert typing). Scope: IPublicQuoteService consumers.</summary>
+    Task<PublicQuote> GetQuoteAsync(string inputSymbol, decimal outputAmount, string outputSymbol)
+        => GetQuoteAsync(inputSymbol, outputAmount, outputSymbol, CancellationToken.None);
 }

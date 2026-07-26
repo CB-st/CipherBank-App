@@ -7,6 +7,15 @@ namespace CipherBank_app.Wallets;
 /// <summary>Payment / receive URI builder (Cora paymentUri.ts).</summary>
 public static class PaymentUri
 {
+    private static readonly Dictionary<string, string> SimpleSchemePrefixes = new()
+    {
+        ["BTC"] = "bitcoin",
+        ["LTC"] = "litecoin",
+        ["DOGE"] = "dogecoin",
+    };
+
+    private static readonly HashSet<string> FiatCurrencies = ["USD", "EUR", "JPY"];
+
     public static string Build(string symbol, string address)
         => Build(symbol, address, null, null, null);
 
@@ -71,15 +80,6 @@ public static class PaymentUri
 
         return parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts);
     }
-
-    private static readonly Dictionary<string, string> SimpleSchemePrefixes = new()
-    {
-        ["BTC"] = "bitcoin",
-        ["LTC"] = "litecoin",
-        ["DOGE"] = "dogecoin",
-    };
-
-    private static readonly HashSet<string> FiatCurrencies = ["USD", "EUR", "JPY"];
 
     /// <summary>
     /// Dispatches a symbol to its scheme-specific URI builder (simple prefix, account-based, or fiat).

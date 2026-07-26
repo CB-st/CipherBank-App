@@ -24,7 +24,12 @@ requires a real reference search per type before any split executes.
   - `split only` — extra types extracted to sibling files in the same namespace; no rename, no API impact.
   - `rename + split` — both of the above.
   - `high churn` — module used widely across `ChallengePass`; coordinate before executing.
-- **Annotation needed** — `Yes`: every new/renamed file must get the AGENTS.md copyright header (updated `file="..."` to match new name) and, for any touched function, the mandatory purpose/call-frequency/scope doc comment.
+- **Annotation needed** — `Yes`: every new/renamed file must get the AGENTS.md copyright header (updated `file="..."` to match new name) and, for any touched function, the mandatory purpose/call-frequency/scope doc comment. This column is about the **cross-PR duplication comments** reviewers will see, not a one-time task: a split lands on `m1` and is then merged up through `m2` → `m3` → `m4`, so the identical header/doc-comment diff reappears on each downstream PR. Review it once on the owning layer and treat the repeats as merge noise.
+
+## Open before Stage 2 approval
+
+- **Callers are still `TBD` on every row.** No reference search has been run, so the `Breaks` column remains an estimate. Stage 2 cannot be approved until each row's callers are filled in; that is step 2 of the execution order below.
+- **Shell compile gate.** The `Callers` search must include the MAUI Shell (`CipherBank-app/` — view models, platform services, and DI registration), not just `Core` and `ChallengePass`. Stage 1 already produced one Critical finding of exactly this shape: Core API signatures changed without mapping Shell call sites, and the Shell stopped compiling even though `Core` and the 267-test suite were green. Renames and type moves in Stage 2 have the same blast radius, so **every Stage 2 PR must build `CipherBank-app/CipherBank-app.csproj`, not only run `dotnet test`.** Note the Shell only exists in full from `prototype/maui-m3` upward, so the compile gate runs there even when the split itself lands on `m1`.
 
 ## CipherBank-app.Core
 
@@ -73,6 +78,6 @@ requires a real reference search per type before any split executes.
 ## Execution order (once reviewed)
 
 1. Confirm this plan with the team (per spec gate — Stage 3 blocked until then).
-2. Real caller search per type (replace `TBD`), starting with `high churn` rows.
+2. Real caller search per type (replace `TBD`), starting with `high churn` rows, and including MAUI Shell callers per the Shell compile gate above.
 3. Execute renames/splits on `prototype/maui-m1` first (earliest layer touching these files), then merge/cherry-pick up through m2 → m3 → m4, same as Stage 1 mechanical fixes.
-4. One PR per layer/folder (e.g. `Core/V1`, `ChallengePass`) to keep diffs reviewable; run full test suite before each push.
+4. One PR per layer/folder (e.g. `Core/V1`, `ChallengePass`) to keep diffs reviewable; run the full test suite **and** the Shell build before each push.

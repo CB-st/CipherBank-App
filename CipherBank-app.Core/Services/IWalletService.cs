@@ -18,4 +18,16 @@ public interface IWalletService
     Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken);
 
     Task<Wallet> CreateWalletAsync(string cryptoSymbol, CancellationToken cancellationToken);
+
+    /// <summary>Wallet list for callers with no ambient token. Use: High (Wallet tab). Scope: IWalletService consumers.</summary>
+    Task<List<Wallet>> GetWalletsAsync() => GetWalletsAsync(CancellationToken.None);
+
+    /// <summary>Single wallet for callers with no ambient token. Use: Medium (Wallet detail). Scope: IWalletService consumers.</summary>
+    Task<Wallet> GetWalletAsync(string id) => GetWalletAsync(id, CancellationToken.None);
+
+    /// <summary>Wallet balance for callers with no ambient token. Use: Medium (Wallet detail). Scope: IWalletService consumers.</summary>
+    Task<decimal> GetWalletBalanceAsync(string id) => GetWalletBalanceAsync(id, CancellationToken.None);
+
+    /// <summary>Wallet creation for callers with no ambient token. Use: Low (add wallet). Scope: IWalletService consumers.</summary>
+    Task<Wallet> CreateWalletAsync(string cryptoSymbol) => CreateWalletAsync(cryptoSymbol, CancellationToken.None);
 }

@@ -8,4 +8,7 @@ namespace CipherBank_app.Custody;
 public interface IStepUpAuth
 {
     Task<bool> RequireAsync(AuthReason reason, CancellationToken ct);
+
+    /// <summary>Gates an action for callers with no ambient token. Use: High (every sensitive tap). Scope: IStepUpAuth consumers.</summary>
+    Task<bool> RequireAsync(AuthReason reason) => RequireAsync(reason, CancellationToken.None);
 }
