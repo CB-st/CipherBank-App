@@ -136,18 +136,40 @@ public sealed class RecipientRepository : IRecipientRepository
             list.Add(new AchRecipientRow(
                 reader.GetString(0),
                 reader.GetString(1),
-                reader.IsDBNull(2) ? null : reader.GetString(2),
-                reader.IsDBNull(3) ? null : reader.GetString(3),
+                await ReadOptionalStringAsync(reader, 2).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, 3).ConfigureAwait(false),
                 Routing: null,
                 Account: null,
-                reader.IsDBNull(4) || string.IsNullOrEmpty(reader.GetString(4)) ? "checking" : reader.GetString(4),
-                reader.IsDBNull(5) ? null : reader.GetString(5),
-                reader.IsDBNull(6) ? null : reader.GetString(6),
-                reader.IsDBNull(7) ? null : reader.GetString(7),
+                await ReadAccountTypeAsync(reader, 4).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, 5).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, 6).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, 7).ConfigureAwait(false),
                 DateTimeOffset.Parse(reader.GetString(8), System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         return list;
+    }
+
+    /// <summary>
+    /// Reads a nullable TEXT column without sync IsDBNull.
+    /// Use: High (list paths). Scope: RecipientRepository row hydrate.
+    /// </summary>
+    private static async Task<string?> ReadOptionalStringAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+        => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
+
+    /// <summary>
+    /// Reads account_type with checking default when null/empty.
+    /// Use: High (list paths). Scope: RecipientRepository row hydrate.
+    /// </summary>
+    private static async Task<string> ReadAccountTypeAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+    {
+        if (await reader.IsDBNullAsync(ordinal).ConfigureAwait(false))
+        {
+            return "checking";
+        }
+
+        string value = reader.GetString(ordinal);
+        return string.IsNullOrEmpty(value) ? "checking" : value;
     }
 
     /// <summary>

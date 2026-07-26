@@ -16,7 +16,7 @@ public sealed class RatesCache : IRatesCache
     {
         await using var conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using var transaction = conn.BeginTransaction();
+        await using var transaction = (Microsoft.Data.Sqlite.SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
         foreach (RateRow row in rows)
         {
             await using var cmd = conn.CreateCommand();

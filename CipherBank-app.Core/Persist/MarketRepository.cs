@@ -20,7 +20,7 @@ public sealed class MarketRepository : IMarketRepository
         string normalizedSymbol = symbol.ToUpperInvariant();
         await using var conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using var transaction = conn.BeginTransaction();
+        await using var transaction = (Microsoft.Data.Sqlite.SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
         foreach ((long timestamp, double value) in points)
         {
             await using var cmd = conn.CreateCommand();

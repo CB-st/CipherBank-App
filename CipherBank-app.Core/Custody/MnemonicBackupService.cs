@@ -48,9 +48,9 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
 
             var document = new BackupDocument
             {
-                Format = Format,
-                Kdf = Kdf,
-                Iterations = Iterations,
+                DocumentFormat = Format,
+                KeyDerivation = Kdf,
+                IterationCount = Iterations,
                 SaltBase64 = Convert.ToBase64String(salt),
                 NonceBase64 = Convert.ToBase64String(nonce),
                 TagBase64 = Convert.ToBase64String(tag),
@@ -166,14 +166,16 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
 
     private static void ValidateDocument(BackupDocument document)
     {
-        if (document.Format != Format ||
-            document.Kdf != Kdf ||
-            document.Iterations != Iterations ||
-            string.IsNullOrWhiteSpace(document.SaltBase64) ||
-            string.IsNullOrWhiteSpace(document.NonceBase64) ||
-            string.IsNullOrWhiteSpace(document.TagBase64) ||
-            string.IsNullOrWhiteSpace(document.CiphertextBase64) ||
-            document.CreatedAt == default)
+        bool unsupported =
+            document.DocumentFormat != Format
+            || document.KeyDerivation != Kdf
+            || document.IterationCount != Iterations
+            || string.IsNullOrWhiteSpace(document.SaltBase64)
+            || string.IsNullOrWhiteSpace(document.NonceBase64)
+            || string.IsNullOrWhiteSpace(document.TagBase64)
+            || string.IsNullOrWhiteSpace(document.CiphertextBase64)
+            || document.CreatedAt == default;
+        if (unsupported)
         {
             throw new CryptographicException("Unsupported or invalid recovery file.");
         }
@@ -182,13 +184,13 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
     private sealed class BackupDocument
     {
         [JsonPropertyName("FORMAT")]
-        public string Format { get; init; } = string.Empty;
+        public string DocumentFormat { get; init; } = string.Empty;
 
         [JsonPropertyName("KDF")]
-        public string Kdf { get; init; } = string.Empty;
+        public string KeyDerivation { get; init; } = string.Empty;
 
         [JsonPropertyName("ITERATIONS")]
-        public int Iterations { get; init; }
+        public int IterationCount { get; init; }
 
         [JsonPropertyName("SALT_B64")]
         public string SaltBase64 { get; init; } = string.Empty;

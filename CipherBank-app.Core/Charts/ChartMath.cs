@@ -20,13 +20,22 @@ public sealed class ChartPathResult
 /// <summary>Pure chart math ported from Cora chartMath.ts.</summary>
 public static class ChartMath
 {
+    private const double DefaultPad = 6;
+    private const double Epsilon = 1e-12;
+
+    public static ChartPathResult ToPath(IReadOnlyList<ChartPoint> series, double w, double h)
+        => ToPath(series, w, h, DefaultPad, min: null, max: null);
+
+    public static ChartPathResult ToPath(IReadOnlyList<ChartPoint> series, double w, double h, double pad)
+        => ToPath(series, w, h, pad, min: null, max: null);
+
     public static ChartPathResult ToPath(
         IReadOnlyList<ChartPoint> series,
         double w,
         double h,
-        double pad = 6,
-        double? min = null,
-        double? max = null)
+        double pad,
+        double? min,
+        double? max)
     {
         if (series.Count < 2)
         {
@@ -38,13 +47,13 @@ public static class ChartMath
         double lo = min ?? series.Min(p => p.V);
         double hi = max ?? series.Max(p => p.V);
         double dx = x1 - x0;
-        if (dx == 0)
+        if (NearlyZero(dx))
         {
             dx = 1;
         }
 
         double dy = hi - lo;
-        if (dy == 0)
+        if (NearlyZero(dy))
         {
             dy = 1;
         }
@@ -79,7 +88,13 @@ public static class ChartMath
             return series;
         }
 
-        double bas = series[0].V == 0 ? 1 : series[0].V;
+        double bas = NearlyZero(series[0].V) ? 1 : series[0].V;
         return series.Select(p => new ChartPoint(p.T, ((p.V / bas) - 1) * 100)).ToList();
     }
+
+    /// <summary>
+    /// True when a chart span is effectively zero and must be substituted to avoid divide-by-zero.
+    /// Use: High (path layout). Scope: ChartMath.
+    /// </summary>
+    private static bool NearlyZero(double value) => Math.Abs(value) < Epsilon;
 }

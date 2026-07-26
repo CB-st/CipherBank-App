@@ -47,9 +47,9 @@ public sealed class WalletRepository : IWalletRepository
             list.Add(new LocalWalletRow(
                 reader.GetString(0),
                 reader.GetString(1),
-                reader.IsDBNull(2) ? null : reader.GetString(2),
-                reader.IsDBNull(3) ? null : reader.GetString(3),
-                reader.IsDBNull(4) ? null : reader.GetString(4),
+                await ReadOptionalStringAsync(reader, 2).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, 3).ConfigureAwait(false),
+                await ReadOptionalStringAsync(reader, 4).ConfigureAwait(false),
                 reader.GetInt32(5),
                 reader.GetString(6),
                 DateTimeOffset.Parse(reader.GetString(7), System.Globalization.CultureInfo.InvariantCulture)));
@@ -57,6 +57,13 @@ public sealed class WalletRepository : IWalletRepository
 
         return list;
     }
+
+    /// <summary>
+    /// Reads a nullable TEXT column without sync IsDBNull.
+    /// Use: High (wallet list). Scope: WalletRepository row hydrate.
+    /// </summary>
+    private static async Task<string?> ReadOptionalStringAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+        => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
 
     public async Task UpsertAsync(LocalWalletRow row)
     {

@@ -39,7 +39,8 @@ public sealed class WalletModule
         {
             WalletUiMode.Watch => WalletSource.Watch,
             WalletUiMode.Managed => WalletSource.Server,
-            _ => UsesServerWallets && mode == WalletUiMode.Unmanaged ? WalletSource.Local : WalletSource.Local,
+            WalletUiMode.Unmanaged => UsesServerWallets ? WalletSource.Server : WalletSource.Local,
+            _ => WalletSource.Local,
         };
 }
 

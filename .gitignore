@@ -86,3 +86,4 @@ coverage*.json
 coverage*.xml
 *.coverage
 *.coveragexml
+reports/

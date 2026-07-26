@@ -155,7 +155,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
                 continue;
             }
 
-            message.Write(buffer, 0, result.Count);
+            await message.WriteAsync(buffer.AsMemory(0, result.Count), ct).ConfigureAwait(false);
             if (!result.EndOfMessage)
             {
                 continue;
