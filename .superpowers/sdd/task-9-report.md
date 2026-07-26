@@ -154,3 +154,86 @@ PIN values come from `StoryJournal.Pin` / `AlternatePin` (`E2E_TEST_PIN` default
   Change-PIN decision logic therefore lives in Core and is covered; the ViewModel holds no branch logic of its own.
 - Six tabs into a five-slot Android tab bar is a product-side UX smell worth revisiting separately
   (Receive and Profile are both one extra tap away). Out of scope for Task 9; the page object handles it.
+
+---
+
+## Fix follow-up
+
+Review findings from Task 9 addressed on top of `f7014cc`.
+
+### Important 1 — legacy PIN-derived blob safety (custody-level invariant)
+
+Changing the PIN is no longer expressible without going through custody:
+
+- `ICustodyService.ChangePinAsync(oldPin, newPin)` (new) returns `CustodyPinChangeResult`
+  (`Changed` / `WrongPin` / `LockedOut` / `DeviceSecretMissing`). It **refuses** the change when
+  `CanUnlockWithDeviceOwnerAsync()` is false, because `UnlockAsync` still accepts a legacy PIN-derived blob
+  and only migrates it on a successful unlock — a hash-only swap before that would orphan the blob.
+  The blob is still **never re-sealed**; the device-secret design is unchanged.
+- `PinChangeCoordinator` now depends on `ICustodyService` instead of `IPinService`, and maps custody results to
+  `PinChangeStatus` through a dictionary (new `PinChangeStatus.VaultNotReady` →
+  "Unlock your wallet before changing your PIN."). The Shell change-PIN flow therefore *cannot* reach the raw
+  PIN gate. `MauiProgram` needed no change (both are already singletons).
+
+New unit coverage in `PinChangeTests`: refusal on a legacy blob preserves the old PIN and the mnemonic is still
+recoverable with it; the same change succeeds after an unlock has migrated the blob, with the mnemonic intact
+under the new PIN; and `CustodyService.ChangePinAsync` reports `DeviceSecretMissing` distinctly from `WrongPin`.
+The legacy blob is seeded through `CustodyService.BlobKey`, so Core now has
+`<InternalsVisibleTo Include="CipherBank-app.Tests" />`.
+
+### Important 2 — vacuous error assertion is now real device evidence
+
+`CB_ACCOUNT_PIN_CHANGE_DynamicPin` submits a **wrong current PIN first** (derived from the journaled PIN by
+`ShiftDigits`, so nothing is hard-coded and it cannot collide with the active or requested PIN) and asserts
+`ChangePinErrorLabel` is visible **and** non-empty, that no status is shown, and that the page is still loaded.
+The subsequent successful change with the real current PIN proves the rejected attempt preserved state.
+`ChangePinPage.Submit()` now waits for either feedback label before returning, so the assertion cannot race the
+KDF-bound submit; a wait timeout is swallowed so the assertion — not a bare Appium error — reports the truth.
+
+### Related minors
+
+- `PinChangeCoordinator.ValidateShape` / `ChangeAsync` accept `string?`; a null new PIN is `TooShort`.
+  Covered by a 4-case `Theory` plus a `ChangeAsync(null)` Fact.
+- `ChangePinViewModel` no longer surfaces `Exception.Message`; it shows a fixed
+  "Could not change your PIN. Please try again." and logs the exception through the existing
+  `[LoggerMessage]` / `ILogger<T>` pattern already used by `SettingsViewModel` etc. (no new logging stack).
+- Removed dead `ProfilePage.HasPrefsCard()` (and its now-unused locator).
+- Added purpose + Use/Scope docs to `ChangePinPage.WaitForPageLoad()` (E2E), `ProfilePage.WaitForPageLoad()`,
+  and the `ChangePinPage.xaml.cs` constructor.
+- **Broad Profile XPath: deliberately left as-is.** Scoping it to the bottom nav would break the other half of
+  the same method: when Profile is behind the "More" overflow it is rendered in a popup menu, not in
+  `BottomNavigationView`, so one nav-scoped selector cannot serve both layouts. Not worth destabilising a green
+  flow for locator aesthetics; the existing comment already explains the two paths.
+
+### Verification
+
+| Run | Result |
+|-----|--------|
+| `dotnet test CipherBank-app.Tests --filter "FullyQualifiedName~PinChangeTests"` | **Failed: 0, Passed: 14** (was 6) |
+| `dotnet test CipherBank-app.Tests --nologo` (full unit suite) | **Failed: 0, Passed: 262, Total: 262**, coverage gate green |
+| `dotnet test CipherBank-app.E2ETests --nologo` (no `E2E_RUN`) | **Failed: 0, Skipped: 14, Total: 14** |
+| `dotnet build CipherBank-app -f net10.0-android -c Debug` | Build succeeded, 0 errors |
+| `./scripts/e2e-android.sh --story CB-ACCOUNT-PIN-CHANGE` | **Passed! Failed: 0, Passed: 1**, 1 m 32 s |
+| `AccountStories` regression (`E2E_RUN=1`) | **Passed! Failed: 0, Passed: 4**, 2 m 32 s |
+
+Journal from the device run (note the new rejection step; `357921` is derived from the active `246810`):
+
+```
+2026-07-26T01:15:32Z device: opened Change PIN with active PIN=246810
+2026-07-26T01:15:48Z device: rejected change with wrong current PIN=357921
+2026-07-26T01:16:13Z device: changed PIN 246810 -> 135791 (previous PIN journaled as alternate)
+2026-07-26T01:16:18Z device: confirmed replaced PIN=246810 no longer unlocks
+2026-07-26T01:16:23Z device: unlocked with new PIN=135791
+```
+
+`docs/tests/gaps/` remains empty. `git check-ignore` confirms
+`artifacts/e2e-journal/CB-ACCOUNT-PIN-CHANGE.journal.txt` is ignored by `artifacts/e2e-journal/.gitignore`
+and untracked.
+
+### Residual concerns
+
+- The `VaultNotReady` message ("Unlock your wallet before changing your PIN") is accurate but can only be seen
+  by a user carrying a pre-device-secret blob; the shipped Profile route already requires an unlock, so it is a
+  belt-and-braces path with unit coverage but no device coverage.
+- A rejected change consumes one `PinService` failed-attempt slot (`MaxFails = 5`). The story spends one of
+  those per run, which is fine, but a future lockout story on the same session should account for it.

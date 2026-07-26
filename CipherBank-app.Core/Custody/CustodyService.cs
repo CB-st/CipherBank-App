@@ -6,6 +6,25 @@ using System.Security.Cryptography;
 
 namespace CipherBank_app.Custody;
 
+/// <summary>Why a custody-level PIN change ended the way it did.</summary>
+public enum CustodyPinChangeResult
+{
+    /// <summary>The stored PIN was replaced; the sealed blob is untouched.</summary>
+    Changed,
+
+    /// <summary>The supplied current PIN failed verification.</summary>
+    WrongPin,
+
+    /// <summary>Too many failed attempts; the PIN gate is temporarily locked.</summary>
+    LockedOut,
+
+    /// <summary>
+    /// No device secret exists, so the blob may still be a legacy PIN-derived seal that only
+    /// <see cref="ICustodyService.UnlockAsync"/> can migrate. Changing the PIN now would orphan it.
+    /// </summary>
+    DeviceSecretMissing,
+}
+
 /// <summary>On-device custody seal/unlock (Cora custody.ts parity).</summary>
 public interface ICustodyService
 {
@@ -13,6 +32,13 @@ public interface ICustodyService
 
     /// <summary>True when a device secret exists so OS-auth unlock is possible.</summary>
     Task<bool> CanUnlockWithDeviceOwnerAsync();
+
+    /// <summary>
+    /// The only supported way to replace the unlock PIN: custody enforces the device-secret invariant
+    /// before delegating to the PIN gate, so a legacy PIN-derived blob can never be orphaned by a
+    /// hash-only PIN swap. Use: Low (user-initiated PIN change). Scope: this device's custody record.
+    /// </summary>
+    Task<CustodyPinChangeResult> ChangePinAsync(string oldPin, string newPin);
 
     Task SealAsync(string mnemonic, string pin);
 
@@ -75,6 +101,26 @@ public sealed class CustodyService : ICustodyService
 
     public async Task<bool> CanUnlockWithDeviceOwnerAsync()
         => !string.IsNullOrEmpty(await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false));
+
+    /// <summary>
+    /// Refuses the change unless a device secret exists, because <see cref="UnlockAsync"/> still accepts a
+    /// legacy PIN-derived blob and only migrates it on a successful unlock — swapping the PIN hash first
+    /// would leave that blob undecryptable. With the invariant satisfied the PIN is a pure logical gate, so
+    /// the change is a hash swap and the blob is never re-sealed.
+    /// Use: Low (user-initiated PIN change). Scope: this device's custody record.
+    /// </summary>
+    public async Task<CustodyPinChangeResult> ChangePinAsync(string oldPin, string newPin)
+    {
+        if (!await CanUnlockWithDeviceOwnerAsync().ConfigureAwait(false))
+        {
+            return CustodyPinChangeResult.DeviceSecretMissing;
+        }
+
+        bool changed = await _pin.ChangePinAsync(oldPin, newPin).ConfigureAwait(false);
+        return changed ? CustodyPinChangeResult.Changed
+            : _pin.IsLockedOut ? CustodyPinChangeResult.LockedOut
+            : CustodyPinChangeResult.WrongPin;
+    }
 
     public async Task SealAsync(string mnemonic, string pin)
     {

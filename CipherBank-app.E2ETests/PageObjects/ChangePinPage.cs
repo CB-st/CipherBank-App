@@ -24,11 +24,16 @@ public class ChangePinPage : BasePage
     /// <summary>Whether the Change PIN submit control is on screen. Use: Medium. Scope: this page object.</summary>
     public bool IsLoaded() => IsElementDisplayed(SubmitButton);
 
+    /// <summary>
+    /// Blocks until the Update PIN control is on screen, i.e. the page finished navigating in.
+    /// Use: High (every Change-PIN story step). Scope: this page object.
+    /// </summary>
     public override void WaitForPageLoad() => WaitForElement(SubmitButton);
 
     /// <summary>
-    /// Fills all three PIN fields and taps Update PIN, staying on this page so the caller can assert the
-    /// status (success) or error (rejection) label. Use: High (CB-ACCOUNT-PIN-CHANGE). Scope: this page object.
+    /// Fills all three PIN fields, taps Update PIN and waits for the page's own verdict, staying here so the
+    /// caller can assert the status (success) or error (rejection) label.
+    /// Use: High (CB-ACCOUNT-PIN-CHANGE). Scope: this page object.
     /// </summary>
     public ChangePinPage Submit(string currentPin, string newPin, string confirmPin)
     {
@@ -36,6 +41,26 @@ public class ChangePinPage : BasePage
         EnterText(NewEntry, newPin);
         EnterText(ConfirmEntry, confirmPin);
         ClickElement(SubmitButton);
+        return WaitForFeedback();
+    }
+
+    /// <summary>
+    /// Waits until either feedback label becomes visible so an assertion is not racing the async submit
+    /// (PIN verification is a deliberately slow KDF). A timeout is swallowed on purpose: the caller's
+    /// IsErrorDisplayed / IsStatusDisplayed assertion then reports the real, unmasked state.
+    /// Use: High (once per submit). Scope: this page object.
+    /// </summary>
+    private ChangePinPage WaitForFeedback()
+    {
+        try
+        {
+            Wait.Until(_ => IsElementDisplayed(ErrorLabel) || IsElementDisplayed(StatusLabel));
+        }
+        catch (WebDriverTimeoutException)
+        {
+            // Intentional: let the caller's assertion describe the missing feedback.
+        }
+
         return this;
     }
 

@@ -132,10 +132,11 @@ public class AccountStories : IDisposable
     }
 
     /// <summary>
-    /// CB-ACCOUNT-PIN-CHANGE: seals a wallet with the journaled PIN, changes it through the real Shell
-    /// surface (Profile → Security → Change PIN) to the journaled AlternatePin, promotes that alternate to
-    /// the active journal PIN, then locks and unlocks with it. The unlock is the proof: it only succeeds if
-    /// the stored PIN really changed, and the PIN values are never hard-coded here.
+    /// CB-ACCOUNT-PIN-CHANGE: seals a wallet with the journaled PIN, proves a wrong current PIN is rejected
+    /// on-device with a real error, then changes the PIN through the same Shell surface (Profile → Security →
+    /// Change PIN) to the journaled AlternatePin, promotes that alternate to the active journal PIN, and
+    /// locks/unlocks with it. The unlock is the proof: it only succeeds if the stored PIN really changed, and
+    /// the PIN values are never hard-coded here.
     /// Use: High (Wave 1 PIN-change gate). Scope: this Fact's device session.
     /// </summary>
     [SkippableFact]
@@ -158,9 +159,21 @@ public class AccountStories : IDisposable
 
         string oldPin = journal.Pin;
         string newPin = journal.AlternatePin;
+        string wrongCurrentPin = ShiftDigits(oldPin);
+        wrongCurrentPin.Should().NotBe(oldPin, "the rejection leg needs a PIN that is genuinely not the active one");
+        wrongCurrentPin.Should().NotBe(newPin, "a wrong current PIN must not collide with the requested new PIN");
+
+        changePin.Submit(wrongCurrentPin, newPin, newPin);
+        changePin.IsErrorDisplayed().Should().BeTrue(
+            "CB-ACCOUNT-PIN-CHANGE: a wrong current PIN must surface a visible, non-empty ChangePinErrorLabel");
+        changePin.IsStatusDisplayed().Should().BeFalse("a rejected change must not report success");
+        changePin.IsLoaded().Should().BeTrue("a rejected change keeps the user on Change PIN");
+        journal.RecordStep($"device: rejected change with wrong current PIN={wrongCurrentPin}");
+
         changePin.Submit(oldPin, newPin, newPin);
         changePin.IsStatusDisplayed().Should().BeTrue(
-            "CB-ACCOUNT-PIN-CHANGE: a valid change reports success on ChangePinStatusLabel");
+            "CB-ACCOUNT-PIN-CHANGE: a valid change reports success on ChangePinStatusLabel "
+            + "(and proves the rejected attempt preserved the old PIN)");
         changePin.IsErrorDisplayed().Should().BeFalse("a successful change must not surface an error");
 
         journal.PromoteAlternatePin();
@@ -185,6 +198,14 @@ public class AccountStories : IDisposable
         journal.RecordStep($"device: unlocked with new PIN={journal.Pin}");
         journal.Flush(StoryIds.CbAccountPinChange);
     }
+
+    /// <summary>
+    /// Derives a same-length PIN that shares no digit with <paramref name="pin"/>, giving the rejection leg a
+    /// deliberately wrong current PIN without hard-coding one alongside the journaled values.
+    /// Use: Low (once per PIN-change story). Scope: this test class.
+    /// </summary>
+    private static string ShiftDigits(string pin)
+        => string.Concat(pin.Select(c => (char)('0' + (((c - '0') + 1) % 10))));
 
     /// <summary>
     /// Seals a wallet through the real onboarding UI and returns Home; converts a boot/seal timeout into a

@@ -44,14 +44,17 @@ public class PinChangeTests
     }
 
     /// <summary>
-    /// Builds a PinService seeded with <see cref="CurrentPin"/> plus a coordinator over it.
+    /// Builds a fully sealed custody (mnemonic + device secret + <see cref="CurrentPin"/>) plus a coordinator
+    /// over it, i.e. the state a real device is in when Change PIN is reachable.
     /// Use: High (every Fact here). Scope: single test.
     /// </summary>
     private static async Task<(PinService Pin, PinChangeCoordinator Coordinator)> SeededAsync()
     {
-        var pin = new PinService(new MemStore());
-        await pin.SetPinAsync(CurrentPin);
-        return (pin, new PinChangeCoordinator(pin));
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        await custody.SealAsync(MnemonicHelper.Generate(), CurrentPin);
+        return (pin, new PinChangeCoordinator(custody));
     }
 
     [Fact]
@@ -124,5 +127,102 @@ public class PinChangeTests
 
         (await pin.ChangePinAsync(CurrentPin, NextPin)).Should().BeTrue();
         (await pin.VerifyPinAsync(NextPin)).Should().BeTrue();
+    }
+
+    /// <summary>
+    /// The device-secret invariant: a legacy PIN-derived blob (no <c>cb_device_secret_v1</c>) can only be
+    /// migrated by <see cref="CustodyService.UnlockAsync"/>, so custody must refuse a PIN change that would
+    /// swap the hash and orphan that blob — and the old PIN must still open it afterwards.
+    /// </summary>
+    [Fact]
+    public async Task Change_RefusedOnLegacyBlob_WithoutDeviceSecret_PreservesOldPin()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        string mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
+
+        var outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
+
+        outcome.Succeeded.Should().BeFalse();
+        outcome.Status.Should().Be(PinChangeStatus.VaultNotReady);
+        (await pin.VerifyPinAsync(CurrentPin)).Should().BeTrue("the refused change must leave the old PIN active");
+        (await pin.VerifyPinAsync(NextPin)).Should().BeFalse();
+        (await custody.UnlockAsync(CurrentPin)).Should().BeTrue("the legacy blob is still openable with the old PIN");
+        custody.ExportMnemonic().Should().Be(mnemonic);
+    }
+
+    /// <summary>
+    /// Once an unlock has migrated the legacy blob to a device secret, the same change is allowed and the
+    /// mnemonic survives the PIN swap (the blob is keyed by the device secret, never re-sealed).
+    /// </summary>
+    [Fact]
+    public async Task Change_AllowedAfterMigration_KeepsMnemonicReachableWithNewPin()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        string mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
+        (await custody.UnlockAsync(CurrentPin)).Should().BeTrue();
+
+        var outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
+
+        outcome.Succeeded.Should().BeTrue();
+        custody.Lock();
+        (await custody.UnlockAsync(NextPin)).Should().BeTrue();
+        custody.ExportMnemonic().Should().Be(mnemonic);
+    }
+
+    /// <summary>
+    /// <see cref="CustodyService.ChangePinAsync"/> reports the invariant breach distinctly from a wrong PIN,
+    /// so callers cannot mistake "refused" for "bad credentials".
+    /// </summary>
+    [Fact]
+    public async Task CustodyChangePin_ReportsDeviceSecretMissing_DistinctFromWrongPin()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        await SeedLegacyPinDerivedBlobAsync(store, pin);
+
+        (await custody.ChangePinAsync(CurrentPin, NextPin))
+            .Should().Be(CustodyPinChangeResult.DeviceSecretMissing);
+
+        (await custody.UnlockAsync(CurrentPin)).Should().BeTrue();
+        (await custody.ChangePinAsync("000000", NextPin)).Should().Be(CustodyPinChangeResult.WrongPin);
+        (await custody.ChangePinAsync(CurrentPin, NextPin)).Should().Be(CustodyPinChangeResult.Changed);
+    }
+
+    [Theory]
+    [InlineData(null, null, null, PinChangeStatus.TooShort)]
+    [InlineData(CurrentPin, null, NextPin, PinChangeStatus.TooShort)]
+    [InlineData(CurrentPin, NextPin, null, PinChangeStatus.Mismatch)]
+    [InlineData(null, NextPin, NextPin, PinChangeStatus.Success)]
+    public void ValidateShape_ToleratesNullInputs(
+        string? currentPin, string? newPin, string? confirmPin, PinChangeStatus expected)
+        => PinChangeCoordinator.ValidateShape(currentPin, newPin, confirmPin).Should().Be(expected);
+
+    [Fact]
+    public async Task ChangeAsync_WithNullNewPin_IsRejectedWithoutTouchingStoredPin()
+    {
+        var (pin, coordinator) = await SeededAsync();
+
+        var outcome = await coordinator.ChangeAsync(CurrentPin, null, null);
+
+        outcome.Status.Should().Be(PinChangeStatus.TooShort);
+        (await pin.VerifyPinAsync(CurrentPin)).Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Writes the pre-device-secret shape straight into the store: a blob sealed with the PIN itself plus a
+    /// PIN hash, exactly what <see cref="CustodyService.UnlockAsync"/>'s legacy branch expects.
+    /// Use: Medium (legacy-invariant Facts). Scope: single test.
+    /// </summary>
+    private static async Task<string> SeedLegacyPinDerivedBlobAsync(MemStore store, PinService pin)
+    {
+        string mnemonic = MnemonicHelper.Generate();
+        await pin.SetPinAsync(CurrentPin);
+        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, CurrentPin));
+        return mnemonic;
     }
 }

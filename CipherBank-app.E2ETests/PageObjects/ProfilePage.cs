@@ -8,7 +8,6 @@ public class ProfilePage : BasePage
 {
     private static readonly By ChangePinButton = By.Id("ProfileChangePinButton");
     private static readonly By LockButton = By.Id("ProfileLockButton");
-    private static readonly By SavePrefsButton = By.Id("ProfileSavePrefsButton");
 
     public ProfilePage(AppiumDriver driver) : base(driver)
     {
@@ -21,9 +20,10 @@ public class ProfilePage : BasePage
     /// </summary>
     public bool IsLoaded() => IsElementDisplayed(ChangePinButton);
 
-    /// <summary>Whether the (scrolled-down) prefs card is reachable. Use: Low. Scope: this page object.</summary>
-    public bool HasPrefsCard() => IsElementDisplayed(SavePrefsButton);
-
+    /// <summary>
+    /// Blocks until the Security card's anchor control is on screen.
+    /// Use: High (every Profile-rooted story). Scope: this page object.
+    /// </summary>
     public override void WaitForPageLoad() => WaitForElement(ChangePinButton);
 
     /// <summary>Opens Profile → Security → Change PIN. Use: High (CB-ACCOUNT-PIN-CHANGE). Scope: this page object.</summary>

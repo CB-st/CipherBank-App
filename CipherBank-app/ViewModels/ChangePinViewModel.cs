@@ -8,6 +8,7 @@ using CipherBank_app.Services;
 using CipherBank_app.Session;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.ViewModels;
 
@@ -18,15 +19,24 @@ namespace CipherBank_app.ViewModels;
 /// </summary>
 public partial class ChangePinViewModel : ObservableObject
 {
+    /// <summary>Shown instead of an exception message so no internal detail reaches the PIN screen.</summary>
+    private const string UnexpectedErrorMessage = "Could not change your PIN. Please try again.";
+
     private readonly PinChangeCoordinator _pinChange;
     private readonly INavigationService _nav;
     private readonly IAppSession _session;
+    private readonly ILogger<ChangePinViewModel> _logger;
 
-    public ChangePinViewModel(PinChangeCoordinator pinChange, INavigationService nav, IAppSession session)
+    public ChangePinViewModel(
+        PinChangeCoordinator pinChange,
+        INavigationService nav,
+        IAppSession session,
+        ILogger<ChangePinViewModel> logger)
     {
         _pinChange = pinChange;
         _nav = nav;
         _session = session;
+        _logger = logger;
     }
 
     [ObservableProperty]
@@ -73,7 +83,8 @@ public partial class ChangePinViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Error = ex.Message;
+            LogChangePinFailed(_logger, ex);
+            Error = UnexpectedErrorMessage;
         }
         finally
         {
@@ -102,4 +113,9 @@ public partial class ChangePinViewModel : ObservableObject
         NewPin = string.Empty;
         ConfirmPin = string.Empty;
     }
+
+#pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unexpected error while changing the PIN")]
+    private static partial void LogChangePinFailed(ILogger logger, Exception ex);
+#pragma warning restore SA1204 // Static members should appear before non-static members
 }
