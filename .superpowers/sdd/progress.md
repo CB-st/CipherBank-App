@@ -69,6 +69,7 @@ Task 10: complete (commits 10e66e7..19d4466, review clean; CB-ACCOUNT-002 green 
 Task 11: complete (commit `3c5fc3a`) — docs closeout — polished `docs/tests/README.md` (harness pointer), `docs/README.md` (STORY_ID_MAP link), Expo mirror docs (`design_handoff_cipherbank/starter/docs/{PLAYWRIGHT_PLAN,STORY_ID_MAP}.md` — fixed stale `E2E_FRESH` env var to `E2E_RUN`, added CB-ACCOUNT-002/PIN-CHANGE/US-ONB-03 mirror rows), confirmed `artifacts/e2e-journal|e2e-recovery|e2e-diagnostics` stay gitignored; see `.superpowers/sdd/task-11-report.md` for harness run outcome
 
 ### Task 11 review fix (2026-07-25)
+- Task 11 live re-verify (controller): `./scripts/e2e-android.sh --wave account` → **Passed 5/5, 0 failed, 0 skipped** on CipherBank_API34 (CB-ACCOUNT-001, US-ONB-03, US-ONB-04, CB-ACCOUNT-PIN-CHANGE, CB-ACCOUNT-002) after filter expansion; HEAD `3e14e1a`.
 
 Review of Task 11 (base `3c5fc3a`) found `--wave account` in `scripts/e2e-android.sh` only matched
 `CB_ACCOUNT_*`-named test methods, silently excluding the `US_ONB_03`/`US_ONB_04` negative Facts from
