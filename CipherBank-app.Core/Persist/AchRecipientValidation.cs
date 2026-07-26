@@ -7,10 +7,13 @@ namespace CipherBank_app.Persist;
 /// <summary>ACH recipient field validation (Cora RecipientPickerModal parity).</summary>
 public static class AchRecipientValidation
 {
-    public const int RoutingNumberDigitCount = 9;
-    public const int AccountNumberMinDigits = 4;
-    public const int MaskVisibleTrailingDigits = 4;
-    public const int MemoMaxLength = 140;
+    public static int RoutingNumberDigitCount => 9;
+
+    public static int AccountNumberMinDigits => 4;
+
+    public static int MaskVisibleTrailingDigits => 4;
+
+    public static int MemoMaxLength => 140;
 
     public static string? Validate(
         string name,
@@ -62,7 +65,7 @@ public static class AchRecipientValidation
             return "Account type must be checking or savings.";
         }
 
-        if (memo is { Length: > MemoMaxLength })
+        if (memo is not null && memo.Length > MemoMaxLength)
         {
             return "Memo must be 140 characters or fewer.";
         }
