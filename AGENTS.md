@@ -44,6 +44,9 @@ Every function (including private helpers) gets a brief comment that states:
 - Failures under `E2E_RUN=1` must **fail** (not soft-pass) and produce gap notes in `docs/tests/gaps/`.
 - Package wipe for MAUI: `adb shell pm clear com.companyname.cipherbankapp` (not Expo’s `com.cipherbank.app`).
 - Dev/test builds may **journal** PINs, mnemonics, and related values for diagnosis.
+- JDK: `scripts/lib/android-env.sh` exports `JAVA_HOME` (default `$HOME/.local/jdk-17`, override-respecting) and
+  prepends `$JAVA_HOME/bin` to `PATH` — both the MAUI Android build and Appium's UiAutomator2 driver need `java`
+  on PATH.
 
 ## Expo lab
 

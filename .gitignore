@@ -77,6 +77,11 @@ out/
 !/AGENTS.md
 /*.mmd
 
+# E2E story journals (diagnostic artifacts; not committed — journals contain PINs/mnemonics).
+# Keep the placeholder .gitignore tracked so the directory intent is documented in git.
+artifacts/e2e-journal/*
+!artifacts/e2e-journal/.gitignore
+
 # Test results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

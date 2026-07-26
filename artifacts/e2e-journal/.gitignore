@@ -1,0 +1,4 @@
+# Story journals contain PINs and mnemonics journaled for local device-run diagnosis (dev/test only).
+# Never commit run output — only this placeholder file should be tracked.
+*
+!.gitignore

@@ -22,9 +22,8 @@ public sealed class StoryJournal
         AlternatePin = alternatePin
             ?? Environment.GetEnvironmentVariable("E2E_TEST_PIN_ALT")
             ?? "135791";
-        _dir = dir
-            ?? Environment.GetEnvironmentVariable("E2E_JOURNAL_DIR")
-            ?? "artifacts/e2e-journal";
+        _dir = RepoPaths.ResolveFromRoot(
+            dir ?? Environment.GetEnvironmentVariable("E2E_JOURNAL_DIR") ?? "artifacts/e2e-journal");
     }
 
     /// <summary>Stores mnemonic for quiz/PIN flows. Use: Medium. Scope: account stories.</summary>

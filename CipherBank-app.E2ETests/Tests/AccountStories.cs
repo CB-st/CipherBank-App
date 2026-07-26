@@ -28,6 +28,13 @@ public class AccountStories : IDisposable
         _fixture = AppiumFixture.CreateOrThrow();
     }
 
+    /// <summary>
+    /// Drives the full CB-ACCOUNT-001 create-account flow (Welcome → Keys → BackupQuiz → SetPin → Home) on a
+    /// Fresh device and journals each <see cref="StoryProcedures.Account001Steps"/> id as the device reaches
+    /// its equivalent screen transition: open (tap Create wallet), complete-form (recovery phrase captured),
+    /// submit (phrase acknowledged), backup (quiz verified), complete (PIN sealed, Home loaded).
+    /// Use: High (canary Fact; the Wave 0 gate for this story). Scope: this Fact's device session.
+    /// </summary>
     [SkippableFact]
     [Trait("Story", StoryIds.CbAccount001)]
     [Trait("Story", StoryIds.UsOnb01)]
@@ -40,22 +47,27 @@ public class AccountStories : IDisposable
 
         var keys = welcome.StartCreateAccount();
         keys.WaitForPageLoad();
+        JournalProcedureStep("open");
+
         string mnemonic = keys.GetMnemonic();
         mnemonic.Should().NotBeNullOrWhiteSpace("Keys screen shows the generated recovery phrase");
         _fixture!.Journal.SetMnemonic(mnemonic);
-        _fixture.Journal.RecordStep("device: recorded mnemonic from Keys screen");
+        JournalProcedureStep("complete-form");
 
         var quiz = keys.Continue();
         quiz.WaitForPageLoad();
-        quiz.AnswerFromMnemonic(mnemonic);
+        JournalProcedureStep("submit");
 
+        quiz.AnswerFromMnemonic(mnemonic);
         var setPin = quiz.Verify();
         setPin.WaitForPageLoad();
+        JournalProcedureStep("backup");
 
         var home = setPin.SealMatching(_fixture.Journal.Pin);
         home.WaitForPageLoad();
         home.IsLoaded().Should().BeTrue("US-ONB-01: sealing the vault lands on Home");
-        _fixture.Journal.RecordStep($"device: sealed vault with PIN={_fixture.Journal.Pin}");
+        JournalProcedureStep("complete");
+
         _fixture.Journal.Flush(StoryIds.CbAccount001);
     }
 
@@ -108,6 +120,15 @@ public class AccountStories : IDisposable
             throw new InvalidOperationException($"{storyId}: Fresh reset did not land on Welcome; gap note written.", ex);
         }
     }
+
+    /// <summary>
+    /// Journals one CB-ACCOUNT-001 procedure step, pairing <paramref name="stepId"/> with its
+    /// <see cref="StoryProcedures.Account001Steps"/> description so the flushed journal traces which named
+    /// procedure step the device reached instead of only ad-hoc prose.
+    /// Use: High (every CB-ACCOUNT-001 screen transition). Scope: this Fact's device session.
+    /// </summary>
+    private void JournalProcedureStep(string stepId) =>
+        _fixture!.Journal.RecordStep($"step:{stepId} - {StoryProcedures.Account001Steps[stepId]}");
 
     /// <summary>Quits and disposes the owned Appium session (no-op when E2E_RUN is unset). Use: High. Scope: this fixture.</summary>
     public void Dispose()

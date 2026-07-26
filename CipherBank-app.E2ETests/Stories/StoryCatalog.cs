@@ -38,9 +38,10 @@ public static class StoryCatalog
 {
     public static readonly IReadOnlyList<StoryEntry> All =
     [
-        new(StoryIds.CbAccount001, StoryIds.UsOnb01, "Create an account", StoryRunnerStatus.Partial,
-            "Welcome → Keys → BackupQuiz → SetPin → Home wired; StoryProcedures.Account001Steps imported, " +
-            "Executable pending the Task 7 emulator canary (run with E2E_FRESH=1)",
+        new(StoryIds.CbAccount001, StoryIds.UsOnb01, "Create an account", StoryRunnerStatus.Executable,
+            "Welcome → Keys → BackupQuiz → SetPin → Home wired; StoryProcedures.Account001Steps journaled " +
+            "step-by-step; passed the Task 7 emulator canary on CipherBank_API34 (./scripts/e2e-android.sh " +
+            "--story CB-ACCOUNT-001)",
             DeviceProfile.Fresh),
         new(StoryIds.CbAccount002, StoryIds.UsOnb02, "Recover / returning device", StoryRunnerStatus.Backlog,
             "WelcomeReturningButton + RestoreBackup; StoryProcedures.Account002Steps imported, page objects pending",

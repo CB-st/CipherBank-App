@@ -150,14 +150,16 @@ build_apk() {
     -f "$TARGET_FRAMEWORK" -c Debug -p:EmbedAssembliesIntoApk=true
 }
 
-# Finds the freshly built debug APK under the app's Android bin output.
+# Finds the freshly built debug APK under the app's Android bin output and prints an absolute path —
+# dotnet test's process cwd is the test assembly's bin/ dir, not $ROOT, so a path relative to $ROOT would
+# resolve to the wrong location once ANDROID_APK_PATH reaches AppiumFixture.
 # Use: Medium (once per harness run). Scope: single build artifact resolution.
 locate_apk() {
   local apk
   apk="$(find "$APK_SEARCH_DIR" -maxdepth 1 -iname '*-Signed.apk' -print -quit 2>/dev/null)"
   [[ -n "$apk" ]] || apk="$(find "$APK_SEARCH_DIR" -maxdepth 1 -iname '*.apk' -print -quit 2>/dev/null)"
   [[ -n "$apk" ]] || die "no APK found under $APK_SEARCH_DIR — did the build succeed?"
-  echo "$apk"
+  echo "$ROOT/$apk"
 }
 
 # Installs (or reinstalls) the given APK onto the running device.

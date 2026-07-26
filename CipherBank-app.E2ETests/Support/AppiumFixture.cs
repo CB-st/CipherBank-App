@@ -108,8 +108,8 @@ public sealed class AppiumFixture : IDisposable
             PlatformName = "Android",
             AutomationName = "UiAutomator2",
             App = apkPath,
+            DeviceName = Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator",
         };
-        options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator");
         return new AndroidDriver(serverUri, options);
     }
 
@@ -132,9 +132,9 @@ public sealed class AppiumFixture : IDisposable
             PlatformName = "iOS",
             AutomationName = "XCUITest",
             App = appPath,
+            DeviceName = Environment.GetEnvironmentVariable("IOS_DEVICE") ?? "iPhone 15",
+            PlatformVersion = Environment.GetEnvironmentVariable("IOS_VERSION") ?? "17.0",
         };
-        options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("IOS_DEVICE") ?? "iPhone 15");
-        options.AddAdditionalAppiumOption("platformVersion", Environment.GetEnvironmentVariable("IOS_VERSION") ?? "17.0");
         return new IOSDriver(serverUri, options);
     }
 

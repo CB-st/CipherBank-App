@@ -19,27 +19,10 @@ public static class GapNotes
         string actual,
         string proposedFix)
     {
-        var dir = Path.Combine(FindRepoRoot(), GapsRelativePath);
+        var dir = RepoPaths.ResolveFromRoot(GapsRelativePath);
         Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"{storyId}.md");
         File.WriteAllText(path, FormatNote(storyId, step, expected, actual, proposedFix));
-    }
-
-    /// <summary>
-    /// Walks upward from cwd to locate the git repo root for gap-note paths.
-    /// Use: Low. Scope: GapNotes path resolution.
-    /// </summary>
-    private static string FindRepoRoot()
-    {
-        var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
-        while (dir is not null)
-        {
-            if (Directory.Exists(Path.Combine(dir.FullName, ".git")))
-                return dir.FullName;
-            dir = dir.Parent;
-        }
-
-        return Directory.GetCurrentDirectory();
     }
 
     /// <summary>
