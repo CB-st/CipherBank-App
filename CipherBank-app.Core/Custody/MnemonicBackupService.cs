@@ -170,22 +170,28 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         }
     }
 
+    /// <summary>
+    /// Rejects recovery files whose header, ciphertext fields, or timestamp are missing/mismatched.
+    /// Use: High (every recovery-file open). Scope: MnemonicBackupService.OpenBackupFileAsync.
+    /// </summary>
     private static void ValidateDocument(BackupDocument document)
     {
-        bool unsupported =
-            document.DocumentFormat != Format
-            || document.KeyDerivation != Kdf
-            || document.IterationCount != Iterations
-            || string.IsNullOrWhiteSpace(document.SaltBase64)
-            || string.IsNullOrWhiteSpace(document.NonceBase64)
-            || string.IsNullOrWhiteSpace(document.TagBase64)
-            || string.IsNullOrWhiteSpace(document.CiphertextBase64)
-            || document.CreatedAt == default;
-        if (unsupported)
+        if (HasUnsupportedHeader(document) || HasMissingCryptoFields(document) || document.CreatedAt == default)
         {
             throw new CryptographicException("Unsupported or invalid recovery file.");
         }
     }
+
+    private static bool HasUnsupportedHeader(BackupDocument document)
+        => document.DocumentFormat != Format
+            || document.KeyDerivation != Kdf
+            || document.IterationCount != Iterations;
+
+    private static bool HasMissingCryptoFields(BackupDocument document)
+        => string.IsNullOrWhiteSpace(document.SaltBase64)
+            || string.IsNullOrWhiteSpace(document.NonceBase64)
+            || string.IsNullOrWhiteSpace(document.TagBase64)
+            || string.IsNullOrWhiteSpace(document.CiphertextBase64);
 
     private sealed class BackupDocument
     {

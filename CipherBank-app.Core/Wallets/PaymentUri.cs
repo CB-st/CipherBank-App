@@ -72,17 +72,41 @@ public static class PaymentUri
         return parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts);
     }
 
+    private static readonly Dictionary<string, string> SimpleSchemePrefixes = new()
+    {
+        ["BTC"] = "bitcoin",
+        ["LTC"] = "litecoin",
+        ["DOGE"] = "dogecoin",
+    };
+
+    private static readonly HashSet<string> FiatCurrencies = ["USD", "EUR", "JPY"];
+
+    /// <summary>
+    /// Dispatches a symbol to its scheme-specific URI builder (simple prefix, account-based, or fiat).
+    /// Use: High (every receive-address render). Scope: PaymentUri.Build.
+    /// </summary>
     private static string MapSchemeUri(string sym, string addr, string suffix, string? amount)
     {
-        return sym switch
+        if (SimpleSchemePrefixes.TryGetValue(sym, out string? prefix))
         {
-            "BTC" => $"bitcoin:{addr}{suffix}",
-            "LTC" => $"litecoin:{addr}{suffix}",
-            "DOGE" => $"dogecoin:{addr}{suffix}",
-            "ETH" => string.IsNullOrEmpty(amount) ? $"ethereum:{addr}" : $"ethereum:{addr}?value={Uri.EscapeDataString(amount)}",
-            "XMR" => string.IsNullOrEmpty(amount) ? $"monero:{addr}" : $"monero:{addr}?tx_amount={Uri.EscapeDataString(amount)}",
-            "USD" or "EUR" or "JPY" => $"cipherbank:receive/{sym}?address={Uri.EscapeDataString(addr)}",
-            _ => addr,
-        };
+            return $"{prefix}:{addr}{suffix}";
+        }
+
+        if (sym == "ETH")
+        {
+            return BuildAccountUri("ethereum", "value", addr, amount);
+        }
+
+        if (sym == "XMR")
+        {
+            return BuildAccountUri("monero", "tx_amount", addr, amount);
+        }
+
+        return FiatCurrencies.Contains(sym) ? $"cipherbank:receive/{sym}?address={Uri.EscapeDataString(addr)}" : addr;
     }
+
+    private static string BuildAccountUri(string scheme, string amountParam, string addr, string? amount)
+        => string.IsNullOrEmpty(amount)
+            ? $"{scheme}:{addr}"
+            : $"{scheme}:{addr}?{amountParam}={Uri.EscapeDataString(amount)}";
 }
