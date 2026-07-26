@@ -11,6 +11,7 @@ public static class StoryIds
     public const string CbAccount002 = "CB-ACCOUNT-002";
     public const string UsOnb01 = "US-ONB-01";
     public const string UsOnb02 = "US-ONB-02";
+    public const string UsOnb03 = "US-ONB-03";
     public const string UsOnb04 = "US-ONB-04";
 
     // Lock

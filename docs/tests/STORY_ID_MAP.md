@@ -22,7 +22,8 @@ flowchart LR
 | US-HOM-05, CB-MARKET-001, US-SND-01 | `US_HOM_05_SND_01_HomeChart_ConvertPickers_SendAch` | Chart chips + Send ACH surfaces |
 | US-POS-01, CB-PAY-003 | `US_POS_01_CB_PAY_003_PosLabSimulate` | Soft-return if PosLab not on screen |
 | CB-ACCOUNT-001 / US-ONB-01 | `CB_ACCOUNT_001_US_ONB_01_CreateAccount` | **Executable** — passed on `CipherBank_API34` (Task 7 canary); Welcome→Keys→Quiz→PIN→Home, procedure steps journaled |
-| US-ONB-04 | `US_ONB_04_PinMismatch_BlocksSeal` | Confirm ≠ PIN blocks seal; same Fresh-device fixture as CB-ACCOUNT-001 |
+| US-ONB-03 | `US_ONB_03_WrongQuizWords_BlocksAdvance` | **Executable** — passed on `CipherBank_API34` (Task 8); wrong backup-quiz words surface `BackupQuizErrorLabel` and block advance to SetPin |
+| US-ONB-04 | `US_ONB_04_PinMismatch_BlocksSeal` | **Executable** — passed on `CipherBank_API34` (Task 8); confirm ≠ PIN surfaces `SetPinErrorLabel` and blocks seal; same Fresh-device fixture as CB-ACCOUNT-001 |
 
 ## Backlog
 
@@ -54,10 +55,12 @@ E2E_RUN=1 TEST_PLATFORM=android ANDROID_APK_PATH=/path/to/app.apk \
 # Clean-install onboarding (DeviceState.FreshAsync clears app data before each Fact — no separate flag needed)
 E2E_RUN=1 TEST_PLATFORM=android ANDROID_APK_PATH=/path/to/app.apk \
   dotnet test CipherBank-app.E2ETests \
-  --filter "FullyQualifiedName~CreateAccount|FullyQualifiedName~PinMismatch"
+  --filter "FullyQualifiedName~CreateAccount|FullyQualifiedName~PinMismatch|FullyQualifiedName~WrongQuizWords"
 
 # Or via the harness (boots CB_AVD, builds/installs the APK, starts Appium):
 ./scripts/e2e-android.sh --story CB-ACCOUNT-001
+./scripts/e2e-android.sh --story US-ONB-03
+./scripts/e2e-android.sh --story US-ONB-04
 ```
 
 Appium server: `http://localhost:4723`.

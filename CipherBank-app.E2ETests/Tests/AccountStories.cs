@@ -71,6 +71,41 @@ public class AccountStories : IDisposable
         _fixture.Journal.Flush(StoryIds.CbAccount001);
     }
 
+    /// <summary>
+    /// Fills the BackupQuiz prompts with deliberately wrong words and asserts the app's own guard
+    /// (<c>BackupQuizViewModel.VerifyAsync</c>) surfaces <c>BackupQuizErrorLabel</c> and keeps the user on
+    /// BackupQuiz instead of advancing to SetPin. Negative counterpart to CB-ACCOUNT-001/US-ONB-01.
+    /// Use: High (Wave 0 onboarding-negative gate). Scope: this Fact's device session.
+    /// </summary>
+    [SkippableFact]
+    [Trait("Story", StoryIds.UsOnb03)]
+    public async Task US_ONB_03_WrongQuizWords_BlocksAdvance()
+    {
+        Skip.If(_fixture is null, "E2E_RUN not set");
+
+        var welcome = await FreshWelcomeOrFail(StoryIds.UsOnb03);
+
+        var keys = welcome.StartCreateAccount();
+        keys.WaitForPageLoad();
+        string mnemonic = keys.GetMnemonic();
+        _fixture!.Journal.SetMnemonic(mnemonic);
+
+        var quiz = keys.Continue();
+        quiz.WaitForPageLoad();
+        quiz.AnswerWrong().VerifyExpectingError();
+
+        quiz.IsErrorDisplayed().Should().BeTrue("US-ONB-03: wrong quiz words surface an error");
+        quiz.IsLoaded().Should().BeTrue("US-ONB-03: wrong quiz words must not advance past BackupQuiz to SetPin");
+        _fixture.Journal.RecordStep("device: confirmed wrong quiz words block advance to SetPin");
+        _fixture.Journal.Flush(StoryIds.UsOnb03);
+    }
+
+    /// <summary>
+    /// Enters a PIN that differs from its confirmation and asserts the app's own guard
+    /// (<c>SetPinViewModel.SealAsync</c>) surfaces <c>SetPinErrorLabel</c> instead of sealing the vault.
+    /// Negative counterpart to CB-ACCOUNT-001/US-ONB-01.
+    /// Use: High (Wave 0 onboarding-negative gate). Scope: this Fact's device session.
+    /// </summary>
     [SkippableFact]
     [Trait("Story", StoryIds.UsOnb04)]
     public async Task US_ONB_04_PinMismatch_BlocksSeal()
