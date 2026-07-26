@@ -105,6 +105,10 @@ public static class PaymentUri
         return FiatCurrencies.Contains(sym) ? $"cipherbank:receive/{sym}?address={Uri.EscapeDataString(addr)}" : addr;
     }
 
+    /// <summary>
+    /// Formats an account-model (non-UTXO) receive URI, appending the amount query param when present.
+    /// Use: High (every receive-address render for ETH/XMR). Scope: PaymentUri.MapSchemeUri.
+    /// </summary>
     private static string BuildAccountUri(string scheme, string amountParam, string addr, string? amount)
         => string.IsNullOrEmpty(amount)
             ? $"{scheme}:{addr}"

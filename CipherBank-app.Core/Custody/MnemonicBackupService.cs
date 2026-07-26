@@ -182,11 +182,19 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         }
     }
 
+    /// <summary>
+    /// Checks the recovery file header against the expected format/KDF/iteration-count constants.
+    /// Use: High (every recovery-file open, via ValidateDocument). Scope: MnemonicBackupService.ValidateDocument.
+    /// </summary>
     private static bool HasUnsupportedHeader(BackupDocument document)
         => document.DocumentFormat != Format
             || document.KeyDerivation != Kdf
             || document.IterationCount != Iterations;
 
+    /// <summary>
+    /// Checks whether any required ciphertext field (salt/nonce/tag/ciphertext) is blank.
+    /// Use: High (every recovery-file open, via ValidateDocument). Scope: MnemonicBackupService.ValidateDocument.
+    /// </summary>
     private static bool HasMissingCryptoFields(BackupDocument document)
         => string.IsNullOrWhiteSpace(document.SaltBase64)
             || string.IsNullOrWhiteSpace(document.NonceBase64)
