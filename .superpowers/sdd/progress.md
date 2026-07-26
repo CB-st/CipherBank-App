@@ -79,5 +79,5 @@ Updated `docs/tests/README.md`, `docs/tests/e2e-tests.md`, `docs/tests/STORY_ID_
 expanded filter, and `docs/tests/README.md`'s test-pyramid inventory to name `AccountStories` as the
 primary executable story suite (previously only `CoraShellSmokeTests + StoryBacklog`). Verified the
 filter expansion with a `bash -x` trace of `resolve_test_filter` (no emulator/dotnet available in this
-sandbox for a full harness re-run); see `.superpowers/sdd/task-11-report.md` follow-up section and the
-fix commit range `3c5fc3a..<this-fix-commit>` (filled in below once committed).
+sandbox for a full harness re-run); see `.superpowers/sdd/task-11-report.md` follow-up section.
+Fix commit range: `3c5fc3a..40805b3`.
