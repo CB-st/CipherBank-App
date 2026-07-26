@@ -1,0 +1,925 @@
+name: AI Context
+
+on:
+  workflow_call:
+    secrets:
+      # Optional PAT / fine-grained token with Contents: Read on sibling repos only.
+      # When omitted, sibling fetches use the caller github.token (typically public repos only).
+      sibling_fetch_token:
+        required: false
+    inputs:
+      pr_number:   { type: number, required: true }
+      pr_head_sha: { type: string, required: true }
+      pr_base_sha: { type: string, required: true }
+      pr_head_ref: { type: string, required: true }
+      pr_base_ref: { type: string, required: true }
+      pr_title:    { type: string, required: false, default: '' }
+      pr_author:   { type: string, required: false, default: '' }
+      # JSON array of sibling repos to snapshot at default-branch HEAD, e.g.
+      # '[{"repo":"org/other-service"}]'. Stored under bin/review/siblings/ with siblings.json manifest.
+      sibling_repositories_json:
+        type: string
+        required: false
+        default: '[]'
+    outputs:
+      head_sha_snapshotted:
+        description: "The PR head SHA this context snapshot was built against."
+        value: ${{ jobs.context.outputs.head_sha_snapshotted }}
+      artifact_name:
+        description: "The uploaded context artifact's name. Callers can grab it with actions/download-artifact@v5 by this name."
+        value: ${{ jobs.context.outputs.artifact_name }}
+      preflight_failed:
+        description: "'true' when the PR exceeded preflight size caps; the artifact will contain a preflight-failure.json sentinel in that case and downstream review/reply steps must branch on it."
+        value: ${{ jobs.context.outputs.preflight_failed }}
+
+# Local reusable context builder (formerly CipherBank.AI/ai-context.yml).
+# Runs in the **caller** repository via `workflow_call`. Uses the caller
+# `GITHUB_TOKEN` (and optional sibling_fetch_token for private siblings): no
+# Anthropic keys and no GitHub App key. Emits `cipherbank-ai-context-v2` —
+# PR snapshot + artifact listing only. Persona/task packs are still dispatched
+# to CipherBank.AI separately by the calling workflows.
+jobs:
+  context:
+    runs-on: ubuntu-22.04
+    # Cap for the whole context build. History + blame dominate on large PRs.
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      # actions:write is needed for the self-post insulation step below
+      # (cancel in-flight reply runs when a new context build starts).
+      # Nothing else in this workflow writes to the repo.
+      actions: write
+    outputs:
+      head_sha_snapshotted: ${{ inputs.pr_head_sha }}
+      artifact_name: ${{ format('ai-context-bundle-{0}-{1}', inputs.pr_number, inputs.pr_head_sha) }}
+      preflight_failed:     ${{ steps.snapshot_pr.outputs.preflight_failed }}
+    env:
+      PR_NUMBER:   ${{ inputs.pr_number }}
+      PR_HEAD_SHA: ${{ inputs.pr_head_sha }}
+      PR_BASE_SHA: ${{ inputs.pr_base_sha }}
+      PR_HEAD_REF: ${{ inputs.pr_head_ref }}
+      PR_BASE_REF: ${{ inputs.pr_base_ref }}
+      PR_TITLE:    ${{ inputs.pr_title }}
+      PR_AUTHOR:   ${{ inputs.pr_author }}
+      REVIEW_DIR:   bin/review
+      HISTORY_DIR:  bin/review/history
+      SIBLINGS_DIR: bin/review/siblings
+      COVERAGE_DIR: bin/review/coverage
+      MAX_HISTORY_COMMITS: "250"
+      # Sibling snapshot caps (per repo, on-disk after clone, .git removed).
+      CB_AI_CONTEXT_MAX_SIBLING_REPOS: "5"
+      CB_AI_CONTEXT_MAX_SIBLING_BYTES: "10485760"
+    steps:
+
+      ### 1. Cancel any in-flight reply runs for this PR's head branch ##########
+      # Push-triggered context builds cancel in-flight reply workflows on this
+      # branch (GitHub concurrency cannot express asymmetric review vs reply).
+      # ai-reply-trigger defers replies while context/review runs are in flight.
+      - name: Cancel in-flight replies
+        uses: actions/github-script@v8
+        continue-on-error: true
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const headRef = process.env.PR_HEAD_REF;
+
+            //GET /actions/runs accepts only one event per call, so we
+            //probe each reply-producing event kind separately and union
+            //the results. Also scope by workflow file to avoid cancelling
+            //anything unrelated. branch is the head_ref of the PR.
+            const eventKinds = ['issue_comment', 'pull_request_review_comment', 'pull_request_review'];
+            const workflows  = ['ai-reply-trigger.yml'];
+            const currentRunId = Number(context.runId);
+            const toCancel = new Map();
+
+            for (const workflow_id of workflows)
+            {
+              for (const event of eventKinds)
+              {
+                try
+                {
+                  const runs = await github.paginate(github.rest.actions.listWorkflowRuns,
+                  {
+                    owner, repo, workflow_id,
+                    event,
+                    branch: headRef,
+                    status: 'in_progress',
+                    per_page: 100,
+                  });
+                  for (const r of runs)
+                  {
+                    if (Number(r.id) === currentRunId)
+                    {
+                      core.info(`Not cancelling current reply trigger run ${r.id}.`);
+                      continue;
+                    }
+                    toCancel.set(r.id, r);
+                  }
+                }
+                catch (e)
+                {
+                  //Missing workflow or API flake: log and continue (non-fatal).
+                  core.warning(`listWorkflowRuns ${workflow_id}/${event}: ${e.message}`);
+                }
+              }
+            }
+
+            if (toCancel.size === 0)
+            {
+              core.info('No in-flight reply runs to cancel.');
+              return;
+            }
+            core.info(`Cancelling ${toCancel.size} in-flight reply run(s) for branch ${headRef}.`);
+            for (const [run_id, r] of toCancel)
+            {
+              try
+              {
+                await github.rest.actions.cancelWorkflowRun({ owner, repo, run_id });
+                core.info(`Cancelled run ${run_id} (${r.name}, event ${r.event})`);
+              }
+              catch (e)
+              {
+                core.warning(`Failed to cancel run ${run_id}: ${e.message}`);
+              }
+            }
+
+      ### 2. Checkout the PR head with full history ###############################
+      - name: Checkout PR head
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.PR_HEAD_SHA }}
+          fetch-depth: 0
+
+      ### 3. Configure git identity ##############################################
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "CipherBank-AI-Review"
+          git config --global user.email "noreply@github.com"
+
+      ### 4. Pull coverage artifact uploaded by the calling Build and Test job ###
+      # The policy tells Claude to downgrade/upgrade finding severity based on
+      # coverage. If the download silently fails, Claude reviews without that
+      # signal and the severity heuristic becomes guesswork — so we verify
+      # presence and emit a warning (not a failure) when the artifact didn't
+      # land. The reviewer persona then sees the explicit "coverage missing" signal in its
+      # prompt and can note it in the summary.
+      - name: Download Coverage Report
+        id: download_coverage
+        uses: actions/download-artifact@v5
+        continue-on-error: true
+        with:
+          name: coverage-report
+          path: ${{ env.COVERAGE_DIR }}
+
+      - name: Verify Coverage Report
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const COVERAGE_DIR = process.env.COVERAGE_DIR;
+            const report = `${COVERAGE_DIR}/cipherbank_coverage_report.txt`;
+            const present = fs.existsSync(report);
+            //Marker for COVERAGE_PRESENT in downstream workflows.
+            fs.mkdirSync(COVERAGE_DIR, { recursive: true });
+            fs.writeFileSync(`${COVERAGE_DIR}/.present`, present ? '1' : '0');
+            if (present)
+            {
+              core.info(`Coverage report present: ${report} (${fs.statSync(report).size} bytes)`);
+            }
+            else
+            {
+              core.warning(
+                'Coverage report artifact not available on this run; ' +
+                'The AI reviewer will run without the coverage signal.',
+              );
+            }
+
+      ### 6a. PR snapshot: meta, files, diffs, hunks, preflight ##################
+      # PR-fact snapshot only. Trusted round/surface/delta decisions run in
+      # ai-review.yml after the central persona App token is minted.
+      - name: Snapshot PR
+        id: snapshot_pr
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const REVIEW_DIR = process.env.REVIEW_DIR;
+            const baseSha    = process.env.PR_BASE_SHA;
+            const headSha    = process.env.PR_HEAD_SHA;
+            const prNumber   = Number(process.env.PR_NUMBER);
+
+            fs.mkdirSync(REVIEW_DIR, { recursive: true });
+            const git = async (args) =>
+            {
+              const r = await exec.getExecOutput('git', args, { silent: true, ignoreReturnCode: true });
+              return r.exitCode === 0 ? r.stdout : '';
+            };
+
+            //PR metadata. Small enough (well under 1 KB) that inlining into
+            //pr-meta.json as the first on-disk file is cheap; baseSha and
+            //headSha live here too so Claude does not have to inspect the
+            //host environment to learn them.
+            const pr = (await github.rest.pulls.get({ owner, repo, pull_number: prNumber })).data;
+            const prMeta =
+            {
+              repo:         { owner, name: repo },
+              number:       pr.number,
+              title:        pr.title,
+              body:         pr.body,
+              baseRefName:  pr.base.ref,
+              headRefName:  pr.head.ref,
+              baseSha,
+              headSha,
+              author:       { login: pr.user?.login ?? '' },
+              labels:       (pr.labels ?? []).map(l => ({ name: l.name })),
+              additions:    pr.additions,
+              deletions:    pr.deletions,
+              changedFiles: pr.changed_files,
+            };
+
+            const prFiles  = await github.paginate(github.rest.pulls.listFiles,
+            {
+              owner, repo, pull_number: prNumber, per_page: 100,
+            });
+            //Three-dot range (merge-base..headSha) matches GitHub's own PR
+            //diff semantics and `pulls.listFiles`. A two-dot range would surface
+            //every base-branch commit since divergence as phantom reversions
+            //whenever the PR branch is stale — the reviewer would then see drift
+            //the author never touched.
+            const prDiff   = await git(['diff', '--no-color',              `${baseSha}...${headSha}`]);
+            //Zero-context diff — only used here to extract precise hunk line
+            //ranges for step 6d's blame query; never shown to Claude.
+            const prU0Diff = await git(['diff', '--no-color', '--unified=0', `${baseSha}...${headSha}`]);
+
+            //Preflight size check. Bail before snapshotting siblings, building
+            //blame maps, or burning 5+ minutes of Claude time on a PR that is
+            //structurally too large to review in one pass. Thresholds are
+            //env-tunable; defaults ~230 files / 10000 LOC churn / 1152 KiB diff (token-budget headroom). Writes a sentinel `preflight-failure.json` that the
+            //review workflow's step 8 reads and hands to the existing
+            //postFailure machinery -- same persona palette, same metadata
+            //marker, same sticky comment.
+            //
+            //Preflight-too-large: policy outcome, not a failed job — set output,
+            //skip heavy steps, upload artifact; review posts the sticky comment.
+            const MAX_FILES      = Number(process.env.CB_AI_CONTEXT_MAX_FILES)      || 1000;
+            const MAX_CHURN      = Number(process.env.CB_AI_CONTEXT_MAX_CHURN)      || 10000;
+            const MAX_DIFF_BYTES = Number(process.env.CB_AI_CONTEXT_MAX_DIFF_BYTES) || 1179648;
+
+            const diffBytes = Buffer.byteLength(prDiff, 'utf8');
+            const churnPre  = (prMeta.additions ?? 0) + (prMeta.deletions ?? 0);
+            const filesPre  = prMeta.changedFiles ?? 0;
+
+            const exceeded = [];
+            if (filesPre  > MAX_FILES)      exceeded.push({ limit: 'changedFiles', value: filesPre,  cap: MAX_FILES });
+            if (churnPre  > MAX_CHURN)      exceeded.push({ limit: 'churnLoc',     value: churnPre,  cap: MAX_CHURN });
+            if (diffBytes > MAX_DIFF_BYTES) exceeded.push({ limit: 'diffBytes',    value: diffBytes, cap: MAX_DIFF_BYTES });
+
+            //Minimum snapshot we always write so the review workflow has
+            //something to show a debugger even when preflight fails. pr-meta
+            //is the most useful single file; the diff goes in too so the
+            //failure comment can link to the right range.
+            fs.writeFileSync(`${REVIEW_DIR}/pr-meta.json`,  JSON.stringify(prMeta));
+            fs.writeFileSync(`${REVIEW_DIR}/pr.diff`,       prDiff);
+            fs.writeFileSync(`${REVIEW_DIR}/pr.u0.diff`,    prU0Diff);
+
+            if (exceeded.length)
+            {
+              const parts = exceeded.map(e => `${e.limit}=${e.value} > ${e.cap}`).join(', ');
+              fs.writeFileSync(`${REVIEW_DIR}/preflight-failure.json`, JSON.stringify(
+              {
+                kind:     'too_large',
+                techLine:
+                  `PR exceeds preflight limits (${parts}). ` +
+                  `Split the PR into smaller pieces or raise the cap via ` +
+                  `CB_AI_CONTEXT_MAX_FILES / CB_AI_CONTEXT_MAX_CHURN / CB_AI_CONTEXT_MAX_DIFF_BYTES`,
+                extraMeta:
+                {
+                  exceeded,
+                  changedFiles: filesPre,
+                  churnLoc:     churnPre,
+                  diffBytes,
+                  limits:
+                  {
+                    maxFiles:     MAX_FILES,
+                    maxChurn:     MAX_CHURN,
+                    maxDiffBytes: MAX_DIFF_BYTES,
+                  },
+                },
+              }));
+              core.setOutput('preflight_failed', 'true');
+              core.warning(
+                `Preflight: PR too large to review ` +
+                `(${exceeded.map(e => e.limit).join(', ')}). ` +
+                `Sentinel written; review workflow will post the failure comment.`,
+              );
+              return;
+            }
+            core.setOutput('preflight_failed', 'false');
+
+            //Extract per-file hunk ranges from the zero-context diff. Keyed by
+            //new-side path so renames resolve to the post-rename filename,
+            //matching what step 6e looks up when annotating pr.diff.
+            //
+            //Each hunk entry carries BOTH sides:
+            //  - `oldStart` / `oldCount`: base-side range. Step 6b queries
+            //    `blame(path: oldPath)` on base and matches blame ranges
+            //    against this window. Internal-only; not what Claude uses
+            //    for anchoring comments.
+            //  - `newStart` / `newCount`: head-side range. This is what the
+            //    GitHub review-comment API expects when anchoring inline
+            //    comments on added/modified lines, so it's what Claude must
+            //    validate `findings[].line` against.
+            //Pure-addition hunks have `oldCount == 0` (no base lines exist);
+            //pure-deletion hunks have `newCount == 0`. We normalise either
+            //zero to 1 so downstream range math (start + count - 1) stays
+            //sane -- for blame, that points at the line before the insert;
+            //for anchoring, Claude should not be producing findings against
+            //a pure-deletion hunk anyway.
+            const hunksByPath = {};
+            {
+              let curPath = null;
+              for (const line of prU0Diff.split('\n'))
+              {
+                if      (line.startsWith('diff --git '))   curPath = null;
+                else if (line.startsWith('+++ /dev/null')) curPath = null;
+                else if (line.startsWith('+++ b/'))        curPath = line.slice(6);
+                else if (line.startsWith('@@ ') && curPath)
+                {
+                  const m = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))?/);
+                  if (!m) continue;
+                  const oldStart = parseInt(m[1], 10);
+                  let   oldCount = m[2] === undefined ? 1 : parseInt(m[2], 10);
+                  const newStart = parseInt(m[3], 10);
+                  let   newCount = m[4] === undefined ? 1 : parseInt(m[4], 10);
+                  if (oldCount === 0) oldCount = 1;
+                  if (newCount === 0) newCount = 1;
+                  (hunksByPath[curPath] ??= []).push({ oldStart, oldCount, newStart, newCount });
+                }
+              }
+            }
+
+            //pr-files.json is written with patches stripped -- the same
+            //byte-level info is already in pr.diff / pr-annotated.diff, so
+            //inlining per-file patches here is pure bloat for Claude's
+            //on-demand reads.
+            const prFilesStripped = prFiles.map(({ patch, ...rest }) => rest);
+
+            fs.writeFileSync(`${REVIEW_DIR}/pr-files.json`, JSON.stringify(prFilesStripped));
+            fs.writeFileSync(`${REVIEW_DIR}/pr-hunks.json`, JSON.stringify(hunksByPath));
+
+            core.info(`Snapshot: ${filesPre} files, ${churnPre} churn LOC, ${diffBytes} diff bytes`);
+
+      ### 6b. Sibling repos (optional caller-configured snapshots) ################
+      - name: Snapshot sibling repositories
+        if: steps.snapshot_pr.outputs.preflight_failed != 'true'
+        env:
+          SIBLING_REPOS_JSON: ${{ inputs.sibling_repositories_json }}
+          SIBLING_TOKEN: ${{ secrets.sibling_fetch_token != '' && secrets.sibling_fetch_token || github.token }}
+          GIT_TERMINAL_PROMPT: "0"
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.sibling_fetch_token != '' && secrets.sibling_fetch_token || github.token }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { spawnSync } = require('child_process');
+            const REVIEW_DIR = process.env.REVIEW_DIR;
+            const SIBLINGS_DIR = process.env.SIBLINGS_DIR;
+            const token = process.env.SIBLING_TOKEN || '';
+            if (!token) {
+              core.setFailed('Sibling snapshot token missing');
+              return;
+            }
+            const raw = (process.env.SIBLING_REPOS_JSON || '[]').trim();
+            let specs;
+            try {
+              specs = JSON.parse(raw);
+            } catch (e) {
+              core.setFailed(`Invalid sibling_repositories_json: ${e.message}`);
+              return;
+            }
+            if (!Array.isArray(specs)) {
+              core.setFailed('sibling_repositories_json must be a JSON array');
+              return;
+            }
+            const { owner, repo } = context.repo;
+            const callerFull = `${owner}/${repo}`.toLowerCase();
+            const MAX_REPOS = Number(process.env.CB_AI_CONTEXT_MAX_SIBLING_REPOS) || 5;
+            const MAX_BYTES = Number(process.env.CB_AI_CONTEXT_MAX_SIBLING_BYTES) || 10485760;
+            fs.mkdirSync(SIBLINGS_DIR, { recursive: true });
+            if (specs.length === 0) {
+              fs.writeFileSync(path.join(REVIEW_DIR, 'siblings.json'), '[]\n');
+              core.info('No sibling repositories configured; wrote empty siblings.json');
+              return;
+            }
+            const parseFullName = (s) => {
+              const t = String(s || '').trim();
+              const i = t.indexOf('/');
+              if (i <= 0 || i === t.length - 1) return null;
+              const o = t.slice(0, i);
+              const r = t.slice(i + 1);
+              if (!o || !r || o.includes('/') || r.includes('/')) return null;
+              return { owner: o, repo: r, full: `${o}/${r}` };
+            };
+            const seen = new Set();
+            const normalized = [];
+            for (const ent of specs) {
+              if (normalized.length >= MAX_REPOS) break;
+              const repoSpec = typeof ent === 'string' ? { repo: ent } : ent;
+              const fullName = parseFullName(repoSpec?.repo);
+              if (!fullName) {
+                core.warning(`Skipping invalid sibling entry: ${JSON.stringify(ent)}`);
+                continue;
+              }
+              const key = fullName.full.toLowerCase();
+              if (key === callerFull) {
+                core.warning(`Skipping sibling same as caller repo: ${fullName.full}`);
+                continue;
+              }
+              if (seen.has(key)) continue;
+              seen.add(key);
+              normalized.push({
+                owner: fullName.owner,
+                repo: fullName.repo,
+                full: fullName.full,
+                ref: typeof repoSpec.ref === 'string' && repoSpec.ref.trim() ? repoSpec.ref.trim() : null,
+              });
+            }
+            if (normalized.length === 0) {
+              fs.writeFileSync(path.join(REVIEW_DIR, 'siblings.json'), '[]\n');
+              core.info('No valid sibling repositories after validation; wrote empty siblings.json');
+              return;
+            }
+            const manifest = [];
+            const gitCfg = [`http.extraheader=AUTHORIZATION: bearer ${token}`];
+            const duBytes = (abs) => {
+              const du = spawnSync('du', ['-sb', abs], { encoding: 'utf8' });
+              if (du.status !== 0 || !du.stdout) return null;
+              const n = parseInt(String(du.stdout).split(/\s+/)[0], 10);
+              return Number.isFinite(n) ? n : null;
+            };
+            const rmrf = (abs) => {
+              try {
+                spawnSync('rm', ['-rf', abs]);
+              } catch { /* noop */ }
+            };
+            const gitQuiet = (args, cwd) =>
+              spawnSync('git', args, { cwd, encoding: 'utf8', env: process.env });
+            for (const spec of normalized) {
+              const destName = `${spec.owner.replace(/[^\w.-]/g, '_')}__${spec.repo.replace(/[^\w.-]/g, '_')}`;
+              const destAbs = path.join(SIBLINGS_DIR, destName);
+              const destRelPosix = `${path.relative(REVIEW_DIR, destAbs).split(path.sep).join('/')}`;
+              try {
+                const meta = await github.rest.repos.get({ owner: spec.owner, repo: spec.repo });
+                const defaultBranch = meta.data.default_branch;
+                const refLabel = spec.ref || defaultBranch;
+                const { data: commitData } = await github.rest.repos.getCommit({
+                  owner: spec.owner,
+                  repo: spec.repo,
+                  ref: refLabel,
+                });
+                const sha = commitData.sha;
+                rmrf(destAbs);
+                const cloneUrl = `https://github.com/${spec.owner}/${spec.repo}.git`;
+                let init = gitQuiet(['init', destAbs]);
+                if (init.status !== 0) {
+                  manifest.push({
+                    repo: spec.full,
+                    error: `git init failed: ${(init.stderr || '').trim().slice(0, 400)}`,
+                  });
+                  continue;
+                }
+                let remote = gitQuiet(['remote', 'add', 'origin', cloneUrl], destAbs);
+                if (remote.status !== 0) {
+                  rmrf(destAbs);
+                  manifest.push({
+                    repo: spec.full,
+                    error: `git remote add failed: ${(remote.stderr || '').trim().slice(0, 400)}`,
+                  });
+                  continue;
+                }
+                const fetch = gitQuiet([
+                  '-c', gitCfg[0], 'fetch', '--depth', '1', '--no-tags',
+                  'origin', sha], destAbs);
+                if (fetch.status !== 0) {
+                  rmrf(destAbs);
+                  manifest.push({
+                    repo: spec.full,
+                    error: `git fetch failed: ${(fetch.stderr || fetch.stdout || '').trim().slice(0, 400)}`,
+                  });
+                  continue;
+                }
+                const chk = gitQuiet(['checkout', '--quiet', 'FETCH_HEAD'], destAbs);
+                if (chk.status !== 0) {
+                  rmrf(destAbs);
+                  manifest.push({
+                    repo: spec.full,
+                    error: `git checkout failed: ${(chk.stderr || '').trim().slice(0, 400)}`,
+                  });
+                  continue;
+                }
+                rmrf(path.join(destAbs, '.git'));
+                const nbytes = duBytes(destAbs);
+                if (nbytes !== null && nbytes > MAX_BYTES) {
+                  rmrf(destAbs);
+                  manifest.push({
+                    repo: spec.full,
+                    error: `Sibling snapshot exceeds size cap (${nbytes} > ${MAX_BYTES} bytes); skipped`,
+                  });
+                  continue;
+                }
+                manifest.push({
+                  repo: spec.full,
+                  ref: refLabel,
+                  sha,
+                  path: destRelPosix,
+                });
+                core.info(`Sibling snapshot OK: ${spec.full} @ ${(sha || '').slice(0, 7)} (${nbytes ?? '?' } bytes)`);
+              } catch (e) {
+                rmrf(destAbs);
+                manifest.push({ repo: spec.full, error: e.message ? String(e.message).slice(0, 400) : 'fetch failed' });
+              }
+            }
+            fs.writeFileSync(path.join(REVIEW_DIR, 'siblings.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+            core.info(`Wrote siblings.json (${manifest.length} entr${manifest.length === 1 ? 'y' : 'ies'})`);
+
+      ### 6c. Per-commit historical diffs ########################################
+      # History is split into a lightweight index (sha, parent, author, subject)
+      # and one diff file per commit. The index is cheap to read; individual
+      # commit diffs are fetched on demand by Claude. This keeps a PR with
+      # fifty commits from costing fifty commit-diffs worth of input tokens
+      # on the first read, which is what a single `history.json` did.
+      - name: Build Commit History
+        if: steps.snapshot_pr.outputs.preflight_failed != 'true'
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const REVIEW_DIR  = process.env.REVIEW_DIR;
+            const HISTORY_DIR = process.env.HISTORY_DIR;
+            const prNumber    = Number(process.env.PR_NUMBER);
+            const maxHistory  = Number(process.env.MAX_HISTORY_COMMITS);
+            const EMPTY_TREE  = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+
+            fs.mkdirSync(HISTORY_DIR, { recursive: true });
+
+            const git = async (args) =>
+            {
+              const r = await exec.getExecOutput('git', args, { silent: true, ignoreReturnCode: true });
+              return r.exitCode === 0 ? r.stdout : '';
+            };
+
+            const allCommits = await github.paginate(github.rest.pulls.listCommits,
+            {
+              owner, repo, pull_number: prNumber, per_page: 100,
+            });
+
+            const index = [];
+            for (const c of allCommits.slice(0, maxHistory))
+            {
+              const sha     = c.sha;
+              const parent  = (await git(['rev-parse', `${sha}^`])).trim() || EMPTY_TREE;
+              const author  = (await git(['log', '-1', '--format=%an <%ae>', sha])).trim();
+              const subject = (await git(['log', '-1', '--format=%s',        sha])).trim();
+              const diff    = await git(['diff', '--no-color', `${parent}..${sha}`]);
+              //Diff goes to its own file under HISTORY_DIR/<sha>.diff.
+              //Name by full sha (no short-sha ambiguity); Claude can
+              //look up a specific commit by the sha from the index.
+              fs.writeFileSync(`${HISTORY_DIR}/${sha}.diff`, diff);
+              index.push({ sha, parent, author, subject, diffPath: `${HISTORY_DIR}/${sha}.diff` });
+            }
+            fs.writeFileSync(`${HISTORY_DIR}/index.json`, JSON.stringify(index));
+            core.info(`History: ${index.length} commits indexed into ${HISTORY_DIR}/`);
+
+      ### 6d. Compute blame map for diff hunks ###################################
+      - name: Compute Blame Map
+        if: steps.snapshot_pr.outputs.preflight_failed != 'true'
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const REVIEW_DIR = process.env.REVIEW_DIR;
+            const baseSha    = process.env.PR_BASE_SHA;
+
+            //File classification (new/deleted/renamed/modified) from REST,
+            //hunk ranges pre-extracted by step 6a. For renames, query blame
+            //against the old path; key the result by the new path so step 6e
+            //can look it up when walking the post-rename diff.
+            const prFiles     = JSON.parse(fs.readFileSync(`${REVIEW_DIR}/pr-files.json`, 'utf8'));
+            const hunksByPath = JSON.parse(fs.readFileSync(`${REVIEW_DIR}/pr-hunks.json`, 'utf8'));
+            const files = prFiles.map(f => (
+            {
+              oldPath:   f.previous_filename ?? (f.status === 'added' ? null : f.filename),
+              newPath:   f.status === 'removed' ? null : f.filename,
+              isNew:     f.status === 'added',
+              isDeleted: f.status === 'removed',
+              hunks:     hunksByPath[f.filename] ?? [],
+            }));
+
+            const blameByPath = {};
+
+            //New-file hunks: blame is undefined by definition; mark and move
+            //on. Blame is always keyed on BASE-side line numbers, so we read
+            //`oldStart` / `oldCount` from each hunk (see step 6a for the
+            //dual-side schema). For added-file hunks there is no base, but
+            //we still carry the same shape so step 6e's annotator can key
+            //its overlap test uniformly.
+            for (const f of files)
+            {
+              const reportPath = f.newPath ?? f.oldPath;
+              if (!reportPath || f.isDeleted) continue;
+              if (f.isNew || !f.oldPath)
+              {
+                blameByPath[reportPath] = f.hunks.map(h => (
+                {
+                  start:   h.oldStart,
+                  end:     h.oldStart + h.oldCount - 1,
+                  authors: [],
+                  note:    'new_file_no_base_blame',
+                }));
+              }
+            }
+
+            //One GraphQL query covers every modified file via aliased fields,
+            //so the whole PR's blame data fetches in a single round-trip.
+            const blameable = files.filter(f => !f.isDeleted && f.oldPath && !f.isNew && f.hunks.length);
+            if (blameable.length)
+            {
+              const fragments = blameable.map((f, i) => `
+                f${i}: object(expression: $ref) {
+                  ... on Commit {
+                    blame(path: ${JSON.stringify(f.oldPath)}) {
+                      ranges { startingLine endingLine commit { author { user { login } name } } }
+                    }
+                  }
+                }`).join('');
+              const query = `
+                query($owner:String!, $repo:String!, $ref:String!) {
+                  repository(owner:$owner, name:$repo) { ${fragments} }
+                }`;
+
+              let data = { repository: {} };
+              try
+              {
+                data = await github.graphql(query, { owner, repo, ref: baseSha });
+              }
+              catch (e)
+              {
+                core.warning(`GraphQL blame query failed: ${e.message}`);
+              }
+
+              for (let i = 0; i < blameable.length; i++)
+              {
+                const f          = blameable[i];
+                const reportPath = f.newPath ?? f.oldPath;
+                const ranges     = data.repository?.[`f${i}`]?.blame?.ranges ?? [];
+
+                blameByPath[reportPath] = f.hunks.map(h =>
+                {
+                  const start = h.oldStart;
+                  const end   = h.oldStart + h.oldCount - 1;
+                  const seen    = new Set();
+                  const authors = [];
+                  for (const r of ranges)
+                  {
+                    if (r.endingLine < start || r.startingLine > end) continue;
+                    const a     = r.commit?.author;
+                    const login = a?.user?.login ?? '';
+                    const name  = a?.name        ?? '';
+                    if (!login && !name) continue;
+                    const key = `${login}|${name}`;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    authors.push({ login, name });
+                  }
+                  return { start, end, authors, note: ranges.length ? null : 'blame_unavailable' };
+                });
+              }
+            }
+
+            fs.writeFileSync(`${REVIEW_DIR}/blame.json`, JSON.stringify(blameByPath));
+            const fileCount = Object.keys(blameByPath).length;
+            const subCount  = Object.values(blameByPath).reduce((n, a) => n + a.length, 0);
+            core.info(`Blame map: ${fileCount} files, ${subCount} sub-hunks (GraphQL)`);
+
+      ### 6e. Annotate diff with blame map #######################################
+      - name: Annotate Diff with Blame Map
+        if: steps.snapshot_pr.outputs.preflight_failed != 'true'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const REVIEW_DIR  = process.env.REVIEW_DIR;
+            const blameByPath = JSON.parse(fs.readFileSync(`${REVIEW_DIR}/blame.json`, 'utf8'));
+
+            const NOTE_LABEL =
+            {
+              new_file_no_base_blame: '(new file, no base blame)',
+              blame_unavailable:      '(blame unavailable)',
+            };
+            const renderAuthors = (authors) =>
+            {
+              const labels = authors
+                .map(a => a.login ? `@${a.login}` : a.name)
+                .filter(Boolean);
+              return [...new Set(labels)].sort((x, y) => x.localeCompare(y)).join(', ');
+            };
+
+            //Inject `# blame[<old-start>-<old-end>]: @author1, @author2` ahead
+            //of each `@@` hunk header. Track curPath from BOTH `--- a/` and
+            //`+++ b/` so deleted-file hunks still resolve to the old path.
+            const prDiff = fs.readFileSync(`${REVIEW_DIR}/pr.diff`, 'utf8');
+            const out = [];
+            let curPath   = null;
+            let annotated = 0;
+            for (const line of prDiff.split('\n'))
+            {
+              if      (line.startsWith('diff --git ')) curPath = null;
+              else if (line.startsWith('--- a/'))      curPath = line.slice(6);
+              else if (line.startsWith('+++ b/'))      curPath = line.slice(6);
+
+              if (line.startsWith('@@ ') && curPath && curPath !== '/dev/null')
+              {
+                const m = line.match(/^@@ -(\d+)(?:,(\d+))?/);
+                if (m)
+                {
+                  const hStart = parseInt(m[1], 10);
+                  let hCount   = m[2] === undefined ? 1 : parseInt(m[2], 10);
+                  if (hCount === 0) hCount = 1;
+                  const hEnd   = hStart + hCount - 1;
+
+                  //One context-3 hunk can span multiple unified=0 sub-hunks;
+                  //union the authors of every overlapping range.
+                  const overlapping = (blameByPath[curPath] ?? [])
+                    .filter(b => !(b.end < hStart || b.start > hEnd));
+
+                  if (overlapping.length)
+                  {
+                    const seen   = new Set();
+                    const merged = [];
+                    for (const b of overlapping)
+                    {
+                      for (const a of b.authors)
+                      {
+                        const key = `${a.login}|${a.name}`;
+                        if (seen.has(key)) continue;
+                        seen.add(key);
+                        merged.push(a);
+                      }
+                    }
+                    let label = renderAuthors(merged);
+                    if (!label)
+                    {
+                      const note = overlapping.map(b => b.note).find(Boolean);
+                      if (note && NOTE_LABEL[note]) label = NOTE_LABEL[note];
+                    }
+                    if (label)
+                    {
+                      out.push(`# blame[${hStart}-${hEnd}]: ${label}`);
+                      annotated++;
+                    }
+                  }
+                }
+              }
+
+              out.push(line);
+            }
+            fs.writeFileSync(`${REVIEW_DIR}/pr-annotated.diff`, out.join('\n'));
+            core.info(`Annotated diff: ${out.length} lines, ${annotated} hunk annotations`);
+
+      ### 7. Write context-env.json snapshot #####################################
+      # Small machine-readable summary of the snapshot so consumers (review
+      # workflow, reply workflow) can make decisions without re-deriving
+      # facts from the artifact's contents. Deliberately tiny -- anything
+      # bigger than a kilobyte belongs in its own file.
+      - name: Write context env
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const REVIEW_DIR   = process.env.REVIEW_DIR;
+            const COVERAGE_DIR = process.env.COVERAGE_DIR;
+            fs.mkdirSync(REVIEW_DIR, { recursive: true });
+
+            //Coverage presence marker was written by step 5 when it ran.
+            //Treat missing marker as "not present" rather than erroring --
+            //this step runs on always() so we reach it even if step 5
+            //skipped for some reason.
+            let coveragePresent = '0';
+            try { coveragePresent = fs.readFileSync(`${COVERAGE_DIR}/.present`, 'utf8').trim(); }
+            catch { /* coverage step didn't run or didn't record */ }
+
+            let sibling_repos = [];
+            try {
+              const raw = fs.readFileSync(`${REVIEW_DIR}/siblings.json`, 'utf8');
+              const parsed = JSON.parse(raw);
+              sibling_repos = Array.isArray(parsed) ? parsed : [];
+            }
+            catch { /* preflight skipped siblings or siblings.json absent */ }
+
+            const env =
+            {
+              pr_number:          Number(process.env.PR_NUMBER),
+              pr_head_sha:        process.env.PR_HEAD_SHA,
+              pr_base_sha:        process.env.PR_BASE_SHA,
+              pr_head_ref:        process.env.PR_HEAD_REF,
+              pr_base_ref:        process.env.PR_BASE_REF,
+              pr_title:           process.env.PR_TITLE,
+              pr_author:          process.env.PR_AUTHOR,
+              sibling_repos,
+              coverage_present:   coveragePresent === '1',
+              snapshotted_at_iso: new Date().toISOString(),
+              run_id:             process.env.GITHUB_RUN_ID,
+              run_number:         Number(process.env.GITHUB_RUN_NUMBER) || null,
+            };
+            fs.writeFileSync(`${REVIEW_DIR}/context-env.json`, JSON.stringify(env));
+            core.info(`Wrote context-env.json: head=${env.pr_head_sha.slice(0, 8)} coverage=${env.coverage_present}`);
+
+      ### 8. Self-describing bundle manifest ######################################
+      - name: Write context-bundle.json
+        if: always() && !cancelled()
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { owner, repo } = context.repo;
+            const REVIEW_DIR = process.env.REVIEW_DIR;
+            fs.mkdirSync(REVIEW_DIR, { recursive: true });
+            const artifactName = `ai-context-bundle-${process.env.PR_NUMBER}-${process.env.PR_HEAD_SHA}`;
+            const walkFiles = (dir, baseRel = '') =>
+            {
+              const out = [];
+              if (!fs.existsSync(dir)) return out;
+              for (const ent of fs.readdirSync(dir, { withFileTypes: true }))
+              {
+                const rel = path.join(baseRel, ent.name);
+                const abs = path.join(dir, ent.name);
+                if (ent.isDirectory()) out.push(...walkFiles(abs, rel));
+                else out.push(rel.split(path.sep).join('/'));
+              }
+              return out.sort();
+            };
+            const repoInfo = (await github.rest.repos.get({ owner, repo })).data;
+            const visRaw = repoInfo.visibility || (repoInfo.private ? 'private' : 'public');
+            const repoIsPrivate = visRaw !== 'public';
+            const manifest =
+            {
+              schemaVersion: 2,
+              bundleKind: 'cipherbank-ai-context-v2',
+              generatedAtIso: new Date().toISOString(),
+              source:
+              {
+                repository:
+                {
+                  owner,
+                  name: repo,
+                  full_name: `${owner}/${repo}`,
+                  visibility: visRaw,
+                },
+                workflow_run_id: Number(process.env.GITHUB_RUN_ID) || context.runId,
+                workflow_run_attempt: Number(process.env.GITHUB_RUN_ATTEMPT) || 1,
+              },
+              pull_request:
+              {
+                number: Number(process.env.PR_NUMBER),
+                title: process.env.PR_TITLE || '',
+                author_login: process.env.PR_AUTHOR || '',
+                base: { ref: process.env.PR_BASE_REF, sha: process.env.PR_BASE_SHA },
+                head: { ref: process.env.PR_HEAD_REF, sha: process.env.PR_HEAD_SHA },
+              },
+              artifact:
+              {
+                name: artifactName,
+                content_paths: walkFiles(REVIEW_DIR),
+              },
+              privacy:
+              {
+                repository_is_private: repoIsPrivate,
+                bundle_includes_private_material: repoIsPrivate,
+              },
+            };
+            fs.writeFileSync(`${REVIEW_DIR}/context-bundle.json`, JSON.stringify(manifest, null, 2));
+            core.info(`Wrote context-bundle.json (${manifest.artifact.content_paths.length} paths)`);
+
+      ### 9. Upload context artifact #############################################
+      - name: Upload Context Artifact
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ format('ai-context-bundle-{0}-{1}', inputs.pr_number, inputs.pr_head_sha) }}
+          path: ${{ env.REVIEW_DIR }}/**
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
