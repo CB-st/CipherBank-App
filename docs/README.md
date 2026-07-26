@@ -46,5 +46,6 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 | [tests/README.md](tests/README.md) | Test strategy overview |
 | [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
-| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end tests |
+| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end Appium (Shell) |
+| [tests/STORY_ID_MAP.md](tests/STORY_ID_MAP.md) | CB-* / US-* story map — Appium owns design-spec at Expo parity |
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |

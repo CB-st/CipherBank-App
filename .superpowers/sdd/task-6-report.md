@@ -1,30 +1,45 @@
-# Task 6 report — P2 hydrate and P1 chart write-through
+# Task 6 report: StoryProcedures for CB-ACCOUNT-* + catalog update
 
-**Status:** DONE_WITH_CONCERNS  
-**Implementation commit:** `4863ac3` (`feat: hydrate rates from SQLite and persist chart OHLC`)
-**Review fix commit:** `77e948d` (`fix: hydrate rates when portfolio loading fails`)
+## Status
 
-## Delivered
+Complete.
 
-- `CipherBank-app/ViewModels/HomeViewModel.cs`
-  - Enqueues P2 `p2-rates` after every Home load attempt, including offline or failed portfolio requests.
-  - Loads local wallets before the remote portfolio request so the failed-request path supplies the best available held symbols; existing in-memory holdings are retained.
-  - Intersects held symbols with enabled currencies and calls the rate bootstrap work through `ISyncJobQueue`.
-  - Enqueues P1 `p1-ohlc-{symbol}` after every history response, including range changes, to persist its points with `IMarketRepository`.
-- `CipherBank-app.Core/Persist/MarketBootstrap.cs`
-  - Reads SQLite rates, skips refresh only when the requested cache is complete and fresh for 15 minutes, otherwise gets one-unit USD inverse quotes and upserts them.
-  - Maps a `PublicQuote` to `RateRow` without logging sensitive data.
-- `CipherBank-app.Tests/Persist/MarketBootstrapTests.cs`
-  - Covers the `PublicQuote` to `RateRow` mapping.
+## What changed
+
+- **`Stories/StoryProcedures.cs`** (new) — `Account001Steps` / `Account002Steps`, each an ordered
+  `IReadOnlyDictionary<string, string>` of step id → description, imported verbatim from the Playwright
+  scaffold at `/tmp/cb-pw-scaffold/cipherbank-playwright-scaffold/` (`docs/USER_STORIES.md` procedure
+  lists, cross-checked against `artifacts/story-manifest.json` `steps[].id`/`steps[].action`). Data only —
+  no Playwright runner ported; ids match the brief exactly (`open`, `complete-form`, `submit`, `backup`,
+  `complete` for 001; `open`, `enter`, `submit`, `restore`, `complete` for 002).
+- **`Stories/StoryCatalog.cs`** — extended `StoryEntry` with an optional trailing
+  `DeviceProfile? RequiredProfile` field (from `Support/DeviceState.cs`'s existing `Fresh`/`Sealed` enum;
+  `null` default keeps every other positional `new(...)` entry compiling unchanged). Tagged both
+  CB-ACCOUNT-001 and CB-ACCOUNT-002 with `DeviceProfile.Fresh` (both start signed-out). Left
+  **CB-ACCOUNT-001 status at `Partial`** (not `Executable` — Task 7's emulator canary is the promotion
+  gate) and refreshed its surface note to mention the imported procedure + pending canary; CB-ACCOUNT-002
+  stays `Backlog` with a note that its procedure is imported but page objects aren't wired.
 
 ## Verification
 
-- Focused: `dotnet test CipherBank-app.Tests --filter FullyQualifiedName~MarketBootstrapTests -p:CollectCoverage=false` — 1/1 passed.
-- Full: `dotnet test CipherBank-app.Tests -p:CollectCoverage=false` — 243/243 passed.
-- IDE diagnostics: no errors in changed files.
-- No targeted `HomeViewModel` unit test was added: the unit-test project references Core and ChallengePass only, while this MAUI view model is not part of that target and would require a UI-specific harness.
+```
+export PATH="$HOME/.local/dotnet:$PATH"
+dotnet build CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj -v q   # 0 errors
+dotnet test CipherBank-app.E2ETests --nologo                              # Failed: 0, Passed: 0, Skipped: 12, Total: 12
+```
+
+No `E2E_RUN` set, so the 12 pre-existing Facts/Theory all report `[SKIP]` (unchanged from Task 5) — this
+task added no new Facts, only static catalog/data.
+
+## Commits
+
+- `2b59bc4` — `feat(e2e): import CB-ACCOUNT procedures into StoryProcedures`
 
 ## Concerns
 
-- Android app build could not run in this environment because a Java SDK is unavailable (`XA5300`), after supplying the installed Android SDK path. Unit tests compile the Core projects but do not compile the MAUI `HomeViewModel` target.
-- Existing NU1608 dependency-version warnings remain during test/build restore.
+- None blocking. `StoryProcedures` isn't consumed by any Fact yet (Task 7 will wire `AccountStories` steps
+  against these ids); until then it's inert catalog data, so there's no runtime signal to verify beyond
+  build+test green.
+- `RequiredProfile` is currently only populated for the two CB-ACCOUNT-* entries; other catalog rows
+  (`CbFund001`, `CbPay003`, etc.) are left `null` rather than backfilled, since that's outside this task's
+  file scope (`StoryCatalog.cs`/`StoryProcedures.cs` only, per brief).

@@ -7,7 +7,7 @@ CipherBank-app has three test projects following a test pyramid: unit tests (fas
 ```mermaid
 flowchart TB
     subgraph e2e [E2E Tests]
-        E2E[CriticalUserJourneyTests]
+        E2E[CoraShellSmokeTests + StoryBacklog]
     end
     subgraph integration [Integration Tests]
         API[ApiIntegrationTests]
@@ -27,7 +27,9 @@ flowchart TB
 |---------|-----------|------------|---------|
 | CipherBank-app.Tests | xUnit | FluentAssertions | Moq |
 | CipherBank-app.IntegrationTests | xUnit | FluentAssertions | WireMock |
-| CipherBank-app.E2ETests | xUnit | FluentAssertions | Appium |
+| CipherBank-app.E2ETests | xUnit | FluentAssertions | Appium (design-spec Shell) |
+
+Expo Playwright (`design_handoff_cipherbank/starter`) is the **contract lab** until Shell parity; then Appium owns full `CB-*` / `US-*` coverage — see [STORY_ID_MAP.md](STORY_ID_MAP.md).
 
 ## Running Tests
 
@@ -41,8 +43,15 @@ dotnet test CipherBank-app.Tests
 # Integration tests only
 dotnet test CipherBank-app.IntegrationTests
 
-# E2E tests (requires Appium server + device/emulator)
-TEST_PLATFORM=android ANDROID_APK_PATH=path/to/app.apk dotnet test CipherBank-app.E2ETests
+# E2E inventory (no device)
+dotnet test CipherBank-app.E2ETests --list-tests
+
+# E2E smoke (requires Appium + device/emulator)
+E2E_RUN=1 TEST_PLATFORM=android ANDROID_APK_PATH=path/to/app.apk \
+  dotnet test CipherBank-app.E2ETests --filter "FullyQualifiedName~CoraShellSmokeTests"
+
+# Or via the Android harness (boots the AVD, builds/installs the APK, starts Appium):
+./scripts/e2e-android.sh --wave account
 ```
 
 ## Coverage
@@ -56,3 +65,4 @@ TEST_PLATFORM=android ANDROID_APK_PATH=path/to/app.apk dotnet test CipherBank-ap
 - [unit-tests.md](unit-tests.md)
 - [integration-tests.md](integration-tests.md)
 - [e2e-tests.md](e2e-tests.md)
+- [STORY_ID_MAP.md](STORY_ID_MAP.md) — CB-* / US-* ↔ Appium

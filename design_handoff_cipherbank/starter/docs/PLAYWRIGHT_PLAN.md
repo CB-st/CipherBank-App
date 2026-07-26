@@ -192,17 +192,25 @@ Before US-ONB-*: clear site data / IndexedDB / localStorage for the origin (web 
 
 ## Relationship to MAUI Appium
 
-Existing smoke (`CoraShellSmokeTests`): Unlock → Home → Convert → Receive (and related).
+**At Expo parity, MAUI Appium owns the full design-spec E2E** (`docs/tests/STORY_ID_MAP.md` in CipherBank-App). This Playwright suite stays the Expo **contract lab** until then — same `CB-*` / `US-*` IDs, not a second product truth.
+
+Existing smoke (`CoraShellSmokeTests`): Unlock → Home → Convert → Receive (and related), gated by `E2E_RUN=1`.
 
 | Story ID | Playwright (Expo web) | Appium (MAUI) |
 |----------|----------------------|---------------|
-| US-LCK-01 | Yes | Yes (exists) |
-| US-CNV-01 | Yes | Yes (exists) |
-| US-RCV-01 | Yes | Yes (exists) |
-| US-ONB-01 | Yes (web clean) | Add when onboarding parity lands |
-| US-POS-01 | Simulate on web | Device / lab build |
+| US-LCK-01 | Lab | Executable (`E2E_RUN=1`) |
+| US-CNV-01 | Lab | Executable |
+| US-RCV-01 | Lab | Executable |
+| US-HOM-05 / US-SND-01 | Lab / backlog | Executable surfaces |
+| US-POS-01 / CB-PAY-003 | Lab | PosLab Simulate |
+| US-ONB-01 / CB-ACCOUNT-001 | Executable (web clean) | Executable (Welcome→Keys→Quiz→PIN→Home) behind `E2E_RUN=1` |
+| US-ONB-03 | Backlog (web) | Executable (wrong quiz words block advance) behind `E2E_RUN=1` |
+| US-ONB-04 | Executable (web) | Executable (PIN mismatch) behind `E2E_RUN=1` |
+| CB-ACCOUNT-PIN-CHANGE | No Expo surface | Executable (Shell-only Change PIN) behind `E2E_RUN=1` |
+| US-ONB-02 / CB-ACCOUNT-002 | `test.fixme` backlog | Executable (recover account via backup file) behind `E2E_RUN=1` |
+| Remaining CB-* | `test.fixme` backlog | `StoryBacklogTests` skipped Theories |
 
-Keep **one story catalog**; two runners.
+Keep **one story catalog**; two runners until cutover, then Appium is authoritative.
 
 ---
 

@@ -48,3 +48,22 @@ Task 3: complete (commits 2b51e4d..8ce7623, review clean)
 
 Cold-start hang fixed by removing Splash `FadeTo` pulse (UI-thread spin). Re-smoke all three click-throughs OK: **Other assets (1)** expand (ETH); **Send** delete recipient E2E (`Rent — 4th St LLC`); **Profile** vault remove through step-up PIN + final confirm (`Demo card •••• 0001`). Persistence-first scorecard numbers unchanged. Details: `.superpowers/sdd/task-11-report.md` follow-up section.
 - Whole-branch review fixes (2026-07-22): BackupFileService deletes temp recovery export after share; progress header dedupe; AppShell splash comment refreshed.
+
+## MAUI Appium Wave 0–1 (2026-07-25)
+
+Plan: `docs/superpowers/plans/2026-07-25-maui-appium-wave0-account.md`  
+Spec: `docs/superpowers/specs/2026-07-25-maui-appium-story-completion-design.md`  
+Branch: `feat/cora-redesign-maui`  
+Base at plan start (spec commit): `2b0fa46`
+
+Task 1: complete (commits 2b0fa46..df81511, review clean)
+Task 2: complete (commits df81511..d365718, review clean; minors: case vs dict parse_args, log() timestamp comment)
+Task 3: complete (commits d365718..54f57f3, review clean)
+Task 4: complete (commits 54f57f3..f87f4a6, review clean; note: page-object AGENTS comments deferred to Task 7)
+Task 5: complete (commits f87f4a6..2adadc4, review clean; minors: SkippableFact test methods lack Use/Scope docs; StoryGuard wrong-screen paths unexercised until Task 7 emulator run)
+Task 6: complete (commits 2adadc4..2b59bc4, review clean; minors: StoryProcedures inert until Task 7, dictionary insertion-order relied on for step order)
+Task 7: complete (commits 2b59bc4..f351479, review clean — CB-ACCOUNT-001 green on CipherBank_API34, 1 passed; minors: journal step labels submit/backup fire slightly out of step with the concrete flow; Selenium.WebDriver pinned back 4.27.0→4.21.0 for Appium.WebDriver 5.0.0 compat — needs forward re-pin follow-up; Node.js/npx fix is dev-box-local, not scripted in repo)
+Task 8: complete (commits f351479..9ab8090, review clean after Important fix: IsVisible+non-empty text on BackupQuiz/SetPin error labels; US-ONB-03/04 green on device)
+Task 9: complete (commits 9ab8090..f7014cc, review fix-up 10e66e7; CB-ACCOUNT-PIN-CHANGE green on CipherBank_API34; Important fixes: PinChangeCoordinator moved onto ICustodyService.ChangePinAsync to refuse legacy-blob PIN changes, wrong-current-PIN assertion made real (visible+non-empty ChangePinErrorLabel); full unit suite 262/262)
+Task 10: complete (commits 10e66e7..19d4466, review clean; CB-ACCOUNT-002 green on CipherBank_API34 — real BackupFileService export to Downloads/MediaStore replacing the cache-and-delete stub, restore via Android document picker, wrong-password rejection, same-custody proof by comparing revealed mnemonic pre/post wipe and by independently decrypting the pulled `.cbr.json`; full Fresh-device regression 5/5; unit suite 262/262)
+Task 11: docs closeout — polished `docs/tests/README.md` (harness pointer), `docs/README.md` (STORY_ID_MAP link), Expo mirror docs (`design_handoff_cipherbank/starter/docs/{PLAYWRIGHT_PLAN,STORY_ID_MAP}.md` — fixed stale `E2E_FRESH` env var to `E2E_RUN`, added CB-ACCOUNT-002/PIN-CHANGE/US-ONB-03 mirror rows), confirmed `artifacts/e2e-journal|e2e-recovery|e2e-diagnostics` stay gitignored; see `.superpowers/sdd/task-11-report.md` for harness run outcome
