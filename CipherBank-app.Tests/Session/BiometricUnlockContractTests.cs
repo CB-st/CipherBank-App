@@ -10,26 +10,6 @@ namespace CipherBank_app.Tests.Session;
 
 public class BiometricUnlockContractTests
 {
-    private sealed class MemStore : ISecureStore
-    {
-        private readonly Dictionary<string, string> _data = new();
-
-        public Task SetAsync(string key, string value)
-        {
-            _data[key] = value;
-            return Task.CompletedTask;
-        }
-
-        public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
-
-        public Task RemoveAsync(string key)
-        {
-            _data.Remove(key);
-            return Task.CompletedTask;
-        }
-    }
-
     [Fact]
     public async Task Seal_StoresDeviceSecret_AndUnlockWithDeviceSecret_WorksWithoutPin()
     {
@@ -110,5 +90,25 @@ public class BiometricUnlockContractTests
         var store = new MemStore();
         var custody = new CustodyService(store, new PinService(store));
         (await custody.UnlockWithDeviceSecretAsync()).Should().BeFalse();
+    }
+
+    private sealed class MemStore : ISecureStore
+    {
+        private readonly Dictionary<string, string> _data = new();
+
+        public Task SetAsync(string key, string value)
+        {
+            _data[key] = value;
+            return Task.CompletedTask;
+        }
+
+        public Task<string?> GetAsync(string key)
+            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
+
+        public Task RemoveAsync(string key)
+        {
+            _data.Remove(key);
+            return Task.CompletedTask;
+        }
     }
 }

@@ -11,19 +11,6 @@ namespace CipherBank_app.Tests.V1;
 
 public class PrefsSyncAndStreamTests
 {
-    private sealed class MemPrefs : IPrefsStore
-    {
-        public UserPrefs Current { get; set; } = new();
-
-        public Task<UserPrefs> LoadAsync() => Task.FromResult(Current);
-
-        public Task SaveAsync(UserPrefs prefs)
-        {
-            Current = prefs;
-            return Task.CompletedTask;
-        }
-    }
-
     [Fact]
     public async Task PrefsSync_RoundTripsThroughMockApi()
     {
@@ -92,5 +79,18 @@ public class PrefsSyncAndStreamTests
             .Select(p => p.Name.ToLowerInvariant())
             .Should()
             .NotContain(n => n.Contains("mnemonic") || n.Contains("seed"));
+    }
+
+    private sealed class MemPrefs : IPrefsStore
+    {
+        public UserPrefs Current { get; set; } = new();
+
+        public Task<UserPrefs> LoadAsync() => Task.FromResult(Current);
+
+        public Task SaveAsync(UserPrefs prefs)
+        {
+            Current = prefs;
+            return Task.CompletedTask;
+        }
     }
 }

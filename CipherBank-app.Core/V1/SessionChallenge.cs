@@ -7,6 +7,16 @@ using System.Text.Json.Serialization;
 namespace CipherBank_app.V1;
 
 /// <summary>
+/// Builds the JSON body for <c>POST /v1/session</c>.
+/// Lab stub today; challenge/pass implementation will decrypt with custody-derived
+/// account key and seal the pass to the API public key — mnemonic never leaves the device.
+/// </summary>
+public interface ISessionProofBuilder
+{
+    Task<object> BuildOpenBodyAsync(CancellationToken ct);
+}
+
+/// <summary>
 /// Server → device challenge for challenge/pass session open.
 /// Ciphertext is sealed to the account public key registered at onboarding.
 /// </summary>
@@ -51,16 +61,6 @@ public sealed class SessionPassDto
 
     [JsonPropertyName("ALGORITHM")]
     public string Algorithm { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// Builds the JSON body for <c>POST /v1/session</c>.
-/// Lab stub today; challenge/pass implementation will decrypt with custody-derived
-/// account key and seal the pass to the API public key — mnemonic never leaves the device.
-/// </summary>
-public interface ISessionProofBuilder
-{
-    Task<object> BuildOpenBodyAsync(CancellationToken ct);
 }
 
 /// <summary>Current stub: <c>{ DEVICE_ATTESTATION: "lab" }</c>.</summary>

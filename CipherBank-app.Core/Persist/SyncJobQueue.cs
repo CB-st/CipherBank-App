@@ -15,12 +15,6 @@ public sealed class SyncJobQueue : ISyncJobQueue
     private int _running;
     private TaskCompletionSource? _idleSignal;
 
-    private sealed record QueuedJob(
-        string Key,
-        SyncPriority Priority,
-        Func<CancellationToken, Task> Work,
-        long EnqueuedAt);
-
     /// <inheritdoc />
     public void Enqueue(string key, SyncPriority priority, Func<CancellationToken, Task> work)
     {
@@ -121,4 +115,10 @@ public sealed class SyncJobQueue : ISyncJobQueue
             Pump();
         }
     }
+
+    private sealed record QueuedJob(
+        string Key,
+        SyncPriority Priority,
+        Func<CancellationToken, Task> Work,
+        long EnqueuedAt);
 }

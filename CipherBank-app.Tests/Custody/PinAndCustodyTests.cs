@@ -10,26 +10,6 @@ namespace CipherBank_app.Tests.Custody;
 
 public class PinAndCustodyTests
 {
-    private sealed class MemStore : ISecureStore
-    {
-        private readonly Dictionary<string, string> _data = new();
-
-        public Task SetAsync(string key, string value)
-        {
-            _data[key] = value;
-            return Task.CompletedTask;
-        }
-
-        public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
-
-        public Task RemoveAsync(string key)
-        {
-            _data.Remove(key);
-            return Task.CompletedTask;
-        }
-    }
-
     [Fact]
     public async Task Pin_VerifySucceedsAfterSet()
     {
@@ -50,5 +30,25 @@ public class PinAndCustodyTests
         custody.Lock();
         (await custody.UnlockAsync("123456")).Should().BeTrue();
         custody.ExportMnemonic().Should().Be(MnemonicHelper.Normalize(mnemonic));
+    }
+
+    private sealed class MemStore : ISecureStore
+    {
+        private readonly Dictionary<string, string> _data = new();
+
+        public Task SetAsync(string key, string value)
+        {
+            _data[key] = value;
+            return Task.CompletedTask;
+        }
+
+        public Task<string?> GetAsync(string key)
+            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
+
+        public Task RemoveAsync(string key)
+        {
+            _data.Remove(key);
+            return Task.CompletedTask;
+        }
     }
 }

@@ -40,6 +40,27 @@ public sealed class MockProductApi : IProductApi
         new() { CardId = "card_lab_1", Last4 = "4242", Brand = "visa", Label = "Hardware test", HardwareTest = true },
     ];
 
+    private PrefsWireDto _prefs = new()
+    {
+        HomeOrderCamel = new List<string> { "cora", "balance", "quickActions", "performance", "holdings", "localWallets" },
+        HomeVisibleCamel = new Dictionary<string, bool>
+        {
+            ["cora"] = true,
+            ["balance"] = true,
+            ["quickActions"] = true,
+            ["performance"] = true,
+            ["holdings"] = true,
+            ["localWallets"] = true,
+        },
+        ValuesHiddenOnLaunchCamel = false,
+        CoraEnabledCamel = true,
+        DefaultSendSpeedCamel = "instant",
+        AppearanceCamel = "dark",
+        BaseCurrencyCamel = "USD",
+        AppLockIdleSecCamel = DefaultAppLockIdleSeconds,
+        AssetsLayoutCamel = "separate",
+    };
+
     public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct)
         => Task.FromResult(new PortfolioDto
         {
@@ -66,19 +87,6 @@ public sealed class MockProductApi : IProductApi
         }
 
         return Task.FromResult<IReadOnlyList<HistoryPointDto>>(pts);
-    }
-
-    private static (int Points, int StepSeconds) ResolveHistoryShape(string range)
-    {
-        return range.Trim().ToLowerInvariant() switch
-        {
-            "1d" => (HistoryHourlyPointCount, HistoryStepSecondsHourly),
-            "1w" or "7d" => (HistoryWeeklyPointCount, HistoryStepSecondsDaily),
-            "1m" or "30d" => (HistoryMonthlyPointCount, HistoryStepSecondsDaily),
-            "90d" => (HistoryQuarterlyPointCount, HistoryStepSecondsDaily),
-            "1y" or "all" => (HistoryYearlyPointCount, HistoryStepSecondsWeekly),
-            _ => (HistoryDayCount, HistoryStepSecondsDaily),
-        };
     }
 
     public Task<SessionDto> CreateSessionAsync(CancellationToken ct)
@@ -219,27 +227,6 @@ public sealed class MockProductApi : IProductApi
             TtlMs = PosReadyTtlMs,
         });
 
-    private PrefsWireDto _prefs = new()
-    {
-        HomeOrderCamel = new List<string> { "cora", "balance", "quickActions", "performance", "holdings", "localWallets" },
-        HomeVisibleCamel = new Dictionary<string, bool>
-        {
-            ["cora"] = true,
-            ["balance"] = true,
-            ["quickActions"] = true,
-            ["performance"] = true,
-            ["holdings"] = true,
-            ["localWallets"] = true,
-        },
-        ValuesHiddenOnLaunchCamel = false,
-        CoraEnabledCamel = true,
-        DefaultSendSpeedCamel = "instant",
-        AppearanceCamel = "dark",
-        BaseCurrencyCamel = "USD",
-        AppLockIdleSecCamel = DefaultAppLockIdleSeconds,
-        AssetsLayoutCamel = "separate",
-    };
-
     public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct)
         => Task.FromResult<PrefsWireDto?>(_prefs);
 
@@ -283,4 +270,17 @@ public sealed class MockProductApi : IProductApi
             },
             SyncedAtCamel = 1720900000000,
         });
+
+    private static (int Points, int StepSeconds) ResolveHistoryShape(string range)
+    {
+        return range.Trim().ToLowerInvariant() switch
+        {
+            "1d" => (HistoryHourlyPointCount, HistoryStepSecondsHourly),
+            "1w" or "7d" => (HistoryWeeklyPointCount, HistoryStepSecondsDaily),
+            "1m" or "30d" => (HistoryMonthlyPointCount, HistoryStepSecondsDaily),
+            "90d" => (HistoryQuarterlyPointCount, HistoryStepSecondsDaily),
+            "1y" or "all" => (HistoryYearlyPointCount, HistoryStepSecondsWeekly),
+            _ => (HistoryDayCount, HistoryStepSecondsDaily),
+        };
+    }
 }

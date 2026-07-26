@@ -28,6 +28,10 @@ public enum CustodyPinChangeResult
 /// <summary>On-device custody seal/unlock (Cora custody.ts parity).</summary>
 public interface ICustodyService
 {
+    bool IsUnlocked { get; }
+
+    DateTimeOffset? SessionExpiresAt { get; }
+
     Task<bool> HasSealedWalletAsync();
 
     /// <summary>True when a device secret exists so OS-auth unlock is possible.</summary>
@@ -49,11 +53,7 @@ public interface ICustodyService
 
     void Lock();
 
-    bool IsUnlocked { get; }
-
     string? ExportMnemonic();
-
-    DateTimeOffset? SessionExpiresAt { get; }
 }
 
 /// <inheritdoc />
@@ -232,6 +232,27 @@ public sealed class CustodyService : ICustodyService
         => IsUnlocked ? _mnemonic : null;
 
     /// <summary>
+    /// Opens a sealed blob without throwing so unlock can try the next key material.
+    /// Use: High (unlock paths). Scope: single CryptoBox open attempt.
+    /// </summary>
+    private static bool TryOpen(string blob, string keyMaterial, out string? mnemonic)
+    {
+        try
+        {
+            mnemonic = CryptoBox.Open(blob, keyMaterial);
+            return true;
+        }
+        catch
+        {
+            mnemonic = null;
+            return false;
+        }
+    }
+
+    private static string CreateDeviceSecret()
+        => Convert.ToBase64String(RandomNumberGenerator.GetBytes(DeviceSecretByteLength));
+
+    /// <summary>
     /// Persists a device-secret seal without orphaning the wallet if the process dies mid-write.
     /// Stages the secret, rewrites the blob, then promotes the secret and clears staging.
     /// Use: Low (seal / legacy migrate). Scope: this device's custody secure-store keys.
@@ -276,25 +297,4 @@ public sealed class CustodyService : ICustodyService
 
         await _store.RemoveAsync(StagingDeviceSecretKey).ConfigureAwait(false);
     }
-
-    /// <summary>
-    /// Opens a sealed blob without throwing so unlock can try the next key material.
-    /// Use: High (unlock paths). Scope: single CryptoBox open attempt.
-    /// </summary>
-    private static bool TryOpen(string blob, string keyMaterial, out string? mnemonic)
-    {
-        try
-        {
-            mnemonic = CryptoBox.Open(blob, keyMaterial);
-            return true;
-        }
-        catch
-        {
-            mnemonic = null;
-            return false;
-        }
-    }
-
-    private static string CreateDeviceSecret()
-        => Convert.ToBase64String(RandomNumberGenerator.GetBytes(DeviceSecretByteLength));
 }

@@ -6,6 +6,16 @@ using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Persist;
 
+/// <summary>SQLite wallets repo.</summary>
+public interface IWalletRepository
+{
+    Task<IReadOnlyList<LocalWalletRow>> ListAsync();
+
+    Task UpsertAsync(LocalWalletRow row);
+
+    Task DeleteAsync(string id);
+}
+
 /// <summary>Local wallet index row.</summary>
 public sealed record LocalWalletRow(
     string Id,
@@ -16,16 +26,6 @@ public sealed record LocalWalletRow(
     int AccountIndex,
     string Kind,
     DateTimeOffset CreatedAt);
-
-/// <summary>SQLite wallets repo.</summary>
-public interface IWalletRepository
-{
-    Task<IReadOnlyList<LocalWalletRow>> ListAsync();
-
-    Task UpsertAsync(LocalWalletRow row);
-
-    Task DeleteAsync(string id);
-}
 
 /// <inheritdoc />
 public sealed class WalletRepository : IWalletRepository
@@ -66,13 +66,6 @@ public sealed class WalletRepository : IWalletRepository
         return list;
     }
 
-    /// <summary>
-    /// Reads a nullable TEXT column without sync IsDBNull.
-    /// Use: High (wallet list). Scope: WalletRepository row hydrate.
-    /// </summary>
-    private static async Task<string?> ReadOptionalStringAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
-        => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
-
     public async Task UpsertAsync(LocalWalletRow row)
     {
         await using SqliteConnection conn = _db.Open();
@@ -104,4 +97,11 @@ public sealed class WalletRepository : IWalletRepository
         cmd.Parameters.AddWithValue("$id", id);
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Reads a nullable TEXT column without sync IsDBNull.
+    /// Use: High (wallet list). Scope: WalletRepository row hydrate.
+    /// </summary>
+    private static async Task<string?> ReadOptionalStringAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+        => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
 }

@@ -4,9 +4,6 @@
 
 namespace CipherBank_app.Persist;
 
-/// <summary>A cached market rate.</summary>
-public sealed record RateRow(string Symbol, double Usd, double Change24h, long UpdatedAtMs);
-
 /// <summary>Stores the latest USD market rates.</summary>
 public interface IRatesCache
 {
@@ -16,3 +13,6 @@ public interface IRatesCache
         IEnumerable<string>? symbols,
         CancellationToken ct);
 }
+
+/// <summary>A cached market rate.</summary>
+public sealed record RateRow(string Symbol, double Usd, double Change24h, long UpdatedAtMs);

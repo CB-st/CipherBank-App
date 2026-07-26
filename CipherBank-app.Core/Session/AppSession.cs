@@ -12,6 +12,8 @@ namespace CipherBank_app.Session;
 /// <summary>App-level session: custody unlock + product tokens + idle lock.</summary>
 public interface IAppSession
 {
+    event EventHandler? Locked;
+
     bool IsBooting { get; }
 
     bool HasWallet { get; }
@@ -21,8 +23,6 @@ public interface IAppSession
     int IdleMs { get; set; }
 
     string? AccessToken { get; }
-
-    event EventHandler? Locked;
 
     Task BootAsync();
 
@@ -83,6 +83,8 @@ public sealed class AppSession : IAppSession
         IdleMs = DefaultIdleMs;
     }
 
+    public event EventHandler? Locked;
+
     public bool IsBooting { get; private set; } = true;
 
     public bool HasWallet { get; private set; }
@@ -92,8 +94,6 @@ public sealed class AppSession : IAppSession
     public int IdleMs { get; set; }
 
     public string? AccessToken { get; private set; }
-
-    public event EventHandler? Locked;
 
     public async Task BootAsync()
     {
@@ -134,6 +134,45 @@ public sealed class AppSession : IAppSession
     }
 
     public void Touch() => _lastTouch = DateTimeOffset.UtcNow;
+
+    public void Lock()
+    {
+        _streamHub.Stop();
+        _custody.Lock();
+        AccessToken = null;
+        _productSessions.Clear();
+        _ = _stream.DisconnectAsync();
+        Locked?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task FinishCustodySetupAsync(string mnemonic, string pin)
+    {
+        await _custody.SealAsync(mnemonic, pin).ConfigureAwait(false);
+        await _seeder.EnsureDerivedAsync(mnemonic).ConfigureAwait(false);
+        if (!await CompleteUnlockAsync(applyBootstrap: false).ConfigureAwait(false))
+        {
+            throw new InvalidOperationException("Custody sealed but product session setup failed.");
+        }
+
+        HasWallet = true;
+    }
+
+    /// <summary>Returns true if idle exceeded and lock was applied.</summary>
+    public bool CheckIdleAndMaybeLock()
+    {
+        if (!IsUnlocked)
+        {
+            return false;
+        }
+
+        if ((DateTimeOffset.UtcNow - _lastTouch).TotalMilliseconds < IdleMs)
+        {
+            return false;
+        }
+
+        Lock();
+        return true;
+    }
 
     /// <summary>
     /// Creates the product session and starts streams after custody is already unlocked.
@@ -187,44 +226,5 @@ public sealed class AppSession : IAppSession
         AccessToken = null;
         _productSessions.Clear();
         _ = _stream.DisconnectAsync();
-    }
-
-    public void Lock()
-    {
-        _streamHub.Stop();
-        _custody.Lock();
-        AccessToken = null;
-        _productSessions.Clear();
-        _ = _stream.DisconnectAsync();
-        Locked?.Invoke(this, EventArgs.Empty);
-    }
-
-    public async Task FinishCustodySetupAsync(string mnemonic, string pin)
-    {
-        await _custody.SealAsync(mnemonic, pin).ConfigureAwait(false);
-        await _seeder.EnsureDerivedAsync(mnemonic).ConfigureAwait(false);
-        if (!await CompleteUnlockAsync(applyBootstrap: false).ConfigureAwait(false))
-        {
-            throw new InvalidOperationException("Custody sealed but product session setup failed.");
-        }
-
-        HasWallet = true;
-    }
-
-    /// <summary>Returns true if idle exceeded and lock was applied.</summary>
-    public bool CheckIdleAndMaybeLock()
-    {
-        if (!IsUnlocked)
-        {
-            return false;
-        }
-
-        if ((DateTimeOffset.UtcNow - _lastTouch).TotalMilliseconds < IdleMs)
-        {
-            return false;
-        }
-
-        Lock();
-        return true;
     }
 }

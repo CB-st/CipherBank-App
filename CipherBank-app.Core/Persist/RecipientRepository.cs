@@ -6,6 +6,20 @@ using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Persist;
 
+/// <summary>SQLite ACH recipients repo (Cora recipientsRepo).</summary>
+public interface IRecipientRepository
+{
+    Task EnsureSchemaAsync();
+
+    Task<IReadOnlyList<AchRecipientRow>> ListAsync();
+
+    Task UpsertAsync(AchRecipientRow row);
+
+    Task DeleteAsync(string id);
+
+    Task SeedDefaultsIfEmptyAsync();
+}
+
 /// <summary>ACH / payee recipient stored on device.</summary>
 /// <remarks>
 /// Full account/routing digits are accepted on upsert only to compute masks; SQLite (the public
@@ -23,20 +37,6 @@ public sealed record AchRecipientRow(
     string? AccountMask,
     string? RoutingMask,
     DateTimeOffset CreatedAt);
-
-/// <summary>SQLite ACH recipients repo (Cora recipientsRepo).</summary>
-public interface IRecipientRepository
-{
-    Task EnsureSchemaAsync();
-
-    Task<IReadOnlyList<AchRecipientRow>> ListAsync();
-
-    Task UpsertAsync(AchRecipientRow row);
-
-    Task DeleteAsync(string id);
-
-    Task SeedDefaultsIfEmptyAsync();
-}
 
 /// <inheritdoc />
 public sealed class RecipientRepository : IRecipientRepository
@@ -64,59 +64,6 @@ public sealed class RecipientRepository : IRecipientRepository
         await ClearSensitiveRecipientColumnsAsync(conn).ConfigureAwait(false);
         _schemaReady = true;
     }
-
-#pragma warning disable CA2100 // Constant DDL strings only
-    /// <summary>
-    /// Adds a column when missing; rethrows non-duplicate failures so schema-ready is not latched.
-    /// Use: Low (first open). Scope: recipients table migration.
-    /// </summary>
-    private static async Task TryAddRecipientColumnAsync(SqliteConnection conn, string ddl)
-    {
-        try
-        {
-            await using SqliteCommand alter = conn.CreateCommand();
-            alter.CommandText = ddl;
-            await alter.ExecuteNonQueryAsync().ConfigureAwait(false);
-        }
-        catch (SqliteException ex) when (IsDuplicateColumn(ex))
-        {
-            // Column already exists.
-        }
-    }
-
-    /// <summary>
-    /// Nulls any legacy cleartext account/routing columns left from older builds.
-    /// Use: Low (schema ensure). Scope: recipients table scrub.
-    /// </summary>
-    private static async Task ClearSensitiveRecipientColumnsAsync(SqliteConnection conn)
-    {
-        foreach (string sql in new[]
-                 {
-                     "UPDATE recipients SET account = NULL WHERE account IS NOT NULL",
-                     "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL",
-                     "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL",
-                 })
-        {
-            try
-            {
-                await using SqliteCommand cmd = conn.CreateCommand();
-                cmd.CommandText = sql;
-                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-            }
-            catch (SqliteException)
-            {
-                // Column absent on fresh schemas that never had the legacy column.
-            }
-        }
-    }
-#pragma warning restore CA2100
-
-    /// <summary>
-    /// SQLite reports duplicate-column ALTERs as SqliteException (message contains "duplicate column").
-    /// Use: Low. Scope: schema migration catch filter.
-    /// </summary>
-    private static bool IsDuplicateColumn(SqliteException ex)
-        => ex.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase);
 
     public async Task<IReadOnlyList<AchRecipientRow>> ListAsync()
     {
@@ -157,28 +104,6 @@ public sealed class RecipientRepository : IRecipientRepository
         }
 
         return list;
-    }
-
-    /// <summary>
-    /// Reads a nullable TEXT column without sync IsDBNull.
-    /// Use: High (list paths). Scope: RecipientRepository row hydrate.
-    /// </summary>
-    private static async Task<string?> ReadOptionalStringAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
-        => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
-
-    /// <summary>
-    /// Reads account_type with checking default when null/empty.
-    /// Use: High (list paths). Scope: RecipientRepository row hydrate.
-    /// </summary>
-    private static async Task<string> ReadAccountTypeAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
-    {
-        if (await reader.IsDBNullAsync(ordinal).ConfigureAwait(false))
-        {
-            return "checking";
-        }
-
-        string value = reader.GetString(ordinal);
-        return string.IsNullOrEmpty(value) ? "checking" : value;
     }
 
     /// <summary>
@@ -260,5 +185,80 @@ public sealed class RecipientRepository : IRecipientRepository
             null,
             null,
             DateTimeOffset.UtcNow)).ConfigureAwait(false);
+    }
+
+#pragma warning disable CA2100 // Constant DDL strings only
+    /// <summary>
+    /// Adds a column when missing; rethrows non-duplicate failures so schema-ready is not latched.
+    /// Use: Low (first open). Scope: recipients table migration.
+    /// </summary>
+    private static async Task TryAddRecipientColumnAsync(SqliteConnection conn, string ddl)
+    {
+        try
+        {
+            await using SqliteCommand alter = conn.CreateCommand();
+            alter.CommandText = ddl;
+            await alter.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+        catch (SqliteException ex) when (IsDuplicateColumn(ex))
+        {
+            // Column already exists.
+        }
+    }
+
+    /// <summary>
+    /// Nulls any legacy cleartext account/routing columns left from older builds.
+    /// Use: Low (schema ensure). Scope: recipients table scrub.
+    /// </summary>
+    private static async Task ClearSensitiveRecipientColumnsAsync(SqliteConnection conn)
+    {
+        foreach (string sql in new[]
+                 {
+                     "UPDATE recipients SET account = NULL WHERE account IS NOT NULL",
+                     "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL",
+                     "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL",
+                 })
+        {
+            try
+            {
+                await using SqliteCommand cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+            }
+            catch (SqliteException)
+            {
+                // Column absent on fresh schemas that never had the legacy column.
+            }
+        }
+    }
+#pragma warning restore CA2100
+
+    /// <summary>
+    /// SQLite reports duplicate-column ALTERs as SqliteException (message contains "duplicate column").
+    /// Use: Low. Scope: schema migration catch filter.
+    /// </summary>
+    private static bool IsDuplicateColumn(SqliteException ex)
+        => ex.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Reads a nullable TEXT column without sync IsDBNull.
+    /// Use: High (list paths). Scope: RecipientRepository row hydrate.
+    /// </summary>
+    private static async Task<string?> ReadOptionalStringAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+        => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
+
+    /// <summary>
+    /// Reads account_type with checking default when null/empty.
+    /// Use: High (list paths). Scope: RecipientRepository row hydrate.
+    /// </summary>
+    private static async Task<string> ReadAccountTypeAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+    {
+        if (await reader.IsDBNullAsync(ordinal).ConfigureAwait(false))
+        {
+            return "checking";
+        }
+
+        string value = reader.GetString(ordinal);
+        return string.IsNullOrEmpty(value) ? "checking" : value;
     }
 }

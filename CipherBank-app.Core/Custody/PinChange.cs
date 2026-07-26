@@ -79,6 +79,18 @@ public sealed class PinChangeCoordinator
     public PinChangeCoordinator(ICustodyService custody) => _custody = custody;
 
     /// <summary>
+    /// Pure shape check (length, confirmation match, reuse) that needs no secure storage, returning
+    /// <see cref="PinChangeStatus.Success"/> when the request is worth sending to custody. Accepts nulls
+    /// (an unbound Entry surfaces one) and treats a missing new PIN as too short.
+    /// Use: Low (once per submit). Scope: this coordinator.
+    /// </summary>
+    public static PinChangeStatus ValidateShape(string? currentPin, string? newPin, string? confirmPin)
+        => (newPin?.Length ?? 0) < MinPinLength ? PinChangeStatus.TooShort
+            : !string.Equals(newPin, confirmPin, StringComparison.Ordinal) ? PinChangeStatus.Mismatch
+            : string.Equals(newPin, currentPin, StringComparison.Ordinal) ? PinChangeStatus.SameAsCurrent
+            : PinChangeStatus.Success;
+
+    /// <summary>
     /// Validates the requested change and, when the shape is sound, asks custody to swap the stored PIN
     /// after verifying <paramref name="currentPin"/>. Never partially applies: a rejected attempt — including
     /// one refused by the device-secret invariant — leaves the old PIN active.
@@ -97,18 +109,6 @@ public sealed class PinChangeCoordinator
             .ConfigureAwait(false);
         return Describe(FromCustody[result]);
     }
-
-    /// <summary>
-    /// Pure shape check (length, confirmation match, reuse) that needs no secure storage, returning
-    /// <see cref="PinChangeStatus.Success"/> when the request is worth sending to custody. Accepts nulls
-    /// (an unbound Entry surfaces one) and treats a missing new PIN as too short.
-    /// Use: Low (once per submit). Scope: this coordinator.
-    /// </summary>
-    public static PinChangeStatus ValidateShape(string? currentPin, string? newPin, string? confirmPin)
-        => (newPin?.Length ?? 0) < MinPinLength ? PinChangeStatus.TooShort
-            : !string.Equals(newPin, confirmPin, StringComparison.Ordinal) ? PinChangeStatus.Mismatch
-            : string.Equals(newPin, currentPin, StringComparison.Ordinal) ? PinChangeStatus.SameAsCurrent
-            : PinChangeStatus.Success;
 
     /// <summary>
     /// Pairs a status with its user-facing message from the dispatch table.

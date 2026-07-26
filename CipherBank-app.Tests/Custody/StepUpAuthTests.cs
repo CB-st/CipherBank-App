@@ -10,41 +10,6 @@ namespace CipherBank_app.Tests.Custody;
 
 public class StepUpAuthTests
 {
-    private sealed class FakeChallenges : IStepUpChallenges
-    {
-        public bool BiometricsPreferred { get; set; }
-
-        public bool BioSucceed { get; set; }
-
-        public string? PinPromptResult { get; set; }
-
-        public Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct)
-            => Task.FromResult(BioSucceed);
-
-        public Task<string?> PromptForPinAsync(string prompt, CancellationToken ct)
-            => Task.FromResult(PinPromptResult);
-    }
-
-    private sealed class MemStore : ISecureStore
-    {
-        private readonly Dictionary<string, string> _data = new();
-
-        public Task SetAsync(string key, string value)
-        {
-            _data[key] = value;
-            return Task.CompletedTask;
-        }
-
-        public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
-
-        public Task RemoveAsync(string key)
-        {
-            _data.Remove(key);
-            return Task.CompletedTask;
-        }
-    }
-
     [Fact]
     public async Task RequireAsync_False_WhenPinCancelled()
     {
@@ -78,5 +43,40 @@ public class StepUpAuthTests
         var step = new StepUpAuthService(challenges, pin);
 
         (await step.RequireAsync(AuthReason.RevealKeys, default)).Should().BeTrue();
+    }
+
+    private sealed class FakeChallenges : IStepUpChallenges
+    {
+        public bool BiometricsPreferred { get; set; }
+
+        public bool BioSucceed { get; set; }
+
+        public string? PinPromptResult { get; set; }
+
+        public Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct)
+            => Task.FromResult(BioSucceed);
+
+        public Task<string?> PromptForPinAsync(string prompt, CancellationToken ct)
+            => Task.FromResult(PinPromptResult);
+    }
+
+    private sealed class MemStore : ISecureStore
+    {
+        private readonly Dictionary<string, string> _data = new();
+
+        public Task SetAsync(string key, string value)
+        {
+            _data[key] = value;
+            return Task.CompletedTask;
+        }
+
+        public Task<string?> GetAsync(string key)
+            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
+
+        public Task RemoveAsync(string key)
+        {
+            _data.Remove(key);
+            return Task.CompletedTask;
+        }
     }
 }

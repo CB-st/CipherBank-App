@@ -14,6 +14,110 @@ namespace CipherBank_app.Tests.Session;
 
 public class AppSessionTests
 {
+    [Fact]
+    public async Task FinishSetup_UnlocksSeedsWalletsAndSession()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        var wallets = new FakeWallets();
+        var productSessions = new InMemoryProductSessionStore();
+        AppSession session = CreateSession(custody, wallets, productSessions: productSessions);
+
+        string mnemonic = MnemonicHelper.Generate();
+        await session.FinishCustodySetupAsync(mnemonic, "123456");
+
+        session.IsUnlocked.Should().BeTrue();
+        session.HasWallet.Should().BeTrue();
+        session.AccessToken.Should().NotBeNullOrEmpty();
+        (await productSessions.GetAsync()).Should().NotBeNull();
+        wallets.Rows.Should().Contain(r => r.Symbol == "BTC");
+        wallets.Rows.Should().Contain(r => r.Symbol == "ETH");
+    }
+
+    [Fact]
+    public async Task IdleLock_LocksAfterTimeout()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        AppSession session = CreateSession(custody, new FakeWallets());
+        await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
+        session.IdleMs = 1;
+        await Task.Delay(20);
+        session.CheckIdleAndMaybeLock().Should().BeTrue();
+        session.IsUnlocked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Unlock_PullsBootstrapRecipients_WithoutTouchingCustodySeal()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        var recipients = new MemRecipients();
+        var prefs = new FakePrefs();
+        AppSession session = CreateSession(custody, new FakeWallets(), prefs, recipients);
+        await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
+        session.Lock();
+
+        (await session.UnlockAsync("123456")).Should().BeTrue();
+        recipients.Rows.Should().Contain(r => r.Name == "Maya Chen");
+        recipients.Rows.Should().Contain(r => r.RoutingMask == AchRecipientValidation.MaskRouting("021000021")
+            || r.Routing == "021000021");
+        custody.IsUnlocked.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Unlock_WhenCreateSessionFails_RelocksCustody()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        var productSessions = new InMemoryProductSessionStore();
+        AppSession okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
+        await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
+        okSession.Lock();
+
+        AppSession failing = CreateSession(
+            custody,
+            new FakeWallets(),
+            api: new FailingSessionApi(),
+            productSessions: productSessions);
+        (await failing.UnlockAsync("123456")).Should().BeFalse();
+        custody.IsUnlocked.Should().BeFalse();
+        failing.AccessToken.Should().BeNull();
+        (await productSessions.GetAsync()).Should().BeNull();
+    }
+
+    private static AppSession CreateSession(
+        ICustodyService custody,
+        FakeWallets wallets,
+        FakePrefs? prefs = null,
+        MemRecipients? recipients = null,
+        IProductApi? api = null,
+        InMemoryProductSessionStore? productSessions = null)
+    {
+        prefs ??= new FakePrefs();
+        recipients ??= new MemRecipients();
+        api ??= new MockProductApi();
+        productSessions ??= new InMemoryProductSessionStore();
+        var stream = new MockStreamService();
+        var hub = new StreamHub(stream);
+        var prefsSync = new PrefsSyncService(prefs, api);
+        var bootstrap = new AccountBootstrapService(api, prefs, recipients);
+        return new AppSession(
+            custody,
+            api,
+            stream,
+            hub,
+            new LocalWalletSeeder(wallets),
+            prefs,
+            prefsSync,
+            bootstrap,
+            productSessions);
+    }
+
     private sealed class MemStore : ISecureStore
     {
         private readonly Dictionary<string, string> _data = new();
@@ -93,34 +197,6 @@ public class AppSessionTests
         public Task SeedDefaultsIfEmptyAsync() => Task.CompletedTask;
     }
 
-    private static AppSession CreateSession(
-        ICustodyService custody,
-        FakeWallets wallets,
-        FakePrefs? prefs = null,
-        MemRecipients? recipients = null,
-        IProductApi? api = null,
-        InMemoryProductSessionStore? productSessions = null)
-    {
-        prefs ??= new FakePrefs();
-        recipients ??= new MemRecipients();
-        api ??= new MockProductApi();
-        productSessions ??= new InMemoryProductSessionStore();
-        var stream = new MockStreamService();
-        var hub = new StreamHub(stream);
-        var prefsSync = new PrefsSyncService(prefs, api);
-        var bootstrap = new AccountBootstrapService(api, prefs, recipients);
-        return new AppSession(
-            custody,
-            api,
-            stream,
-            hub,
-            new LocalWalletSeeder(wallets),
-            prefs,
-            prefsSync,
-            bootstrap,
-            productSessions);
-    }
-
     private sealed class FailingSessionApi : IProductApi
     {
         private readonly MockProductApi _inner = new();
@@ -186,81 +262,5 @@ public class AppSessionTests
 
         public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
             => _inner.GetAccountBootstrapAsync(ct);
-    }
-
-    [Fact]
-    public async Task FinishSetup_UnlocksSeedsWalletsAndSession()
-    {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var wallets = new FakeWallets();
-        var productSessions = new InMemoryProductSessionStore();
-        AppSession session = CreateSession(custody, wallets, productSessions: productSessions);
-
-        string mnemonic = MnemonicHelper.Generate();
-        await session.FinishCustodySetupAsync(mnemonic, "123456");
-
-        session.IsUnlocked.Should().BeTrue();
-        session.HasWallet.Should().BeTrue();
-        session.AccessToken.Should().NotBeNullOrEmpty();
-        (await productSessions.GetAsync()).Should().NotBeNull();
-        wallets.Rows.Should().Contain(r => r.Symbol == "BTC");
-        wallets.Rows.Should().Contain(r => r.Symbol == "ETH");
-    }
-
-    [Fact]
-    public async Task IdleLock_LocksAfterTimeout()
-    {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        AppSession session = CreateSession(custody, new FakeWallets());
-        await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
-        session.IdleMs = 1;
-        await Task.Delay(20);
-        session.CheckIdleAndMaybeLock().Should().BeTrue();
-        session.IsUnlocked.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task Unlock_PullsBootstrapRecipients_WithoutTouchingCustodySeal()
-    {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var recipients = new MemRecipients();
-        var prefs = new FakePrefs();
-        AppSession session = CreateSession(custody, new FakeWallets(), prefs, recipients);
-        await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
-        session.Lock();
-
-        (await session.UnlockAsync("123456")).Should().BeTrue();
-        recipients.Rows.Should().Contain(r => r.Name == "Maya Chen");
-        recipients.Rows.Should().Contain(r => r.RoutingMask == AchRecipientValidation.MaskRouting("021000021")
-            || r.Routing == "021000021");
-        custody.IsUnlocked.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Unlock_WhenCreateSessionFails_RelocksCustody()
-    {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var productSessions = new InMemoryProductSessionStore();
-        AppSession okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
-        await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
-        okSession.Lock();
-
-        AppSession failing = CreateSession(
-            custody,
-            new FakeWallets(),
-            api: new FailingSessionApi(),
-            productSessions: productSessions);
-        (await failing.UnlockAsync("123456")).Should().BeFalse();
-        custody.IsUnlocked.Should().BeFalse();
-        failing.AccessToken.Should().BeNull();
-        (await productSessions.GetAsync()).Should().BeNull();
     }
 }

@@ -10,6 +10,12 @@ namespace CipherBank_app.Custody;
 /// <summary>PIN hash + lockout (Cora pinStore parity).</summary>
 public interface IPinService
 {
+    int FailedAttempts { get; }
+
+    bool IsLockedOut { get; }
+
+    TimeSpan? LockoutRemaining { get; }
+
     Task SetPinAsync(string pin);
 
     Task<bool> VerifyPinAsync(string pin);
@@ -25,12 +31,6 @@ public interface IPinService
 
     /// <summary>Loads lockout / fail counters from secure storage into in-memory fields.</summary>
     Task RefreshAsync();
-
-    int FailedAttempts { get; }
-
-    bool IsLockedOut { get; }
-
-    TimeSpan? LockoutRemaining { get; }
 }
 
 /// <inheritdoc />
@@ -44,6 +44,7 @@ public sealed class PinService : IPinService
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(5);
 
     private readonly ISecureStore _store;
+    private DateTimeOffset? _lockUntilUtc;
 
     public PinService(ISecureStore store) => _store = store;
 
@@ -61,8 +62,6 @@ public sealed class PinService : IPinService
                 : null;
         }
     }
-
-    private DateTimeOffset? _lockUntilUtc;
 
     public async Task SetPinAsync(string pin)
     {
@@ -136,6 +135,17 @@ public sealed class PinService : IPinService
 
     public Task RefreshAsync() => RefreshLockAsync();
 
+    private static string HashPin(string pin, byte[] salt)
+    {
+        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
+            Encoding.UTF8.GetBytes(pin),
+            salt,
+            120_000,
+            HashAlgorithmName.SHA256,
+            32);
+        return Convert.ToBase64String(hash);
+    }
+
     private async Task RefreshLockAsync()
     {
         string? fails = await _store.GetAsync(FailKey).ConfigureAwait(false);
@@ -152,16 +162,5 @@ public sealed class PinService : IPinService
                 await _store.SetAsync(FailKey, "0").ConfigureAwait(false);
             }
         }
-    }
-
-    private static string HashPin(string pin, byte[] salt)
-    {
-        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(pin),
-            salt,
-            120_000,
-            HashAlgorithmName.SHA256,
-            32);
-        return Convert.ToBase64String(hash);
     }
 }

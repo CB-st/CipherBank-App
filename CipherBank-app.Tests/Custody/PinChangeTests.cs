@@ -19,44 +19,6 @@ public class PinChangeTests
     private const string CurrentPin = "246810";
     private const string NextPin = "135791";
 
-    /// <summary>
-    /// In-memory <see cref="ISecureStore"/> so PIN hash/salt/lockout round-trip without platform storage.
-    /// Use: High (every Fact here). Scope: one test's PinService instance.
-    /// </summary>
-    private sealed class MemStore : ISecureStore
-    {
-        private readonly Dictionary<string, string> _data = new();
-
-        public Task SetAsync(string key, string value)
-        {
-            _data[key] = value;
-            return Task.CompletedTask;
-        }
-
-        public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
-
-        public Task RemoveAsync(string key)
-        {
-            _data.Remove(key);
-            return Task.CompletedTask;
-        }
-    }
-
-    /// <summary>
-    /// Builds a fully sealed custody (mnemonic + device secret + <see cref="CurrentPin"/>) plus a coordinator
-    /// over it, i.e. the state a real device is in when Change PIN is reachable.
-    /// Use: High (every Fact here). Scope: single test.
-    /// </summary>
-    private static async Task<(PinService Pin, PinChangeCoordinator Coordinator)> SeededAsync()
-    {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        await custody.SealAsync(MnemonicHelper.Generate(), CurrentPin);
-        return (pin, new PinChangeCoordinator(custody));
-    }
-
     [Fact]
     public async Task Change_RejectsConfirmMismatch_WithoutTouchingStoredPin()
     {
@@ -214,6 +176,20 @@ public class PinChangeTests
     }
 
     /// <summary>
+    /// Builds a fully sealed custody (mnemonic + device secret + <see cref="CurrentPin"/>) plus a coordinator
+    /// over it, i.e. the state a real device is in when Change PIN is reachable.
+    /// Use: High (every Fact here). Scope: single test.
+    /// </summary>
+    private static async Task<(PinService Pin, PinChangeCoordinator Coordinator)> SeededAsync()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        await custody.SealAsync(MnemonicHelper.Generate(), CurrentPin);
+        return (pin, new PinChangeCoordinator(custody));
+    }
+
+    /// <summary>
     /// Writes the pre-device-secret shape straight into the store: a blob sealed with the PIN itself plus a
     /// PIN hash, exactly what <see cref="CustodyService.UnlockAsync"/>'s legacy branch expects.
     /// Use: Medium (legacy-invariant Facts). Scope: single test.
@@ -224,5 +200,29 @@ public class PinChangeTests
         await pin.SetPinAsync(CurrentPin);
         await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, CurrentPin));
         return mnemonic;
+    }
+
+    /// <summary>
+    /// In-memory <see cref="ISecureStore"/> so PIN hash/salt/lockout round-trip without platform storage.
+    /// Use: High (every Fact here). Scope: one test's PinService instance.
+    /// </summary>
+    private sealed class MemStore : ISecureStore
+    {
+        private readonly Dictionary<string, string> _data = new();
+
+        public Task SetAsync(string key, string value)
+        {
+            _data[key] = value;
+            return Task.CompletedTask;
+        }
+
+        public Task<string?> GetAsync(string key)
+            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
+
+        public Task RemoveAsync(string key)
+        {
+            _data.Remove(key);
+            return Task.CompletedTask;
+        }
     }
 }

@@ -8,24 +8,24 @@ using System.Text.Json;
 
 namespace CipherBank_app.V1;
 
+/// <summary>Product websocket / mock stream.</summary>
+public interface IStreamService
+{
+    event EventHandler<StreamEvent>? EventReceived;
+
+    bool IsConnected { get; }
+
+    Task ConnectAsync(CancellationToken ct);
+
+    Task DisconnectAsync();
+}
+
 /// <summary>Stream event from /v1/stream.</summary>
 public sealed class StreamEvent
 {
     public string Type { get; init; } = string.Empty;
 
     public JsonElement? Payload { get; init; }
-}
-
-/// <summary>Product websocket / mock stream.</summary>
-public interface IStreamService
-{
-    event EventHandler<StreamEvent>? EventReceived;
-
-    Task ConnectAsync(CancellationToken ct);
-
-    Task DisconnectAsync();
-
-    bool IsConnected { get; }
 }
 
 /// <summary>Mock in-process stream that ticks rates periodically.</summary>
@@ -134,6 +134,64 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         _ = Task.Run(() => ReceiveLoopAsync(_cts.Token));
     }
 
+    public async Task DisconnectAsync()
+    {
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync().ConfigureAwait(false);
+            _cts.Dispose();
+            _cts = null;
+        }
+
+        if (_ws is not null)
+        {
+            try
+            {
+                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None).ConfigureAwait(false);
+            }
+            catch
+            {
+                // ignored
+            }
+
+            _ws.Dispose();
+            _ws = null;
+        }
+    }
+
+    public async ValueTask DisposeAsync() => await DisconnectAsync().ConfigureAwait(false);
+
+    private static bool TryParseStreamEvent(string json, out StreamEvent? streamEvent)
+    {
+        streamEvent = null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            string type = ExtractEventType(doc.RootElement);
+            streamEvent = new StreamEvent { Type = type, Payload = doc.RootElement.Clone() };
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string ExtractEventType(JsonElement root)
+    {
+        if (root.TryGetProperty("TYPE", out JsonElement upperType))
+        {
+            return upperType.GetString() ?? string.Empty;
+        }
+
+        if (root.TryGetProperty("type", out JsonElement lowerType))
+        {
+            return lowerType.GetString() ?? string.Empty;
+        }
+
+        return string.Empty;
+    }
+
     /// <summary>
     /// Accumulates WebSocket text fragments until EndOfMessage, then parses one JSON event.
     /// Use: High (while connected). Scope: ClientWebSocketStreamService receive loop.
@@ -183,62 +241,4 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
         EventReceived?.Invoke(this, streamEvent);
     }
-
-    private static bool TryParseStreamEvent(string json, out StreamEvent? streamEvent)
-    {
-        streamEvent = null;
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            string type = ExtractEventType(doc.RootElement);
-            streamEvent = new StreamEvent { Type = type, Payload = doc.RootElement.Clone() };
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static string ExtractEventType(JsonElement root)
-    {
-        if (root.TryGetProperty("TYPE", out JsonElement upperType))
-        {
-            return upperType.GetString() ?? string.Empty;
-        }
-
-        if (root.TryGetProperty("type", out JsonElement lowerType))
-        {
-            return lowerType.GetString() ?? string.Empty;
-        }
-
-        return string.Empty;
-    }
-
-    public async Task DisconnectAsync()
-    {
-        if (_cts is not null)
-        {
-            await _cts.CancelAsync().ConfigureAwait(false);
-            _cts.Dispose();
-            _cts = null;
-        }
-
-        if (_ws is not null)
-        {
-            try
-            {
-                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None).ConfigureAwait(false);
-            }
-            catch
-            {
-                // ignored
-            }
-
-            _ws.Dispose();
-            _ws = null;
-        }
-    }
-
-    public async ValueTask DisposeAsync() => await DisconnectAsync().ConfigureAwait(false);
 }

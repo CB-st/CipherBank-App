@@ -7,6 +7,14 @@ using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Persist;
 
+/// <summary>SQLite-backed prefs.</summary>
+public interface IPrefsStore
+{
+    Task<UserPrefs> LoadAsync();
+
+    Task SaveAsync(UserPrefs prefs);
+}
+
 /// <summary>User preference model (Cora prefs).</summary>
 public sealed class UserPrefs
 {
@@ -14,6 +22,8 @@ public sealed class UserPrefs
     {
         "cora", "balance", "quickActions", "performance", "holdings", "localWallets",
     };
+
+    public static readonly string[] DefaultEnabledCurrencies = { "BTC", "XMR", "USD" };
 
     public List<string> HomeOrder { get; set; } = new(DefaultHomeOrder);
 
@@ -39,8 +49,6 @@ public sealed class UserPrefs
     public string Appearance { get; set; } = "dark";
 
     public string BaseCurrency { get; set; } = "USD";
-
-    public static readonly string[] DefaultEnabledCurrencies = { "BTC", "XMR", "USD" };
 
     /// <summary>Symbols visible on Home selectors / charts (uppercase tickers).</summary>
     public List<string> EnabledCurrencies { get; set; } = new(DefaultEnabledCurrencies);
@@ -135,14 +143,6 @@ public sealed class UserPrefs
             DefaultSendSpeed = "instant";
         }
     }
-}
-
-/// <summary>SQLite-backed prefs.</summary>
-public interface IPrefsStore
-{
-    Task<UserPrefs> LoadAsync();
-
-    Task SaveAsync(UserPrefs prefs);
 }
 
 /// <inheritdoc />
