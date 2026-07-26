@@ -1,0 +1,73 @@
+// <copyright file="AccountBootstrapService.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using CipherBank_app.Persist;
+
+namespace CipherBank_app.V1;
+
+/// <summary>Import server bootstrap contacts/prefs for returning users. Never touches custody.</summary>
+public interface IAccountBootstrapService
+{
+    Task ApplyAsync(CancellationToken ct = default);
+}
+
+/// <inheritdoc />
+public sealed class AccountBootstrapService : IAccountBootstrapService
+{
+    private readonly IProductApi _api;
+    private readonly IPrefsStore _prefs;
+    private readonly IRecipientRepository _recipients;
+
+    public AccountBootstrapService(IProductApi api, IPrefsStore prefs, IRecipientRepository recipients)
+    {
+        _api = api;
+        _prefs = prefs;
+        _recipients = recipients;
+    }
+
+    public async Task ApplyAsync(CancellationToken ct = default)
+    {
+        AccountBootstrapDto bootstrap = await _api.GetAccountBootstrapAsync(ct).ConfigureAwait(false);
+
+        UserPrefs local = await _prefs.LoadAsync().ConfigureAwait(false);
+        PrefsMerge.Merge(local, bootstrap.ResolvedPrefs);
+        await _prefs.SaveAsync(local).ConfigureAwait(false);
+
+        foreach (BootstrapRecipientDto contact in bootstrap.ResolvedRecipients)
+        {
+            string? routing = contact.ResolvedRouting;
+            if (string.IsNullOrWhiteSpace(routing))
+            {
+                continue;
+            }
+
+            string digits = new string(routing.Where(char.IsDigit).ToArray());
+            if (digits.Length != 9)
+            {
+                continue;
+            }
+
+            string name = contact.ResolvedName;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            string last4 = contact.ResolvedLast4 ?? digits[^4..];
+            string accountPlaceholder = "****" + last4;
+            await _recipients.UpsertAsync(new AchRecipientRow(
+                contact.ResolvedId,
+                name.Trim(),
+                contact.ResolvedHolder,
+                contact.ResolvedBank,
+                digits,
+                accountPlaceholder,
+                contact.ResolvedAccountType is "savings" ? "savings" : "checking",
+                contact.ResolvedMemo,
+                AchRecipientValidation.MaskAccount(accountPlaceholder),
+                AchRecipientValidation.MaskRouting(digits),
+                DateTimeOffset.UtcNow)).ConfigureAwait(false);
+        }
+    }
+}

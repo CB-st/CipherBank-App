@@ -1,0 +1,264 @@
+// <copyright file="MockProductApi.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+namespace CipherBank_app.V1;
+
+/// <summary>In-process /v1 mock (Cora fixtures parity).</summary>
+public sealed class MockProductApi : IProductApi
+{
+    // --- Fixture constants ---
+    private const string MockAccessToken = "mock-access";
+    private const string MockRefreshToken = "mock-refresh";
+    private const int QuoteTtlSeconds = 30;
+    private const int HistoryDayCount = 30;
+    private const string MockReceiveAddress = "bc1qmockreceiveaddress0000000000000000";
+    private readonly List<VaultCardDto> _vaultCards =
+    [
+        new() { CardId = "card_lab_1", Last4 = "4242", Brand = "visa", Label = "Hardware test", HardwareTest = true },
+    ];
+
+    public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default)
+        => Task.FromResult(new PortfolioDto
+        {
+            TotalUsd = "128450.22",
+            Change24HPct = "2.14",
+            Holdings =
+            {
+                new HoldingDto { Symbol = "BTC", Name = "Bitcoin", Balance = "1.25000000", UsdValue = "82500.00", Change24HPct = "1.8" },
+                new HoldingDto { Symbol = "ETH", Name = "Ethereum", Balance = "12.50000000", UsdValue = "31250.00", Change24HPct = "2.4" },
+                new HoldingDto { Symbol = "USD", Name = "US Dollar", Balance = "14700.22", UsdValue = "14700.22", Change24HPct = "0" },
+            },
+        });
+
+    public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct = default)
+    {
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var (points, stepSeconds) = ResolveHistoryShape(range);
+        var pts = new List<HistoryPointDto>(points + 1);
+        double v = 100;
+        for (int i = points; i >= 0; i--)
+        {
+            v += Math.Sin(i / 3.0) * 2 + 0.3;
+            pts.Add(new HistoryPointDto { T = now - (i * (long)stepSeconds), V = v });
+        }
+
+        return Task.FromResult<IReadOnlyList<HistoryPointDto>>(pts);
+    }
+
+    private static (int Points, int StepSeconds) ResolveHistoryShape(string range)
+    {
+        return range.Trim().ToLowerInvariant() switch
+        {
+            "1d" or "1D" => (24, 3600),
+            "1w" or "7d" => (7, 86400),
+            "1m" or "30d" => (30, 86400),
+            "90d" => (90, 86400),
+            "1y" or "all" => (52, 86400 * 7),
+            _ => (HistoryDayCount, 86400),
+        };
+    }
+
+    public Task<SessionDto> CreateSessionAsync(CancellationToken ct = default)
+        => Task.FromResult(new SessionDto
+        {
+            AccessToken = MockAccessToken,
+            RefreshToken = MockRefreshToken,
+            ExpiresAt = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeMilliseconds(),
+        });
+
+    public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default)
+    {
+        // Prefer ISessionChallengeClient / IPqChannelChallengeSource in DI for real crypto.
+        // This stub satisfies IProductApi for callers that hit MockProductApi directly.
+        _ = accountPublicKeyWire;
+        return Task.FromResult(new SessionChallengeDto
+        {
+            ChallengeId = "ch_mock_" + Guid.NewGuid().ToString("N")[..8],
+            Ciphertext = Convert.ToBase64String(new byte[48]),
+            ApiPublicKey = Convert.ToBase64String(new byte[32]),
+            ApiKeyId = "api_mock",
+            Algorithm = "x25519-chacha20poly1305",
+        });
+    }
+
+    public Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default)
+    {
+        _ = request;
+        return Task.FromResult(new KeyShareResponseDto
+        {
+            KeyShareId = "ks_mock_" + Guid.NewGuid().ToString("N")[..8],
+            MlKemCiphertext = Convert.ToBase64String(new byte[1088]),
+            ServerX25519PublicKey = Convert.ToBase64String(new byte[32]),
+            Algorithm = "hybrid-mlkem768-x25519-v1",
+        });
+    }
+
+    public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default)
+    {
+        string mode = string.IsNullOrWhiteSpace(request.Mode) ? "managed" : request.Mode.ToLowerInvariant();
+        string symbol = string.IsNullOrWhiteSpace(request.Symbol) ? "XMR" : request.Symbol.ToUpperInvariant();
+        string label = string.IsNullOrWhiteSpace(request.Label) ? $"CipherBank {mode}" : request.Label!;
+        string walletId = "wlt_" + Guid.NewGuid().ToString("N")[..12];
+        string? address = mode switch
+        {
+            "managed" => "4" + Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")[..10],
+            "watch" => request.Address,
+            _ => request.Address,
+        };
+        return Task.FromResult(new CreateWalletResultDto
+        {
+            WalletId = walletId,
+            Symbol = symbol,
+            Label = label,
+            Mode = mode,
+            Address = address,
+        });
+    }
+
+    public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct = default)
+        => Task.FromResult(new QuoteDto
+        {
+            From = from.ToUpperInvariant(),
+            To = to.ToUpperInvariant(),
+            Rate = from.Equals("BTC", StringComparison.OrdinalIgnoreCase) ? "66000" : "1.00",
+            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(QuoteTtlSeconds).ToUnixTimeMilliseconds(),
+        });
+
+    public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct = default)
+        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
+
+    public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct = default)
+        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
+
+    public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct = default)
+        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
+
+    public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct = default)
+        => Task.FromResult(new ReceiveDto { Asset = asset.ToUpperInvariant(), Address = MockReceiveAddress, Uri = null });
+
+    public Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<VaultBinaryDto>>(new[]
+        {
+            new VaultBinaryDto { BinaryId = "bin_xmr_1", Label = "XMR wallet-rpc shard", Kind = "wallet_rpc" },
+        });
+
+    public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<VaultCardDto>>(_vaultCards.ToList());
+    }
+
+    public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        _ = idempotencyKey;
+        var added = new VaultCardDto
+        {
+            CardId = string.IsNullOrWhiteSpace(card.CardId) ? "card_" + Guid.NewGuid().ToString("N")[..12] : card.CardId,
+            Last4 = card.Last4,
+            Brand = card.Brand,
+            Label = card.Label,
+            HardwareTest = card.HardwareTest,
+        };
+        _vaultCards.Add(added);
+        return Task.FromResult(added);
+    }
+
+    public Task DeleteVaultCardAsync(string cardId, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        _vaultCards.RemoveAll(card => card.CardId == cardId);
+        return Task.CompletedTask;
+    }
+
+    public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct = default)
+        => Task.FromResult(new PosSessionDto { SessionId = Guid.NewGuid().ToString("N"), Status = "pending_auth" });
+
+    public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct = default)
+        => Task.FromResult(new PosSessionDto
+        {
+            SessionId = sessionId,
+            Status = "authorized",
+            TokenRef = "tok_" + Guid.NewGuid().ToString("N")[..12],
+            Last4 = "4242",
+            Brand = "visa",
+            TtlMs = 60_000,
+        });
+
+    public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct = default)
+        => Task.FromResult(new PosSessionDto
+        {
+            SessionId = sessionId,
+            Status = "ready_to_present",
+            TokenRef = "tok_ready",
+            Last4 = "4242",
+            Brand = "visa",
+            TtlMs = 45_000,
+        });
+
+    private PrefsWireDto _prefs = new()
+    {
+        HomeOrderCamel = new List<string> { "cora", "balance", "quickActions", "performance", "holdings", "localWallets" },
+        HomeVisibleCamel = new Dictionary<string, bool>
+        {
+            ["cora"] = true,
+            ["balance"] = true,
+            ["quickActions"] = true,
+            ["performance"] = true,
+            ["holdings"] = true,
+            ["localWallets"] = true,
+        },
+        ValuesHiddenOnLaunchCamel = false,
+        CoraEnabledCamel = true,
+        DefaultSendSpeedCamel = "instant",
+        AppearanceCamel = "dark",
+        BaseCurrencyCamel = "USD",
+        AppLockIdleSecCamel = 120,
+        AssetsLayoutCamel = "separate",
+    };
+
+    public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct = default)
+        => Task.FromResult<PrefsWireDto?>(_prefs);
+
+    public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct = default)
+    {
+        _prefs = prefs;
+        return Task.CompletedTask;
+    }
+
+    public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct = default)
+        => Task.FromResult(new AccountBootstrapDto
+        {
+            PrefsCamel = new PrefsWireDto
+            {
+                DefaultSendSpeedCamel = "instant",
+                CoraEnabledCamel = true,
+            },
+            RecipientsCamel = new List<BootstrapRecipientDto>
+            {
+                new()
+                {
+                    IdCamel = "maya",
+                    DisplayNameCamel = "Maya Chen",
+                    AccountHolderNameCamel = "Maya Chen",
+                    BankNameCamel = "Chase",
+                    AccountLast4Camel = "4021",
+                    AccountTypeCamel = "checking",
+                    RoutingNumberCamel = "021000021",
+                },
+                new()
+                {
+                    IdCamel = "sunset",
+                    DisplayNameCamel = "Sunset Property Mgmt",
+                    AccountHolderNameCamel = "Sunset Property Management LLC",
+                    BankNameCamel = "Wells Fargo",
+                    AccountLast4Camel = "5544",
+                    AccountTypeCamel = "checking",
+                    RoutingNumberCamel = "121000248",
+                    MemoCamel = "Rent",
+                },
+            },
+            SyncedAtCamel = 1720900000000,
+        });
+}
