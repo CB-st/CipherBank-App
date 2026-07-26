@@ -36,6 +36,9 @@ suite today: the Fresh-device account/onboarding Facts (`CB-ACCOUNT-001`, `US-ON
 `CB-ACCOUNT-PIN-CHANGE`, `CB-ACCOUNT-002`). `CoraShellSmokeTests` covers the sealed-device design-spec
 smoke path; `StoryBacklogTests` lists the remaining `CB-*` catalog as skipped Theories.
 
+**Operator runbook (emulator boot → build/install → Appium → tests):**
+[CipherBank-app.E2ETests/README.md](../CipherBank-app.E2ETests/README.md)
+
 ## Running Tests
 
 ```bash
