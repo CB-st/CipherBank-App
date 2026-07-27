@@ -134,7 +134,7 @@ jobs:
       # Must match the SonarQube project key provisioned by SRE. Override via
       # repo variable SONAR_PROJECT_KEY. Do NOT add a root sonar-project.properties
       # — SonarScanner for .NET rejects that file and fails post-processing.
-      SONAR_PROJECT_KEY:    ${{ vars.SONAR_PROJECT_KEY || 'CB-st_CipherBank-App_6f7fd196-021a-4b20-a3f2-9094fa18ab2c' }}
+      SONAR_PROJECT_KEY:    ${{ vars.SONAR_PROJECT_KEY || 'CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c' }}
       DOTNET_NOLOGO:        true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
     steps:
