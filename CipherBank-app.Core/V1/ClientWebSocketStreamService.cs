@@ -1,4 +1,4 @@
-// <copyright file="StreamService.cs" company="CipherBank">
+// <copyright file="ClientWebSocketStreamService.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
@@ -7,104 +7,6 @@ using System.Text;
 using System.Text.Json;
 
 namespace CipherBank_app.V1;
-
-/// <summary>Product websocket / mock stream.</summary>
-public interface IStreamService
-{
-    event EventHandler<StreamEvent>? EventReceived;
-
-    bool IsConnected { get; }
-
-    Task ConnectAsync(CancellationToken ct);
-
-    Task DisconnectAsync();
-}
-
-/// <summary>Stream event from /v1/stream.</summary>
-public sealed class StreamEvent
-{
-    public string Type { get; init; } = string.Empty;
-
-    public JsonElement? Payload { get; init; }
-}
-
-/// <summary>Mock in-process stream that ticks rates periodically.</summary>
-public sealed class MockStreamService : IStreamService, IAsyncDisposable
-{
-    // --- Tick cadence (only fires when subscribers exist) ---
-    private const int BalanceUpdateEveryNthSecond = 2;
-    private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(5);
-
-    private CancellationTokenSource? _cts;
-    private Task? _loop;
-
-    public event EventHandler<StreamEvent>? EventReceived;
-
-    public bool IsConnected => _loop is { IsCompleted: false };
-
-    /// <summary>Test/helper: raise a stream event for hub wiring.</summary>
-    public void Emit(StreamEvent e) => EventReceived?.Invoke(this, e);
-
-    public Task ConnectAsync(CancellationToken ct)
-    {
-        _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        CancellationToken token = _cts.Token;
-        _loop = Task.Run(async () =>
-        {
-            while (!token.IsCancellationRequested)
-            {
-                EventHandler<StreamEvent>? handlers = EventReceived;
-                if (handlers is not null)
-                {
-                    handlers.Invoke(this, new StreamEvent { Type = "RATE.TICK" });
-                    if (DateTimeOffset.UtcNow.Second % BalanceUpdateEveryNthSecond == 0)
-                    {
-                        handlers.Invoke(this, new StreamEvent { Type = "balance.update" });
-                    }
-                }
-
-                try
-                {
-                    await Task.Delay(TickInterval, token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-            }
-        });
-        return Task.CompletedTask;
-    }
-
-    public async Task DisconnectAsync()
-    {
-        if (_cts is null)
-        {
-            return;
-        }
-
-        await _cts.CancelAsync().ConfigureAwait(false);
-        if (_loop is not null)
-        {
-            try
-            {
-                await _loop.ConfigureAwait(false);
-            }
-            catch
-            {
-                // ignored
-            }
-        }
-
-        _cts.Dispose();
-        _cts = null;
-        _loop = null;
-    }
-
-    public async ValueTask DisposeAsync() => await DisconnectAsync().ConfigureAwait(false);
-}
 
 /// <summary>Live ClientWebSocket against EXPO_PUBLIC_WSS-style endpoint.</summary>
 public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposable
@@ -131,7 +33,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         _ws = new ClientWebSocket();
         await _ws.ConnectAsync(_uri, _cts.Token).ConfigureAwait(false);
-        _ = Task.Run(() => ReceiveLoopAsync(_cts.Token));
+        _ = Task.Run(() => ReceiveLoopAsync(_cts.Token), _cts.Token);
     }
 
     public async Task DisconnectAsync()

@@ -1,0 +1,84 @@
+// <copyright file="MockStreamService.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+namespace CipherBank_app.V1;
+
+/// <summary>Mock in-process stream that ticks rates periodically.</summary>
+public sealed class MockStreamService : IStreamService, IAsyncDisposable
+{
+    // --- Tick cadence (only fires when subscribers exist) ---
+    private const int BalanceUpdateEveryNthSecond = 2;
+    private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(5);
+
+    private CancellationTokenSource? _cts;
+    private Task? _loop;
+
+    public event EventHandler<StreamEvent>? EventReceived;
+
+    public bool IsConnected => _loop is { IsCompleted: false };
+
+    /// <summary>Test/helper: raise a stream event for hub wiring.</summary>
+    public void Emit(StreamEvent e) => EventReceived?.Invoke(this, e);
+
+    public async Task ConnectAsync(CancellationToken ct)
+    {
+        // Cancel any prior loop and await it so reconnect cannot orphan unobserved failures.
+        await DisconnectAsync().ConfigureAwait(false);
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        CancellationToken token = _cts.Token;
+        _loop = Task.Run(
+            async () =>
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    EventHandler<StreamEvent>? handlers = EventReceived;
+                    if (handlers is not null)
+                    {
+                        handlers.Invoke(this, new StreamEvent { Type = "RATE.TICK" });
+                        if (DateTimeOffset.UtcNow.Second % BalanceUpdateEveryNthSecond == 0)
+                        {
+                            handlers.Invoke(this, new StreamEvent { Type = "balance.update" });
+                        }
+                    }
+
+                    try
+                    {
+                        await Task.Delay(TickInterval, token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                }
+            },
+            token);
+    }
+
+    public async Task DisconnectAsync()
+    {
+        if (_cts is null)
+        {
+            return;
+        }
+
+        await _cts.CancelAsync().ConfigureAwait(false);
+        if (_loop is not null)
+        {
+            try
+            {
+                await _loop.ConfigureAwait(false);
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        _cts.Dispose();
+        _cts = null;
+        _loop = null;
+    }
+
+    public async ValueTask DisposeAsync() => await DisconnectAsync().ConfigureAwait(false);
+}

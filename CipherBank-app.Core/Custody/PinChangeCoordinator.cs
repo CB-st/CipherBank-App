@@ -1,43 +1,8 @@
-// <copyright file="PinChange.cs" company="CipherBank">
+// <copyright file="PinChangeCoordinator.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 namespace CipherBank_app.Custody;
-
-/// <summary>Why a change-PIN attempt ended the way it did (drives the surfaced message).</summary>
-public enum PinChangeStatus
-{
-    /// <summary>The stored PIN was replaced.</summary>
-    Success,
-
-    /// <summary>The new PIN is shorter than <see cref="PinChangeCoordinator.MinPinLength"/>.</summary>
-    TooShort,
-
-    /// <summary>The new PIN and its confirmation differ.</summary>
-    Mismatch,
-
-    /// <summary>The new PIN equals the one already in use.</summary>
-    SameAsCurrent,
-
-    /// <summary>The supplied current PIN failed verification.</summary>
-    WrongCurrentPin,
-
-    /// <summary>Too many failed attempts; the PIN gate is temporarily locked.</summary>
-    LockedOut,
-
-    /// <summary>
-    /// Custody refused the change because no device secret exists yet (see
-    /// <see cref="CustodyPinChangeResult.DeviceSecretMissing"/>); the old PIN stays active.
-    /// </summary>
-    VaultNotReady,
-}
-
-/// <summary>Result of one change-PIN attempt: machine-readable status plus a user-facing message.</summary>
-public readonly record struct PinChangeOutcome(PinChangeStatus Status, string Message)
-{
-    /// <summary>True only for <see cref="PinChangeStatus.Success"/>. Use: High. Scope: caller branch.</summary>
-    public bool Succeeded => Status == PinChangeStatus.Success;
-}
 
 /// <summary>
 /// Owns the change-PIN decision path so the MAUI ViewModel stays a thin binder: validates the requested

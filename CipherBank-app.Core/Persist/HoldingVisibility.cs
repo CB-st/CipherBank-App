@@ -41,8 +41,3 @@ public static class HoldingVisibility
         return new HoldingVisibilityResult(visible, other);
     }
 }
-
-/// <summary>Visible and hidden Home holding collections.</summary>
-public sealed record HoldingVisibilityResult(
-    IReadOnlyList<HoldingDto> Visible,
-    IReadOnlyList<HoldingDto> Other);

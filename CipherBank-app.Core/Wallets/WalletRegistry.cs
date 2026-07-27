@@ -4,23 +4,6 @@
 
 namespace CipherBank_app.Wallets;
 
-/// <summary>UI create mode for a wallet module.</summary>
-public enum WalletUiMode
-{
-    Derive,
-    Watch,
-    Managed,
-    Unmanaged,
-}
-
-/// <summary>Portfolio source after create.</summary>
-public enum WalletSource
-{
-    Local,
-    Watch,
-    Server,
-}
-
 /// <summary>Modular wallet registry.</summary>
 public static class WalletRegistry
 {
@@ -88,27 +71,4 @@ public static class WalletRegistry
 
     public static IReadOnlyList<WalletModule> All()
         => Modules.Values.OrderBy(m => m.Symbol).ToList();
-}
-
-/// <summary>Per-asset light-wallet module (Cora registry.ts).</summary>
-public sealed class WalletModule
-{
-    public required string Symbol { get; init; }
-
-    public required IReadOnlyList<WalletUiMode> AddModes { get; init; }
-
-    public bool CanDerive { get; init; }
-
-    public bool UsesServerWallets { get; init; }
-
-    public string? Notes { get; init; }
-
-    public WalletSource SourceFor(WalletUiMode mode)
-        => mode switch
-        {
-            WalletUiMode.Watch => WalletSource.Watch,
-            WalletUiMode.Managed => WalletSource.Server,
-            WalletUiMode.Unmanaged => UsesServerWallets ? WalletSource.Server : WalletSource.Local,
-            _ => WalletSource.Local,
-        };
 }

@@ -6,38 +6,6 @@ using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Persist;
 
-/// <summary>SQLite ACH recipients repo (Cora recipientsRepo).</summary>
-public interface IRecipientRepository
-{
-    Task EnsureSchemaAsync();
-
-    Task<IReadOnlyList<AchRecipientRow>> ListAsync();
-
-    Task UpsertAsync(AchRecipientRow row);
-
-    Task DeleteAsync(string id);
-
-    Task SeedDefaultsIfEmptyAsync();
-}
-
-/// <summary>ACH / payee recipient stored on device.</summary>
-/// <remarks>
-/// Full account/routing digits are accepted on upsert only to compute masks; SQLite (the public
-/// environment) persists masks and metadata — never cleartext PAN/routing.
-/// </remarks>
-public sealed record AchRecipientRow(
-    string Id,
-    string Name,
-    string? Holder,
-    string? Bank,
-    string? Routing,
-    string? Account,
-    string AccountType,
-    string? Memo,
-    string? AccountMask,
-    string? RoutingMask,
-    DateTimeOffset CreatedAt);
-
 /// <inheritdoc />
 public sealed class RecipientRepository : IRecipientRepository
 {

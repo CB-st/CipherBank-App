@@ -6,27 +6,6 @@ using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Persist;
 
-/// <summary>SQLite wallets repo.</summary>
-public interface IWalletRepository
-{
-    Task<IReadOnlyList<LocalWalletRow>> ListAsync();
-
-    Task UpsertAsync(LocalWalletRow row);
-
-    Task DeleteAsync(string id);
-}
-
-/// <summary>Local wallet index row.</summary>
-public sealed record LocalWalletRow(
-    string Id,
-    string Symbol,
-    string? Label,
-    string? Address,
-    string? Path,
-    int AccountIndex,
-    string Kind,
-    DateTimeOffset CreatedAt);
-
 /// <inheritdoc />
 public sealed class WalletRepository : IWalletRepository
 {

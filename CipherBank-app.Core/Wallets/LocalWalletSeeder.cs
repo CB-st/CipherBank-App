@@ -6,14 +6,6 @@ using CipherBank_app.Persist;
 
 namespace CipherBank_app.Wallets;
 
-/// <summary>Seeds derived wallet rows after custody seal (Cora ensureDerivedWallets).</summary>
-public interface ILocalWalletSeeder
-{
-    Task EnsureDerivedAsync(string mnemonic);
-
-    Task EnsureDerivedAsync(string mnemonic, IEnumerable<string> symbols);
-}
-
 /// <inheritdoc />
 public sealed class LocalWalletSeeder : ILocalWalletSeeder
 {

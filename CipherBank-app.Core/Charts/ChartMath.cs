@@ -6,9 +6,6 @@ using System.Globalization;
 
 namespace CipherBank_app.Charts;
 
-/// <summary>Point in a time series chart.</summary>
-public readonly record struct ChartPoint(double T, double V);
-
 /// <summary>Pure chart math ported from Cora chartMath.ts.</summary>
 public static class ChartMath
 {
@@ -90,12 +87,4 @@ public static class ChartMath
     /// Use: High (path layout). Scope: ChartMath.
     /// </summary>
     private static bool NearlyZero(double value) => Math.Abs(value) < Epsilon;
-}
-
-/// <summary>Result of mapping a series into a drawable path within a box.</summary>
-public sealed class ChartPathResult
-{
-    public string Line { get; init; } = string.Empty;
-    public string Area { get; init; } = string.Empty;
-    public IReadOnlyList<(double X, double Y)> Pts { get; init; } = Array.Empty<(double, double)>();
 }

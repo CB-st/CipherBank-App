@@ -1,4 +1,4 @@
-// <copyright file="PrefsWire.cs" company="CipherBank">
+// <copyright file="PrefsWireDto.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
@@ -6,31 +6,6 @@ using System.Text.Json.Serialization;
 using CipherBank_app.Persist;
 
 namespace CipherBank_app.V1;
-
-/// <summary>Merge remote prefs into local. Local keeps AssetsLayout when remote omits it.</summary>
-public static class PrefsMerge
-{
-    public static UserPrefs Merge(UserPrefs local, PrefsWireDto? remote)
-    {
-        ArgumentNullException.ThrowIfNull(local);
-        if (remote is null)
-        {
-            local.NormalizeHomeSections();
-            return local;
-        }
-
-        string priorLayout = local.AssetsLayout;
-        bool remoteHadLayout = !string.IsNullOrWhiteSpace(remote.AssetsLayout ?? remote.AssetsLayoutCamel);
-        remote.ApplyOnto(local);
-        if (!remoteHadLayout)
-        {
-            local.AssetsLayout = priorLayout;
-        }
-
-        local.NormalizeHomeSections();
-        return local;
-    }
-}
 
 /// <summary>Wire DTO for GET/PUT /v1/prefs (SCREAMING_SNAKE; camelCase accepted on read).</summary>
 public sealed class PrefsWireDto

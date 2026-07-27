@@ -6,12 +6,6 @@ using CipherBank_app.Persist;
 
 namespace CipherBank_app.V1;
 
-/// <summary>Import server bootstrap contacts/prefs for returning users. Never touches custody.</summary>
-public interface IAccountBootstrapService
-{
-    Task ApplyAsync(CancellationToken ct);
-}
-
 /// <inheritdoc />
 public sealed class AccountBootstrapService : IAccountBootstrapService
 {

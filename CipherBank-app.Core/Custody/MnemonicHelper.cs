@@ -1,4 +1,4 @@
-// <copyright file="Mnemonic.cs" company="CipherBank">
+// <copyright file="MnemonicHelper.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
