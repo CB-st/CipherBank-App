@@ -40,12 +40,12 @@ Previously deferred rows cleared **in code** (no new `sonar.yml` ignores):
 ```bash
 export PATH="$HOME/.local/dotnet:$PATH"
 source scripts/lib/android-env.sh
-./scripts/lint-csharp.sh           # SonarAnalyzer opt-in
-./scripts/lint-csharp.sh --strict  # also fail on remaining warnings
+./scripts/lint.sh                  # csharp + shell (+ other langs when present)
+./scripts/lint-csharp.sh --strict  # C# only; also fail on remaining warnings
 mkdir -p reports
 dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release \
   -p:CollectCoverage=true -p:CoverletOutputFormat=cobertura \
   -p:CoverletOutput="$PWD/reports/coverage" -p:Threshold=0
 ```
 
-**Sonar-aligned pre-push lint:** [LOCAL_SONAR_LINT.md](LOCAL_SONAR_LINT.md).
+**Pre-push lint:** [LOCAL_LINT.md](LOCAL_LINT.md) · C# Connected Mode: [LOCAL_SONAR_LINT.md](LOCAL_SONAR_LINT.md).

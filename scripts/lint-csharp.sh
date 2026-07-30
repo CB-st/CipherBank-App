@@ -14,6 +14,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=lint/lib.sh
+source "$ROOT/scripts/lint/lib.sh"
+cb_lint_ensure_path
+
 # shellcheck source=lib/android-env.sh
 source "$ROOT/scripts/lib/android-env.sh"
 

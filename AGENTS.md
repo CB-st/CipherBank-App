@@ -4,6 +4,8 @@ Guidance for agents and developers working in this repository. **MAUI is the pro
 
 Read first: this file → `docs/BUILD_LOG.md` (what shipped and how it connects) → `docs/tests/STORY_ID_MAP.md` (when touching E2E).
 
+**Pre-push local lint:** `./scripts/lint.sh` (Sonar-aligned C# + shell; Python/C++/Make when those sources exist). See `docs/LOCAL_LINT.md`.
+
 ## Coding standards (mandatory for new and touched code)
 
 These three rules apply to MAUI Shell, Core, E2E (`CipherBank-app.E2ETests`), and harness scripts. Gap-driven feature work inherits them. When editing legacy code, bring **touched** functions up to this convention; do not mass-rewrite untouched files in the same change.

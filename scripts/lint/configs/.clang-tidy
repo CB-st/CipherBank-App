@@ -1,0 +1,20 @@
+# Org-default clang-tidy config for CipherBank Cursor checkouts.
+# Used by scripts/lint-cpp.sh. Prefer a repo-root .clang-tidy when present.
+# Spec: docs/superpowers/specs/2026-07-30-local-multi-lang-lint-design.md
+
+Checks: >
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  bugprone-*,
+  cert-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  modernize-*,
+  -modernize-use-trailing-return-type
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+FormatStyle: file
