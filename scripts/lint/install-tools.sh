@@ -44,6 +44,8 @@ case "$arch" in
   *) arch_norm="$arch" ;;
 esac
 
+# Returns 0 when the named tool must be installed (missing or --force).
+# Use: High (each install_*). Scope: install-tools decision.
 need_tool() {
   local name="$1"
   if [[ "$FORCE" -eq 1 ]]; then
@@ -56,6 +58,18 @@ need_tool() {
   return 0
 }
 
+# Looks up PREFIX_SHA256_${os}_${arch} pins from tool-versions.env.
+# Use: High (curl install paths). Scope: install-tools digest dispatch.
+digest_for() {
+  local prefix="$1"
+  local key="${prefix}_${os}_${arch_norm}"
+  key="${key//-/_}"
+  # shellcheck disable=SC2086
+  eval "printf '%s' \"\${$key:-}\""
+}
+
+# Downloads and installs pinned shellcheck when missing.
+# Use: Medium (install-tools). Scope: cb-lint bin prefix.
 install_shellcheck() {
   local ver="${SHELLCHECK_VERSION:-0.10.0}"
   if ! need_tool shellcheck; then
@@ -73,16 +87,21 @@ install_shellcheck() {
       ;;
   esac
   local url="https://github.com/koalaman/shellcheck/releases/download/v${ver}/${asset}"
+  local expected
+  expected="$(digest_for SHELLCHECK_SHA256)"
   local tmp
   tmp="$(mktemp -d)"
   echo "==> shellcheck v${ver}"
   curl -fsSL "$url" -o "$tmp/$asset"
+  cb_lint_verify_sha256 "$tmp/$asset" "$expected"
   tar -xJf "$tmp/$asset" -C "$tmp"
   install -m 0755 "$tmp/shellcheck-v${ver}/shellcheck" "$BIN/shellcheck"
   rm -rf "$tmp"
   echo "installed: $BIN/shellcheck"
 }
 
+# Downloads and installs pinned ruff (standalone tarball preferred).
+# Use: Medium (install-tools). Scope: cb-lint bin prefix.
 install_ruff() {
   local ver="${RUFF_VERSION:-0.12.4}"
   if ! need_tool ruff; then
@@ -101,10 +120,13 @@ install_ruff() {
 
   if [[ -n "$target" ]]; then
     local url="https://github.com/astral-sh/ruff/releases/download/${ver}/${target}.tar.gz"
+    local expected
+    expected="$(digest_for RUFF_SHA256)"
     local tmp
     tmp="$(mktemp -d)"
     echo "==> ruff ${ver} (standalone)"
     if curl -fsSL "$url" -o "$tmp/ruff.tgz"; then
+      cb_lint_verify_sha256 "$tmp/ruff.tgz" "$expected"
       tar -xzf "$tmp/ruff.tgz" -C "$tmp"
       # tarball may nest the binary
       local binpath
@@ -145,6 +167,8 @@ install_ruff() {
   echo "warn: cannot install ruff" >&2
 }
 
+# Downloads checkmake release asset (or go install) when missing.
+# Use: Medium (install-tools). Scope: cb-lint bin prefix.
 install_checkmake() {
   local ver="${CHECKMAKE_VERSION:-0.2.2}"
   if ! need_tool checkmake; then
@@ -166,17 +190,25 @@ install_checkmake() {
   local asset
   case "$os-$arch_norm" in
     linux-x86_64) asset="checkmake-${ver}.linux.amd64" ;;
-    linux-aarch64) asset="checkmake-${ver}.linux.arm64" ;;
     darwin-x86_64) asset="checkmake-${ver}.darwin.amd64" ;;
-    darwin-aarch64) asset="checkmake-${ver}.darwin.arm64" ;;
+    linux-aarch64|darwin-aarch64)
+      echo "warn: no checkmake ${ver} release asset for $os-$arch_norm — install go and re-run, or skip make lint" >&2
+      return 0
+      ;;
     *)
       echo "warn: no checkmake asset for $os-$arch_norm — install go and re-run, or skip make lint" >&2
       return 0
       ;;
   esac
   local url="https://github.com/mrtazz/checkmake/releases/download/${ver}/${asset}"
+  local expected
+  expected="$(digest_for CHECKMAKE_SHA256)"
   echo "==> checkmake ${ver} (release asset)"
   if curl -fsSL "$url" -o "$BIN/checkmake"; then
+    if ! cb_lint_verify_sha256 "$BIN/checkmake" "$expected"; then
+      rm -f "$BIN/checkmake"
+      return 1
+    fi
     chmod 0755 "$BIN/checkmake"
     echo "installed: $BIN/checkmake"
   else
@@ -185,6 +217,8 @@ install_checkmake() {
   fi
 }
 
+# Reports whether clang-tidy / clang-format are available (no download).
+# Use: Low (end of install-tools). Scope: operator hints.
 verify_clang() {
   if command -v clang-tidy >/dev/null 2>&1; then
     echo "ok: clang-tidy ($(command -v clang-tidy))"

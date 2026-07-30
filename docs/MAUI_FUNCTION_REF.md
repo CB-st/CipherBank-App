@@ -1,14 +1,10 @@
 # MAUI_FUNCTION_REF.md — CipherBank C# application interface
 
-The **on-device** contract: how the .NET 10 MAUI app (`CipherBank-app` + `CipherBank-app.Core` + `CipherBank-app.ChallengePass`) boots, seals custody, opens sessions, moves money, and locks. Shaped like [`design_handoff_cipherbank/starter/API.md`](../design_handoff_cipherbank/starter/API.md) — each entry is an **INVOKE** (not an HTTP path) with inputs → logic → outputs.
+The **on-device** contract: how the .NET 10 MAUI app (`CipherBank-app` + `CipherBank-app.Core` + `CipherBank-app.ChallengePass`) boots, seals custody, opens sessions, moves money, and locks. Each entry is an **INVOKE** (not an HTTP path) with inputs → logic → outputs.
 
-**94 INVOKEs.** Regenerate companion HTML locally if needed: `node docs/scripts/generate-maui-function-ref.mjs` (HTML twin is not kept in-tree — review churn).
+**94 INVOKEs.** Keep this markdown as the in-tree map; do not commit a generated HTML twin (review churn).
 
-Companion wire docs:
-- Product `/v1`: [`design_handoff_cipherbank/starter/src/mocks/API_CONTRACT.md`](../design_handoff_cipherbank/starter/src/mocks/API_CONTRACT.md)
-- Public market: [`design_handoff_cipherbank/starter/docs/PUBLIC_API.md`](../design_handoff_cipherbank/starter/docs/PUBLIC_API.md)
-
-**Synced to:** `feat/cora-redesign-maui` (PR #16) — audited for CompleteUnlock breakout, full product money/POS/challenge surface, ChallengePass builder, idle PQ clear, wire `ACCESS_TOKEN`/`TOTAL_USD`, bootstrap ResolvedId, Convert 15s indicative TTL.
+**Synced to:** stacked MAUI prototype (`maui-m1`…`maui-m4`) — audited for CompleteUnlock breakout, product money/POS/challenge surface, ChallengePass builder, idle PQ clear, wire `ACCESS_TOKEN`/`TOTAL_USD`, bootstrap ResolvedId, Convert 15s indicative TTL.
 
 Conventions:
 - **Base types:** `CipherBank_app.*` (Core), `CipherBank_app.ChallengePass.*`, MAUI ViewModels under `CipherBank-app/ViewModels/`.

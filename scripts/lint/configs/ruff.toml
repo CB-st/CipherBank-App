@@ -1,6 +1,6 @@
 # Org-default Ruff config for CipherBank Cursor checkouts.
 # Used by scripts/lint-python.sh when no project ruff.toml is preferred.
-# Spec: docs/superpowers/specs/2026-07-30-local-multi-lang-lint-design.md
+# Policy: docs/LOCAL_LINT.md
 
 line-length = 100
 target-version = "py311"

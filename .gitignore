@@ -93,6 +93,9 @@ reports/
 # E2E run artifacts (journals, recovery dumps, gap scratch) — never commit device journals
 artifacts/
 
+# Local E2E credential fallbacks (see docs/tests/e2e-local.env.example)
+.env*.local
+
 # Expo handoff — out of MAUI merge path
 design_handoff_cipherbank/
 .worktrees/

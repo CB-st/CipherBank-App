@@ -23,6 +23,7 @@ public class CriticalUserJourneyTests : IDisposable
         // Configure Appium driver based on target platform
         // This setup assumes Appium server is running locally
         var platform = Environment.GetEnvironmentVariable("TEST_PLATFORM") ?? "android";
+        var appiumUrl = ResolveAppiumServerUrl();
 
         if (platform.Equals("ios", StringComparison.OrdinalIgnoreCase))
         {
@@ -35,7 +36,7 @@ public class CriticalUserJourneyTests : IDisposable
             options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("IOS_DEVICE") ?? "iPhone 15");
             options.AddAdditionalAppiumOption("platformVersion", Environment.GetEnvironmentVariable("IOS_VERSION") ?? "17.0");
 
-            _driver = new IOSDriver(new Uri("http://localhost:4723"), options);
+            _driver = new IOSDriver(new Uri(appiumUrl), options);
         }
         else
         {
@@ -47,11 +48,19 @@ public class CriticalUserJourneyTests : IDisposable
             };
             options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator");
 
-            _driver = new AndroidDriver(new Uri("http://localhost:4723"), options);
+            _driver = new AndroidDriver(new Uri(appiumUrl), options);
         }
 
         _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
     }
+
+    /// <summary>
+    /// Resolves Appium base URL from APPIUM_SERVER_URL (exported by scripts/e2e-android.sh) or defaults to :4723.
+    /// Use: High (fixture ctor). Scope: CriticalUserJourneyTests driver connect.
+    /// </summary>
+    private static string ResolveAppiumServerUrl()
+        => Environment.GetEnvironmentVariable("APPIUM_SERVER_URL")
+            ?? "http://localhost:4723";
 
     /// <summary>
     /// Tests the complete login flow with valid credentials.

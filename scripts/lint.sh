@@ -9,7 +9,6 @@
 #   ./scripts/lint.sh --strict        # C# fail on warnings
 #   ./scripts/lint.sh --core-only     # C# Core+Tests only (M1)
 #
-# Spec: docs/superpowers/specs/2026-07-30-local-multi-lang-lint-design.md
 # Docs: docs/LOCAL_LINT.md
 
 set -euo pipefail
@@ -48,6 +47,8 @@ if [[ "$install_only" -eq 1 ]]; then
 fi
 
 detect_langs() {
+  # Chooses which language linters to run from files present in the repo.
+  # Use: High (default ./scripts/lint.sh). Scope: repo root auto-detect.
   local out=()
   if cb_lint_has_any "$ROOT" '*.csproj' || cb_lint_has_any "$ROOT" '*.cs'; then
     out+=(csharp)

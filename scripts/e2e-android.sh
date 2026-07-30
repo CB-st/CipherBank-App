@@ -48,16 +48,14 @@ Usage:
   scripts/e2e-android.sh --all             Run the full E2E suite
   scripts/e2e-android.sh --help            Show this help
 
-Environment overrides:
-  E2E_TEST_PIN              Unlock PIN (required — set in env or artifacts/e2e-local.env)
-  E2E_TEST_PIN_ALT          Alternate PIN for change-PIN stories (required)
-  E2E_RECOVERY_PASSWORD     Recovery-file password for CB-ACCOUNT-002 (required)
-  E2E_JOURNAL_DIR           Story journal output dir (default: artifacts/e2e-journal)
-  APPIUM_PORT               Appium server port (default: 4723)
+Harness credentials (required once Story-trait Facts land on M4):
+  E2E_TEST_PIN / E2E_TEST_PIN_ALT / E2E_RECOVERY_PASSWORD
+  Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
+  Optional fallback: .env.e2e.local at repo root (also gitignored via .env*.local)
 
-Harness credentials are synthetic lab values for emulator diagnosis only. Copy
-docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored) and fill
-values — see docs/tests/e2e-tests.md § Harness credentials. Do not commit journals.
+Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave
+exit with a clear deferral (those Facts ship on M4). --all may run the scaffold
+suite without credentials.
 
 Requires: CB_AVD emulator image, ANDROID_HOME, DOTNET_ROOT (see scripts/lib/android-env.sh).
 EOF
@@ -70,6 +68,12 @@ log() { echo "==> $*" >&2; }
 # Prints an error to stderr and exits non-zero.
 # Use: Low (only on unrecoverable setup failures). Scope: process-wide.
 die() { echo "ERROR: $*" >&2; exit 1; }
+
+# True when E2E Facts declare [Trait("Story", …)] (account wave / M4).
+# Use: High (arg + credential gates). Scope: CipherBank-app.E2ETests tree.
+e2e_story_facts_ready() {
+  grep -R --include='*.cs' -E 'Trait\(\s*"Story"' "$ROOT/CipherBank-app.E2ETests" >/dev/null 2>&1
+}
 
 # Parses CLI flags into MODE/MODE_VALUE globals via case-based dispatch.
 # Use: High (every invocation). Scope: script entry point.
@@ -99,6 +103,10 @@ parse_args() {
       die "unrecognized argument: ${1:-}"
       ;;
   esac
+
+  if [[ "$MODE" == "story" || "$MODE" == "wave" ]] && ! e2e_story_facts_ready; then
+    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M4). Use --all for the scaffold suite, or check out prototype/maui-m4."
+  fi
 }
 
 # Resolves the --story/--wave/--all selection into a dotnet test --filter expression using Story traits.
@@ -223,8 +231,13 @@ ensure_appium_running() {
 
 # Loads gitignored lab credentials (artifacts/e2e-local.env or .env.e2e.local) into the
 # process environment when present, then requires PIN / alt / recovery password to be set.
-# Use: High (every harness run before device tests). Scope: scripts/e2e-android.sh.
+# Skipped until Story-trait Facts exist (M4) so the scaffold suite is not blocked.
+# Use: High (every harness run before device tests that need credentials). Scope: scripts/e2e-android.sh.
 ensure_e2e_credentials() {
+  if ! e2e_story_facts_ready; then
+    log "Skipping harness credentials (no Story-trait Facts in CipherBank-app.E2ETests yet)"
+    return 0
+  fi
   local env_file="$ROOT/artifacts/e2e-local.env"
   local dotenv_file="$ROOT/.env.e2e.local"
   local example="$ROOT/docs/tests/e2e-local.env.example"
@@ -236,7 +249,7 @@ ensure_e2e_credentials() {
     apply_e2e_env_file_if_unset "$dotenv_file"
   fi
   if [[ -z "${E2E_TEST_PIN:-}" || -z "${E2E_TEST_PIN_ALT:-}" || -z "${E2E_RECOVERY_PASSWORD:-}" ]]; then
-    die "Missing E2E harness credentials. Copy $example to $env_file and fill lab values (see docs/tests/e2e-tests.md § Harness credentials), or export E2E_TEST_PIN, E2E_TEST_PIN_ALT, and E2E_RECOVERY_PASSWORD."
+    die "Missing E2E harness credentials. Copy $example to $env_file and fill lab values, or export E2E_TEST_PIN, E2E_TEST_PIN_ALT, and E2E_RECOVERY_PASSWORD."
   fi
 }
 

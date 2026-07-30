@@ -55,6 +55,6 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 | [tests/README.md](tests/README.md) | Test strategy overview |
 | [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
-| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end Appium (Shell) |
-| [tests/STORY_ID_MAP.md](tests/STORY_ID_MAP.md) | CB-* / US-* story map — Appium owns design-spec at Expo parity |
+| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end Appium overview (full story map lands on M4) |
+| [tests/e2e-local.env.example](tests/e2e-local.env.example) | Template for gitignored harness credentials |
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |

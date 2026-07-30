@@ -81,7 +81,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      actions: write
     env:
       SCAN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       DOTNET_NOLOGO: true
@@ -108,14 +107,17 @@ jobs:
             exit 1
           fi
           mkdir -p reports
-          # CoverletOutput without trailing slash is a file prefix → coverage.cobertura.xml
+          # Dual format: OpenCover for sonar.cs.opencover.reportsPaths (supported C# property);
+          # cobertura retained for the AI coverage summary parser.
           dotnet test "${test_proj}" -c Release --nologo \
             -p:CollectCoverage=true \
-            -p:CoverletOutputFormat=cobertura \
+            -p:CoverletOutputFormat=\"cobertura,opencover\" \
             -p:CoverletOutput="${GITHUB_WORKSPACE}/reports/coverage" \
             -p:Threshold=0
           test -f reports/coverage.cobertura.xml
+          test -f reports/coverage.opencover.xml
           echo "Coverlet wrote reports/coverage.cobertura.xml ($(wc -c < reports/coverage.cobertura.xml) bytes)."
+          echo "Coverlet wrote reports/coverage.opencover.xml ($(wc -c < reports/coverage.opencover.xml) bytes)."
 
       - name: Summarize coverage for AI reviewers
         run: |
@@ -148,6 +150,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifact-coverage
           cp -f reports/coverage.cobertura.xml artifact-coverage/
+          cp -f reports/coverage.opencover.xml artifact-coverage/
           cp -f reports/cipherbank_coverage_report.txt artifact-coverage/
 
       - name: Upload coverage-report artifact
@@ -286,8 +289,8 @@ jobs:
           fi
 
       ### 3. Coverlet from coverage job #########################################
-      # coverage-report is flat (cobertura + AI summary). Fail closed: a scan
-      # without coverage leaves new_coverage at 0% and reds the gate.
+      # coverage-report is flat (opencover + cobertura + AI summary). Fail closed:
+      # a scan without OpenCover leaves new_coverage at 0% and reds the gate.
       - name: Download coverage-report
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
@@ -297,16 +300,24 @@ jobs:
       - name: Verify coverage report
         run: |
           set -euo pipefail
-          target=reports/coverage.cobertura.xml
-          if [ ! -f "${target}" ]; then
-            echo "Missing ${target} after coverage-report download." >&2
+          opencover=reports/coverage.opencover.xml
+          cobertura=reports/coverage.cobertura.xml
+          if [ ! -f "${opencover}" ]; then
+            echo "Missing ${opencover} after coverage-report download." >&2
             ls -la reports >&2 || true
             exit 1
           fi
-          echo "Coverage report ($(wc -c < "${target}") bytes) at ${target}."
+          if [ ! -f "${cobertura}" ]; then
+            echo "Missing ${cobertura} after coverage-report download." >&2
+            ls -la reports >&2 || true
+            exit 1
+          fi
+          echo "OpenCover report ($(wc -c < "${opencover}") bytes) at ${opencover}."
+          echo "Cobertura report ($(wc -c < "${cobertura}") bytes) at ${cobertura}."
           # Keep the alternate path Sonar begin also lists, for local/CI parity.
           mkdir -p CipherBank-app.Tests/coverage
-          cp -f "${target}" CipherBank-app.Tests/coverage/coverage.cobertura.xml
+          cp -f "${cobertura}" CipherBank-app.Tests/coverage/coverage.cobertura.xml
+          cp -f "${opencover}" CipherBank-app.Tests/coverage/coverage.opencover.xml
 
       ### 4. Toolchain ##########################################################
       - name: Set up .NET
@@ -371,8 +382,7 @@ jobs:
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
             /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,design_handoff_cipherbank/**" \
             /d:sonar.cpd.exclusions="**/IProductApi.cs,**/IWalletService.cs,**/IPublicQuoteService.cs,**/IMnemonicBackupService.cs,**/IPrefsSyncService.cs,**/IStepUpChallenges.cs,**/IChallengePass*.cs,**/IAccountKeySource.cs,**/ISessionChallengeClient.cs,**/IPq*.cs" \
-            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml" \
-            /d:sonar.cs.cobertura.reportsPaths="reports/coverage.cobertura.xml,CipherBank-app.Tests/coverage/coverage.cobertura.xml" \
+            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
       - name: Build analyzable projects
