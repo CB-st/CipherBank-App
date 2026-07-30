@@ -47,5 +47,5 @@ public class WalletCardItemTests
         new("w1", "BTC", "Bitcoin", balance, "addr-1", DateTimeOffset.UnixEpoch);
 
     private static CryptoCurrency MakeCrypto(decimal price, decimal percent) =>
-        new("BTC", "Bitcoin", price, PriceChange24h: 0, percent, MarketCap: 0, Volume24h: 0, IconUrl: string.Empty);
+        new("BTC", "Bitcoin", price, PriceChange24h: 0, percent, MarketCap: 0, Volume24h: 0, IconUrl: null);
 }

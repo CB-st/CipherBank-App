@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System;
 using CipherBank_app.Models;
 using FluentAssertions;
 using Xunit;
@@ -22,7 +23,7 @@ public class CryptoCurrencyTests
             1.5m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         // Act & Assert
         crypto.IsPriceUp.Should().BeTrue();
@@ -40,7 +41,7 @@ public class CryptoCurrencyTests
             -1.5m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         // Act & Assert
         crypto.IsPriceUp.Should().BeFalse();
@@ -58,7 +59,7 @@ public class CryptoCurrencyTests
             0m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         // Act & Assert
         crypto.IsPriceUp.Should().BeTrue();
@@ -76,7 +77,7 @@ public class CryptoCurrencyTests
             0m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         // Act
         var result = crypto.FormattedPrice;
@@ -88,7 +89,7 @@ public class CryptoCurrencyTests
     [Fact]
     public void FormattedPrice_UsesDollarSymbolAndInvariantGrouping()
     {
-        var crypto = new CryptoCurrency("BTC", "Bitcoin", 50000m, 0, 0, 0, 0, string.Empty);
+        var crypto = new CryptoCurrency("BTC", "Bitcoin", 50000m, 0, 0, 0, 0, null);
         crypto.FormattedPrice.Should().Be("$50,000.00");
     }
 
@@ -104,7 +105,7 @@ public class CryptoCurrencyTests
             1.5m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         // Act
         var result = crypto.FormattedPercentChange;
@@ -126,7 +127,7 @@ public class CryptoCurrencyTests
             -1.5m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         // Act
         var result = crypto.FormattedPercentChange;
@@ -148,7 +149,7 @@ public class CryptoCurrencyTests
             1.5m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         var crypto2 = new CryptoCurrency(
             "BTC",
@@ -158,7 +159,7 @@ public class CryptoCurrencyTests
             1.5m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         // Act & Assert
         crypto1.Should().Be(crypto2);
@@ -176,7 +177,7 @@ public class CryptoCurrencyTests
             1.5m,
             1000000000m,
             50000000m,
-            "https://example.com/btc.png");
+            new Uri("https://example.com/btc.png"));
 
         // Act
         var modified = crypto with { CurrentPrice = 55000m };

@@ -111,6 +111,102 @@ dotnet_diagnostic.SA1309.severity = none   # Allow _camelCase private fields —
 dotnet_diagnostic.SA1200.severity = none   # Allow usings outside namespace — required for file-scoped namespaces
 dotnet_diagnostic.SA0001.severity = none   # Don't require XML comment analysis on all files
 
+# ---------------------------------------------------------------------------
+# SonarAnalyzer.CSharp (csharpsquid) — aligns local lint with SonarQube gate.
+# Severities follow docs/SONAR_GATE.md. Deferred rules are silenced so they do
+# not block TreatWarningsAsErrors when EnableSonarAnalyzers=true.
+# Enable via: ./scripts/lint-csharp.sh  or  -p:EnableSonarAnalyzers=true
+# ---------------------------------------------------------------------------
+
+# P0 reliability — fail local lint (true bugs)
+dotnet_diagnostic.S1244.severity = error
+dotnet_diagnostic.S3923.severity = error
+dotnet_diagnostic.S6966.severity = error
+
+# P1 / signal maintainability — warn locally (CI Sonar gate still enforces new_violations).
+# Use ./scripts/lint-csharp.sh --strict to fail the build on these.
+dotnet_diagnostic.S1541.severity = warning
+dotnet_diagnostic.S3776.severity = warning
+dotnet_diagnostic.S2339.severity = warning
+dotnet_diagnostic.S2360.severity = warning
+dotnet_diagnostic.S2365.severity = warning
+dotnet_diagnostic.S1067.severity = warning
+dotnet_diagnostic.S3218.severity = warning
+dotnet_diagnostic.S107.severity = warning
+dotnet_diagnostic.S109.severity = warning
+dotnet_diagnostic.S3358.severity = warning
+dotnet_diagnostic.S4457.severity = warning
+dotnet_diagnostic.S3906.severity = warning
+dotnet_diagnostic.S3994.severity = warning
+dotnet_diagnostic.S3995.severity = warning
+dotnet_diagnostic.S3996.severity = warning
+dotnet_diagnostic.S3376.severity = warning
+dotnet_diagnostic.S8969.severity = warning
+dotnet_diagnostic.S6608.severity = warning
+
+# Previously deferred — now in burndown scope (warn until fixed; --strict fails)
+dotnet_diagnostic.S6354.severity = warning
+dotnet_diagnostic.S4055.severity = warning
+dotnet_diagnostic.S4004.severity = warning
+dotnet_diagnostic.S3956.severity = warning
+dotnet_diagnostic.S4136.severity = warning
+
+# UserPrefs must keep collection setters for PrefsStore STJ replace semantics (see SONAR_GATE.md)
+[CipherBank-app.Core/Persist/UserPrefs.cs]
+dotnet_diagnostic.S4004.severity = none
+
+# StyleCop structural residuals — warn during burndown
+[*.{cs,csx}]
+dotnet_diagnostic.SA1402.severity = warning
+dotnet_diagnostic.SA1201.severity = warning
+dotnet_diagnostic.SA1649.severity = warning
+dotnet_diagnostic.SA1636.severity = warning
+dotnet_diagnostic.SA1107.severity = warning
+dotnet_diagnostic.SA1516.severity = warning
+
+# IDE convention lock (Phase 7) — prefer var when type is apparent; silence flip-flop pair
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+dotnet_diagnostic.IDE0007.severity = suggestion
+dotnet_diagnostic.IDE0008.severity = none
+dotnet_diagnostic.IDE0021.severity = suggestion
+dotnet_diagnostic.IDE0022.severity = suggestion
+dotnet_diagnostic.IDE0028.severity = suggestion
+
+# Residual MINOR / INFO — suggestion (do not fail --strict after cluster burn)
+dotnet_diagnostic.S2221.severity = suggestion
+dotnet_diagnostic.S3242.severity = suggestion
+dotnet_diagnostic.S1227.severity = suggestion
+dotnet_diagnostic.S3240.severity = suggestion
+dotnet_diagnostic.S4040.severity = suggestion
+dotnet_diagnostic.S4261.severity = suggestion
+dotnet_diagnostic.S4056.severity = suggestion
+
+# SQL / schema CommandText is not UI copy — keep S4055 as warning for true user strings only;
+# Persist repositories may still report SQL literals; treat as suggestion until dedicated SQL constants pass.
+[CipherBank-app.Core/Persist/WalletRepository.cs]
+dotnet_diagnostic.S4055.severity = none
+
+[CipherBank-app.Core/Persist/RecipientRepository.cs]
+dotnet_diagnostic.S4055.severity = none
+
+[CipherBank-app.Core/Persist/MarketRepository.cs]
+dotnet_diagnostic.S4055.severity = none
+
+[CipherBank-app.Core/Persist/PrefsStore.cs]
+dotnet_diagnostic.S4055.severity = none
+
+[CipherBank-app.Core/Persist/RatesCache.cs]
+dotnet_diagnostic.S4055.severity = none
+
+[CipherBank-app.Core/Persist/LocalDb.cs]
+dotnet_diagnostic.S4055.severity = none
+
+# Test-injected System.Random for deterministic BackupQuiz; production uses RandomNumberGenerator.
+[CipherBank-app.Core/Custody/BackupQuiz.cs]
+dotnet_diagnostic.CA5394.severity = none
+
 # XML files
 [*.{xml,xaml,csproj,props,targets}]
 indent_size = 2

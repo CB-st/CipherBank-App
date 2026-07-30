@@ -1,0 +1,78 @@
+// <copyright file="AccountBootstrapService.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using CipherBank_app.Persist;
+
+namespace CipherBank_app.V1;
+
+/// <inheritdoc />
+public sealed class AccountBootstrapService : IAccountBootstrapService
+{
+    private readonly IProductApi _api;
+    private readonly IPrefsStore _prefs;
+    private readonly IRecipientRepository _recipients;
+    private readonly TimeProvider _timeProvider;
+
+    public AccountBootstrapService(IProductApi api, IPrefsStore prefs, IRecipientRepository recipients)
+        : this(api, prefs, recipients, TimeProvider.System)
+    {
+    }
+
+    public AccountBootstrapService(
+        IProductApi api,
+        IPrefsStore prefs,
+        IRecipientRepository recipients,
+        TimeProvider timeProvider)
+    {
+        _api = api;
+        _prefs = prefs;
+        _recipients = recipients;
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
+
+    public async Task ApplyAsync(CancellationToken ct)
+    {
+        AccountBootstrapDto bootstrap = await _api.GetAccountBootstrapAsync(ct).ConfigureAwait(false);
+
+        UserPrefs local = await _prefs.LoadAsync().ConfigureAwait(false);
+        PrefsMerge.Merge(local, bootstrap.ResolvedPrefs);
+        await _prefs.SaveAsync(local).ConfigureAwait(false);
+
+        foreach (BootstrapRecipientDto contact in bootstrap.ResolvedRecipients)
+        {
+            var routing = contact.ResolvedRouting;
+            if (string.IsNullOrWhiteSpace(routing))
+            {
+                continue;
+            }
+
+            var digits = new string(routing.Where(char.IsDigit).ToArray());
+            if (digits.Length != AchRecipientValidation.RoutingNumberDigitCount)
+            {
+                continue;
+            }
+
+            var name = contact.ResolvedName;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var last4 = contact.ResolvedLast4 ?? digits[^AchRecipientValidation.MaskVisibleTrailingDigits..];
+            var accountPlaceholder = "****" + last4;
+            await _recipients.UpsertAsync(new AchRecipientRow(
+                contact.ResolvedId,
+                name.Trim(),
+                contact.ResolvedHolder,
+                contact.ResolvedBank,
+                digits,
+                accountPlaceholder,
+                contact.ResolvedAccountType is "savings" ? "savings" : "checking",
+                contact.ResolvedMemo,
+                AchRecipientValidation.MaskAccount(accountPlaceholder),
+                AchRecipientValidation.MaskRouting(digits),
+                _timeProvider.GetUtcNow())).ConfigureAwait(false);
+        }
+    }
+}

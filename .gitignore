@@ -75,6 +75,8 @@ out/
 # Top-level docs (architecture, summaries)
 /*.md
 /*.mmd
+!/AGENTS.md
+!/README.md
 
 # Test results
 [Tt]est[Rr]esult*/
@@ -86,3 +88,11 @@ coverage*.json
 coverage*.xml
 *.coverage
 *.coveragexml
+reports/
+
+# E2E run artifacts (journals, recovery dumps, gap scratch) — never commit device journals
+artifacts/
+
+# Expo handoff — out of MAUI merge path
+design_handoff_cipherbank/
+.worktrees/

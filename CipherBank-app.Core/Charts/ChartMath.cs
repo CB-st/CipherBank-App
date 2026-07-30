@@ -1,0 +1,102 @@
+// <copyright file="ChartMath.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using System.Globalization;
+
+namespace CipherBank_app.Charts;
+
+/// <summary>Pure chart math ported from Cora chartMath.ts.</summary>
+public static class ChartMath
+{
+    private const double DefaultPad = 6;
+    private const double Epsilon = 1e-12;
+    private const double PercentScale = 100;
+
+    /// <summary>
+    /// Builds SVG line/area path data for a series using default pad and auto min/max.
+    /// Use: High (sparkline layout). Scope: ChartMath path builders.
+    /// </summary>
+    public static ChartPathResult ToPath(IReadOnlyCollection<ChartPoint> series, double w, double h)
+        => ToPath(series, w, h, DefaultPad, min: null, max: null);
+
+    /// <summary>
+    /// Builds SVG line/area path data for a series with an explicit pad and auto min/max.
+    /// Use: High (sparkline layout). Scope: ChartMath path builders.
+    /// </summary>
+    public static ChartPathResult ToPath(IReadOnlyCollection<ChartPoint> series, double w, double h, double pad)
+        => ToPath(series, w, h, pad, min: null, max: null);
+
+    /// <summary>
+    /// Builds SVG line/area path data for a series with pad and optional fixed value bounds.
+    /// Use: High (sparkline layout). Scope: ChartMath path builders.
+    /// </summary>
+    public static ChartPathResult ToPath(
+        IReadOnlyCollection<ChartPoint> series,
+        double w,
+        double h,
+        double pad,
+        double? min,
+        double? max)
+    {
+        if (series.Count < 2)
+        {
+            return new ChartPathResult();
+        }
+
+        var x0 = series.Min(p => p.T);
+        var x1 = series.Max(p => p.T);
+        var lo = min ?? series.Min(p => p.V);
+        var hi = max ?? series.Max(p => p.V);
+        var dx = x1 - x0;
+        if (NearlyZero(dx))
+        {
+            dx = 1;
+        }
+
+        var dy = hi - lo;
+        if (NearlyZero(dy))
+        {
+            dy = 1;
+        }
+
+        var pts = series.Select(p =>
+        {
+            var x = ((p.T - x0) / dx) * w;
+            var y = (h - pad) - (((p.V - lo) / dy) * (h - (pad * 2)));
+            return (x, y);
+        }).ToList();
+
+        var lineParts = new List<string>(pts.Count);
+        for (var i = 0; i < pts.Count; i++)
+        {
+            var cmd = i == 0 ? "M" : "L";
+            lineParts.Add(string.Create(
+                CultureInfo.InvariantCulture,
+                $"{cmd}{pts[i].x:0.0} {pts[i].y:0.0}"));
+        }
+
+        var line = string.Join(" ", lineParts);
+        var area = string.Create(
+            CultureInfo.InvariantCulture,
+            $"{line} L{w:0.0} {h:0.0} L0 {h:0.0} Z");
+        return new ChartPathResult { Line = line, Area = area, Pts = pts };
+    }
+
+    public static IReadOnlyList<ChartPoint> ToIndexed(IReadOnlyList<ChartPoint> series)
+    {
+        if (series.Count == 0)
+        {
+            return series;
+        }
+
+        var bas = NearlyZero(series[0].V) ? 1 : series[0].V;
+        return series.Select(p => new ChartPoint(p.T, ((p.V / bas) - 1) * PercentScale)).ToList();
+    }
+
+    /// <summary>
+    /// True when a chart span is effectively zero and must be substituted to avoid divide-by-zero.
+    /// Use: High (path layout). Scope: ChartMath.
+    /// </summary>
+    private static bool NearlyZero(double value) => Math.Abs(value) < Epsilon;
+}

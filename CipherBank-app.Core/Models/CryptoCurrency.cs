@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System;
 using System.Globalization;
 
 namespace CipherBank_app.Models;
@@ -17,7 +18,7 @@ public record CryptoCurrency(
     decimal PercentChange24h,
     decimal MarketCap,
     decimal Volume24h,
-    string IconUrl)
+    Uri? IconUrl)
 {
     public bool IsPriceUp => PercentChange24h >= 0;
 
