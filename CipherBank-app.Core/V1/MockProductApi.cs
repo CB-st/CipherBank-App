@@ -21,6 +21,10 @@ public sealed class MockProductApi : IProductApi
     private const int HistoryStepSecondsDaily = 86400;
     private const int HistoryStepSecondsWeekly = 86400 * 7;
     private const double HistoryBaseValue = 100;
+    private const double HistoryWavePeriod = 3.0;
+    private const double HistoryWaveAmplitude = 2.0;
+    private const double HistoryWaveOffset = 0.3;
+    private const long MockBootstrapSyncedAtMs = 1_720_900_000_000L;
     private const int SessionExpiresHours = 1;
     private const int MockChallengeIdSuffixLength = 8;
     private const int MockKeyShareIdSuffixLength = 8;
@@ -82,7 +86,7 @@ public sealed class MockProductApi : IProductApi
         double v = HistoryBaseValue;
         for (int i = points; i >= 0; i--)
         {
-            v += Math.Sin(i / 3.0) * 2 + 0.3;
+            v += (Math.Sin(i / HistoryWavePeriod) * HistoryWaveAmplitude) + HistoryWaveOffset;
             pts.Add(new HistoryPointDto { T = now - (i * (long)stepSeconds), V = v });
         }
 
@@ -146,19 +150,19 @@ public sealed class MockProductApi : IProductApi
         });
     }
 
-    public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct)
+    public Task<QuoteDto> GetQuoteAsync(string from, string toAsset, CancellationToken ct)
         => Task.FromResult(new QuoteDto
         {
             From = from.ToUpperInvariant(),
-            To = to.ToUpperInvariant(),
+            To = toAsset.ToUpperInvariant(),
             Rate = from.Equals("BTC", StringComparison.OrdinalIgnoreCase) ? "66000" : "1.00",
             ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(QuoteTtlSeconds).ToUnixTimeMilliseconds(),
         });
 
-    public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct)
+    public Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct)
         => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
 
-    public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct)
+    public Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct)
         => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
 
     public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct)
@@ -268,7 +272,7 @@ public sealed class MockProductApi : IProductApi
                     MemoCamel = "Rent",
                 },
             },
-            SyncedAtCamel = 1720900000000,
+            SyncedAtCamel = MockBootstrapSyncedAtMs,
         });
 
     private static (int Points, int StepSeconds) ResolveHistoryShape(string range)

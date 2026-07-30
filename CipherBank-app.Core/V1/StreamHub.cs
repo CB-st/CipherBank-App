@@ -32,7 +32,7 @@ public sealed class StreamHub : IStreamHub
         }
     }
 
-    public void Stop()
+    public void StopStreaming()
     {
         lock (_gate)
         {

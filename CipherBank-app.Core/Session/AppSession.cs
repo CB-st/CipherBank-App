@@ -103,7 +103,7 @@ public sealed class AppSession : IAppSession
 
     public void Lock()
     {
-        _streamHub.Stop();
+        _streamHub.StopStreaming();
         _custody.Lock();
         AccessToken = null;
         _productSessions.Clear();
@@ -187,7 +187,7 @@ public sealed class AppSession : IAppSession
     /// </summary>
     private void RollbackFailedUnlock()
     {
-        _streamHub.Stop();
+        _streamHub.StopStreaming();
         _custody.Lock();
         AccessToken = null;
         _productSessions.Clear();

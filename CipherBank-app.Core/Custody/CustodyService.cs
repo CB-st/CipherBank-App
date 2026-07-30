@@ -78,7 +78,7 @@ public sealed class CustodyService : ICustodyService
         return MapPinChangeResult(changed);
     }
 
-    public async Task SealAsync(string mnemonic, string pin)
+    public Task SealAsync(string mnemonic, string pin)
     {
         string normalized = MnemonicHelper.Normalize(mnemonic);
         if (!MnemonicHelper.Validate(normalized))
@@ -86,7 +86,7 @@ public sealed class CustodyService : ICustodyService
             throw new ArgumentException("Invalid mnemonic.", nameof(mnemonic));
         }
 
-        await SealValidatedAsync(normalized, pin).ConfigureAwait(false);
+        return SealValidatedAsync(normalized, pin);
     }
 
     public async Task<bool> UnlockAsync(string pin)

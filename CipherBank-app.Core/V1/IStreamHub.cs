@@ -13,5 +13,9 @@ public interface IStreamHub
 
     void Start();
 
-    void Stop();
+    /// <summary>
+    /// Tears down the hub subscription so stream events stop fan-out.
+    /// Use: Medium (lock / logout). Scope: process-wide stream hub.
+    /// </summary>
+    void StopStreaming();
 }

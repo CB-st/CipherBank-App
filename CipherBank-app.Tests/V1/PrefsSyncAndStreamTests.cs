@@ -49,7 +49,7 @@ public class PrefsSyncAndStreamTests
         hub.Start();
         stream.Emit(new StreamEvent { Type = "RATE.TICK" });
         count.Should().Be(1);
-        hub.Stop();
+        hub.StopStreaming();
         stream.Emit(new StreamEvent { Type = "RATE.TICK" });
         count.Should().Be(1);
     }

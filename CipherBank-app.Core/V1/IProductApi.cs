@@ -23,11 +23,11 @@ public interface IProductApi
 
     Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct);
 
-    Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct);
+    Task<QuoteDto> GetQuoteAsync(string from, string toAsset, CancellationToken ct);
 
-    Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct);
+    Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct);
 
-    Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct);
+    Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct);
 
     Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct);
 
@@ -76,15 +76,15 @@ public interface IProductApi
         => CreateWalletAsync(request, CancellationToken.None);
 
     /// <summary>Indicative quote for callers with no ambient token. Use: High (Convert). Scope: IProductApi consumers.</summary>
-    Task<QuoteDto> GetQuoteAsync(string from, string to) => GetQuoteAsync(from, to, CancellationToken.None);
+    Task<QuoteDto> GetQuoteAsync(string from, string toAsset) => GetQuoteAsync(from, toAsset, CancellationToken.None);
 
     /// <summary>Convert for callers with no ambient token. Use: Medium (Convert submit). Scope: IProductApi consumers.</summary>
-    Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey)
-        => ConvertAsync(from, to, amount, idempotencyKey, CancellationToken.None);
+    Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey)
+        => ConvertAsync(from, toAsset, amount, idempotencyKey, CancellationToken.None);
 
     /// <summary>Transfer for callers with no ambient token. Use: Medium (Send submit). Scope: IProductApi consumers.</summary>
-    Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey)
-        => TransferAsync(to, amount, speed, idempotencyKey, CancellationToken.None);
+    Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey)
+        => TransferAsync(destination, amount, speed, idempotencyKey, CancellationToken.None);
 
     /// <summary>Pay for callers with no ambient token. Use: Medium (Pay submit). Scope: IProductApi consumers.</summary>
     Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey)

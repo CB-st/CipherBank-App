@@ -194,12 +194,12 @@ public class CoreZeroTokenOverloadTests
         public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct)
             => Record<CreateWalletResultDto>(ct);
 
-        public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct) => Record<QuoteDto>(ct);
+        public Task<QuoteDto> GetQuoteAsync(string from, string toAsset, CancellationToken ct) => Record<QuoteDto>(ct);
 
-        public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct)
+        public Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct)
             => Record<MoneyMoveDto>(ct);
 
-        public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct)
+        public Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct)
             => Record<MoneyMoveDto>(ct);
 
         public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct)

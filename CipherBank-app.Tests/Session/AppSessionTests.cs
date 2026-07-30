@@ -218,14 +218,14 @@ public class AppSessionTests
         public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct)
             => _inner.CreateWalletAsync(request, ct);
 
-        public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct)
-            => _inner.GetQuoteAsync(from, to, ct);
+        public Task<QuoteDto> GetQuoteAsync(string from, string toAsset, CancellationToken ct)
+            => _inner.GetQuoteAsync(from, toAsset, ct);
 
-        public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct)
-            => _inner.ConvertAsync(from, to, amount, idempotencyKey, ct);
+        public Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct)
+            => _inner.ConvertAsync(from, toAsset, amount, idempotencyKey, ct);
 
-        public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct)
-            => _inner.TransferAsync(to, amount, speed, idempotencyKey, ct);
+        public Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct)
+            => _inner.TransferAsync(destination, amount, speed, idempotencyKey, ct);
 
         public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct)
             => _inner.PayAsync(amount, mix, idempotencyKey, ct);
