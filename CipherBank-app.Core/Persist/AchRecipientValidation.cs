@@ -7,13 +7,18 @@ namespace CipherBank_app.Persist;
 /// <summary>ACH recipient field validation (Cora RecipientPickerModal parity).</summary>
 public static class AchRecipientValidation
 {
-    public static int RoutingNumberDigitCount => 9;
+    private const int RoutingNumberDigitCountValue = 9;
+    private const int AccountNumberMinDigitsValue = 4;
+    private const int MaskVisibleTrailingDigitsValue = 4;
+    private const int MemoMaxLengthValue = 140;
 
-    public static int AccountNumberMinDigits => 4;
+    public static int RoutingNumberDigitCount => RoutingNumberDigitCountValue;
 
-    public static int MaskVisibleTrailingDigits => 4;
+    public static int AccountNumberMinDigits => AccountNumberMinDigitsValue;
 
-    public static int MemoMaxLength => 140;
+    public static int MaskVisibleTrailingDigits => MaskVisibleTrailingDigitsValue;
+
+    public static int MemoMaxLength => MemoMaxLengthValue;
 
     public static string? Validate(
         string name,
@@ -24,6 +29,10 @@ public static class AchRecipientValidation
         string accountType)
         => Validate(name, holder, bank, routing, account, accountType, null);
 
+    /// <summary>
+    /// Validates ACH payee fields for create/edit; returns the first user-facing error or null when valid.
+    /// Use: High (every recipient save). Scope: RecipientPicker / Persist callers.
+    /// </summary>
     public static string? Validate(
         string name,
         string holder,
@@ -32,47 +41,19 @@ public static class AchRecipientValidation
         string account,
         string accountType,
         string? memo)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return "Enter a payee name.";
-        }
+        => FirstError(
+            RequireNonBlank(name, "Enter a payee name."), // NOSONAR (S4055 — i18n deferred, docs/SONAR_GATE.md)
+            RequireNonBlank(holder, "Enter the account holder name."), // NOSONAR (S4055 — i18n deferred, docs/SONAR_GATE.md)
+            RequireNonBlank(bank, "Enter the bank name."), // NOSONAR (S4055 — i18n deferred, docs/SONAR_GATE.md)
+            ValidateRouting(routing),
+            ValidateAccount(account),
+            ValidateAccountType(accountType),
+            ValidateMemo(memo));
 
-        if (string.IsNullOrWhiteSpace(holder))
-        {
-            return "Enter the account holder name.";
-        }
-
-        if (string.IsNullOrWhiteSpace(bank))
-        {
-            return "Enter the bank name.";
-        }
-
-        string digits = new string(routing.Where(char.IsDigit).ToArray());
-        if (digits.Length != RoutingNumberDigitCount)
-        {
-            return "Routing number must be 9 digits.";
-        }
-
-        if (string.IsNullOrWhiteSpace(account) || account.Trim().Length < AccountNumberMinDigits)
-        {
-            return "Enter a valid account number.";
-        }
-
-        string type = accountType.Trim().ToLowerInvariant();
-        if (type is not ("checking" or "savings"))
-        {
-            return "Account type must be checking or savings.";
-        }
-
-        if (memo is not null && memo.Length > MemoMaxLength)
-        {
-            return "Memo must be 140 characters or fewer.";
-        }
-
-        return null;
-    }
-
+    /// <summary>
+    /// Masks an account number to trailing digits for display.
+    /// Use: High (recipient lists). Scope: Persist UI mapping.
+    /// </summary>
     public static string MaskAccount(string account)
     {
         string trimmed = account.Trim();
@@ -84,9 +65,13 @@ public static class AchRecipientValidation
         return "•••• " + trimmed[^MaskVisibleTrailingDigits..];
     }
 
+    /// <summary>
+    /// Masks a routing number to trailing digits for display.
+    /// Use: High (recipient lists). Scope: Persist UI mapping.
+    /// </summary>
     public static string MaskRouting(string routing)
     {
-        string digits = new string(routing.Where(char.IsDigit).ToArray());
+        string digits = DigitsOnly(routing);
         if (digits.Length < MaskVisibleTrailingDigits)
         {
             return "••••";
@@ -94,4 +79,64 @@ public static class AchRecipientValidation
 
         return "•••• " + digits[^MaskVisibleTrailingDigits..];
     }
+
+    /// <summary>
+    /// Returns the first non-null error message from ordered validation steps.
+    /// Use: High (Validate). Scope: this helper.
+    /// </summary>
+    private static string? FirstError(params string?[] errors)
+        => Array.Find(errors, static e => e is not null);
+
+    /// <summary>
+    /// Requires a non-blank string; returns <paramref name="message"/> when empty.
+    /// Use: High (Validate). Scope: this helper.
+    /// </summary>
+    private static string? RequireNonBlank(string value, string message)
+        => string.IsNullOrWhiteSpace(value) ? message : null;
+
+    /// <summary>
+    /// Ensures routing is exactly <see cref="RoutingNumberDigitCount"/> digits.
+    /// Use: High (Validate). Scope: this helper.
+    /// </summary>
+    private static string? ValidateRouting(string routing)
+        => DigitsOnly(routing).Length == RoutingNumberDigitCount
+            ? null
+            : $"Routing number must be {RoutingNumberDigitCount} digits.";
+
+    /// <summary>
+    /// Ensures account has at least <see cref="AccountNumberMinDigits"/> characters after trim.
+    /// Use: High (Validate). Scope: this helper.
+    /// </summary>
+    private static string? ValidateAccount(string account)
+        => string.IsNullOrWhiteSpace(account) || account.Trim().Length < AccountNumberMinDigits
+            ? "Enter a valid account number."
+            : null;
+
+    /// <summary>
+    /// Ensures account type is checking or savings (case-insensitive).
+    /// Use: High (Validate). Scope: this helper.
+    /// </summary>
+    private static string? ValidateAccountType(string accountType)
+    {
+        string type = accountType.Trim().ToUpperInvariant();
+        return type is "CHECKING" or "SAVINGS"
+            ? null
+            : "Account type must be checking or savings.";
+    }
+
+    /// <summary>
+    /// Ensures optional memo does not exceed <see cref="MemoMaxLength"/>.
+    /// Use: Medium (Validate with memo). Scope: this helper.
+    /// </summary>
+    private static string? ValidateMemo(string? memo)
+        => memo is not null && memo.Length > MemoMaxLength
+            ? $"Memo must be {MemoMaxLength} characters or fewer."
+            : null;
+
+    /// <summary>
+    /// Strips non-digit characters from a routing or similar numeric field.
+    /// Use: High (Validate/Mask). Scope: this helper.
+    /// </summary>
+    private static string DigitsOnly(string value)
+        => new(value.Where(char.IsDigit).ToArray());
 }
