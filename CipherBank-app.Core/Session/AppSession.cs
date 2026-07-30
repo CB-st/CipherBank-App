@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Net.Http;
+using System.Net.WebSockets;
 using System.Text.Json;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
@@ -28,6 +30,7 @@ public sealed class AppSession : IAppSession
     private readonly IProductSessionStore _productSessions;
     private readonly TimeProvider _timeProvider;
     private DateTimeOffset _lastTouch;
+    private Task _pendingDisconnect = Task.CompletedTask;
 
     public AppSession(AppSessionDeps deps)
     {
@@ -103,7 +106,7 @@ public sealed class AppSession : IAppSession
         _custody.Lock();
         AccessToken = null;
         _productSessions.Clear();
-        _ = _stream.DisconnectAsync();
+        QueueDisconnect();
         Locked?.Invoke(this, EventArgs.Empty);
     }
 
@@ -143,6 +146,7 @@ public sealed class AppSession : IAppSession
     /// </summary>
     private async Task<bool> CompleteUnlockAsync(bool applyBootstrap)
     {
+        await _pendingDisconnect.ConfigureAwait(false);
         try
         {
             SessionDto session = await _api.CreateSessionAsync(CancellationToken.None).ConfigureAwait(false);
@@ -211,6 +215,22 @@ public sealed class AppSession : IAppSession
             RollbackFailedUnlock();
             return false;
         }
+        catch (HttpRequestException)
+        {
+            RollbackFailedUnlock();
+            return false;
+        }
+        catch (WebSocketException)
+        {
+            RollbackFailedUnlock();
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            // Includes TaskCanceledException from connect/request timeouts.
+            RollbackFailedUnlock();
+            return false;
+        }
     }
 
     /// <summary>
@@ -223,6 +243,39 @@ public sealed class AppSession : IAppSession
         _custody.Lock();
         AccessToken = null;
         _productSessions.Clear();
-        _ = _stream.DisconnectAsync();
+        QueueDisconnect();
+    }
+
+    /// <summary>
+    /// Starts stream teardown without racing a later <see cref="CompleteUnlockAsync"/> connect.
+    /// Use: Medium (lock / unlock failure). Scope: AppSession stream lifecycle.
+    /// </summary>
+    private void QueueDisconnect()
+    {
+        _pendingDisconnect = DisconnectQuietlyAsync();
+    }
+
+    private async Task DisconnectQuietlyAsync()
+    {
+        try
+        {
+            await _stream.DisconnectAsync().ConfigureAwait(false);
+        }
+        catch (WebSocketException)
+        {
+            // ignored — socket may already be closing
+        }
+        catch (ObjectDisposedException)
+        {
+            // ignored
+        }
+        catch (InvalidOperationException)
+        {
+            // ignored
+        }
+        catch (OperationCanceledException)
+        {
+            // ignored
+        }
     }
 }

@@ -59,7 +59,13 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
                 continue;
             }
 
-            var last4 = contact.ResolvedLast4 ?? digits[^AchRecipientValidation.MaskVisibleTrailingDigits..];
+            var last4 = contact.ResolvedLast4;
+            if (string.IsNullOrWhiteSpace(last4))
+            {
+                // Do not substitute routing trailing digits for a missing account mask.
+                continue;
+            }
+
             var accountPlaceholder = "****" + last4;
             await _recipients.UpsertAsync(new AchRecipientRow(
                 contact.ResolvedId,

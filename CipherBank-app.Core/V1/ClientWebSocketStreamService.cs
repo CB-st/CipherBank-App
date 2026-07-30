@@ -15,6 +15,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     private const int ReceiveBufferBytes = 8 * 1024;
 
     private readonly Uri _uri;
+    private readonly SemaphoreSlim _gate = new(1, 1);
     private ClientWebSocket? _ws;
     private CancellationTokenSource? _cts;
 
@@ -35,51 +36,44 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
     public async Task ConnectAsync(CancellationToken ct)
     {
-        await DisconnectAsync().ConfigureAwait(false);
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        _ws = new ClientWebSocket();
-        await _ws.ConnectAsync(_uri, _cts.Token).ConfigureAwait(false);
-        _ = Task.Run(() => ReceiveLoopAsync(_cts.Token), _cts.Token);
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await DisconnectCoreAsync().ConfigureAwait(false);
+            _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _ws = new ClientWebSocket();
+            await _ws.ConnectAsync(_uri, _cts.Token).ConfigureAwait(false);
+            _ = Task.Run(() => ReceiveLoopAsync(_cts.Token), _cts.Token);
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     /// <summary>
     /// Cancels the receive loop and closes the socket, ignoring expected close-race faults.
+    /// Serialized with <see cref="ConnectAsync"/> so lock teardown cannot race a later connect.
     /// Use: Medium (disconnect / dispose). Scope: ClientWebSocketStreamService session.
     /// </summary>
     public async Task DisconnectAsync()
     {
-        if (_cts is not null)
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
         {
-            await _cts.CancelAsync().ConfigureAwait(false);
-            _cts.Dispose();
-            _cts = null;
+            await DisconnectCoreAsync().ConfigureAwait(false);
         }
-
-        if (_ws is not null)
+        finally
         {
-            try
-            {
-                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (WebSocketException)
-            {
-                // ignored — socket may already be closing
-            }
-            catch (ObjectDisposedException)
-            {
-                // ignored
-            }
-            catch (InvalidOperationException)
-            {
-                // ignored
-            }
-
-            _ws.Dispose();
-            _ws = null;
+            _gate.Release();
         }
     }
 
-    public async ValueTask DisposeAsync() => await DisconnectAsync().ConfigureAwait(false);
+    public async ValueTask DisposeAsync()
+    {
+        await DisconnectAsync().ConfigureAwait(false);
+        _gate.Dispose();
+    }
 
     /// <summary>
     /// Parses one WebSocket text frame into a stream event without throwing on bad JSON.
@@ -122,6 +116,39 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         }
 
         return string.Empty;
+    }
+
+    private async Task DisconnectCoreAsync()
+    {
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync().ConfigureAwait(false);
+            _cts.Dispose();
+            _cts = null;
+        }
+
+        if (_ws is not null)
+        {
+            try
+            {
+                await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (WebSocketException)
+            {
+                // ignored — socket may already be closing
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignored
+            }
+            catch (InvalidOperationException)
+            {
+                // ignored
+            }
+
+            _ws.Dispose();
+            _ws = null;
+        }
     }
 
     /// <summary>

@@ -113,27 +113,21 @@ public sealed class CustodyService : ICustodyService
             return false;
         }
 
-        var deviceSecret = await ResolveDeviceSecretAsync().ConfigureAwait(false);
         try
         {
-            if (!string.IsNullOrEmpty(deviceSecret) && TryOpen(blob, deviceSecret, out var opened) && opened is not null)
+            if (!await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false))
             {
-                // PIN is a logical gate; AES key is the device secret.
-                _mnemonic = opened;
-                await PromoteStagedDeviceSecretAsync(deviceSecret).ConfigureAwait(false);
-            }
-            else if (TryOpen(blob, pin, out var legacyOpened) && legacyOpened is not null)
-            {
+                if (!TryOpen(blob, pin, out var legacyOpened) || legacyOpened is null)
+                {
+                    _mnemonic = null;
+                    _expires = null;
+                    return false;
+                }
+
                 // Legacy PIN-derived blob, or interrupted migration that left DeviceSecretKey
                 // without rewriting the blob — recover via PIN then re-seal.
                 _mnemonic = legacyOpened;
                 await PersistDeviceSecretSealAsync(legacyOpened).ConfigureAwait(false);
-            }
-            else
-            {
-                _mnemonic = null;
-                _expires = null;
-                return false;
             }
 
             _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
@@ -163,24 +157,21 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     public async Task<bool> UnlockWithDeviceSecretAsync()
     {
-        var deviceSecret = await ResolveDeviceSecretAsync().ConfigureAwait(false);
         var blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
-        if (string.IsNullOrEmpty(deviceSecret) || string.IsNullOrEmpty(blob))
+        if (string.IsNullOrEmpty(blob))
         {
             return false;
         }
 
         try
         {
-            if (!TryOpen(blob, deviceSecret, out var opened) || opened is null)
+            if (!await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false))
             {
                 _mnemonic = null;
                 _expires = null;
                 return false;
             }
 
-            _mnemonic = opened;
-            await PromoteStagedDeviceSecretAsync(deviceSecret).ConfigureAwait(false);
             _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
             return true;
         }
@@ -303,7 +294,7 @@ public sealed class CustodyService : ICustodyService
 
     /// <summary>
     /// Prefer the promoted device secret; fall back to a staged secret from an interrupted migrate.
-    /// Use: High (every unlock). Scope: custody secure-store lookup.
+    /// Use: High (capability checks). Scope: custody secure-store lookup.
     /// </summary>
     private async Task<string?> ResolveDeviceSecretAsync()
     {
@@ -318,17 +309,40 @@ public sealed class CustodyService : ICustodyService
     }
 
     /// <summary>
-    /// Completes an interrupted migrate when unlock opened the blob with a staged secret.
-    /// Use: Low (recovery). Scope: custody secure-store keys.
+    /// Opens the seal with the promoted secret, then the staged secret if the promoted key
+    /// cannot decrypt (interrupted reseal left a new blob + staged key while the old promoted
+    /// secret remained). Commits whichever secret successfully opened the blob.
+    /// Use: High (every unlock). Scope: custody secure-store keys + in-memory mnemonic.
     /// </summary>
-    private async Task PromoteStagedDeviceSecretAsync(string deviceSecret)
+    private async Task<bool> TryUnlockWithDeviceSecretsAsync(string blob)
     {
         var promoted = await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
-        if (string.IsNullOrEmpty(promoted))
+        if (!string.IsNullOrEmpty(promoted) && TryOpen(blob, promoted, out var opened) && opened is not null)
         {
-            await _store.SetAsync(DeviceSecretKey, deviceSecret).ConfigureAwait(false);
+            _mnemonic = opened;
+            await CommitWorkingDeviceSecretAsync(promoted).ConfigureAwait(false);
+            return true;
         }
 
+        var staged = await _store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(staged) && TryOpen(blob, staged, out var stagedOpened) && stagedOpened is not null)
+        {
+            _mnemonic = stagedOpened;
+            await CommitWorkingDeviceSecretAsync(staged).ConfigureAwait(false);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Persists the secret that successfully opened the blob and clears staging.
+    /// Overwrites a stale promoted secret after an interrupted reseal recovery.
+    /// Use: Low (recovery). Scope: custody secure-store keys.
+    /// </summary>
+    private async Task CommitWorkingDeviceSecretAsync(string deviceSecret)
+    {
+        await _store.SetAsync(DeviceSecretKey, deviceSecret).ConfigureAwait(false);
         await _store.RemoveAsync(StagingDeviceSecretKey).ConfigureAwait(false);
     }
 }

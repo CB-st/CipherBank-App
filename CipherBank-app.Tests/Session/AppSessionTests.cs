@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Net.Http;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Session;
@@ -88,6 +89,28 @@ public class AppSessionTests
             custody,
             new FakeWallets(),
             api: new FailingSessionApi(),
+            productSessions: productSessions);
+        (await failing.UnlockAsync("123456")).Should().BeFalse();
+        custody.IsUnlocked.Should().BeFalse();
+        failing.AccessToken.Should().BeNull();
+        (await productSessions.GetAsync()).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Unlock_WhenCreateSessionThrowsHttpRequestException_RelocksCustody()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        var productSessions = new InMemoryProductSessionStore();
+        AppSession okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
+        await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
+        okSession.Lock();
+
+        AppSession failing = CreateSession(
+            custody,
+            new FakeWallets(),
+            api: new FailingSessionApi(new HttpRequestException("offline")),
             productSessions: productSessions);
         (await failing.UnlockAsync("123456")).Should().BeFalse();
         custody.IsUnlocked.Should().BeFalse();
@@ -206,9 +229,20 @@ public class AppSessionTests
     private sealed class FailingSessionApi : IProductApi
     {
         private readonly MockProductApi _inner = new();
+        private readonly Exception _createSessionFailure;
+
+        public FailingSessionApi()
+            : this(new InvalidOperationException("offline"))
+        {
+        }
+
+        public FailingSessionApi(Exception createSessionFailure)
+        {
+            _createSessionFailure = createSessionFailure;
+        }
 
         public Task<SessionDto> CreateSessionAsync(CancellationToken ct)
-            => Task.FromException<SessionDto>(new InvalidOperationException("offline"));
+            => Task.FromException<SessionDto>(_createSessionFailure);
 
         public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct) => _inner.GetPortfolioAsync(ct);
 

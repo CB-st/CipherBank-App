@@ -40,7 +40,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         CancellationToken ct)
         => CreateBackupFileAsync(mnemonic, recoveryPassword, null, ct);
 
-    public Task<byte[]> CreateBackupFileAsync(
+    public async Task<byte[]> CreateBackupFileAsync(
         string mnemonic,
         string recoveryPassword,
         string? hint,
@@ -53,41 +53,12 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
             throw new ArgumentException("Mnemonic is invalid.", nameof(mnemonic));
         }
 
-        var salt = RandomNumberGenerator.GetBytes(SaltSize);
-        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
-        var key = DeriveKey(recoveryPassword, salt);
-        var plaintext = Encoding.UTF8.GetBytes(MnemonicHelper.Normalize(mnemonic));
-        var ciphertext = new byte[plaintext.Length];
-        var tag = new byte[TagSize];
-
-        try
-        {
-            using var aes = new AesGcm(key, TagSize);
-            aes.Encrypt(nonce, plaintext, ciphertext, tag);
-
-            var document = new BackupDocument
-            {
-                DocumentFormat = Format,
-                KeyDerivation = Kdf,
-                IterationCount = Iterations,
-                SaltBase64 = Convert.ToBase64String(salt),
-                NonceBase64 = Convert.ToBase64String(nonce),
-                TagBase64 = Convert.ToBase64String(tag),
-                CiphertextBase64 = Convert.ToBase64String(ciphertext),
-                CreatedAt = _timeProvider.GetUtcNow(),
-                Hint = hint,
-            };
-
-            return Task.FromResult(JsonSerializer.SerializeToUtf8Bytes(document));
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(key);
-            CryptographicOperations.ZeroMemory(plaintext);
-        }
+        var normalized = MnemonicHelper.Normalize(mnemonic);
+        return await Task.Run(() => CreateBackupFileCore(normalized, recoveryPassword, hint), ct)
+            .ConfigureAwait(false);
     }
 
-    public Task<string> OpenBackupFileAsync(
+    public async Task<string> OpenBackupFileAsync(
         ReadOnlyMemory<byte> fileBytes,
         string recoveryPassword,
         CancellationToken ct)
@@ -95,10 +66,18 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         ct.ThrowIfCancellationRequested();
         ValidatePassword(recoveryPassword);
 
+        // Copy so Task.Run work owns a stable buffer (caller may reuse the Memory).
+        var fileCopy = fileBytes.ToArray();
+        return await Task.Run(() => OpenBackupFileCore(fileCopy, recoveryPassword), ct)
+            .ConfigureAwait(false);
+    }
+
+    private static string OpenBackupFileCore(byte[] fileBytes, string recoveryPassword)
+    {
         BackupDocument document;
         try
         {
-            document = JsonSerializer.Deserialize<BackupDocument>(fileBytes.Span)
+            document = JsonSerializer.Deserialize<BackupDocument>(fileBytes)
                 ?? throw new CryptographicException(InvalidRecoveryFileMessage);
         }
         catch (JsonException ex)
@@ -145,7 +124,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
                 throw new CryptographicException("Recovery file does not contain a valid mnemonic.");
             }
 
-            return Task.FromResult(MnemonicHelper.Normalize(mnemonic));
+            return MnemonicHelper.Normalize(mnemonic);
         }
         finally
         {
@@ -213,6 +192,42 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
             || string.IsNullOrWhiteSpace(document.NonceBase64)
             || string.IsNullOrWhiteSpace(document.TagBase64)
             || string.IsNullOrWhiteSpace(document.CiphertextBase64);
+
+    private byte[] CreateBackupFileCore(string normalizedMnemonic, string recoveryPassword, string? hint)
+    {
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
+        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
+        var key = DeriveKey(recoveryPassword, salt);
+        var plaintext = Encoding.UTF8.GetBytes(normalizedMnemonic);
+        var ciphertext = new byte[plaintext.Length];
+        var tag = new byte[TagSize];
+
+        try
+        {
+            using var aes = new AesGcm(key, TagSize);
+            aes.Encrypt(nonce, plaintext, ciphertext, tag);
+
+            var document = new BackupDocument
+            {
+                DocumentFormat = Format,
+                KeyDerivation = Kdf,
+                IterationCount = Iterations,
+                SaltBase64 = Convert.ToBase64String(salt),
+                NonceBase64 = Convert.ToBase64String(nonce),
+                TagBase64 = Convert.ToBase64String(tag),
+                CiphertextBase64 = Convert.ToBase64String(ciphertext),
+                CreatedAt = _timeProvider.GetUtcNow(),
+                Hint = hint,
+            };
+
+            return JsonSerializer.SerializeToUtf8Bytes(document);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(key);
+            CryptographicOperations.ZeroMemory(plaintext);
+        }
+    }
 
     private sealed class BackupDocument
     {

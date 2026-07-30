@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Security.Cryptography;
 using CipherBank_app.Custody;
 using FluentAssertions;
 using Xunit;
@@ -30,6 +31,31 @@ public class PinAndCustodyTests
         custody.Lock();
         (await custody.UnlockAsync("123456")).Should().BeTrue();
         custody.ExportMnemonic().Should().Be(MnemonicHelper.Normalize(mnemonic));
+    }
+
+    [Fact]
+    public async Task Custody_DeviceSecretUnlock_RecoversInterruptedReseal()
+    {
+        var store = new MemStore();
+        var pin = new PinService(store);
+        var custody = new CustodyService(store, pin);
+        var mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
+        await custody.SealAsync(mnemonic, "123456");
+        custody.Lock();
+
+        var stalePromoted = await store.GetAsync(CustodyService.DeviceSecretKey);
+        stalePromoted.Should().NotBeNullOrEmpty();
+
+        // Interrupted PersistDeviceSecretSealAsync after blob rewrite: new seal + staged secret,
+        // old promoted secret still present.
+        var stagedSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        await store.SetAsync(CustodyService.StagingDeviceSecretKey, stagedSecret);
+        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, stagedSecret));
+
+        (await custody.UnlockWithDeviceSecretAsync()).Should().BeTrue();
+        custody.ExportMnemonic().Should().Be(mnemonic);
+        (await store.GetAsync(CustodyService.DeviceSecretKey)).Should().Be(stagedSecret);
+        (await store.GetAsync(CustodyService.StagingDeviceSecretKey)).Should().BeNull();
     }
 
     private sealed class MemStore : ISecureStore
