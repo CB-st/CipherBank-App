@@ -95,7 +95,16 @@ cb_lint_verify_sha256() {
     echo "error: missing SHA-256 pin for $(basename "$file")" >&2
     return 1
   fi
-  actual="$(sha256sum "$file" | awk '{print $1}')"
+  if command -v sha256sum >/dev/null 2>&1; then
+    actual="$(sha256sum "$file" | awk '{print $1}')"
+  elif command -v shasum >/dev/null 2>&1; then
+    actual="$(shasum -a 256 "$file" | awk '{print $1}')"
+  elif command -v openssl >/dev/null 2>&1; then
+    actual="$(openssl dgst -sha256 "$file" | awk '{print $NF}')"
+  else
+    echo "error: need sha256sum, shasum, or openssl to verify $(basename "$file")" >&2
+    return 1
+  fi
   if [[ "$actual" != "$expected" ]]; then
     echo "error: SHA-256 mismatch for $(basename "$file")" >&2
     echo "  expected: $expected" >&2

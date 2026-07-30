@@ -290,9 +290,9 @@ run_e2e_tests() {
   APPIUM_PORT="$APPIUM_PORT" \
   E2E_RUN=1 TEST_PLATFORM=android \
     ANDROID_APK_PATH="$apk" \
-    E2E_TEST_PIN="$E2E_TEST_PIN" \
-    E2E_TEST_PIN_ALT="$E2E_TEST_PIN_ALT" \
-    E2E_RECOVERY_PASSWORD="$E2E_RECOVERY_PASSWORD" \
+    E2E_TEST_PIN="${E2E_TEST_PIN:-}" \
+    E2E_TEST_PIN_ALT="${E2E_TEST_PIN_ALT:-}" \
+    E2E_RECOVERY_PASSWORD="${E2E_RECOVERY_PASSWORD:-}" \
     E2E_JOURNAL_DIR="$journal_dir" \
     dotnet test "${test_args[@]}"
 }
