@@ -30,12 +30,29 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+
+    <!-- Same Roslyn engine SonarQube uses for csharpsquid:* rules.
+         Opt-in only: normal builds stay unchanged. Enable with
+         -p:EnableSonarAnalyzers=true (see scripts/lint-csharp.sh). -->
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.31.0.145097" Condition="'$(EnableSonarAnalyzers)' == 'true'">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <!-- Security-specific analyzer configuration -->
   <PropertyGroup>
     <!-- Treat security-related warnings as errors -->
     <WarningsAsErrors>$(WarningsAsErrors);CA2100;CA5350;CA5351;CA5359;CA5360;CA5361;CA5362;CA5363;CA5364;CA5365;CA5366;CA5367;CA5368;CA5369;CA5370;CA5371;CA5372;CA5373;CA5374;CA5375;CA5376;CA5377;CA5378;CA5379;CA5380;CA5381;CA5382;CA5383;CA5384;CA5385;CA5386;CA5387;CA5388;CA5389;CA5390;CA5391;CA5392;CA5393;CA5394;CA5395;CA5396;CA5397;CA5398;CA5399;CA5400;CA5401;CA5402;CA5403;CA5404;CA5405</WarningsAsErrors>
+    <!-- NuGet correctness: never demote these into WarningsNotAsErrors (Phase 4 Task 2). -->
+    <WarningsAsErrors>$(WarningsAsErrors);NU1608;NU1605;NU1107</WarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Opt-in SonarAnalyzer: keep .editorconfig severities (error vs warning vs none).
+       Do not promote every Sonar warning to a build error — that would block on residual
+       debt before SONAR_GATE burn-down. scripts/lint-csharp.sh fails on `error S####`. -->
+  <PropertyGroup Condition="'$(EnableSonarAnalyzers)' == 'true'">
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
 </Project>

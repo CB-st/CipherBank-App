@@ -22,7 +22,7 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 10, TimeSpan.FromMinutes(1));
 
         // Act
-        var result = await rateLimiter.TryAcquireAsync();
+        var result = await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         result.Should().BeTrue();
@@ -35,12 +35,12 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 3, TimeSpan.FromMinutes(1));
 
         // Act - Make 3 requests (the limit)
-        await rateLimiter.TryAcquireAsync();
-        await rateLimiter.TryAcquireAsync();
-        await rateLimiter.TryAcquireAsync();
+        await rateLimiter.TryAcquireAsync(default);
+        await rateLimiter.TryAcquireAsync(default);
+        await rateLimiter.TryAcquireAsync(default);
 
         // 4th request should fail
-        var result = await rateLimiter.TryAcquireAsync();
+        var result = await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         result.Should().BeFalse();
@@ -53,9 +53,9 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 1, TimeSpan.FromMilliseconds(50));
 
         // Act - Make request, wait for window, make another
-        await rateLimiter.TryAcquireAsync();
+        await rateLimiter.TryAcquireAsync(default);
         await Task.Delay(100); // Wait for window to expire
-        var result = await rateLimiter.TryAcquireAsync();
+        var result = await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         result.Should().BeTrue();
@@ -68,7 +68,7 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 10, TimeSpan.FromMinutes(1));
 
         // Act
-        var waitTime = await rateLimiter.GetWaitTimeAsync();
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync(default);
 
         // Assert
         waitTime.Should().Be(TimeSpan.Zero);
@@ -81,8 +81,8 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 1, TimeSpan.FromSeconds(10));
 
         // Act
-        await rateLimiter.TryAcquireAsync(); // Use up the limit
-        var waitTime = await rateLimiter.GetWaitTimeAsync();
+        await rateLimiter.TryAcquireAsync(default); // Use up the limit
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync(default);
 
         // Assert
         waitTime.Should().BeGreaterThan(TimeSpan.Zero);
@@ -96,9 +96,9 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 10, TimeSpan.FromMinutes(1));
 
         // Act
-        await rateLimiter.TryAcquireAsync();
-        await rateLimiter.TryAcquireAsync();
-        await rateLimiter.TryAcquireAsync();
+        await rateLimiter.TryAcquireAsync(default);
+        await rateLimiter.TryAcquireAsync(default);
+        await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         rateLimiter.CurrentRequestCount.Should().Be(3);
@@ -165,9 +165,9 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 2, TimeSpan.FromMilliseconds(100));
 
         // Act
-        await rateLimiter.TryAcquireAsync(); // Request 1
-        await rateLimiter.TryAcquireAsync(); // Request 2
-        var atLimit = await rateLimiter.TryAcquireAsync(); // Should fail
+        await rateLimiter.TryAcquireAsync(default); // Request 1
+        await rateLimiter.TryAcquireAsync(default); // Request 2
+        var atLimit = await rateLimiter.TryAcquireAsync(default); // Should fail
 
         atLimit.Should().BeFalse();
 
@@ -175,7 +175,7 @@ public class RateLimiterTests
         await Task.Delay(150);
 
         // Now should be able to make requests again
-        var afterExpiry = await rateLimiter.TryAcquireAsync();
+        var afterExpiry = await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         afterExpiry.Should().BeTrue();

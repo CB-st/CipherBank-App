@@ -13,6 +13,8 @@ public record PriceHistory(
     DateTimeOffset StartDate,
     DateTimeOffset EndDate)
 {
+    private const decimal PercentScale = 100m;
+
     public decimal HighPrice => PricePoints.Count > 0 ? PricePoints.Max(p => p.Price) : 0;
 
     public decimal LowPrice => PricePoints.Count > 0 ? PricePoints.Min(p => p.Price) : 0;
@@ -20,10 +22,10 @@ public record PriceHistory(
     public decimal AveragePrice => PricePoints.Count > 0 ? PricePoints.Average(p => p.Price) : 0;
 
     public decimal PriceChange => PricePoints.Count >= 2
-        ? PricePoints.Last().Price - PricePoints.First().Price
+        ? PricePoints[^1].Price - PricePoints[0].Price
         : 0;
 
-    public decimal PercentChange => PricePoints.Count >= 2 && PricePoints.First().Price != 0
-        ? (PriceChange / PricePoints.First().Price) * 100
+    public decimal PercentChange => PricePoints.Count >= 2 && PricePoints[0].Price != 0
+        ? (PriceChange / PricePoints[0].Price) * PercentScale
         : 0;
 }

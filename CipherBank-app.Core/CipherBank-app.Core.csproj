@@ -5,15 +5,38 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>CipherBank_app</RootNamespace>
+    <!-- Phase 3: SA1402/SA1649 removed after Stage 2 one-type-per-file splits. -->
+    <!-- Phase 3 Stage 3: SA1402/SA1649 removed. CA1707 kept for RootNamespace CipherBank_app (assembly-aligned). -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IDE0005</WarningsNotAsErrors>
+    <NoWarn>$(NoWarn);IDE0005;CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
+    <!-- Pin past NU1903 (2.1.11) but exclude ALL assets — desktop Linux natives
+         (libc.so.6) must never land in the Android APK or SqliteConnection type-init fails.
+         Android natives come only from sqlitepclraw.lib.e_sqlite3.android below.
+         CipherBank-app.Tests references the desktop package without ExcludeAssets. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>all</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.12" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
+    <PackageReference Include="NBitcoin" Version="8.0.13" />
+    <PackageReference Include="NBitcoin.Altcoins" Version="3.0.33" />
+    <PackageReference Include="Nethereum.HdWallet" Version="6.1.0" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Custody storage-key constants stay internal; the unit suite needs them to seed legacy blobs. -->
+    <InternalsVisibleTo Include="CipherBank-app.Tests" />
   </ItemGroup>
 
 </Project>

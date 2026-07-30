@@ -17,6 +17,17 @@ public static partial class AddressValidator
     // Base58 alphabet used by Bitcoin and Solana
     private const string Base58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
+    private const int Base58LegacyMinLength = 26;
+    private const int Base58LegacyMaxLength = 35;
+    private const int Bech32MinLength = 42;
+    private const int Bech32MaxLength = 62;
+    private const int EthereumAddressLength = 42;
+    private const int SolanaMinLength = 32;
+    private const int SolanaMaxLength = 44;
+    private const int GenericMinLength = 20;
+    private const int GenericMaxLength = 100;
+    private const int Bech32HrpLength = 3;
+
     /// <summary>
     /// Validates a cryptocurrency address for the specified symbol.
     /// </summary>
@@ -50,33 +61,29 @@ public static partial class AddressValidator
             return false;
         }
 
-        // P2PKH addresses: Start with 1, 25-34 characters
         if (address.StartsWith('1'))
         {
-            return address.Length >= 26 && address.Length <= 35 && IsValidBase58(address);
+            return IsValidLegacyBase58Address(address);
         }
 
-        // P2SH addresses: Start with 3, 25-35 characters
         if (address.StartsWith('3'))
         {
-            return address.Length >= 26 && address.Length <= 35 && IsValidBase58(address);
+            return IsValidLegacyBase58Address(address);
         }
 
-        // Bech32 addresses: Start with bc1, 42-62 characters
         if (address.StartsWith("bc1", StringComparison.OrdinalIgnoreCase))
         {
-            return address.Length >= 42 && address.Length <= 62 && IsValidBech32(address);
+            return IsValidBech32Range(address);
         }
 
-        // Testnet addresses: Start with m, n, or 2 (P2PKH/P2SH) or tb1 (Bech32)
         if (address.StartsWith('m') || address.StartsWith('n') || address.StartsWith('2'))
         {
-            return address.Length >= 26 && address.Length <= 35 && IsValidBase58(address);
+            return IsValidLegacyBase58Address(address);
         }
 
         if (address.StartsWith("tb1", StringComparison.OrdinalIgnoreCase))
         {
-            return address.Length >= 42 && address.Length <= 62 && IsValidBech32(address);
+            return IsValidBech32Range(address);
         }
 
         return false;
@@ -93,18 +100,16 @@ public static partial class AddressValidator
             return false;
         }
 
-        // Must start with 0x and be exactly 42 characters (0x + 40 hex)
         if (!address.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
-        if (address.Length != 42)
+        if (address.Length != EthereumAddressLength)
         {
             return false;
         }
 
-        // Check that remaining characters are valid hex
         return EthereumAddressRegex().IsMatch(address);
     }
 
@@ -119,8 +124,7 @@ public static partial class AddressValidator
             return false;
         }
 
-        // Solana addresses are typically 32-44 characters in Base58
-        if (address.Length < 32 || address.Length > 44)
+        if (address.Length < SolanaMinLength || address.Length > SolanaMaxLength)
         {
             return false;
         }
@@ -139,18 +143,24 @@ public static partial class AddressValidator
             return false;
         }
 
-        // Basic validation: reasonable length, alphanumeric
-        return address.Length >= 20 && address.Length <= 100 &&
+        return address.Length >= GenericMinLength && address.Length <= GenericMaxLength &&
                address.All(c => char.IsLetterOrDigit(c) || c == '_');
     }
+
+    private static bool IsValidLegacyBase58Address(string address)
+        => address.Length >= Base58LegacyMinLength
+           && address.Length <= Base58LegacyMaxLength
+           && IsValidBase58(address);
+
+    private static bool IsValidBech32Range(string address)
+        => address.Length >= Bech32MinLength
+           && address.Length <= Bech32MaxLength
+           && IsValidBech32(address);
 
     /// <summary>
     /// Checks if a string contains only valid Base58 characters.
     /// </summary>
-    private static bool IsValidBase58(string value)
-    {
-        return !string.IsNullOrEmpty(value) && value.All(c => Base58Alphabet.Contains(c));
-    }
+    private static bool IsValidBase58(string value) => !string.IsNullOrEmpty(value) && value.All(c => Base58Alphabet.Contains(c));
 
     /// <summary>
     /// Validates Bech32 address format (simplified validation).
@@ -158,7 +168,7 @@ public static partial class AddressValidator
     private static bool IsValidBech32(string address)
     {
         // Bech32 uses lowercase a-z and 0-9, excluding 1, b, i, o
-        var bech32Data = address.Substring(3); // Remove bc1 or tb1 prefix
+        var bech32Data = address.Substring(Bech32HrpLength); // Remove bc1 or tb1 prefix
         const string bech32Alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
         return bech32Data.All(c => bech32Alphabet.Contains(char.ToLowerInvariant(c)) || char.IsDigit(c));
