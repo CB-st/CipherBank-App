@@ -17,6 +17,3 @@ exclude = [
 [lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = []
-
-[lint.per-file-ignores]
-"**/tests/**" = ["S101"]

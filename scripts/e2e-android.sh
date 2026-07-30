@@ -94,12 +94,17 @@ parse_args() {
     --all)
       MODE="all"
       ;;
-    --help|-h|"")
+    --help|-h)
       print_usage
       exit 0
       ;;
+    "")
+      print_usage >&2
+      echo "ERROR: missing required argument (use --help for usage)" >&2
+      exit 2
+      ;;
     *)
-      print_usage
+      print_usage >&2
       die "unrecognized argument: ${1:-}"
       ;;
   esac

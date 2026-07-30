@@ -49,8 +49,8 @@ Default `dotnet build` is unchanged. Local C# lint sets `-p:EnableSonarAnalyzers
 ```bash
 mkdir -p reports
 dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release \
-  -p:CollectCoverage=true -p:CoverletOutputFormat=cobertura \
+  -p:CollectCoverage=true -p:CoverletOutputFormat=\"cobertura,opencover\" \
   -p:CoverletOutput="$PWD/reports/coverage" -p:Threshold=0
 ```
 
-Gate expects **≥80%** new coverage on Sonar; aim toward **~90%** on stacked PRs when burning coverage debt.
+Aim toward **~80–90%** new coverage on stacked PRs when burning coverage debt. Confirm whether `new_coverage` is an active quality-gate condition via the CI `quality-gate.json` artifact — docs are not a substitute for the live gate.

@@ -13,7 +13,7 @@ Sonar does not always annotate the GitHub PR; use the `sonar-context-<sha>` work
 | P0 | Reliability / bugs | S1244, S3923, S6966 | Fix before merge |
 | P1 | HIGH maintainability | S2360 optional params, S1541/S3776 complexity, S2339 public const, S3218 shadowing, S1067 | Fix or overload |
 | P2 | MAJOR maintainability (signal) | S109 magic numbers, nested ternaries S3358, Uri string props S399x | Name constants / extract helpers / use `Uri` |
-| P3 | Coverage | new_coverage / new_line_coverage | Coverlet → `reports/coverage.cobertura.xml`; gate expects ≥80% new coverage |
+| P3 | Coverage | new_coverage / new_line_coverage | Coverlet → OpenCover (`reports/coverage.opencover.xml`) for `sonar.cs.opencover.reportsPaths`; CI fails closed if the artifact is missing. When the project quality gate includes `new_coverage`, treat **≥80%** as the target (confirm via `quality-gate.json` — do not assume the condition from docs alone). |
 | P0 | NuGet constraint / restore | NU1608, NU1605, NU1107 | **Errors** via `Directory.Build.props` `WarningsAsErrors`; never demote to WNAE |
 
 ## Remaining exceptions (not deferred smells — structural/product constraints)
@@ -44,7 +44,7 @@ source scripts/lib/android-env.sh
 ./scripts/lint-csharp.sh --strict  # C# only; also fail on remaining warnings
 mkdir -p reports
 dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release \
-  -p:CollectCoverage=true -p:CoverletOutputFormat=cobertura \
+  -p:CollectCoverage=true -p:CoverletOutputFormat=\"cobertura,opencover\" \
   -p:CoverletOutput="$PWD/reports/coverage" -p:Threshold=0
 ```
 
