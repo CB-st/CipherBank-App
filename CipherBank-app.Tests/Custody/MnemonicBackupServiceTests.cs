@@ -25,7 +25,7 @@ public class MnemonicBackupServiceTests
         opened.Should().Be(MnemonicHelper.Normalize(mnemonic));
         Encoding.UTF8.GetString(file).Should().NotContain(MnemonicHelper.Normalize(mnemonic));
 
-        using JsonDocument json = JsonDocument.Parse(file);
+        using var json = JsonDocument.Parse(file);
         JsonElement root = json.RootElement;
         root.GetProperty("FORMAT").GetString().Should().Be("cipherbank-recovery-v1");
         root.GetProperty("KDF").GetString().Should().Be("PBKDF2-SHA256");
@@ -76,7 +76,7 @@ public class MnemonicBackupServiceTests
             MnemonicHelper.Generate(),
             "correct-horse-battery-staple",
             default);
-        using JsonDocument validJson = JsonDocument.Parse(validFile);
+        using var validJson = JsonDocument.Parse(validFile);
         var fields = validJson.RootElement.EnumerateObject()
             .Where(property => property.Name != "CREATED_AT")
             .ToDictionary(property => property.Name, property => property.Value.Clone());

@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Data.Common;
 using System.Globalization;
 using Microsoft.Data.Sqlite;
 
@@ -238,7 +239,7 @@ public sealed class RecipientRepository : IRecipientRepository
     /// Runs schema DDL, ignoring duplicate-column failures.
     /// Use: Low (migration). Scope: recipients schema helpers.
     /// </summary>
-    private static async Task TryExecuteSchemaAsync(SqliteCommand cmd)
+    private static async Task TryExecuteSchemaAsync(DbCommand cmd)
     {
         try
         {
@@ -298,7 +299,7 @@ public sealed class RecipientRepository : IRecipientRepository
     /// Runs scrub SQL, ignoring missing-column failures on fresh schemas.
     /// Use: Low. Scope: recipients scrub helpers.
     /// </summary>
-    private static async Task TryExecuteOptionalColumnAsync(SqliteCommand cmd)
+    private static async Task TryExecuteOptionalColumnAsync(DbCommand cmd)
     {
         try
         {

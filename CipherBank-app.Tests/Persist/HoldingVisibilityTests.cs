@@ -21,7 +21,7 @@ public class HoldingVisibilityTests
             new HoldingDto { Symbol = "usd" },
         };
 
-        HoldingVisibilityResult result = HoldingVisibility.Split(holdings, new List<string> { "BTC", "Usd" });
+        HoldingVisibilityResult result = HoldingVisibility.Split(holdings, ["BTC", "Usd"]);
 
         result.Visible.Select(holding => holding.Symbol).Should().Equal("btc", "usd");
         result.Other.Select(holding => holding.Symbol).Should().Equal("ETH");
