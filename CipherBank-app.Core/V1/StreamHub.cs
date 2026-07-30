@@ -11,9 +11,12 @@ public sealed class StreamHub : IStreamHub
     private readonly object _gate = new();
     private bool _hooked;
 
-    public StreamHub(IStreamService stream) => _stream = stream;
+    public StreamHub(IStreamService stream)
+    {
+        _stream = stream;
+    }
 
-    public event EventHandler<StreamEvent>? EventReceived;
+    public event EventHandler<StreamEventArgs>? EventReceived;
 
     public bool IsRunning { get; private set; }
 
@@ -47,6 +50,6 @@ public sealed class StreamHub : IStreamHub
         }
     }
 
-    private void OnStreamEvent(object? sender, StreamEvent e)
+    private void OnStreamEvent(object? sender, StreamEventArgs e)
         => EventReceived?.Invoke(this, e);
 }

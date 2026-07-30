@@ -27,11 +27,20 @@ dotnet build -f net10.0-maccatalyst -t:Run
 dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 ```
 
+## Coding standards & Sonar
+
+Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar typology / stages / missteps**) live in the repo-root [AGENTS.md](../AGENTS.md). Gate soften-vs-fix policy: [SONAR_GATE.md](SONAR_GATE.md). Stage 2 file splits: [SONAR_STRUCTURAL_PLAN.md](SONAR_STRUCTURAL_PLAN.md).
+
 ## Documentation Index
 
 | Document | Description |
 |----------|-------------|
+| [../AGENTS.md](../AGENTS.md) | **Day-to-day agent rules**, including Sonar typology, Stage 1–3 order, Shell compile gate, common missteps |
+| [BUILD_LOG.md](BUILD_LOG.md) | Condensed prototype map: what shipped, where it lives, connections |
 | [SONAR_GATE.md](SONAR_GATE.md) | Sonar quality-gate policy: what we fix vs soften (with reasons) |
+| [SONAR_STRUCTURAL_PLAN.md](SONAR_STRUCTURAL_PLAN.md) | Stage 2 SA1402/SA1649 inventory, callers, split targets, execution status |
+| [MAUI_FUNCTION_REF.md](MAUI_FUNCTION_REF.md) | Monolithic INVOKE-style map of MAUI/Core/ChallengePass functions (API.md format) |
+| [CB_MauiFunctionRef.html](CB_MauiFunctionRef.html) | Navigable HTML twin of MAUI_FUNCTION_REF |
 | [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
 | [core/README.md](core/README.md) | Core library overview |
 | [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |
@@ -45,5 +54,6 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 | [tests/README.md](tests/README.md) | Test strategy overview |
 | [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
-| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end tests |
+| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end Appium (Shell) |
+| [tests/STORY_ID_MAP.md](tests/STORY_ID_MAP.md) | CB-* / US-* story map — Appium owns design-spec at Expo parity |
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |

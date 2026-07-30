@@ -7,7 +7,7 @@ namespace CipherBank_app.V1;
 /// <summary>Product websocket / mock stream.</summary>
 public interface IStreamService
 {
-    event EventHandler<StreamEvent>? EventReceived;
+    event EventHandler<StreamEventArgs>? EventReceived;
 
     bool IsConnected { get; }
 

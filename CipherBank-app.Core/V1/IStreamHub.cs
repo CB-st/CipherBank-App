@@ -7,7 +7,7 @@ namespace CipherBank_app.V1;
 /// <summary>Process-wide fan-out of product stream events (one subscription to the socket).</summary>
 public interface IStreamHub
 {
-    event EventHandler<StreamEvent>? EventReceived;
+    event EventHandler<StreamEventArgs>? EventReceived;
 
     bool IsRunning { get; }
 

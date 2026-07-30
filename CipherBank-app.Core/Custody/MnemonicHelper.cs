@@ -34,7 +34,7 @@ public static class MnemonicHelper
     }
 
     public static string Normalize(string phrase)
-        => string.Join(' ', phrase.Trim().ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        => string.Join(' ', phrase.Trim().ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)); // NOSONAR (S4040) — BIP39 English wordlist is lowercase-only
 
     public static string[] Words(string phrase)
         => Normalize(phrase).Split(' ', StringSplitOptions.RemoveEmptyEntries);

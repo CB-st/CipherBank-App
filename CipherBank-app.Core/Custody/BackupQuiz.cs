@@ -29,19 +29,11 @@ public static class BackupQuiz
         // Fisher–Yates partial shuffle
         for (int i = 0; i < take; i++)
         {
-            int j;
-            if (rng is null)
-            {
-#pragma warning disable CA5394 // Random.Shared for non-deterministic quiz picks in production
-                j = shared.Next(i, indices.Length);
+#pragma warning disable CA5394 // Random.Shared for non-deterministic quiz picks; test RNG when rng is set
+            int j = rng is null
+                ? shared.Next(i, indices.Length)
+                : rng.Next(i, indices.Length);
 #pragma warning restore CA5394
-            }
-            else
-            {
-#pragma warning disable CA5394 // Deterministic test RNG only — production uses Random.Shared
-                j = rng.Next(i, indices.Length);
-#pragma warning restore CA5394
-            }
 
             (indices[i], indices[j]) = (indices[j], indices[i]);
         }

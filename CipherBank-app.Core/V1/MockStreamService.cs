@@ -14,12 +14,12 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
     private CancellationTokenSource? _cts;
     private Task? _loop;
 
-    public event EventHandler<StreamEvent>? EventReceived;
+    public event EventHandler<StreamEventArgs>? EventReceived;
 
     public bool IsConnected => _loop is { IsCompleted: false };
 
     /// <summary>Test/helper: raise a stream event for hub wiring.</summary>
-    public void Emit(StreamEvent e) => EventReceived?.Invoke(this, e);
+    public void Emit(StreamEventArgs e) => EventReceived?.Invoke(this, e);
 
     public async Task ConnectAsync(CancellationToken ct)
     {
@@ -32,13 +32,13 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
             {
                 while (!token.IsCancellationRequested)
                 {
-                    EventHandler<StreamEvent>? handlers = EventReceived;
+                    EventHandler<StreamEventArgs>? handlers = EventReceived;
                     if (handlers is not null)
                     {
-                        handlers.Invoke(this, new StreamEvent { Type = "RATE.TICK" });
+                        handlers.Invoke(this, new StreamEventArgs { Type = "RATE.TICK" });
                         if (DateTimeOffset.UtcNow.Second % BalanceUpdateEveryNthSecond == 0)
                         {
-                            handlers.Invoke(this, new StreamEvent { Type = "balance.update" });
+                            handlers.Invoke(this, new StreamEventArgs { Type = "balance.update" });
                         }
                     }
 

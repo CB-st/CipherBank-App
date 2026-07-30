@@ -12,6 +12,11 @@ using Xunit;
 
 namespace CipherBank_app.Tests.Session;
 
+/// <summary>
+/// AppSession unit coverage for finish-setup, idle lock, unlock bootstrap, and failed-session rollback.
+/// Serialized via <see cref="AppSessionTestSerialGate"/>.
+/// </summary>
+[Collection(nameof(AppSessionTests))]
 public class AppSessionTests
 {
     [Fact]

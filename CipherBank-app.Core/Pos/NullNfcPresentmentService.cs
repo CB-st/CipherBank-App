@@ -12,15 +12,15 @@ public sealed class NullNfcPresentmentService : INfcPresentmentService
     public string? LastError { get; private set; } = "NFC presentment is only available on Android devices with NFC.";
 
     public Task<bool> PresentAsync(NfcPresentmentPayload payload, CancellationToken ct)
-        => PresentCore(payload, ct);
+        => PresentCoreAsync(payload, ct);
 
     public Task<bool> PresentAsync(NfcPresentmentPayload payload, TimeSpan timeout, CancellationToken ct)
     {
         _ = timeout;
-        return PresentCore(payload, ct);
+        return PresentCoreAsync(payload, ct);
     }
 
-    private Task<bool> PresentCore(NfcPresentmentPayload payload, CancellationToken ct)
+    private Task<bool> PresentCoreAsync(NfcPresentmentPayload payload, CancellationToken ct)
     {
         _ = payload;
         _ = ct;

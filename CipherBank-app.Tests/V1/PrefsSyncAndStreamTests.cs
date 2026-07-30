@@ -47,10 +47,10 @@ public class PrefsSyncAndStreamTests
         hub.EventReceived += (_, _) => count++;
         hub.Start();
         hub.Start();
-        stream.Emit(new StreamEvent { Type = "RATE.TICK" });
+        stream.Emit(new StreamEventArgs { Type = "RATE.TICK" });
         count.Should().Be(1);
         hub.StopStreaming();
-        stream.Emit(new StreamEvent { Type = "RATE.TICK" });
+        stream.Emit(new StreamEventArgs { Type = "RATE.TICK" });
         count.Should().Be(1);
     }
 

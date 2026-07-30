@@ -130,14 +130,20 @@ public sealed class MockProductApi : IProductApi
 
     public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct)
     {
-        string mode = string.IsNullOrWhiteSpace(request.Mode) ? "managed" : request.Mode.ToLowerInvariant();
+        string modeKey = string.IsNullOrWhiteSpace(request.Mode) ? "MANAGED" : request.Mode.ToUpperInvariant();
+        string mode = modeKey switch
+        {
+            "MANAGED" => "managed",
+            "WATCH" => "watch",
+            _ => request.Mode!.Trim(),
+        };
         string symbol = string.IsNullOrWhiteSpace(request.Symbol) ? "XMR" : request.Symbol.ToUpperInvariant();
         string label = string.IsNullOrWhiteSpace(request.Label) ? $"CipherBank {mode}" : request.Label!;
         string walletId = "wlt_" + Guid.NewGuid().ToString("N")[..MockWalletIdSuffixLength];
-        string? address = mode switch
+        string? address = modeKey switch
         {
-            "managed" => "4" + Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")[..MockManagedAddressSuffixLength],
-            "watch" => request.Address,
+            "MANAGED" => "4" + Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")[..MockManagedAddressSuffixLength],
+            "WATCH" => request.Address,
             _ => request.Address,
         };
         return Task.FromResult(new CreateWalletResultDto

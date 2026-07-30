@@ -29,7 +29,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     {
     }
 
-    public event EventHandler<StreamEvent>? EventReceived;
+    public event EventHandler<StreamEventArgs>? EventReceived;
 
     public bool IsConnected => _ws?.State == WebSocketState.Open;
 
@@ -69,14 +69,14 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
     public async ValueTask DisposeAsync() => await DisconnectAsync().ConfigureAwait(false);
 
-    private static bool TryParseStreamEvent(string json, out StreamEvent? streamEvent)
+    private static bool TryParseStreamEvent(string json, out StreamEventArgs? streamEvent)
     {
         streamEvent = null;
         try
         {
             using var doc = JsonDocument.Parse(json);
             string type = ExtractEventType(doc.RootElement);
-            streamEvent = new StreamEvent { Type = type, Payload = doc.RootElement.Clone() };
+            streamEvent = new StreamEventArgs { Type = type, Payload = doc.RootElement.Clone() };
             return true;
         }
         catch
@@ -142,7 +142,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
         string json = Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length);
         message.SetLength(0);
-        if (!TryParseStreamEvent(json, out StreamEvent? streamEvent) || streamEvent is null)
+        if (!TryParseStreamEvent(json, out StreamEventArgs? streamEvent) || streamEvent is null)
         {
             return;
         }
