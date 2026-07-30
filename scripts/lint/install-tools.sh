@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+# Installs pinned local lint tools into ~/.local/cb-lint/bin (or $CB_LINT_HOME).
+# Does not install compilers — only linters. Prefer existing PATH binaries when present.
+#
+# Usage:
+#   ./scripts/lint/install-tools.sh
+#   ./scripts/lint/install-tools.sh --force   # re-download even if on PATH
+#
+# Policy: docs/LOCAL_LINT.md · versions: scripts/lint/tool-versions.env
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=lib.sh
+source "$ROOT/scripts/lint/lib.sh"
+
+cb_lint_load_versions
+cb_lint_ensure_path
+
+FORCE=0
+for arg in "$@"; do
+  case "$arg" in
+    --force) FORCE=1 ;;
+    -h|--help)
+      sed -n '2,12p' "$0"
+      exit 0
+      ;;
+    *)
+      echo "Unknown arg: $arg" >&2
+      exit 2
+      ;;
+  esac
+done
+
+INSTALL_ROOT="$(cb_lint_install_root)"
+BIN="$INSTALL_ROOT/bin"
+mkdir -p "$BIN"
+
+os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+arch="$(uname -m)"
+case "$arch" in
+  x86_64|amd64) arch_norm=x86_64 ;;
+  aarch64|arm64) arch_norm=aarch64 ;;
+  *) arch_norm="$arch" ;;
+esac
+
+need_tool() {
+  local name="$1"
+  if [[ "$FORCE" -eq 1 ]]; then
+    return 0
+  fi
+  if command -v "$name" >/dev/null 2>&1; then
+    echo "ok: $name already on PATH ($(command -v "$name"))"
+    return 1
+  fi
+  return 0
+}
+
+install_shellcheck() {
+  local ver="${SHELLCHECK_VERSION:-0.10.0}"
+  if ! need_tool shellcheck; then
+    return 0
+  fi
+  local asset
+  case "$os-$arch_norm" in
+    linux-x86_64) asset="shellcheck-v${ver}.linux.x86_64.tar.xz" ;;
+    linux-aarch64) asset="shellcheck-v${ver}.linux.aarch64.tar.xz" ;;
+    darwin-x86_64) asset="shellcheck-v${ver}.darwin.x86_64.tar.xz" ;;
+    darwin-aarch64) asset="shellcheck-v${ver}.darwin.aarch64.tar.xz" ;;
+    *)
+      echo "warn: no shellcheck asset for $os-$arch_norm — install via package manager" >&2
+      return 0
+      ;;
+  esac
+  local url="https://github.com/koalaman/shellcheck/releases/download/v${ver}/${asset}"
+  local tmp
+  tmp="$(mktemp -d)"
+  echo "==> shellcheck v${ver}"
+  curl -fsSL "$url" -o "$tmp/$asset"
+  tar -xJf "$tmp/$asset" -C "$tmp"
+  install -m 0755 "$tmp/shellcheck-v${ver}/shellcheck" "$BIN/shellcheck"
+  rm -rf "$tmp"
+  echo "installed: $BIN/shellcheck"
+}
+
+install_ruff() {
+  local ver="${RUFF_VERSION:-0.12.4}"
+  if ! need_tool ruff; then
+    return 0
+  fi
+
+  # Prefer official standalone binaries (works under PEP 668 / no pipx).
+  # Asset names omit the version: ruff-<triple>.tar.gz
+  local target=""
+  case "$os-$arch_norm" in
+    linux-x86_64) target="ruff-x86_64-unknown-linux-gnu" ;;
+    linux-aarch64) target="ruff-aarch64-unknown-linux-gnu" ;;
+    darwin-x86_64) target="ruff-x86_64-apple-darwin" ;;
+    darwin-aarch64) target="ruff-aarch64-apple-darwin" ;;
+  esac
+
+  if [[ -n "$target" ]]; then
+    local url="https://github.com/astral-sh/ruff/releases/download/${ver}/${target}.tar.gz"
+    local tmp
+    tmp="$(mktemp -d)"
+    echo "==> ruff ${ver} (standalone)"
+    if curl -fsSL "$url" -o "$tmp/ruff.tgz"; then
+      tar -xzf "$tmp/ruff.tgz" -C "$tmp"
+      # tarball may nest the binary
+      local binpath
+      binpath="$(find "$tmp" -type f -name ruff | head -1)"
+      if [[ -n "$binpath" ]]; then
+        install -m 0755 "$binpath" "$BIN/ruff"
+        rm -rf "$tmp"
+        echo "installed: $BIN/ruff"
+        return 0
+      fi
+    fi
+    rm -rf "$tmp"
+    echo "warn: ruff standalone download failed; trying pipx/venv fallback" >&2
+  fi
+
+  if command -v pipx >/dev/null 2>&1; then
+    echo "==> ruff ${ver} via pipx"
+    pipx install "ruff==${ver}" --force >/dev/null
+    if command -v ruff >/dev/null 2>&1; then
+      ln -sfn "$(command -v ruff)" "$BIN/ruff" 2>/dev/null || true
+    fi
+    echo "ok: ruff"
+    return 0
+  fi
+
+  # Isolated venv under cb-lint (avoids PEP 668 system pip).
+  local venv
+  venv="$(cb_lint_install_root)/venv"
+  if command -v python3 >/dev/null 2>&1; then
+    echo "==> ruff ${ver} via cb-lint venv"
+    python3 -m venv "$venv"
+    "$venv/bin/pip" install --quiet "ruff==${ver}"
+    ln -sfn "$venv/bin/ruff" "$BIN/ruff"
+    echo "installed: $BIN/ruff"
+    return 0
+  fi
+
+  echo "warn: cannot install ruff" >&2
+}
+
+install_checkmake() {
+  local ver="${CHECKMAKE_VERSION:-0.2.2}"
+  if ! need_tool checkmake; then
+    return 0
+  fi
+
+  # Prefer go install when available (release asset names vary by tag).
+  if command -v go >/dev/null 2>&1; then
+    echo "==> checkmake ${ver} via go install"
+    GOBIN="$BIN" go install "github.com/mrtazz/checkmake/cmd/checkmake@${ver}" \
+      || GOBIN="$BIN" go install "github.com/mrtazz/checkmake/cmd/checkmake@v${ver}" \
+      || true
+    if [[ -x "$BIN/checkmake" ]]; then
+      echo "installed: $BIN/checkmake"
+      return 0
+    fi
+  fi
+
+  local asset
+  case "$os-$arch_norm" in
+    linux-x86_64) asset="checkmake-${ver}.linux.amd64" ;;
+    linux-aarch64) asset="checkmake-${ver}.linux.arm64" ;;
+    darwin-x86_64) asset="checkmake-${ver}.darwin.amd64" ;;
+    darwin-aarch64) asset="checkmake-${ver}.darwin.arm64" ;;
+    *)
+      echo "warn: no checkmake asset for $os-$arch_norm — install go and re-run, or skip make lint" >&2
+      return 0
+      ;;
+  esac
+  local url="https://github.com/mrtazz/checkmake/releases/download/${ver}/${asset}"
+  echo "==> checkmake ${ver} (release asset)"
+  if curl -fsSL "$url" -o "$BIN/checkmake"; then
+    chmod 0755 "$BIN/checkmake"
+    echo "installed: $BIN/checkmake"
+  else
+    rm -f "$BIN/checkmake"
+    echo "warn: checkmake download failed — make lint will skip until installed" >&2
+  fi
+}
+
+verify_clang() {
+  if command -v clang-tidy >/dev/null 2>&1; then
+    echo "ok: clang-tidy ($(command -v clang-tidy))"
+  else
+    echo "hint: clang-tidy not found — install llvm/clang (e.g. apt install clang-tidy) for C++ lint"
+  fi
+  if command -v clang-format >/dev/null 2>&1; then
+    echo "ok: clang-format ($(command -v clang-format))"
+  else
+    echo "hint: clang-format not found — optional for C++ style dry-run"
+  fi
+}
+
+echo "Install root: $INSTALL_ROOT"
+install_shellcheck
+install_ruff
+install_checkmake
+verify_clang
+echo
+echo "Done. Ensure PATH includes: $BIN"
+echo "Then: ./scripts/lint.sh"
