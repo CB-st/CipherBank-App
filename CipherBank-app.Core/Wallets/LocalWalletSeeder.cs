@@ -18,9 +18,18 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     public Task EnsureDerivedAsync(string mnemonic)
         => EnsureDerivedAsync(mnemonic, DefaultSymbols);
 
-    public async Task EnsureDerivedAsync(string mnemonic, IEnumerable<string> symbols)
+    public Task EnsureDerivedAsync(string mnemonic, IEnumerable<string> symbols)
     {
         ArgumentNullException.ThrowIfNull(symbols);
+        return EnsureDerivedCoreAsync(mnemonic, symbols);
+    }
+
+    /// <summary>
+    /// Derives and upserts missing local wallets for each supported symbol.
+    /// Use: Medium (post-unlock seed). Scope: local wallet repository.
+    /// </summary>
+    private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<string> symbols)
+    {
         IReadOnlyList<LocalWalletRow> existing = await _wallets.ListAsync().ConfigureAwait(false);
         foreach (string sym in symbols)
         {

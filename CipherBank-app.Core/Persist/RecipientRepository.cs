@@ -9,6 +9,8 @@ namespace CipherBank_app.Persist;
 /// <inheritdoc />
 public sealed class RecipientRepository : IRecipientRepository
 {
+    private const string DefaultAccountType = "checking";
+
     private readonly ILocalDb _db;
     private bool _schemaReady;
 
@@ -136,7 +138,7 @@ public sealed class RecipientRepository : IRecipientRepository
             "Demo Bank",
             "021000021",
             "88210001",
-            "checking",
+            DefaultAccountType,
             "Rent",
             null,
             null,
@@ -148,7 +150,7 @@ public sealed class RecipientRepository : IRecipientRepository
             "City Credit Union",
             "110000000",
             "44102222",
-            "checking",
+            DefaultAccountType,
             null,
             null,
             null,
@@ -223,10 +225,10 @@ public sealed class RecipientRepository : IRecipientRepository
     {
         if (await reader.IsDBNullAsync(ordinal).ConfigureAwait(false))
         {
-            return "checking";
+            return DefaultAccountType;
         }
 
         string value = reader.GetString(ordinal);
-        return string.IsNullOrEmpty(value) ? "checking" : value;
+        return string.IsNullOrEmpty(value) ? DefaultAccountType : value;
     }
 }

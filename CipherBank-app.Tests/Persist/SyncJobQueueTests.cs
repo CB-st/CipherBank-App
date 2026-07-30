@@ -25,7 +25,7 @@ public class SyncJobQueueTests
                 order.Add("p2-a-start");
             }
 
-            await gate1.Task.WaitAsync(ct).ConfigureAwait(false);
+            await gate1.Task.WaitAsync(ct);
             lock (order)
             {
                 order.Add("p2-a-end");
@@ -38,7 +38,7 @@ public class SyncJobQueueTests
                 order.Add("p2-b-start");
             }
 
-            await gate2.Task.WaitAsync(ct).ConfigureAwait(false);
+            await gate2.Task.WaitAsync(ct);
             lock (order)
             {
                 order.Add("p2-b-end");
@@ -51,7 +51,7 @@ public class SyncJobQueueTests
             {
                 return order.Count >= 2;
             }
-        }).ConfigureAwait(false);
+        });
 
         queue.Enqueue("p2-c", SyncPriority.P2, async ct =>
         {
@@ -60,7 +60,7 @@ public class SyncJobQueueTests
                 order.Add("p2-c-start");
             }
 
-            await Task.Delay(10, ct).ConfigureAwait(false);
+            await Task.Delay(10, ct);
             lock (order)
             {
                 order.Add("p2-c-end");
@@ -73,7 +73,7 @@ public class SyncJobQueueTests
                 order.Add("p1-d-start");
             }
 
-            await Task.Delay(10, ct).ConfigureAwait(false);
+            await Task.Delay(10, ct);
             lock (order)
             {
                 order.Add("p1-d-end");
@@ -87,7 +87,7 @@ public class SyncJobQueueTests
             {
                 return order.Contains("p1-d-start") && order.Contains("p2-c-start");
             }
-        }).ConfigureAwait(false);
+        });
 
         lock (order)
         {
@@ -95,7 +95,7 @@ public class SyncJobQueueTests
         }
 
         gate2.SetResult();
-        await queue.DrainAsync(default).ConfigureAwait(false);
+        await queue.DrainAsync(default);
     }
 
     [Fact]
@@ -108,19 +108,19 @@ public class SyncJobQueueTests
         queue.Enqueue("btc", SyncPriority.P1, async ct =>
         {
             Interlocked.Increment(ref runCount);
-            await gate.Task.WaitAsync(ct).ConfigureAwait(false);
+            await gate.Task.WaitAsync(ct);
         });
 
-        await WaitUntilAsync(() => Volatile.Read(ref runCount) == 1).ConfigureAwait(false);
+        await WaitUntilAsync(() => Volatile.Read(ref runCount) == 1);
 
         queue.Enqueue("btc", SyncPriority.P1, async ct =>
         {
             Interlocked.Increment(ref runCount);
-            await Task.CompletedTask.ConfigureAwait(false);
+            await Task.CompletedTask;
         });
 
         gate.SetResult();
-        await queue.DrainAsync(default).ConfigureAwait(false);
+        await queue.DrainAsync(default);
 
         runCount.Should().Be(1);
     }
@@ -135,7 +135,7 @@ public class SyncJobQueueTests
                 throw new TimeoutException("Condition was not met within the timeout.");
             }
 
-            await Task.Delay(10).ConfigureAwait(false);
+            await Task.Delay(10);
         }
     }
 }

@@ -9,19 +9,22 @@ namespace CipherBank_app.Services;
 /// </summary>
 public static class CurrencySymbolMap
 {
+    private const string ApiBitcoin = "BITCOIN";
+    private const string ApiMonero = "MONERO";
+
     private static readonly Dictionary<string, string> AppToApi = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["BTC"] = "BITCOIN",
-        ["BITCOIN"] = "BITCOIN",
-        ["XMR"] = "MONERO",
-        ["MONERO"] = "MONERO",
+        ["BTC"] = ApiBitcoin,
+        [ApiBitcoin] = ApiBitcoin,
+        ["XMR"] = ApiMonero,
+        [ApiMonero] = ApiMonero,
         ["USD"] = "USD",
     };
 
     private static readonly Dictionary<string, string> ApiToApp = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["BITCOIN"] = "BTC",
-        ["MONERO"] = "XMR",
+        [ApiBitcoin] = "BTC",
+        [ApiMonero] = "XMR",
         ["USD"] = "USD",
     };
 

@@ -9,6 +9,8 @@ namespace CipherBank_app.V1;
 /// <summary>ACH contact from account bootstrap (no custody material).</summary>
 public sealed class BootstrapRecipientDto
 {
+    private const int BootstrapIdHexPrefixLength = 16;
+
     [JsonPropertyName("ID")]
     public string? Id { get; set; }
 
@@ -72,7 +74,7 @@ public sealed class BootstrapRecipientDto
             }
 
             // Stable synthetic key so re-bootstrap does not duplicate the same payee.
-            string seed = ResolvedName.Trim().ToLowerInvariant();
+            string seed = ResolvedName.Trim().ToUpperInvariant();
             if (string.IsNullOrEmpty(seed))
             {
                 seed = (ResolvedLast4 ?? string.Empty) + "|" + (ResolvedRouting ?? string.Empty);
@@ -86,7 +88,7 @@ public sealed class BootstrapRecipientDto
             return "bootstrap_" + Convert.ToHexString(
                     System.Security.Cryptography.SHA256.HashData(
                         System.Text.Encoding.UTF8.GetBytes(seed)))
-                .ToLowerInvariant()[..16];
+                .ToUpperInvariant()[..BootstrapIdHexPrefixLength];
         }
     }
 
@@ -100,7 +102,7 @@ public sealed class BootstrapRecipientDto
 
     public string? ResolvedLast4 => AccountLast4 ?? AccountLast4Camel;
 
-    public string ResolvedAccountType => (AccountType ?? AccountTypeCamel ?? "checking").ToLowerInvariant();
+    public string ResolvedAccountType => (AccountType ?? AccountTypeCamel ?? "checking").ToUpperInvariant();
 
     public string? ResolvedMemo => Memo ?? MemoCamel;
 }

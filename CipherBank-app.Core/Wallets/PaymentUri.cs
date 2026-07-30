@@ -7,6 +7,9 @@ namespace CipherBank_app.Wallets;
 /// <summary>Payment / receive URI builder (Cora paymentUri.ts).</summary>
 public static class PaymentUri
 {
+    private const int DefaultShortenHeadLength = 8;
+    private const int DefaultShortenTailLength = 6;
+
     private static readonly Dictionary<string, string> SimpleSchemePrefixes = new()
     {
         ["BTC"] = "bitcoin",
@@ -39,10 +42,10 @@ public static class PaymentUri
     }
 
     public static string Shorten(string address)
-        => Shorten(address, 8, 6);
+        => Shorten(address, DefaultShortenHeadLength, DefaultShortenTailLength);
 
     public static string Shorten(string address, int head)
-        => Shorten(address, head, 6);
+        => Shorten(address, head, DefaultShortenTailLength);
 
     public static string Shorten(string address, int head, int tail)
     {

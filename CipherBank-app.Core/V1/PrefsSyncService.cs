@@ -26,9 +26,18 @@ public sealed class PrefsSyncService : IPrefsSyncService
         await _store.SaveAsync(local).ConfigureAwait(false);
     }
 
-    public async Task<bool> SaveAndPushAsync(UserPrefs prefs, CancellationToken ct)
+    public Task<bool> SaveAndPushAsync(UserPrefs prefs, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(prefs);
+        return SaveAndPushCoreAsync(prefs, ct);
+    }
+
+    /// <summary>
+    /// Normalizes, persists locally, then pushes prefs to the product API.
+    /// Use: Medium (settings save). Scope: prefs store + API.
+    /// </summary>
+    private async Task<bool> SaveAndPushCoreAsync(UserPrefs prefs, CancellationToken ct)
+    {
         prefs.NormalizeHomeSections();
         await _store.SaveAsync(prefs).ConfigureAwait(false);
         try

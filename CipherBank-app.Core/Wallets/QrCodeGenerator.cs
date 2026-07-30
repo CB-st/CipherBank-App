@@ -9,8 +9,10 @@ namespace CipherBank_app.Wallets;
 /// <summary>QR matrix / PNG generation for receive URIs.</summary>
 public static class QrCodeGenerator
 {
+    private const int DefaultPixelsPerModule = 8;
+
     public static byte[] ToPngBytes(string payload)
-        => ToPngBytes(payload, 8);
+        => ToPngBytes(payload, DefaultPixelsPerModule);
 
     public static byte[] ToPngBytes(string payload, int pixelsPerModule)
     {

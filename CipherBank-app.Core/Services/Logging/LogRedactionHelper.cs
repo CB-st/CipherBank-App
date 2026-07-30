@@ -14,6 +14,7 @@ public static class LogRedactionHelper
 {
     private const string RedactionMarker = "***";
     private const string Ellipsis = "...";
+    private const int DefaultShowChars = 4;
 
     /// <summary>
     /// Redacts a username, showing only the first and last characters.
@@ -154,7 +155,7 @@ public static class LogRedactionHelper
     /// <param name="value">The value to redact</param>
     /// <returns>Redacted value</returns>
     public static string Redact(string? value)
-        => Redact(value, 4);
+        => Redact(value, DefaultShowChars);
 
     /// <summary>Redacts sensitive data from a generic string based on its apparent type.</summary>
     /// <param name="value">The value to redact</param>

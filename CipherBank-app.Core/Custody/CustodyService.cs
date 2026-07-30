@@ -75,9 +75,7 @@ public sealed class CustodyService : ICustodyService
         }
 
         bool changed = await _pin.ChangePinAsync(oldPin, newPin).ConfigureAwait(false);
-        return changed ? CustodyPinChangeResult.Changed
-            : _pin.IsLockedOut ? CustodyPinChangeResult.LockedOut
-            : CustodyPinChangeResult.WrongPin;
+        return MapPinChangeResult(changed);
     }
 
     public async Task SealAsync(string mnemonic, string pin)
@@ -88,10 +86,7 @@ public sealed class CustodyService : ICustodyService
             throw new ArgumentException("Invalid mnemonic.", nameof(mnemonic));
         }
 
-        await _pin.SetPinAsync(pin).ConfigureAwait(false);
-        await PersistDeviceSecretSealAsync(normalized).ConfigureAwait(false);
-        _mnemonic = normalized;
-        _expires = DateTimeOffset.UtcNow.Add(SessionTtl);
+        await SealValidatedAsync(normalized, pin).ConfigureAwait(false);
     }
 
     public async Task<bool> UnlockAsync(string pin)
@@ -180,6 +175,38 @@ public sealed class CustodyService : ICustodyService
 
     public string? ExportMnemonic()
         => IsUnlocked ? _mnemonic : null;
+
+    /// <summary>
+    /// Maps a PIN-service swap outcome to custody status without nested ternaries.
+    /// Use: Low (PIN change). Scope: ChangePinAsync.
+    /// </summary>
+    private CustodyPinChangeResult MapPinChangeResult(bool changed)
+    {
+        if (changed)
+        {
+            return CustodyPinChangeResult.Changed;
+        }
+
+        if (_pin.IsLockedOut)
+        {
+            return CustodyPinChangeResult.LockedOut;
+        }
+
+        return CustodyPinChangeResult.WrongPin;
+    }
+
+    /// <summary>
+    /// Persists seal after mnemonic validation; caller must have normalized and validated first.
+    /// Use: Low (seal). Scope: SealAsync.
+    /// </summary>
+    private async Task SealValidatedAsync(string normalized, string pin)
+    {
+        await _pin.SetPinAsync(pin).ConfigureAwait(false);
+        await PersistDeviceSecretSealAsync(normalized).ConfigureAwait(false);
+        _mnemonic = normalized;
+        // Sonar S6354: TimeProvider/IClock injection deferred (docs/SONAR_GATE.md).
+        _expires = DateTimeOffset.UtcNow.Add(SessionTtl); // NOSONAR (S6354)
+    }
 
     /// <summary>
     /// Opens a sealed blob without throwing so unlock can try the next key material.

@@ -17,8 +17,8 @@ public sealed class PinChangeCoordinator
     public static readonly int MinPinLength = 6;
 
     /// <summary>Status → message table so the caller never grows an if/else chain over statuses.</summary>
-    private static readonly IReadOnlyDictionary<PinChangeStatus, string> Messages =
-        new Dictionary<PinChangeStatus, string>
+    private static readonly Dictionary<PinChangeStatus, string> Messages =
+        new()
         {
             [PinChangeStatus.Success] = "PIN updated.",
             [PinChangeStatus.TooShort] = $"PIN must be at least {MinPinLength} digits.",
@@ -30,8 +30,8 @@ public sealed class PinChangeCoordinator
         };
 
     /// <summary>Custody result → surfaced status, so this class never grows a branch chain over results.</summary>
-    private static readonly IReadOnlyDictionary<CustodyPinChangeResult, PinChangeStatus> FromCustody =
-        new Dictionary<CustodyPinChangeResult, PinChangeStatus>
+    private static readonly Dictionary<CustodyPinChangeResult, PinChangeStatus> FromCustody =
+        new()
         {
             [CustodyPinChangeResult.Changed] = PinChangeStatus.Success,
             [CustodyPinChangeResult.WrongPin] = PinChangeStatus.WrongCurrentPin,
@@ -50,10 +50,24 @@ public sealed class PinChangeCoordinator
     /// Use: Low (once per submit). Scope: this coordinator.
     /// </summary>
     public static PinChangeStatus ValidateShape(string? currentPin, string? newPin, string? confirmPin)
-        => (newPin?.Length ?? 0) < MinPinLength ? PinChangeStatus.TooShort
-            : !string.Equals(newPin, confirmPin, StringComparison.Ordinal) ? PinChangeStatus.Mismatch
-            : string.Equals(newPin, currentPin, StringComparison.Ordinal) ? PinChangeStatus.SameAsCurrent
-            : PinChangeStatus.Success;
+    {
+        if ((newPin?.Length ?? 0) < MinPinLength)
+        {
+            return PinChangeStatus.TooShort;
+        }
+
+        if (!string.Equals(newPin, confirmPin, StringComparison.Ordinal))
+        {
+            return PinChangeStatus.Mismatch;
+        }
+
+        if (string.Equals(newPin, currentPin, StringComparison.Ordinal))
+        {
+            return PinChangeStatus.SameAsCurrent;
+        }
+
+        return PinChangeStatus.Success;
+    }
 
     /// <summary>
     /// Validates the requested change and, when the shape is sound, asks custody to swap the stored PIN

@@ -13,6 +13,7 @@ namespace CipherBank_app.Custody;
 public sealed class MnemonicBackupService : IMnemonicBackupService
 {
     private const string Format = "cipherbank-recovery-v1";
+    private const string InvalidRecoveryFileMessage = "Invalid recovery file.";
     private const string Kdf = "PBKDF2-SHA256";
     private const int Iterations = 600_000;
     private const int MinimumPasswordLength = 12;
@@ -86,11 +87,11 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         try
         {
             document = JsonSerializer.Deserialize<BackupDocument>(fileBytes.Span)
-                ?? throw new CryptographicException("Invalid recovery file.");
+                ?? throw new CryptographicException(InvalidRecoveryFileMessage);
         }
         catch (JsonException ex)
         {
-            throw new CryptographicException("Invalid recovery file.", ex);
+            throw new CryptographicException(InvalidRecoveryFileMessage, ex);
         }
 
         ValidateDocument(document);
@@ -108,7 +109,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         }
         catch (FormatException ex)
         {
-            throw new CryptographicException("Invalid recovery file.", ex);
+            throw new CryptographicException(InvalidRecoveryFileMessage, ex);
         }
 
         if (salt.Length != SaltSize ||
@@ -116,7 +117,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
             tag.Length != TagSize ||
             ciphertext.Length == 0)
         {
-            throw new CryptographicException("Invalid recovery file.");
+            throw new CryptographicException(InvalidRecoveryFileMessage);
         }
 
         byte[] key = DeriveKey(recoveryPassword, salt);
