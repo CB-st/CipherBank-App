@@ -54,7 +54,7 @@ Every function (including private helpers) gets a brief comment that states:
 
 ## Sonar typology, stages, and hard-won methods
 
-**Dashboard / artifacts:** https://sonar.cipherbank.money — project `CB-st_CipherBank-App_6f7fd196-021a-4b20-a3f2-9094fa18ab2c`. Prefer CI `sonar-context-<sha>` (`issues.json`) when the PR annotation is missing. Policy softens vs must-fix: `docs/SONAR_GATE.md`. Structural SA1402/SA1649 inventory: `docs/SONAR_STRUCTURAL_PLAN.md`. Stage design: `docs/superpowers/specs/2026-07-26-sonar-stage1-mechanical-design.md`.
+**Dashboard / artifacts:** https://sonar.cipherbank.money — project `CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c`. Prefer CI `sonar-context-<sha>` (`issues.json`) when the PR annotation is missing. Policy softens vs must-fix: `docs/SONAR_GATE.md`. Structural SA1402/SA1649 inventory: `docs/SONAR_STRUCTURAL_PLAN.md`. Stage design: `docs/superpowers/specs/2026-07-26-sonar-stage1-mechanical-design.md`. **Local pre-push:** `./scripts/lint-csharp.sh` + Connected Mode — `docs/LOCAL_SONAR_LINT.md`.
 
 ### Typology (what shows up on this stack)
 

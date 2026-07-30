@@ -11,7 +11,10 @@ public sealed class MarketRepository : IMarketRepository
 {
     private readonly ILocalDb _db;
 
-    public MarketRepository(ILocalDb db) => _db = db;
+    public MarketRepository(ILocalDb db)
+    {
+        _db = db;
+    }
 
     /// <inheritdoc />
     public async Task UpsertOhlcAsync(

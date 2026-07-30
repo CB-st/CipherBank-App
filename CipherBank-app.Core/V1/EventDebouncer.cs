@@ -12,7 +12,10 @@ public sealed class EventDebouncer
     private CancellationTokenSource? _cts;
     private int _fireCount;
 
-    public EventDebouncer(TimeSpan delay) => _delay = delay;
+    public EventDebouncer(TimeSpan delay)
+    {
+        _delay = delay;
+    }
 
     public int FireCount => _fireCount;
 
@@ -33,8 +36,8 @@ public sealed class EventDebouncer
     }
 
     /// <summary>
-    /// Core debounce loop: swap CTS, delay, then fire the action once.
-    /// Use: High (stream bursts). Scope: this debouncer instance; CTS swap is serialized.
+    /// Runs the debounce delay and action after argument validation.
+    /// Use: High (DebounceAsync). Scope: this debouncer instance.
     /// </summary>
     private async Task DebounceCoreAsync(Func<Task> action, CancellationToken outer)
     {

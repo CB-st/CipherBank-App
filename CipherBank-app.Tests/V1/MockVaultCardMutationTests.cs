@@ -29,12 +29,11 @@ public sealed class MockVaultCardMutationTests
         IReadOnlyList<VaultCardDto> cards = await api.GetVaultCardsAsync(default);
 
         added.CardId.Should().StartWith("card_");
-        cards.Should().ContainSingle(card =>
-            card.CardId == added.CardId &&
-            card.Last4 == "9876" &&
-            card.Brand == "mastercard" &&
-            card.Label == "Travel card" &&
-            !card.HardwareTest);
+        VaultCardDto match = cards.Should().ContainSingle(card => card.CardId == added.CardId).Subject;
+        match.Last4.Should().Be("9876");
+        match.Brand.Should().Be("mastercard");
+        match.Label.Should().Be("Travel card");
+        match.HardwareTest.Should().BeFalse();
     }
 
     [Fact]

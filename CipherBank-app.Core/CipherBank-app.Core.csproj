@@ -5,10 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>CipherBank_app</RootNamespace>
-    <!-- Prototype Core: known analyzer noise on net10 + dense modules.
-         Keep visible as warnings; do not fail the build. -->
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);SA1402;SA1649;SA1201;SA1204;SA1202;SA1516;SA1407;SA1515;SA1507;CA1707;CA1711;CA1716;CA1859;IDE0005</WarningsNotAsErrors>
-    <NoWarn>$(NoWarn);IDE0005</NoWarn>
+    <!-- Phase 3: SA1402/SA1649 removed after Stage 2 one-type-per-file splits. -->
+    <!-- Phase 3 Stage 3: SA1402/SA1649 removed. CA1707 kept for RootNamespace CipherBank_app (assembly-aligned). -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IDE0005</WarningsNotAsErrors>
+    <NoWarn>$(NoWarn);IDE0005;CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

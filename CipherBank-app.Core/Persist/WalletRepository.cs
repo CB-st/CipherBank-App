@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Globalization;
 using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Persist;
@@ -11,7 +12,10 @@ public sealed class WalletRepository : IWalletRepository
 {
     private readonly ILocalDb _db;
 
-    public WalletRepository(ILocalDb db) => _db = db;
+    public WalletRepository(ILocalDb db)
+    {
+        _db = db;
+    }
 
     public async Task<IReadOnlyList<LocalWalletRow>> ListAsync()
     {
@@ -63,7 +67,7 @@ public sealed class WalletRepository : IWalletRepository
         cmd.Parameters.AddWithValue("$path", (object?)row.Path ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$idx", row.AccountIndex);
         cmd.Parameters.AddWithValue("$kind", row.Kind);
-        cmd.Parameters.AddWithValue("$created", row.CreatedAt.ToString("O"));
+        cmd.Parameters.AddWithValue("$created", row.CreatedAt.ToString("O", CultureInfo.InvariantCulture));
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
 

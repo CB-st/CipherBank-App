@@ -11,7 +11,10 @@ public sealed class RatesCache : IRatesCache
 {
     private readonly ILocalDb _db;
 
-    public RatesCache(ILocalDb db) => _db = db;
+    public RatesCache(ILocalDb db)
+    {
+        _db = db;
+    }
 
     /// <inheritdoc />
     public async Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct)

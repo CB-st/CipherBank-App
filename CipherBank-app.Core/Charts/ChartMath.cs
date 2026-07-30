@@ -51,7 +51,7 @@ public static class ChartMath
         var pts = series.Select(p =>
         {
             double x = ((p.T - x0) / dx) * w;
-            double y = h - pad - ((p.V - lo) / dy) * (h - (pad * 2));
+            double y = (h - pad) - (((p.V - lo) / dy) * (h - (pad * 2)));
             return (x, y);
         }).ToList();
 

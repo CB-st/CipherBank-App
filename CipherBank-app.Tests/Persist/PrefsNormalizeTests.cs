@@ -13,16 +13,14 @@ public class PrefsNormalizeTests
     [Fact]
     public void Normalize_MigratesLegacyAssets_ToHoldingsAndLocal()
     {
-        var prefs = new UserPrefs
+        var prefs = new UserPrefs();
+        prefs.ReplaceHomeVisible(new Dictionary<string, bool>
         {
-            HomeOrder = new List<string> { "cora", "balance", "assets" },
-            HomeVisible = new Dictionary<string, bool>
-            {
-                ["cora"] = true,
-                ["balance"] = true,
-                ["assets"] = false,
-            },
-        };
+            ["cora"] = true,
+            ["balance"] = true,
+            ["assets"] = false,
+        });
+        prefs.ReplaceHomeOrder(["cora", "balance", "assets"]);
 
         prefs.NormalizeHomeSections();
 
@@ -37,7 +35,8 @@ public class PrefsNormalizeTests
     [Fact]
     public void Normalize_EmptyEnabledCurrencies_Defaults()
     {
-        var prefs = new UserPrefs { EnabledCurrencies = new List<string>() };
+        var prefs = new UserPrefs();
+        prefs.ReplaceEnabledCurrencies([]);
         prefs.NormalizeHomeSections();
         prefs.EnabledCurrencies.Should().BeEquivalentTo(UserPrefs.DefaultEnabledCurrencies);
     }

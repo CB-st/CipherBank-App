@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Globalization;
 using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Persist;
@@ -12,9 +13,19 @@ public sealed class RecipientRepository : IRecipientRepository
     private const string DefaultAccountType = "checking";
 
     private readonly ILocalDb _db;
+    private readonly TimeProvider _timeProvider;
     private bool _schemaReady;
 
-    public RecipientRepository(ILocalDb db) => _db = db;
+    public RecipientRepository(ILocalDb db)
+        : this(db, TimeProvider.System)
+    {
+    }
+
+    public RecipientRepository(ILocalDb db, TimeProvider timeProvider)
+    {
+        _db = db;
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
 
     public async Task EnsureSchemaAsync()
     {
@@ -108,7 +119,7 @@ public sealed class RecipientRepository : IRecipientRepository
         cmd.Parameters.AddWithValue("$memo", (object?)row.Memo ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$am", (object?)accountMask ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$rm", (object?)routingMask ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$created", row.CreatedAt.ToString("O"));
+        cmd.Parameters.AddWithValue("$created", row.CreatedAt.ToString("O", CultureInfo.InvariantCulture));
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
 
@@ -132,7 +143,7 @@ public sealed class RecipientRepository : IRecipientRepository
         }
 
         await UpsertAsync(new AchRecipientRow(
-            Guid.NewGuid().ToString("N"),
+            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
             "Rent — 4th St LLC",
             "4th St LLC",
             "Demo Bank",
@@ -142,9 +153,9 @@ public sealed class RecipientRepository : IRecipientRepository
             "Rent",
             null,
             null,
-            DateTimeOffset.UtcNow)).ConfigureAwait(false);
+            _timeProvider.GetUtcNow())).ConfigureAwait(false);
         await UpsertAsync(new AchRecipientRow(
-            Guid.NewGuid().ToString("N"),
+            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
             "Utilities Co",
             "Utilities Co",
             "City Credit Union",
@@ -154,7 +165,7 @@ public sealed class RecipientRepository : IRecipientRepository
             null,
             null,
             null,
-            DateTimeOffset.UtcNow)).ConfigureAwait(false);
+            _timeProvider.GetUtcNow())).ConfigureAwait(false);
     }
 
 #pragma warning disable CA2100 // Constant DDL strings only

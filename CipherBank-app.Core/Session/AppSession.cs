@@ -24,7 +24,8 @@ public sealed class AppSession : IAppSession
     private readonly IPrefsSyncService _prefsSync;
     private readonly IAccountBootstrapService _bootstrap;
     private readonly IProductSessionStore _productSessions;
-    private DateTimeOffset _lastTouch = DateTimeOffset.UtcNow;
+    private readonly TimeProvider _timeProvider;
+    private DateTimeOffset _lastTouch;
 
     public AppSession(AppSessionDeps deps)
     {
@@ -37,6 +38,8 @@ public sealed class AppSession : IAppSession
         _prefsSync = deps.PrefsSync;
         _bootstrap = deps.Bootstrap;
         _productSessions = deps.ProductSessions;
+        _timeProvider = deps.Time ?? TimeProvider.System;
+        _lastTouch = _timeProvider.GetUtcNow();
         IdleMs = DefaultIdleMs;
     }
 
@@ -90,7 +93,7 @@ public sealed class AppSession : IAppSession
         return await CompleteUnlockAsync(applyBootstrap: true).ConfigureAwait(false);
     }
 
-    public void Touch() => _lastTouch = DateTimeOffset.UtcNow;
+    public void Touch() => _lastTouch = _timeProvider.GetUtcNow();
 
     public void Lock()
     {
@@ -122,7 +125,7 @@ public sealed class AppSession : IAppSession
             return false;
         }
 
-        if ((DateTimeOffset.UtcNow - _lastTouch).TotalMilliseconds < IdleMs)
+        if ((_timeProvider.GetUtcNow() - _lastTouch).TotalMilliseconds < IdleMs)
         {
             return false;
         }

@@ -60,6 +60,10 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
         }
     }
 
+    /// <summary>
+    /// Starts as many eligible jobs as concurrency allows.
+    /// Use: High (after each enqueue / completion). Scope: SyncJobScheduler instance.
+    /// </summary>
     private void Pump()
     {
         while (true)
@@ -89,6 +93,10 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
         }
     }
 
+    /// <summary>
+    /// Runs one job then pumps the next eligible work.
+    /// Use: High (per enqueued job). Scope: SyncJobScheduler instance.
+    /// </summary>
     private async Task RunJobAsync(QueuedJob job)
     {
         try

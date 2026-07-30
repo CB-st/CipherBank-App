@@ -19,4 +19,5 @@ public readonly record struct AppSessionDeps(
     IPrefsStore Prefs,
     IPrefsSyncService PrefsSync,
     IAccountBootstrapService Bootstrap,
-    IProductSessionStore ProductSessions);
+    IProductSessionStore ProductSessions,
+    TimeProvider Time);

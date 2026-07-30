@@ -19,8 +19,8 @@ public class CryptoAPIServiceTests
         var mockService = new Mock<ICryptoApiService>();
         var expectedCryptos = new List<CryptoCurrency>
         {
-            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url1"),
-            new("ETH", "Ethereum", 3000m, 30m, 1.0m, 500000000m, 20000000m, "url2"),
+            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, null),
+            new("ETH", "Ethereum", 3000m, 30m, 1.0m, 500000000m, 20000000m, null),
         };
 
         mockService
@@ -42,7 +42,7 @@ public class CryptoAPIServiceTests
         // Arrange
         var mockService = new Mock<ICryptoApiService>();
         var expectedCrypto = new CryptoCurrency(
-            "BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url");
+            "BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, new Uri("https://example.com/btc.png"));
 
         mockService
             .Setup(x => x.GetCryptoPriceAsync("BTC", It.IsAny<CancellationToken>()))
@@ -109,7 +109,7 @@ public class CryptoAPIServiceTests
         var mockService = new Mock<ICryptoApiService>();
         var expectedResults = new List<CryptoCurrency>
         {
-            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url"),
+            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, null),
         };
 
         mockService
@@ -121,7 +121,7 @@ public class CryptoAPIServiceTests
 
         // Assert
         result.Should().HaveCount(1);
-        result.First().Name.Should().Contain("Bitcoin");
+        result[0].Name.Should().Contain("Bitcoin");
     }
 
     [Fact]

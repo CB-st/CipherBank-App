@@ -8,6 +8,8 @@ namespace CipherBank_app.Charts;
 public sealed class ChartPathResult
 {
     public string Line { get; init; } = string.Empty;
+
     public string Area { get; init; } = string.Empty;
+
     public IReadOnlyList<(double X, double Y)> Pts { get; init; } = Array.Empty<(double, double)>();
 }

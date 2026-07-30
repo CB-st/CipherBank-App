@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
 namespace CipherBank_app.V1;
@@ -16,5 +17,6 @@ public sealed class PortfolioDto
     public string Change24HPct { get; set; } = "0";
 
     [JsonPropertyName("HOLDINGS")]
-    public List<HoldingDto> Holdings { get; set; } = new();
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    public Collection<HoldingDto> Holdings { get; } = [];
 }

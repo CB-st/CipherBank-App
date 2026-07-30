@@ -57,6 +57,7 @@ public static class AddressDerive
         ExtKey root = m.DeriveExtKey();
         string path = $"m/84'/2'/0'/0/{accountIndex}";
         ExtKey key = root.Derive(new KeyPath(path));
+
         // Use Litecoin network if registered; otherwise encode wit program with ltc HRP via BTC segwit then rewrite
         WitKeyId wit = key.Neuter().PubKey.WitHash;
         string address = new BitcoinWitPubKeyAddress(wit, NBitcoin.Altcoins.Litecoin.Instance.Mainnet).ToString();

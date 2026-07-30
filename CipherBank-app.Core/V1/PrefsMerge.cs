@@ -19,7 +19,8 @@ public static class PrefsMerge
         }
 
         string priorLayout = local.AssetsLayout;
-        bool remoteHadLayout = !string.IsNullOrWhiteSpace(remote.AssetsLayout ?? remote.AssetsLayoutCamel);
+        remote.FoldAlternateNames();
+        bool remoteHadLayout = !string.IsNullOrWhiteSpace(remote.AssetsLayout);
         remote.ApplyOnto(local);
         if (!remoteHadLayout)
         {

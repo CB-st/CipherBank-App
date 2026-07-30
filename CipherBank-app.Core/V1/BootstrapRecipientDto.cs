@@ -2,6 +2,9 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace CipherBank_app.V1;
@@ -9,72 +12,50 @@ namespace CipherBank_app.V1;
 /// <summary>ACH contact from account bootstrap (no custody material).</summary>
 public sealed class BootstrapRecipientDto
 {
-    private const int BootstrapIdHexPrefixLength = 16;
+    private const int SyntheticIdHexChars = 16;
 
     [JsonPropertyName("ID")]
     public string? Id { get; set; }
 
-    [JsonPropertyName("id")]
-    public string? IdCamel { get; set; }
-
     [JsonPropertyName("DISPLAY_NAME")]
     public string? DisplayName { get; set; }
-
-    [JsonPropertyName("displayName")]
-    public string? DisplayNameCamel { get; set; }
 
     [JsonPropertyName("ACCOUNT_HOLDER_NAME")]
     public string? AccountHolderName { get; set; }
 
-    [JsonPropertyName("accountHolderName")]
-    public string? AccountHolderNameCamel { get; set; }
-
     [JsonPropertyName("BANK_NAME")]
     public string? BankName { get; set; }
-
-    [JsonPropertyName("bankName")]
-    public string? BankNameCamel { get; set; }
 
     [JsonPropertyName("ROUTING_NUMBER")]
     public string? RoutingNumber { get; set; }
 
-    [JsonPropertyName("routingNumber")]
-    public string? RoutingNumberCamel { get; set; }
-
     [JsonPropertyName("ACCOUNT_LAST4")]
     public string? AccountLast4 { get; set; }
-
-    [JsonPropertyName("accountLast4")]
-    public string? AccountLast4Camel { get; set; }
 
     [JsonPropertyName("ACCOUNT_TYPE")]
     public string? AccountType { get; set; }
 
-    [JsonPropertyName("accountType")]
-    public string? AccountTypeCamel { get; set; }
-
     [JsonPropertyName("MEMO")]
     public string? Memo { get; set; }
 
-    [JsonPropertyName("memo")]
-    public string? MemoCamel { get; set; }
+    /// <summary>Captures camelCase aliases for fold-in after deserialize.</summary>
+    [JsonExtensionData]
+    [JsonInclude]
+    public Dictionary<string, JsonElement>? ExtensionData { get; private set; }
 
     public string ResolvedId
     {
         get
         {
+            FoldAlternateNames();
             if (!string.IsNullOrWhiteSpace(Id))
             {
-                return Id!;
-            }
-
-            if (!string.IsNullOrWhiteSpace(IdCamel))
-            {
-                return IdCamel!;
+                return Id;
             }
 
             // Stable synthetic key so re-bootstrap does not duplicate the same payee.
-            string seed = ResolvedName.Trim().ToUpperInvariant();
+            // Lowercase kept for id stability across app versions (S4040 Upper would rewrite keys).
+            string seed = ResolvedName.Trim().ToLowerInvariant(); // NOSONAR (S4040)
             if (string.IsNullOrEmpty(seed))
             {
                 seed = (ResolvedLast4 ?? string.Empty) + "|" + (ResolvedRouting ?? string.Empty);
@@ -85,24 +66,105 @@ public sealed class BootstrapRecipientDto
                 return "recipient_unknown";
             }
 
-            return "bootstrap_" + Convert.ToHexString(
-                    System.Security.Cryptography.SHA256.HashData(
-                        System.Text.Encoding.UTF8.GetBytes(seed)))
-                .ToUpperInvariant()[..BootstrapIdHexPrefixLength];
+            return "bootstrap_" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(seed)))
+                .ToLowerInvariant()[..SyntheticIdHexChars]; // NOSONAR (S4040 — stable hex id)
         }
     }
 
-    public string ResolvedName => DisplayName ?? DisplayNameCamel ?? string.Empty;
+    public string ResolvedName
+    {
+        get
+        {
+            FoldAlternateNames();
+            return DisplayName ?? string.Empty;
+        }
+    }
 
-    public string? ResolvedHolder => AccountHolderName ?? AccountHolderNameCamel;
+    public string? ResolvedHolder
+    {
+        get
+        {
+            FoldAlternateNames();
+            return AccountHolderName;
+        }
+    }
 
-    public string? ResolvedBank => BankName ?? BankNameCamel;
+    public string? ResolvedBank
+    {
+        get
+        {
+            FoldAlternateNames();
+            return BankName;
+        }
+    }
 
-    public string? ResolvedRouting => RoutingNumber ?? RoutingNumberCamel;
+    public string? ResolvedRouting
+    {
+        get
+        {
+            FoldAlternateNames();
+            return RoutingNumber;
+        }
+    }
 
-    public string? ResolvedLast4 => AccountLast4 ?? AccountLast4Camel;
+    public string? ResolvedLast4
+    {
+        get
+        {
+            FoldAlternateNames();
+            return AccountLast4;
+        }
+    }
 
-    public string ResolvedAccountType => (AccountType ?? AccountTypeCamel ?? "checking").ToUpperInvariant();
+    public string ResolvedAccountType
+    {
+        get
+        {
+            FoldAlternateNames();
+            string type = (AccountType ?? "checking").ToUpperInvariant();
+            return type == "SAVINGS" ? "savings" : "checking";
+        }
+    }
 
-    public string? ResolvedMemo => Memo ?? MemoCamel;
+    public string? ResolvedMemo
+    {
+        get
+        {
+            FoldAlternateNames();
+            return Memo;
+        }
+    }
+
+    /// <summary>
+    /// Folds camelCase extension keys into primary properties once.
+    /// Use: High (bootstrap deserialize / Resolved*). Scope: this DTO.
+    /// </summary>
+    public void FoldAlternateNames()
+    {
+        Dictionary<string, JsonElement>? data = ExtensionData;
+        if (data is null || data.Count == 0)
+        {
+            return;
+        }
+
+        FoldIdentityFields(data);
+        FoldAccountFields(data);
+        ExtensionData = null;
+    }
+
+    private void FoldIdentityFields(IDictionary<string, JsonElement> data)
+    {
+        Id ??= WireJson.TryGetString(data, "id");
+        DisplayName ??= WireJson.TryGetString(data, "displayName");
+        AccountHolderName ??= WireJson.TryGetString(data, "accountHolderName");
+        BankName ??= WireJson.TryGetString(data, "bankName");
+    }
+
+    private void FoldAccountFields(IDictionary<string, JsonElement> data)
+    {
+        RoutingNumber ??= WireJson.TryGetString(data, "routingNumber");
+        AccountLast4 ??= WireJson.TryGetString(data, "accountLast4");
+        AccountType ??= WireJson.TryGetString(data, "accountType");
+        Memo ??= WireJson.TryGetString(data, "memo");
+    }
 }

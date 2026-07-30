@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Globalization;
+
 namespace CipherBank_app.V1;
 
 /// <summary>In-process /v1 mock (Cora fixtures parity).</summary>
@@ -24,7 +26,6 @@ public sealed class MockProductApi : IProductApi
     private const double HistoryWavePeriod = 3.0;
     private const double HistoryWaveAmplitude = 2.0;
     private const double HistoryWaveOffset = 0.3;
-    private const long MockBootstrapSyncedAtMs = 1_720_900_000_000L;
     private const int SessionExpiresHours = 1;
     private const int MockChallengeIdSuffixLength = 8;
     private const int MockKeyShareIdSuffixLength = 8;
@@ -38,32 +39,27 @@ public sealed class MockProductApi : IProductApi
     private const int PosAuthorizedTtlMs = 60_000;
     private const int PosReadyTtlMs = 45_000;
     private const int DefaultAppLockIdleSeconds = 120;
+    private const long MockBootstrapSyncedAtUnixMs = 1_720_900_000_000L;
     private const string MockReceiveAddress = "bc1qmockreceiveaddress0000000000000000";
+
+    private readonly TimeProvider _timeProvider;
     private readonly List<VaultCardDto> _vaultCards =
     [
         new() { CardId = "card_lab_1", Last4 = "4242", Brand = "visa", Label = "Hardware test", HardwareTest = true },
     ];
 
-    private PrefsWireDto _prefs = new()
+    private PrefsWireDto _prefs;
+
+    public MockProductApi()
+        : this(TimeProvider.System)
     {
-        HomeOrderCamel = new List<string> { "cora", "balance", "quickActions", "performance", "holdings", "localWallets" },
-        HomeVisibleCamel = new Dictionary<string, bool>
-        {
-            ["cora"] = true,
-            ["balance"] = true,
-            ["quickActions"] = true,
-            ["performance"] = true,
-            ["holdings"] = true,
-            ["localWallets"] = true,
-        },
-        ValuesHiddenOnLaunchCamel = false,
-        CoraEnabledCamel = true,
-        DefaultSendSpeedCamel = "instant",
-        AppearanceCamel = "dark",
-        BaseCurrencyCamel = "USD",
-        AppLockIdleSecCamel = DefaultAppLockIdleSeconds,
-        AssetsLayoutCamel = "separate",
-    };
+    }
+
+    public MockProductApi(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+        _prefs = CreateDefaultPrefs();
+    }
 
     public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct)
         => Task.FromResult(new PortfolioDto
@@ -80,7 +76,7 @@ public sealed class MockProductApi : IProductApi
 
     public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
     {
-        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        long now = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
         (int points, int stepSeconds) = ResolveHistoryShape(range);
         var pts = new List<HistoryPointDto>(points + 1);
         double v = HistoryBaseValue;
@@ -98,7 +94,7 @@ public sealed class MockProductApi : IProductApi
         {
             AccessToken = MockAccessToken,
             RefreshToken = MockRefreshToken,
-            ExpiresAt = DateTimeOffset.UtcNow.AddHours(SessionExpiresHours).ToUnixTimeMilliseconds(),
+            ExpiresAt = _timeProvider.GetUtcNow().AddHours(SessionExpiresHours).ToUnixTimeMilliseconds(),
         });
 
     public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
@@ -108,7 +104,7 @@ public sealed class MockProductApi : IProductApi
         _ = accountPublicKeyWire;
         return Task.FromResult(new SessionChallengeDto
         {
-            ChallengeId = "ch_mock_" + Guid.NewGuid().ToString("N")[..MockChallengeIdSuffixLength],
+            ChallengeId = "ch_mock_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockChallengeIdSuffixLength],
             Ciphertext = Convert.ToBase64String(new byte[MockChallengeCiphertextBytes]),
             ApiPublicKey = Convert.ToBase64String(new byte[MockX25519PublicKeyBytes]),
             ApiKeyId = "api_mock",
@@ -121,7 +117,7 @@ public sealed class MockProductApi : IProductApi
         _ = request;
         return Task.FromResult(new KeyShareResponseDto
         {
-            KeyShareId = "ks_mock_" + Guid.NewGuid().ToString("N")[..MockKeyShareIdSuffixLength],
+            KeyShareId = "ks_mock_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockKeyShareIdSuffixLength],
             MlKemCiphertext = Convert.ToBase64String(new byte[MockMlKemCiphertextBytes]),
             ServerX25519PublicKey = Convert.ToBase64String(new byte[MockX25519PublicKeyBytes]),
             Algorithm = "hybrid-mlkem768-x25519-v1",
@@ -135,14 +131,14 @@ public sealed class MockProductApi : IProductApi
         {
             "MANAGED" => "managed",
             "WATCH" => "watch",
-            _ => request.Mode!.Trim(),
+            _ => request.Mode.Trim(),
         };
         string symbol = string.IsNullOrWhiteSpace(request.Symbol) ? "XMR" : request.Symbol.ToUpperInvariant();
-        string label = string.IsNullOrWhiteSpace(request.Label) ? $"CipherBank {mode}" : request.Label!;
-        string walletId = "wlt_" + Guid.NewGuid().ToString("N")[..MockWalletIdSuffixLength];
+        string label = string.IsNullOrWhiteSpace(request.Label) ? $"CipherBank {mode}" : request.Label;
+        string walletId = "wlt_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockWalletIdSuffixLength];
         string? address = modeKey switch
         {
-            "MANAGED" => "4" + Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")[..MockManagedAddressSuffixLength],
+            "MANAGED" => "4" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture) + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockManagedAddressSuffixLength],
             "WATCH" => request.Address,
             _ => request.Address,
         };
@@ -162,17 +158,17 @@ public sealed class MockProductApi : IProductApi
             From = from.ToUpperInvariant(),
             To = toAsset.ToUpperInvariant(),
             Rate = from.Equals("BTC", StringComparison.OrdinalIgnoreCase) ? "66000" : "1.00",
-            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(QuoteTtlSeconds).ToUnixTimeMilliseconds(),
+            ExpiresAt = _timeProvider.GetUtcNow().AddSeconds(QuoteTtlSeconds).ToUnixTimeMilliseconds(),
         });
 
     public Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct)
-        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
+        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture), Status = "pending" });
 
     public Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct)
-        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
+        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture), Status = "pending" });
 
     public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct)
-        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N"), Status = "pending" });
+        => Task.FromResult(new MoneyMoveDto { Id = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture), Status = "pending" });
 
     public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct)
         => Task.FromResult(new ReceiveDto { Asset = asset.ToUpperInvariant(), Address = MockReceiveAddress, Uri = null });
@@ -195,7 +191,7 @@ public sealed class MockProductApi : IProductApi
         _ = idempotencyKey;
         var added = new VaultCardDto
         {
-            CardId = string.IsNullOrWhiteSpace(card.CardId) ? "card_" + Guid.NewGuid().ToString("N")[..MockCardIdSuffixLength] : card.CardId,
+            CardId = string.IsNullOrWhiteSpace(card.CardId) ? "card_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockCardIdSuffixLength] : card.CardId,
             Last4 = card.Last4,
             Brand = card.Brand,
             Label = card.Label,
@@ -213,14 +209,14 @@ public sealed class MockProductApi : IProductApi
     }
 
     public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct)
-        => Task.FromResult(new PosSessionDto { SessionId = Guid.NewGuid().ToString("N"), Status = "pending_auth" });
+        => Task.FromResult(new PosSessionDto { SessionId = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture), Status = "pending_auth" });
 
     public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct)
         => Task.FromResult(new PosSessionDto
         {
             SessionId = sessionId,
             Status = "authorized",
-            TokenRef = "tok_" + Guid.NewGuid().ToString("N")[..MockPosTokenSuffixLength],
+            TokenRef = "tok_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockPosTokenSuffixLength],
             Last4 = "4242",
             Brand = "visa",
             TtlMs = PosAuthorizedTtlMs,
@@ -249,48 +245,92 @@ public sealed class MockProductApi : IProductApi
     public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
         => Task.FromResult(new AccountBootstrapDto
         {
-            PrefsCamel = new PrefsWireDto
+            Prefs = new PrefsWireDto
             {
-                DefaultSendSpeedCamel = "instant",
-                CoraEnabledCamel = true,
+                DefaultSendSpeed = "instant",
+                CoraEnabled = true,
             },
-            RecipientsCamel = new List<BootstrapRecipientDto>
+            Recipients =
             {
-                new()
-                {
-                    IdCamel = "maya",
-                    DisplayNameCamel = "Maya Chen",
-                    AccountHolderNameCamel = "Maya Chen",
-                    BankNameCamel = "Chase",
-                    AccountLast4Camel = "4021",
-                    AccountTypeCamel = "checking",
-                    RoutingNumberCamel = "021000021",
-                },
-                new()
-                {
-                    IdCamel = "sunset",
-                    DisplayNameCamel = "Sunset Property Mgmt",
-                    AccountHolderNameCamel = "Sunset Property Management LLC",
-                    BankNameCamel = "Wells Fargo",
-                    AccountLast4Camel = "5544",
-                    AccountTypeCamel = "checking",
-                    RoutingNumberCamel = "121000248",
-                    MemoCamel = "Rent",
-                },
+                CreateBootstrapRecipient(
+                    "maya",
+                    "Maya Chen",
+                    "Maya Chen",
+                    "Chase",
+                    "4021",
+                    "021000021",
+                    memo: null),
+                CreateBootstrapRecipient(
+                    "sunset",
+                    "Sunset Property Mgmt",
+                    "Sunset Property Management LLC",
+                    "Wells Fargo",
+                    "5544",
+                    "121000248",
+                    memo: "Rent"),
             },
-            SyncedAtCamel = MockBootstrapSyncedAtMs,
+            SyncedAt = MockBootstrapSyncedAtUnixMs,
         });
+
+    /// <summary>
+    /// Builds a fixture bootstrap recipient (shared shape for mock twins).
+    /// Use: Low (GetAccountBootstrapAsync). Scope: MockProductApi.
+    /// </summary>
+    private static BootstrapRecipientDto CreateBootstrapRecipient(
+        string id,
+        string displayName,
+        string holder,
+        string bank,
+        string last4,
+        string routing,
+        string? memo)
+        => new()
+        {
+            Id = id,
+            DisplayName = displayName,
+            AccountHolderName = holder,
+            BankName = bank,
+            AccountLast4 = last4,
+            AccountType = "checking",
+            RoutingNumber = routing,
+            Memo = memo,
+        };
 
     private static (int Points, int StepSeconds) ResolveHistoryShape(string range)
     {
-        return range.Trim().ToLowerInvariant() switch
+        return range.Trim().ToUpperInvariant() switch
         {
-            "1d" => (HistoryHourlyPointCount, HistoryStepSecondsHourly),
-            "1w" or "7d" => (HistoryWeeklyPointCount, HistoryStepSecondsDaily),
-            "1m" or "30d" => (HistoryMonthlyPointCount, HistoryStepSecondsDaily),
-            "90d" => (HistoryQuarterlyPointCount, HistoryStepSecondsDaily),
-            "1y" or "all" => (HistoryYearlyPointCount, HistoryStepSecondsWeekly),
+            "1D" => (HistoryHourlyPointCount, HistoryStepSecondsHourly),
+            "1W" or "7D" => (HistoryWeeklyPointCount, HistoryStepSecondsDaily),
+            "1M" or "30D" => (HistoryMonthlyPointCount, HistoryStepSecondsDaily),
+            "90D" => (HistoryQuarterlyPointCount, HistoryStepSecondsDaily),
+            "1Y" or "ALL" => (HistoryYearlyPointCount, HistoryStepSecondsWeekly),
             _ => (HistoryDayCount, HistoryStepSecondsDaily),
         };
+    }
+
+    private static PrefsWireDto CreateDefaultPrefs()
+    {
+        PrefsWireDto prefs = new()
+        {
+            ValuesHiddenOnLaunch = false,
+            CoraEnabled = true,
+            DefaultSendSpeed = "instant",
+            Appearance = "dark",
+            BaseCurrency = "USD",
+            LockIdleSeconds = DefaultAppLockIdleSeconds,
+            AssetsLayout = "separate",
+        };
+        prefs.ReplaceHomeOrder(["cora", "balance", "quickActions", "performance", "holdings", "localWallets"]);
+        prefs.ReplaceHomeVisible(new Dictionary<string, bool>
+        {
+            ["cora"] = true,
+            ["balance"] = true,
+            ["quickActions"] = true,
+            ["performance"] = true,
+            ["holdings"] = true,
+            ["localWallets"] = true,
+        });
+        return prefs;
     }
 }

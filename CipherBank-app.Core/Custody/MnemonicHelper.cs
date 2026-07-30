@@ -12,8 +12,9 @@ public static class MnemonicHelper
     private const int BitsPerWordIndex = 11;
     private const int ChecksumDivisor = 33;
     private const int BitsPerByte = 8;
+    private const int HighestBitInByte = 7;
     private const int HighestWordBitIndex = 10;
-    private const int MaxBitIndexInByte = 7;
+
     public static string Generate()
     {
         var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
@@ -61,7 +62,7 @@ public static class MnemonicHelper
             {
                 if (((index >> i) & 1) == 1)
                 {
-                    entropy[bitPos / BitsPerByte] |= (byte)(1 << (MaxBitIndexInByte - (bitPos % BitsPerByte)));
+                    entropy[bitPos / BitsPerByte] |= (byte)(1 << (HighestBitInByte - (bitPos % BitsPerByte)));
                 }
 
                 bitPos++;

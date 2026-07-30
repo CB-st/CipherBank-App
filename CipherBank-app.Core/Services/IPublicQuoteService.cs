@@ -19,12 +19,18 @@ public interface IPublicQuoteService
     /// <returns>True when the API accepts the connectivity test.</returns>
     Task<bool> TestConnectionAsync(CancellationToken cancellationToken);
 
+    /// <summary>Connectivity probe for callers with no ambient token. Use: Low (diagnostics). Scope: IPublicQuoteService consumers.</summary>
+    Task<bool> TestConnectionAsync() => TestConnectionAsync(CancellationToken.None);
+
     /// <summary>
     /// Returns supported currency codes as app tickers (BTC, XMR, USD, …).
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Ordered app symbols.</returns>
     Task<IReadOnlyList<string>> GetCurrenciesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Currency list for callers with no ambient token. Use: Medium (Convert load). Scope: IPublicQuoteService consumers.</summary>
+    Task<IReadOnlyList<string>> GetCurrenciesAsync() => GetCurrenciesAsync(CancellationToken.None);
 
     /// <summary>
     /// Calculates output for a fixed input amount (<c>POST /iquote</c>).
@@ -40,6 +46,10 @@ public interface IPublicQuoteService
         string outputSymbol,
         CancellationToken cancellationToken);
 
+    /// <summary>Fixed-input quote for callers with no ambient token. Use: High (Convert typing). Scope: IPublicQuoteService consumers.</summary>
+    Task<PublicQuote> GetInverseQuoteAsync(string inputSymbol, decimal inputAmount, string outputSymbol)
+        => GetInverseQuoteAsync(inputSymbol, inputAmount, outputSymbol, CancellationToken.None);
+
     /// <summary>
     /// Calculates input required for a fixed output amount (<c>POST /quote</c>).
     /// </summary>
@@ -53,16 +63,6 @@ public interface IPublicQuoteService
         decimal outputAmount,
         string outputSymbol,
         CancellationToken cancellationToken);
-
-    /// <summary>Connectivity probe for callers with no ambient token. Use: Low (diagnostics). Scope: IPublicQuoteService consumers.</summary>
-    Task<bool> TestConnectionAsync() => TestConnectionAsync(CancellationToken.None);
-
-    /// <summary>Currency list for callers with no ambient token. Use: Medium (Convert load). Scope: IPublicQuoteService consumers.</summary>
-    Task<IReadOnlyList<string>> GetCurrenciesAsync() => GetCurrenciesAsync(CancellationToken.None);
-
-    /// <summary>Fixed-input quote for callers with no ambient token. Use: High (Convert typing). Scope: IPublicQuoteService consumers.</summary>
-    Task<PublicQuote> GetInverseQuoteAsync(string inputSymbol, decimal inputAmount, string outputSymbol)
-        => GetInverseQuoteAsync(inputSymbol, inputAmount, outputSymbol, CancellationToken.None);
 
     /// <summary>Fixed-output quote for callers with no ambient token. Use: High (Convert typing). Scope: IPublicQuoteService consumers.</summary>
     Task<PublicQuote> GetQuoteAsync(string inputSymbol, decimal outputAmount, string outputSymbol)

@@ -13,7 +13,10 @@ public sealed class PrefsStore : IPrefsStore
     private const string Key = "user_prefs";
     private readonly ILocalDb _db;
 
-    public PrefsStore(ILocalDb db) => _db = db;
+    public PrefsStore(ILocalDb db)
+    {
+        _db = db;
+    }
 
     public async Task<UserPrefs> LoadAsync()
     {

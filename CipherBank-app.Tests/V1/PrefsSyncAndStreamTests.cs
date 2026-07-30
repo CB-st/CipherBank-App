@@ -32,7 +32,7 @@ public class PrefsSyncAndStreamTests
     public void PrefsMerge_KeepsLocalAssetsLayout_WhenRemoteOmitsIt()
     {
         var local = new UserPrefs { AssetsLayout = "combined", CoraEnabled = true };
-        var remote = new PrefsWireDto { CoraEnabledCamel = false };
+        var remote = new PrefsWireDto { CoraEnabled = false };
         PrefsMerge.Merge(local, remote);
         local.AssetsLayout.Should().Be("combined");
         local.CoraEnabled.Should().BeFalse();
@@ -60,9 +60,27 @@ public class PrefsSyncAndStreamTests
         var debounce = new EventDebouncer(TimeSpan.FromMilliseconds(40));
         int runs = 0;
         await Task.WhenAll(
-            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }, default),
-            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }, default),
-            debounce.DebounceAsync(() => { Interlocked.Increment(ref runs); return Task.CompletedTask; }, default));
+            debounce.DebounceAsync(
+                () =>
+                {
+                    Interlocked.Increment(ref runs);
+                    return Task.CompletedTask;
+                },
+                default),
+            debounce.DebounceAsync(
+                () =>
+                {
+                    Interlocked.Increment(ref runs);
+                    return Task.CompletedTask;
+                },
+                default),
+            debounce.DebounceAsync(
+                () =>
+                {
+                    Interlocked.Increment(ref runs);
+                    return Task.CompletedTask;
+                },
+                default));
         await Task.Delay(80);
         runs.Should().Be(1);
         debounce.FireCount.Should().Be(1);

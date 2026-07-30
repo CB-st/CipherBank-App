@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.Resources;
+
 namespace CipherBank_app.Persist;
 
 /// <summary>ACH recipient field validation (Cora RecipientPickerModal parity).</summary>
@@ -42,9 +44,9 @@ public static class AchRecipientValidation
         string accountType,
         string? memo)
         => FirstError(
-            RequireNonBlank(name, "Enter a payee name."), // NOSONAR (S4055 — i18n deferred, docs/SONAR_GATE.md)
-            RequireNonBlank(holder, "Enter the account holder name."), // NOSONAR (S4055 — i18n deferred, docs/SONAR_GATE.md)
-            RequireNonBlank(bank, "Enter the bank name."), // NOSONAR (S4055 — i18n deferred, docs/SONAR_GATE.md)
+            RequireNonBlank(name, Strings.AchEnterPayeeName),
+            RequireNonBlank(holder, Strings.AchEnterAccountHolderName),
+            RequireNonBlank(bank, Strings.AchEnterBankName),
             ValidateRouting(routing),
             ValidateAccount(account),
             ValidateAccountType(accountType),
@@ -101,7 +103,7 @@ public static class AchRecipientValidation
     private static string? ValidateRouting(string routing)
         => DigitsOnly(routing).Length == RoutingNumberDigitCount
             ? null
-            : $"Routing number must be {RoutingNumberDigitCount} digits.";
+            : Strings.AchRoutingNumberMustBeDigits(RoutingNumberDigitCount);
 
     /// <summary>
     /// Ensures account has at least <see cref="AccountNumberMinDigits"/> characters after trim.
@@ -109,7 +111,7 @@ public static class AchRecipientValidation
     /// </summary>
     private static string? ValidateAccount(string account)
         => string.IsNullOrWhiteSpace(account) || account.Trim().Length < AccountNumberMinDigits
-            ? "Enter a valid account number."
+            ? Strings.AchEnterValidAccountNumber
             : null;
 
     /// <summary>
@@ -121,7 +123,7 @@ public static class AchRecipientValidation
         string type = accountType.Trim().ToUpperInvariant();
         return type is "CHECKING" or "SAVINGS"
             ? null
-            : "Account type must be checking or savings.";
+            : Strings.AchAccountTypeMustBeCheckingOrSavings;
     }
 
     /// <summary>
@@ -130,7 +132,7 @@ public static class AchRecipientValidation
     /// </summary>
     private static string? ValidateMemo(string? memo)
         => memo is not null && memo.Length > MemoMaxLength
-            ? $"Memo must be {MemoMaxLength} characters or fewer."
+            ? Strings.AchMemoMustBeMaxLength(MemoMaxLength)
             : null;
 
     /// <summary>

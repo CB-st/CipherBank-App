@@ -18,9 +18,19 @@ public sealed class PinService : IPinService
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(5);
 
     private readonly ISecureStore _store;
+    private readonly TimeProvider _timeProvider;
     private DateTimeOffset? _lockUntilUtc;
 
-    public PinService(ISecureStore store) => _store = store;
+    public PinService(ISecureStore store)
+        : this(store, TimeProvider.System)
+    {
+    }
+
+    public PinService(ISecureStore store, TimeProvider timeProvider)
+    {
+        _store = store;
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
 
     public int FailedAttempts { get; private set; }
 
@@ -31,8 +41,8 @@ public sealed class PinService : IPinService
         get
         {
             // populated async via RefreshAsync — sync helpers use cached fields
-            return _lockUntilUtc is DateTimeOffset until && until > DateTimeOffset.UtcNow
-                ? until - DateTimeOffset.UtcNow
+            return _lockUntilUtc is DateTimeOffset until && until > _timeProvider.GetUtcNow()
+                ? until - _timeProvider.GetUtcNow()
                 : null;
         }
     }
@@ -100,7 +110,7 @@ public sealed class PinService : IPinService
         await _store.SetAsync(FailKey, FailedAttempts.ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
         if (FailedAttempts >= MaxFails)
         {
-            _lockUntilUtc = DateTimeOffset.UtcNow.Add(LockoutDuration);
+            _lockUntilUtc = _timeProvider.GetUtcNow().Add(LockoutDuration);
             await _store.SetAsync(LockKey, _lockUntilUtc.Value.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
         }
 
@@ -128,7 +138,7 @@ public sealed class PinService : IPinService
         if (long.TryParse(lockMs, out long ms))
         {
             _lockUntilUtc = DateTimeOffset.FromUnixTimeMilliseconds(ms);
-            if (_lockUntilUtc <= DateTimeOffset.UtcNow)
+            if (_lockUntilUtc <= _timeProvider.GetUtcNow())
             {
                 _lockUntilUtc = null;
                 FailedAttempts = 0;

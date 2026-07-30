@@ -21,11 +21,16 @@ public class PrefsStoreTests
         prefs.LockIdleSeconds = 90;
         prefs.Appearance = "light";
         prefs.HomeVisible["cora"] = false;
+        prefs.ReplaceHomeOrder(["balance", "cora", "quickActions", "performance", "holdings", "localWallets"]);
+        prefs.ReplaceEnabledCurrencies(["BTC", "ETH"]);
         await store.SaveAsync(prefs);
 
         UserPrefs loaded = await store.LoadAsync();
         loaded.LockIdleSeconds.Should().Be(90);
         loaded.Appearance.Should().Be("light");
         loaded.HomeVisible["cora"].Should().BeFalse();
+        loaded.HomeOrder.Should().Equal("balance", "cora", "quickActions", "performance", "holdings", "localWallets");
+        loaded.EnabledCurrencies.Should().Equal("BTC", "ETH");
+        loaded.HomeOrder.Should().HaveCount(6);
     }
 }

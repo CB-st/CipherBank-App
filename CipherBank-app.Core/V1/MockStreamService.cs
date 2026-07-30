@@ -11,8 +11,19 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
     private const int BalanceUpdateEveryNthSecond = 2;
     private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(5);
 
+    private readonly TimeProvider _timeProvider;
     private CancellationTokenSource? _cts;
     private Task? _loop;
+
+    public MockStreamService()
+        : this(TimeProvider.System)
+    {
+    }
+
+    public MockStreamService(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
 
     public event EventHandler<StreamEventArgs>? EventReceived;
 
@@ -36,7 +47,7 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
                     if (handlers is not null)
                     {
                         handlers.Invoke(this, new StreamEventArgs { Type = "RATE.TICK" });
-                        if (DateTimeOffset.UtcNow.Second % BalanceUpdateEveryNthSecond == 0)
+                        if (_timeProvider.GetUtcNow().Second % BalanceUpdateEveryNthSecond == 0)
                         {
                             handlers.Invoke(this, new StreamEventArgs { Type = "balance.update" });
                         }

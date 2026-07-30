@@ -120,7 +120,8 @@ public class AppSessionTests
             prefs,
             prefsSync,
             bootstrap,
-            productSessions));
+            productSessions,
+            TimeProvider.System));
     }
 
     private sealed class MemStore : ISecureStore

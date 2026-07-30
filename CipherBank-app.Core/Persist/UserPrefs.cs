@@ -2,25 +2,27 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Collections.ObjectModel;
+
 namespace CipherBank_app.Persist;
 
 /// <summary>User preference model (Cora prefs).</summary>
 public sealed class UserPrefs
 {
+    public static readonly string[] DefaultHomeOrder =
+    {
+        "cora", "balance", "quickActions", "performance", "holdings", "localWallets",
+    };
+
+    public static readonly string[] DefaultEnabledCurrencies = { "BTC", "XMR", "USD" };
+
     public static string SectionHoldings { get; } = "holdings";
 
     public static string SectionLocalWallets { get; } = "localWallets";
 
     public static string SectionLegacyAssets { get; } = "assets";
 
-    public static readonly string[] DefaultHomeOrder =
-    {
-        "cora", "balance", "quickActions", "performance", SectionHoldings, SectionLocalWallets,
-    };
-
-    public static readonly string[] DefaultEnabledCurrencies = { "BTC", "XMR", "USD" };
-
-    public List<string> HomeOrder { get; set; } = new(DefaultHomeOrder);
+    public Collection<string> HomeOrder { get; set; } = new(DefaultHomeOrder.ToList());
 
     public Dictionary<string, bool> HomeVisible { get; set; } = new()
     {
@@ -46,9 +48,48 @@ public sealed class UserPrefs
     public string BaseCurrency { get; set; } = "USD";
 
     /// <summary>Symbols visible on Home selectors / charts (uppercase tickers).</summary>
-    public List<string> EnabledCurrencies { get; set; } = new(DefaultEnabledCurrencies);
+    public Collection<string> EnabledCurrencies { get; set; } = new(DefaultEnabledCurrencies.ToList());
 
     public int LockIdleSeconds { get; set; } = 120;
+
+    /// <summary>
+    /// Replaces <see cref="HomeOrder"/> contents (JSON/wire apply and tests).
+    /// Use: Medium (prefs sync). Scope: this prefs model.
+    /// </summary>
+    public void ReplaceHomeOrder(IEnumerable<string> order)
+    {
+        HomeOrder.Clear();
+        foreach (string item in order)
+        {
+            HomeOrder.Add(item);
+        }
+    }
+
+    /// <summary>
+    /// Replaces <see cref="EnabledCurrencies"/> contents (JSON/wire apply and profile save).
+    /// Use: Medium (prefs sync). Scope: this prefs model.
+    /// </summary>
+    public void ReplaceEnabledCurrencies(IEnumerable<string> currencies)
+    {
+        EnabledCurrencies.Clear();
+        foreach (string item in currencies)
+        {
+            EnabledCurrencies.Add(item);
+        }
+    }
+
+    /// <summary>
+    /// Replaces <see cref="HomeVisible"/> contents (JSON/wire apply and tests).
+    /// Use: Medium (prefs sync). Scope: this prefs model.
+    /// </summary>
+    public void ReplaceHomeVisible(IEnumerable<KeyValuePair<string, bool>> visible)
+    {
+        HomeVisible.Clear();
+        foreach (KeyValuePair<string, bool> item in visible)
+        {
+            HomeVisible[item.Key] = item.Value;
+        }
+    }
 
     /// <summary>Migrate legacy Expo-style <c>assets</c> key and ensure holdings/local keys exist.</summary>
     public void NormalizeHomeSections()
@@ -92,19 +133,30 @@ public sealed class UserPrefs
 
             if (!HomeVisible.ContainsKey(key))
             {
-                bool legacyAssets = HomeVisible.TryGetValue(SectionLegacyAssets, out bool assetsVisible) && assetsVisible;
-                if (key == SectionHoldings || key == SectionLocalWallets)
-                {
-                    HomeVisible[key] = HomeVisible.ContainsKey(SectionLegacyAssets) && legacyAssets;
-                }
-                else
-                {
-                    HomeVisible[key] = true;
-                }
+                HomeVisible[key] = ResolveHomeVisibleDefault(key);
             }
         }
 
         HomeVisible.Remove(SectionLegacyAssets);
+    }
+
+    /// <summary>
+    /// Defaults a missing home-section visibility flag, migrating legacy "assets" into holdings/localWallets.
+    /// Use: Medium (NormalizeHomeSections). Scope: this prefs model.
+    /// </summary>
+    private bool ResolveHomeVisibleDefault(string key)
+    {
+        if (key != SectionHoldings && key != SectionLocalWallets)
+        {
+            return true;
+        }
+
+        if (!HomeVisible.ContainsKey(SectionLegacyAssets))
+        {
+            return true;
+        }
+
+        return HomeVisible.TryGetValue(SectionLegacyAssets, out bool assetsVisible) && assetsVisible;
     }
 
     private void NormalizeAssetsLayout()
@@ -118,21 +170,18 @@ public sealed class UserPrefs
 
     private void NormalizeEnabledCurrencies()
     {
-        if (EnabledCurrencies is null || EnabledCurrencies.Count == 0)
+        if (EnabledCurrencies.Count == 0)
         {
-            EnabledCurrencies = new List<string>(DefaultEnabledCurrencies);
+            ReplaceEnabledCurrencies(DefaultEnabledCurrencies);
             return;
         }
 
-        EnabledCurrencies = EnabledCurrencies
+        var normalized = EnabledCurrencies
             .Where(s => !string.IsNullOrWhiteSpace(s))
             .Select(s => s.Trim().ToUpperInvariant())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        if (EnabledCurrencies.Count == 0)
-        {
-            EnabledCurrencies = new List<string>(DefaultEnabledCurrencies);
-        }
+        ReplaceEnabledCurrencies(normalized.Count == 0 ? DefaultEnabledCurrencies : normalized);
     }
 
     private void NormalizeDefaultSendSpeed()

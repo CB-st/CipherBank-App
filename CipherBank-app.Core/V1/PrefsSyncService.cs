@@ -33,8 +33,8 @@ public sealed class PrefsSyncService : IPrefsSyncService
     }
 
     /// <summary>
-    /// Normalizes, persists locally, then pushes prefs to the product API.
-    /// Use: Medium (settings save). Scope: prefs store + API.
+    /// Saves locally then pushes prefs after argument validation.
+    /// Use: High (SaveAndPushAsync). Scope: this service.
     /// </summary>
     private async Task<bool> SaveAndPushCoreAsync(UserPrefs prefs, CancellationToken ct)
     {

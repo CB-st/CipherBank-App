@@ -2,91 +2,126 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Collections.ObjectModel;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using CipherBank_app.Persist;
 
 namespace CipherBank_app.V1;
 
-/// <summary>Wire DTO for GET/PUT /v1/prefs (SCREAMING_SNAKE; camelCase accepted on read).</summary>
+/// <summary>
+/// Wire DTO for GET/PUT /v1/prefs (SCREAMING_SNAKE on write; camelCase accepted on read via ExtensionData).
+/// </summary>
 public sealed class PrefsWireDto
 {
     [JsonPropertyName("HOME_ORDER")]
-    public List<string>? HomeOrder { get; set; }
-
-    [JsonPropertyName("homeOrder")]
-    public List<string>? HomeOrderCamel { get; set; }
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    public Collection<string> HomeOrder { get; } = [];
 
     [JsonPropertyName("HOME_VISIBLE")]
-    public Dictionary<string, bool>? HomeVisible { get; set; }
-
-    [JsonPropertyName("homeVisible")]
-    public Dictionary<string, bool>? HomeVisibleCamel { get; set; }
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    public Dictionary<string, bool> HomeVisible { get; } = new();
 
     [JsonPropertyName("ASSETS_LAYOUT")]
     public string? AssetsLayout { get; set; }
 
-    [JsonPropertyName("assetsLayout")]
-    public string? AssetsLayoutCamel { get; set; }
-
     [JsonPropertyName("VALUES_HIDDEN_ON_LAUNCH")]
     public bool? ValuesHiddenOnLaunch { get; set; }
-
-    [JsonPropertyName("valuesHiddenOnLaunch")]
-    public bool? ValuesHiddenOnLaunchCamel { get; set; }
 
     [JsonPropertyName("CORA_ENABLED")]
     public bool? CoraEnabled { get; set; }
 
-    [JsonPropertyName("coraEnabled")]
-    public bool? CoraEnabledCamel { get; set; }
-
     [JsonPropertyName("DEFAULT_SEND_SPEED")]
     public string? DefaultSendSpeed { get; set; }
-
-    [JsonPropertyName("defaultSendSpeed")]
-    public string? DefaultSendSpeedCamel { get; set; }
 
     [JsonPropertyName("APPEARANCE")]
     public string? Appearance { get; set; }
 
-    [JsonPropertyName("appearance")]
-    public string? AppearanceCamel { get; set; }
-
     [JsonPropertyName("BASE_CURRENCY")]
     public string? BaseCurrency { get; set; }
 
-    [JsonPropertyName("baseCurrency")]
-    public string? BaseCurrencyCamel { get; set; }
-
     [JsonPropertyName("ENABLED_CURRENCIES")]
-    public List<string>? EnabledCurrencies { get; set; }
-
-    [JsonPropertyName("enabledCurrencies")]
-    public List<string>? EnabledCurrenciesCamel { get; set; }
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
+    public Collection<string> EnabledCurrencies { get; } = [];
 
     [JsonPropertyName("LOCK_IDLE_SECONDS")]
     public int? LockIdleSeconds { get; set; }
 
-    [JsonPropertyName("appLockIdleSec")]
-    public int? AppLockIdleSecCamel { get; set; }
+    /// <summary>Captures camelCase / alt keys (e.g. appLockIdleSec) for fold-in after deserialize.</summary>
+    [JsonExtensionData]
+    [JsonInclude]
+    public Dictionary<string, JsonElement>? ExtensionData { get; private set; }
 
     public static PrefsWireDto FromUserPrefs(UserPrefs prefs)
-        => new()
+    {
+        PrefsWireDto dto = new()
         {
-            HomeOrder = new List<string>(prefs.HomeOrder),
-            HomeVisible = new Dictionary<string, bool>(prefs.HomeVisible),
             AssetsLayout = prefs.AssetsLayout,
             ValuesHiddenOnLaunch = prefs.ValuesHiddenOnLaunch,
             CoraEnabled = prefs.CoraEnabled,
             DefaultSendSpeed = prefs.DefaultSendSpeed,
             Appearance = prefs.Appearance,
             BaseCurrency = prefs.BaseCurrency,
-            EnabledCurrencies = new List<string>(prefs.EnabledCurrencies),
             LockIdleSeconds = prefs.LockIdleSeconds,
         };
+        dto.ReplaceHomeOrder(prefs.HomeOrder);
+        dto.ReplaceHomeVisible(prefs.HomeVisible);
+        dto.ReplaceEnabledCurrencies(prefs.EnabledCurrencies);
+        return dto;
+    }
 
+    public void ReplaceHomeOrder(IEnumerable<string> order)
+    {
+        HomeOrder.Clear();
+        foreach (string item in order)
+        {
+            HomeOrder.Add(item);
+        }
+    }
+
+    public void ReplaceHomeVisible(IEnumerable<KeyValuePair<string, bool>> visible)
+    {
+        HomeVisible.Clear();
+        foreach (KeyValuePair<string, bool> item in visible)
+        {
+            HomeVisible[item.Key] = item.Value;
+        }
+    }
+
+    public void ReplaceEnabledCurrencies(IEnumerable<string> currencies)
+    {
+        EnabledCurrencies.Clear();
+        foreach (string item in currencies)
+        {
+            EnabledCurrencies.Add(item);
+        }
+    }
+
+    /// <summary>
+    /// Folds camelCase extension keys into primary SCREAMING_SNAKE properties once.
+    /// Use: High (deserialize / ApplyOnto). Scope: this DTO.
+    /// </summary>
+    public void FoldAlternateNames()
+    {
+        Dictionary<string, JsonElement>? data = ExtensionData;
+        if (data is null || data.Count == 0)
+        {
+            return;
+        }
+
+        FoldHomeFields(data);
+        FoldDisplayFields(data);
+        FoldCurrencyAndLockFields(data);
+        ExtensionData = null;
+    }
+
+    /// <summary>
+    /// Applies folded wire prefs onto a local <see cref="UserPrefs"/> model.
+    /// Use: High (prefs sync). Scope: this DTO.
+    /// </summary>
     public void ApplyOnto(UserPrefs target)
     {
+        FoldAlternateNames();
         ApplyHomeSectionsOnto(target);
         ApplyDisplayPrefsOnto(target);
         ApplyCurrencyPrefsOnto(target);
@@ -94,76 +129,115 @@ public sealed class PrefsWireDto
         target.NormalizeHomeSections();
     }
 
-    private void ApplyHomeSectionsOnto(UserPrefs target)
+    private void FoldHomeFields(IDictionary<string, JsonElement> data)
     {
-        List<string>? order = HomeOrder ?? HomeOrderCamel;
-        if (order is { Count: > 0 })
+        if (HomeOrder.Count == 0 && WireJson.TryGetStringList(data, "homeOrder") is { } homeOrder)
         {
-            target.HomeOrder = new List<string>(order);
+            ReplaceHomeOrder(homeOrder);
         }
 
-        Dictionary<string, bool>? visible = HomeVisible ?? HomeVisibleCamel;
-        if (visible is not null)
+        if (HomeVisible.Count == 0 && WireJson.TryGetBoolMap(data, "homeVisible") is { } homeVisible)
         {
-            foreach (KeyValuePair<string, bool> kv in visible)
+            ReplaceHomeVisible(homeVisible);
+        }
+
+        AssetsLayout ??= WireJson.TryGetString(data, "assetsLayout");
+    }
+
+    private void FoldDisplayFields(IDictionary<string, JsonElement> data)
+    {
+        ValuesHiddenOnLaunch ??= WireJson.TryGetBool(data, "valuesHiddenOnLaunch");
+        CoraEnabled ??= WireJson.TryGetBool(data, "coraEnabled");
+        DefaultSendSpeed ??= WireJson.TryGetString(data, "defaultSendSpeed");
+        Appearance ??= WireJson.TryGetString(data, "appearance");
+    }
+
+    private void FoldCurrencyAndLockFields(IDictionary<string, JsonElement> data)
+    {
+        BaseCurrency ??= WireJson.TryGetString(data, "baseCurrency");
+        if (EnabledCurrencies.Count == 0 && WireJson.TryGetStringList(data, "enabledCurrencies") is { } enabled)
+        {
+            ReplaceEnabledCurrencies(enabled);
+        }
+
+        LockIdleSeconds ??= ResolveLockIdleSeconds(data);
+
+        static int? ResolveLockIdleSeconds(IDictionary<string, JsonElement> source)
+        {
+            if (WireJson.TryGetInt64(source, "appLockIdleSec") is long idle)
+            {
+                return (int)idle;
+            }
+
+            if (WireJson.TryGetInt64(source, "lockIdleSeconds") is long lockIdle)
+            {
+                return (int)lockIdle;
+            }
+
+            return null;
+        }
+    }
+
+    private void ApplyHomeSectionsOnto(UserPrefs target)
+    {
+        if (HomeOrder is { Count: > 0 })
+        {
+            target.ReplaceHomeOrder(HomeOrder);
+        }
+
+        if (HomeVisible.Count > 0)
+        {
+            foreach (KeyValuePair<string, bool> kv in HomeVisible)
             {
                 target.HomeVisible[kv.Key] = kv.Value;
             }
         }
 
-        string? layout = AssetsLayout ?? AssetsLayoutCamel;
-        if (!string.IsNullOrWhiteSpace(layout))
+        if (!string.IsNullOrWhiteSpace(AssetsLayout))
         {
-            target.AssetsLayout = layout;
+            target.AssetsLayout = AssetsLayout;
         }
     }
 
     private void ApplyDisplayPrefsOnto(UserPrefs target)
     {
-        bool? hide = ValuesHiddenOnLaunch ?? ValuesHiddenOnLaunchCamel;
-        if (hide is bool hideValue)
+        if (ValuesHiddenOnLaunch is bool hideValue)
         {
             target.ValuesHiddenOnLaunch = hideValue;
         }
 
-        bool? cora = CoraEnabled ?? CoraEnabledCamel;
-        if (cora is bool coraValue)
+        if (CoraEnabled is bool coraValue)
         {
             target.CoraEnabled = coraValue;
         }
 
-        string? speed = DefaultSendSpeed ?? DefaultSendSpeedCamel;
-        if (!string.IsNullOrWhiteSpace(speed))
+        if (!string.IsNullOrWhiteSpace(DefaultSendSpeed))
         {
-            target.DefaultSendSpeed = speed;
+            target.DefaultSendSpeed = DefaultSendSpeed;
         }
 
-        string? appearance = Appearance ?? AppearanceCamel;
-        if (!string.IsNullOrWhiteSpace(appearance))
+        if (!string.IsNullOrWhiteSpace(Appearance))
         {
-            target.Appearance = appearance;
+            target.Appearance = Appearance;
         }
     }
 
     private void ApplyCurrencyPrefsOnto(UserPrefs target)
     {
-        string? currency = BaseCurrency ?? BaseCurrencyCamel;
-        if (!string.IsNullOrWhiteSpace(currency))
+        if (!string.IsNullOrWhiteSpace(BaseCurrency))
         {
-            target.BaseCurrency = currency;
+            target.BaseCurrency = BaseCurrency;
         }
 
-        List<string>? enabled = EnabledCurrencies ?? EnabledCurrenciesCamel;
-        if (enabled is { Count: > 0 })
+        if (EnabledCurrencies is { Count: > 0 })
         {
-            target.EnabledCurrencies = new List<string>(enabled);
+            target.ReplaceEnabledCurrencies(EnabledCurrencies);
         }
     }
 
     private void ApplyLockIdleOnto(UserPrefs target)
     {
-        int? idle = LockIdleSeconds ?? AppLockIdleSecCamel;
-        if (idle is int seconds && seconds > 0)
+        if (LockIdleSeconds is int seconds && seconds > 0)
         {
             target.LockIdleSeconds = seconds;
         }

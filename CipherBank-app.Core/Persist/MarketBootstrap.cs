@@ -17,12 +17,22 @@ public static class MarketBootstrap
     /// Gets cached rates for the requested symbols and refreshes the entire set when
     /// the cache is incomplete or any row is stale.
     /// </summary>
-    public static async Task HydrateAndRefreshAsync(
+    public static Task HydrateAndRefreshAsync(
         IRatesCache cache,
         IPublicQuoteService publicQuotes,
         IEnumerable<string> symbols,
         CancellationToken ct)
+        => HydrateAndRefreshAsync(cache, publicQuotes, symbols, null, ct);
+
+    public static async Task HydrateAndRefreshAsync(
+        IRatesCache cache,
+        IPublicQuoteService publicQuotes,
+        IEnumerable<string> symbols,
+        TimeProvider? timeProvider,
+        CancellationToken ct)
     {
+        TimeProvider clock = timeProvider ?? TimeProvider.System;
+
         string[] requestedSymbols = symbols
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
             .Select(symbol => symbol.ToUpperInvariant())
@@ -34,7 +44,7 @@ public static class MarketBootstrap
         }
 
         IReadOnlyList<RateRow> cachedRows = await cache.GetAsync(requestedSymbols, ct).ConfigureAwait(false);
-        long nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        long nowMs = clock.GetUtcNow().ToUnixTimeMilliseconds();
         if (cachedRows.Count == requestedSymbols.Length
             && cachedRows.All(row => nowMs - row.UpdatedAtMs <= MaxRateAge.TotalMilliseconds))
         {

@@ -24,13 +24,20 @@ public sealed class CustodyService : ICustodyService
 
     private readonly ISecureStore _store;
     private readonly IPinService _pin;
+    private readonly TimeProvider _timeProvider;
     private string? _mnemonic;
     private DateTimeOffset? _expires;
 
     public CustodyService(ISecureStore store, IPinService pin)
+        : this(store, pin, TimeProvider.System)
+    {
+    }
+
+    public CustodyService(ISecureStore store, IPinService pin, TimeProvider timeProvider)
     {
         _store = store;
         _pin = pin;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public bool IsUnlocked
@@ -42,7 +49,7 @@ public sealed class CustodyService : ICustodyService
                 return false;
             }
 
-            if (_expires is not DateTimeOffset expires || expires <= DateTimeOffset.UtcNow)
+            if (_expires is not DateTimeOffset expires || expires <= _timeProvider.GetUtcNow())
             {
                 Lock();
                 return false;
@@ -125,7 +132,7 @@ public sealed class CustodyService : ICustodyService
                 return false;
             }
 
-            _expires = DateTimeOffset.UtcNow.Add(SessionTtl);
+            _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
             return true;
         }
         catch
@@ -156,7 +163,7 @@ public sealed class CustodyService : ICustodyService
 
             _mnemonic = opened;
             await PromoteStagedDeviceSecretAsync(deviceSecret).ConfigureAwait(false);
-            _expires = DateTimeOffset.UtcNow.Add(SessionTtl);
+            _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
             return true;
         }
         catch
@@ -175,38 +182,6 @@ public sealed class CustodyService : ICustodyService
 
     public string? ExportMnemonic()
         => IsUnlocked ? _mnemonic : null;
-
-    /// <summary>
-    /// Maps a PIN-service swap outcome to custody status without nested ternaries.
-    /// Use: Low (PIN change). Scope: ChangePinAsync.
-    /// </summary>
-    private CustodyPinChangeResult MapPinChangeResult(bool changed)
-    {
-        if (changed)
-        {
-            return CustodyPinChangeResult.Changed;
-        }
-
-        if (_pin.IsLockedOut)
-        {
-            return CustodyPinChangeResult.LockedOut;
-        }
-
-        return CustodyPinChangeResult.WrongPin;
-    }
-
-    /// <summary>
-    /// Persists seal after mnemonic validation; caller must have normalized and validated first.
-    /// Use: Low (seal). Scope: SealAsync.
-    /// </summary>
-    private async Task SealValidatedAsync(string normalized, string pin)
-    {
-        await _pin.SetPinAsync(pin).ConfigureAwait(false);
-        await PersistDeviceSecretSealAsync(normalized).ConfigureAwait(false);
-        _mnemonic = normalized;
-        // Sonar S6354: TimeProvider/IClock injection deferred (docs/SONAR_GATE.md).
-        _expires = DateTimeOffset.UtcNow.Add(SessionTtl); // NOSONAR (S6354)
-    }
 
     /// <summary>
     /// Opens a sealed blob without throwing so unlock can try the next key material.
@@ -228,6 +203,34 @@ public sealed class CustodyService : ICustodyService
 
     private static string CreateDeviceSecret()
         => Convert.ToBase64String(RandomNumberGenerator.GetBytes(DeviceSecretByteLength));
+
+    /// <summary>
+    /// Maps PIN-change success / lockout / wrong-PIN into <see cref="CustodyPinChangeResult"/>.
+    /// Use: Medium (ChangePinAsync). Scope: this service.
+    /// </summary>
+    private CustodyPinChangeResult MapPinChangeResult(bool changed)
+    {
+        if (changed)
+        {
+            return CustodyPinChangeResult.Changed;
+        }
+
+        return _pin.IsLockedOut ? CustodyPinChangeResult.LockedOut : CustodyPinChangeResult.WrongPin;
+    }
+
+    /// <summary>
+    /// Persists PIN + sealed mnemonic after shape validation.
+    /// Use: Medium (SealAsync). Scope: this service.
+    /// </summary>
+    private async Task SealValidatedAsync(string normalizedMnemonic, string pin)
+    {
+        await _pin.SetPinAsync(pin).ConfigureAwait(false);
+        await PersistDeviceSecretSealAsync(normalizedMnemonic).ConfigureAwait(false);
+        _mnemonic = normalizedMnemonic;
+
+        // Sonar S6354: TimeProvider/IClock injection deferred (docs/SONAR_GATE.md).
+        _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
+    }
 
     /// <summary>
     /// Persists a device-secret seal without orphaning the wallet if the process dies mid-write.

@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.Resources;
+
 namespace CipherBank_app.Custody;
 
 /// <summary>
@@ -18,20 +20,20 @@ public sealed class PinChangeCoordinator
 
     /// <summary>Status → message table so the caller never grows an if/else chain over statuses.</summary>
     private static readonly Dictionary<PinChangeStatus, string> Messages =
-        new()
+        new Dictionary<PinChangeStatus, string>
         {
-            [PinChangeStatus.Success] = "PIN updated.",
-            [PinChangeStatus.TooShort] = $"PIN must be at least {MinPinLength} digits.",
-            [PinChangeStatus.Mismatch] = "PINs do not match.",
-            [PinChangeStatus.SameAsCurrent] = "New PIN must differ from the current PIN.",
-            [PinChangeStatus.WrongCurrentPin] = "Current PIN is incorrect.",
-            [PinChangeStatus.LockedOut] = "Too many failed attempts. Try again later.",
-            [PinChangeStatus.VaultNotReady] = "Unlock your wallet before changing your PIN.",
+            [PinChangeStatus.Success] = Strings.PinChangeSuccess,
+            [PinChangeStatus.TooShort] = Strings.PinChangeTooShort(MinPinLength),
+            [PinChangeStatus.Mismatch] = Strings.PinChangeMismatch,
+            [PinChangeStatus.SameAsCurrent] = Strings.PinChangeSameAsCurrent,
+            [PinChangeStatus.WrongCurrentPin] = Strings.PinChangeWrongCurrentPin,
+            [PinChangeStatus.LockedOut] = Strings.PinChangeLockedOut,
+            [PinChangeStatus.VaultNotReady] = Strings.PinChangeVaultNotReady,
         };
 
     /// <summary>Custody result → surfaced status, so this class never grows a branch chain over results.</summary>
     private static readonly Dictionary<CustodyPinChangeResult, PinChangeStatus> FromCustody =
-        new()
+        new Dictionary<CustodyPinChangeResult, PinChangeStatus>
         {
             [CustodyPinChangeResult.Changed] = PinChangeStatus.Success,
             [CustodyPinChangeResult.WrongPin] = PinChangeStatus.WrongCurrentPin,
@@ -41,7 +43,10 @@ public sealed class PinChangeCoordinator
 
     private readonly ICustodyService _custody;
 
-    public PinChangeCoordinator(ICustodyService custody) => _custody = custody;
+    public PinChangeCoordinator(ICustodyService custody)
+    {
+        _custody = custody;
+    }
 
     /// <summary>
     /// Pure shape check (length, confirmation match, reuse) that needs no secure storage, returning
@@ -61,12 +66,9 @@ public sealed class PinChangeCoordinator
             return PinChangeStatus.Mismatch;
         }
 
-        if (string.Equals(newPin, currentPin, StringComparison.Ordinal))
-        {
-            return PinChangeStatus.SameAsCurrent;
-        }
-
-        return PinChangeStatus.Success;
+        return string.Equals(newPin, currentPin, StringComparison.Ordinal)
+            ? PinChangeStatus.SameAsCurrent
+            : PinChangeStatus.Success;
     }
 
     /// <summary>

@@ -22,6 +22,18 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
     private const int TagSize = 16;
     private const int KeySize = 32;
 
+    private readonly TimeProvider _timeProvider;
+
+    public MnemonicBackupService()
+        : this(TimeProvider.System)
+    {
+    }
+
+    public MnemonicBackupService(TimeProvider timeProvider)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+    }
+
     public Task<byte[]> CreateBackupFileAsync(
         string mnemonic,
         string recoveryPassword,
@@ -62,7 +74,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
                 NonceBase64 = Convert.ToBase64String(nonce),
                 TagBase64 = Convert.ToBase64String(tag),
                 CiphertextBase64 = Convert.ToBase64String(ciphertext),
-                CreatedAt = DateTimeOffset.UtcNow,
+                CreatedAt = _timeProvider.GetUtcNow(),
                 Hint = hint,
             };
 

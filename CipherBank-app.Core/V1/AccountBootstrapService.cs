@@ -12,12 +12,23 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
     private readonly IProductApi _api;
     private readonly IPrefsStore _prefs;
     private readonly IRecipientRepository _recipients;
+    private readonly TimeProvider _timeProvider;
 
     public AccountBootstrapService(IProductApi api, IPrefsStore prefs, IRecipientRepository recipients)
+        : this(api, prefs, recipients, TimeProvider.System)
+    {
+    }
+
+    public AccountBootstrapService(
+        IProductApi api,
+        IPrefsStore prefs,
+        IRecipientRepository recipients,
+        TimeProvider timeProvider)
     {
         _api = api;
         _prefs = prefs;
         _recipients = recipients;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public async Task ApplyAsync(CancellationToken ct)
@@ -61,7 +72,7 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
                 contact.ResolvedMemo,
                 AchRecipientValidation.MaskAccount(accountPlaceholder),
                 AchRecipientValidation.MaskRouting(digits),
-                DateTimeOffset.UtcNow)).ConfigureAwait(false);
+                _timeProvider.GetUtcNow())).ConfigureAwait(false);
         }
     }
 }
