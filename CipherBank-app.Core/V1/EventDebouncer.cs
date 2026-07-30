@@ -41,7 +41,7 @@ public sealed class EventDebouncer
     /// </summary>
     private async Task DebounceCoreAsync(Func<Task> action, CancellationToken outer)
     {
-        CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(outer);
+        var linked = CancellationTokenSource.CreateLinkedTokenSource(outer);
         CancellationTokenSource? prior;
         CancellationToken token;
         lock (_gate)

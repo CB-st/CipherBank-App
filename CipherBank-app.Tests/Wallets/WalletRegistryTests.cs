@@ -49,10 +49,7 @@ public class WalletRegistryTests
     }
 
     [Fact]
-    public void PaymentUri_BtcIncludesAmount()
-    {
-        PaymentUri.Build("BTC", "bc1qtest", "0.5").Should().Be("bitcoin:bc1qtest?amount=0.5");
-    }
+    public void PaymentUri_BtcIncludesAmount() => PaymentUri.Build("BTC", "bc1qtest", "0.5").Should().Be("bitcoin:bc1qtest?amount=0.5");
 
     [Fact]
     public void AddressValidate_EthAcceptsChecksumForm()

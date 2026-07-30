@@ -21,6 +21,10 @@ public static class MnemonicHelper
         return mnemonic.ToString();
     }
 
+    /// <summary>
+    /// Returns true when the phrase is a valid BIP39 English mnemonic after normalize.
+    /// Use: High (create/recover entry). Scope: MnemonicHelper validation.
+    /// </summary>
     public static bool Validate(string phrase)
     {
         try
@@ -28,7 +32,15 @@ public static class MnemonicHelper
             _ = new Mnemonic(Normalize(phrase), Wordlist.English);
             return true;
         }
-        catch
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
         {
             return false;
         }

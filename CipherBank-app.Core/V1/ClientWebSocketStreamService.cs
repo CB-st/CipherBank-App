@@ -42,6 +42,10 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         _ = Task.Run(() => ReceiveLoopAsync(_cts.Token), _cts.Token);
     }
 
+    /// <summary>
+    /// Cancels the receive loop and closes the socket, ignoring expected close-race faults.
+    /// Use: Medium (disconnect / dispose). Scope: ClientWebSocketStreamService session.
+    /// </summary>
     public async Task DisconnectAsync()
     {
         if (_cts is not null)
@@ -57,7 +61,15 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
             {
                 await _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None).ConfigureAwait(false);
             }
-            catch
+            catch (WebSocketException)
+            {
+                // ignored — socket may already be closing
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignored
+            }
+            catch (InvalidOperationException)
             {
                 // ignored
             }
@@ -69,6 +81,10 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
     public async ValueTask DisposeAsync() => await DisconnectAsync().ConfigureAwait(false);
 
+    /// <summary>
+    /// Parses one WebSocket text frame into a stream event without throwing on bad JSON.
+    /// Use: High (receive loop). Scope: ClientWebSocketStreamService parse helper.
+    /// </summary>
     private static bool TryParseStreamEvent(string json, out StreamEventArgs? streamEvent)
     {
         streamEvent = null;
@@ -79,7 +95,15 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
             streamEvent = new StreamEventArgs { Type = type, Payload = doc.RootElement.Clone() };
             return true;
         }
-        catch
+        catch (JsonException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException)
         {
             return false;
         }
@@ -113,7 +137,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
             WebSocketReceiveResult result = await _ws.ReceiveAsync(buffer, ct).ConfigureAwait(false);
             if (result.MessageType == WebSocketMessageType.Close)
             {
-                break;
+                return;
             }
 
             if (result.MessageType != WebSocketMessageType.Text)

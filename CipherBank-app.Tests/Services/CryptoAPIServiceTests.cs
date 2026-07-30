@@ -131,7 +131,7 @@ public class CryptoAPIServiceTests
         var mockService = new Mock<ICryptoApiService>();
         mockService
             .Setup(x => x.SearchCryptoAsync("xyz123", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<CryptoCurrency>());
+            .ReturnsAsync([]);
 
         // Act
         List<CryptoCurrency> result = await mockService.Object.SearchCryptoAsync("xyz123", default);

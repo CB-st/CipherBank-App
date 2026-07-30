@@ -13,14 +13,26 @@ public static class ChartMath
     private const double Epsilon = 1e-12;
     private const double PercentScale = 100;
 
-    public static ChartPathResult ToPath(IReadOnlyList<ChartPoint> series, double w, double h)
+    /// <summary>
+    /// Builds SVG line/area path data for a series using default pad and auto min/max.
+    /// Use: High (sparkline layout). Scope: ChartMath path builders.
+    /// </summary>
+    public static ChartPathResult ToPath(IReadOnlyCollection<ChartPoint> series, double w, double h)
         => ToPath(series, w, h, DefaultPad, min: null, max: null);
 
-    public static ChartPathResult ToPath(IReadOnlyList<ChartPoint> series, double w, double h, double pad)
+    /// <summary>
+    /// Builds SVG line/area path data for a series with an explicit pad and auto min/max.
+    /// Use: High (sparkline layout). Scope: ChartMath path builders.
+    /// </summary>
+    public static ChartPathResult ToPath(IReadOnlyCollection<ChartPoint> series, double w, double h, double pad)
         => ToPath(series, w, h, pad, min: null, max: null);
 
+    /// <summary>
+    /// Builds SVG line/area path data for a series with pad and optional fixed value bounds.
+    /// Use: High (sparkline layout). Scope: ChartMath path builders.
+    /// </summary>
     public static ChartPathResult ToPath(
-        IReadOnlyList<ChartPoint> series,
+        IReadOnlyCollection<ChartPoint> series,
         double w,
         double h,
         double pad,

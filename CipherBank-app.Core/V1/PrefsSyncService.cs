@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Net.Http;
+using System.Text.Json;
 using CipherBank_app.Persist;
 
 namespace CipherBank_app.V1;
@@ -45,7 +47,23 @@ public sealed class PrefsSyncService : IPrefsSyncService
             await _api.PutPrefsAsync(PrefsWireDto.FromUserPrefs(prefs), ct).ConfigureAwait(false);
             return true;
         }
-        catch
+        catch (HttpRequestException)
+        {
+            return false;
+        }
+        catch (TaskCanceledException)
+        {
+            return false;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
         {
             return false;
         }

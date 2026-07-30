@@ -34,7 +34,7 @@ public class PinAndCustodyTests
 
     private sealed class MemStore : ISecureStore
     {
-        private readonly Dictionary<string, string> _data = new();
+        private readonly Dictionary<string, string> _data = [];
 
         public Task SetAsync(string key, string value)
         {

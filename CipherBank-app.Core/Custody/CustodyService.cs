@@ -96,6 +96,10 @@ public sealed class CustodyService : ICustodyService
         return SealValidatedAsync(normalized, pin);
     }
 
+    /// <summary>
+    /// Unlocks custody with PIN, preferring device-secret seal then legacy PIN seal.
+    /// Use: High (every PIN unlock). Scope: CustodyService session.
+    /// </summary>
     public async Task<bool> UnlockAsync(string pin)
     {
         if (!await _pin.VerifyPinAsync(pin).ConfigureAwait(false))
@@ -135,14 +139,28 @@ public sealed class CustodyService : ICustodyService
             _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
             return true;
         }
-        catch
+        catch (CryptographicException)
         {
-            _mnemonic = null;
-            _expires = null;
-            return false;
+            return FailUnlock();
+        }
+        catch (FormatException)
+        {
+            return FailUnlock();
+        }
+        catch (InvalidOperationException)
+        {
+            return FailUnlock();
+        }
+        catch (ArgumentException)
+        {
+            return FailUnlock();
         }
     }
 
+    /// <summary>
+    /// Unlocks custody using the persisted device secret without a PIN prompt.
+    /// Use: Medium (biometric / auto-unlock). Scope: CustodyService session.
+    /// </summary>
     public async Task<bool> UnlockWithDeviceSecretAsync()
     {
         var deviceSecret = await ResolveDeviceSecretAsync().ConfigureAwait(false);
@@ -166,11 +184,21 @@ public sealed class CustodyService : ICustodyService
             _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
             return true;
         }
-        catch
+        catch (CryptographicException)
         {
-            _mnemonic = null;
-            _expires = null;
-            return false;
+            return FailUnlock();
+        }
+        catch (FormatException)
+        {
+            return FailUnlock();
+        }
+        catch (InvalidOperationException)
+        {
+            return FailUnlock();
+        }
+        catch (ArgumentException)
+        {
+            return FailUnlock();
         }
     }
 
@@ -194,7 +222,22 @@ public sealed class CustodyService : ICustodyService
             mnemonic = CryptoBox.Open(blob, keyMaterial);
             return true;
         }
-        catch
+        catch (CryptographicException)
+        {
+            mnemonic = null;
+            return false;
+        }
+        catch (FormatException)
+        {
+            mnemonic = null;
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            mnemonic = null;
+            return false;
+        }
+        catch (ArgumentException)
         {
             mnemonic = null;
             return false;
@@ -203,6 +246,17 @@ public sealed class CustodyService : ICustodyService
 
     private static string CreateDeviceSecret()
         => Convert.ToBase64String(RandomNumberGenerator.GetBytes(DeviceSecretByteLength));
+
+    /// <summary>
+    /// Clears in-memory custody session state after a failed unlock attempt.
+    /// Use: Medium (unlock failure paths). Scope: CustodyService session fields.
+    /// </summary>
+    private bool FailUnlock()
+    {
+        _mnemonic = null;
+        _expires = null;
+        return false;
+    }
 
     /// <summary>
     /// Maps PIN-change success / lockout / wrong-PIN into <see cref="CustodyPinChangeResult"/>.

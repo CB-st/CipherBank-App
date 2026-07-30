@@ -115,7 +115,7 @@ public sealed class WalletSurfaceCoverageTests
     [Fact]
     public void QrCodeGenerator_ProducesPngBytes()
     {
-        byte[] png = QrCodeGenerator.ToPngBytes("bitcoin:bc1qtest");
+        var png = QrCodeGenerator.ToPngBytes("bitcoin:bc1qtest");
         png.Should().NotBeEmpty();
         png[0].Should().Be(0x89); // PNG magic
     }
@@ -130,10 +130,10 @@ public sealed class WalletSurfaceCoverageTests
         var nfc = new NullNfcPresentmentService();
         nfc.IsSupported.Should().BeFalse();
         nfc.LastError.Should().Contain("Android");
-        bool ok = await nfc.PresentAsync(new NfcPresentmentPayload(), CancellationToken.None);
+        var ok = await nfc.PresentAsync(new NfcPresentmentPayload(), CancellationToken.None);
         ok.Should().BeFalse();
         nfc.LastError.Should().Contain("Simulate");
-        bool ok2 = await nfc.PresentAsync(new NfcPresentmentPayload(), TimeSpan.FromSeconds(1), CancellationToken.None);
+        var ok2 = await nfc.PresentAsync(new NfcPresentmentPayload(), TimeSpan.FromSeconds(1), CancellationToken.None);
         ok2.Should().BeFalse();
     }
 }

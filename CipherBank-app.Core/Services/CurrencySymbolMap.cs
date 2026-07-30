@@ -64,8 +64,5 @@ public static class CurrencySymbolMap
     /// </summary>
     /// <param name="symbol">App or API symbol.</param>
     /// <returns>True when mapped.</returns>
-    public static bool IsSupported(string? symbol)
-    {
-        return !string.IsNullOrWhiteSpace(symbol) && AppToApi.ContainsKey(symbol.Trim());
-    }
+    public static bool IsSupported(string? symbol) => !string.IsNullOrWhiteSpace(symbol) && AppToApi.ContainsKey(symbol.Trim());
 }

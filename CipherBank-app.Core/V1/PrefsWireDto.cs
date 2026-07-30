@@ -20,7 +20,7 @@ public sealed class PrefsWireDto
 
     [JsonPropertyName("HOME_VISIBLE")]
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-    public Dictionary<string, bool> HomeVisible { get; } = new();
+    public Dictionary<string, bool> HomeVisible { get; } = [];
 
     [JsonPropertyName("ASSETS_LAYOUT")]
     public string? AssetsLayout { get; set; }
@@ -79,7 +79,7 @@ public sealed class PrefsWireDto
         }
     }
 
-    public void ReplaceHomeVisible(IEnumerable<KeyValuePair<string, bool>> visible)
+    public void ReplaceHomeVisible(IReadOnlyDictionary<string, bool> visible)
     {
         HomeVisible.Clear();
         foreach (KeyValuePair<string, bool> item in visible)

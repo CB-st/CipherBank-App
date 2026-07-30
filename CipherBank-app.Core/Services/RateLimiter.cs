@@ -134,10 +134,7 @@ public sealed partial class RateLimiter : IDisposable
     }
 
     /// <inheritdoc/>
-    public void Dispose()
-    {
-        _lock.Dispose();
-    }
+    public void Dispose() => _lock.Dispose();
 
     [LoggerMessage(Level = LogLevel.Information, Message = "RateLimiter initialized: {MaxRequests} requests per {WindowDuration}")]
     private static partial void LogRateLimiterInitialized(ILogger logger, int maxRequests, TimeSpan windowDuration);

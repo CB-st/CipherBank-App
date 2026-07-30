@@ -17,6 +17,10 @@ public sealed class NfcPresentmentPayload
 
     public string? MerchantId { get; set; }
 
+    /// <summary>
+    /// Parses an NDEF presentment JSON blob into a payload, or null when malformed.
+    /// Use: Medium (NFC presentment). Scope: NfcPresentmentPayload parse helper.
+    /// </summary>
     public static NfcPresentmentPayload? TryParse(string json)
     {
         try
@@ -31,7 +35,11 @@ public sealed class NfcPresentmentPayload
                 MerchantId = root.TryGetProperty("merchantId", out JsonElement m) ? m.GetString() : null,
             };
         }
-        catch
+        catch (JsonException)
+        {
+            return null;
+        }
+        catch (ArgumentException)
         {
             return null;
         }

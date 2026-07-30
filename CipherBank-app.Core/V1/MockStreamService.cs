@@ -59,13 +59,17 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
                     }
                     catch (OperationCanceledException)
                     {
-                        break;
+                        return;
                     }
                 }
             },
             token);
     }
 
+    /// <summary>
+    /// Cancels the tick loop and awaits it, swallowing expected cancel/dispose faults.
+    /// Use: Medium (disconnect / dispose). Scope: MockStreamService session.
+    /// </summary>
     public async Task DisconnectAsync()
     {
         if (_cts is null)
@@ -80,9 +84,17 @@ public sealed class MockStreamService : IStreamService, IAsyncDisposable
             {
                 await _loop.ConfigureAwait(false);
             }
-            catch
+            catch (OperationCanceledException)
             {
                 // ignored
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignored
+            }
+            catch (AggregateException)
+            {
+                // ignored — loop may wrap cancel/dispose
             }
         }
 

@@ -16,10 +16,7 @@ public class CurrencySymbolMapTests
     [InlineData("XMR", "MONERO")]
     [InlineData("USD", "USD")]
     [InlineData("BITCOIN", "BITCOIN")]
-    public void ToApiCurrency_MapsKnownSymbols(string input, string expected)
-    {
-        CurrencySymbolMap.ToApiCurrency(input).Should().Be(expected);
-    }
+    public void ToApiCurrency_MapsKnownSymbols(string input, string expected) => CurrencySymbolMap.ToApiCurrency(input).Should().Be(expected);
 
     [Fact]
     public void ToApiCurrency_RejectsUnsupportedSymbols()
@@ -32,10 +29,7 @@ public class CurrencySymbolMapTests
     [InlineData("BITCOIN", "BTC")]
     [InlineData("MONERO", "XMR")]
     [InlineData("USD", "USD")]
-    public void ToAppSymbol_MapsKnownApiCodes(string input, string expected)
-    {
-        CurrencySymbolMap.ToAppSymbol(input).Should().Be(expected);
-    }
+    public void ToAppSymbol_MapsKnownApiCodes(string input, string expected) => CurrencySymbolMap.ToAppSymbol(input).Should().Be(expected);
 
     [Fact]
     public void IsSupported_ReturnsExpected()

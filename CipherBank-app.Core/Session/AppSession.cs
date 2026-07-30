@@ -2,10 +2,12 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Text.Json;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.V1;
 using CipherBank_app.Wallets;
+using Microsoft.Data.Sqlite;
 
 namespace CipherBank_app.Session;
 
@@ -160,7 +162,23 @@ public sealed class AppSession : IAppSession
                 UserPrefs prefs = await _prefs.LoadAsync().ConfigureAwait(false);
                 IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * MillisecondsPerSecond : DefaultIdleMs;
             }
-            catch
+            catch (InvalidOperationException)
+            {
+                // Prefs/bootstrap are best-effort after a successful product session.
+            }
+            catch (FormatException)
+            {
+                // Prefs/bootstrap are best-effort after a successful product session.
+            }
+            catch (ArgumentException)
+            {
+                // Prefs/bootstrap are best-effort after a successful product session.
+            }
+            catch (SqliteException)
+            {
+                // Prefs/bootstrap are best-effort after a successful product session.
+            }
+            catch (JsonException)
             {
                 // Prefs/bootstrap are best-effort after a successful product session.
             }
@@ -168,7 +186,27 @@ public sealed class AppSession : IAppSession
             Touch();
             return true;
         }
-        catch
+        catch (InvalidOperationException)
+        {
+            RollbackFailedUnlock();
+            return false;
+        }
+        catch (FormatException)
+        {
+            RollbackFailedUnlock();
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            RollbackFailedUnlock();
+            return false;
+        }
+        catch (SqliteException)
+        {
+            RollbackFailedUnlock();
+            return false;
+        }
+        catch (JsonException)
         {
             RollbackFailedUnlock();
             return false;

@@ -160,10 +160,7 @@ public static partial class AddressValidator
     /// <summary>
     /// Checks if a string contains only valid Base58 characters.
     /// </summary>
-    private static bool IsValidBase58(string value)
-    {
-        return !string.IsNullOrEmpty(value) && value.All(c => Base58Alphabet.Contains(c));
-    }
+    private static bool IsValidBase58(string value) => !string.IsNullOrEmpty(value) && value.All(c => Base58Alphabet.Contains(c));
 
     /// <summary>
     /// Validates Bech32 address format (simplified validation).

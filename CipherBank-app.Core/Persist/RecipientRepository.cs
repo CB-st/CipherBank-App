@@ -36,12 +36,12 @@ public sealed class RecipientRepository : IRecipientRepository
 
         await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
-        await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN holder TEXT").ConfigureAwait(false);
-        await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN bank TEXT").ConfigureAwait(false);
-        await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN routing TEXT").ConfigureAwait(false);
-        await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN account TEXT").ConfigureAwait(false);
-        await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN account_type TEXT").ConfigureAwait(false);
-        await TryAddRecipientColumnAsync(conn, "ALTER TABLE recipients ADD COLUMN memo TEXT").ConfigureAwait(false);
+        await TryAddHolderColumnAsync(conn).ConfigureAwait(false);
+        await TryAddBankColumnAsync(conn).ConfigureAwait(false);
+        await TryAddRoutingColumnAsync(conn).ConfigureAwait(false);
+        await TryAddAccountColumnAsync(conn).ConfigureAwait(false);
+        await TryAddAccountTypeColumnAsync(conn).ConfigureAwait(false);
+        await TryAddMemoColumnAsync(conn).ConfigureAwait(false);
         await ClearSensitiveRecipientColumnsAsync(conn).ConfigureAwait(false);
         _schemaReady = true;
     }
@@ -168,18 +168,81 @@ public sealed class RecipientRepository : IRecipientRepository
             _timeProvider.GetUtcNow())).ConfigureAwait(false);
     }
 
-#pragma warning disable CA2100 // Constant DDL strings only
     /// <summary>
-    /// Adds a column when missing; rethrows non-duplicate failures so schema-ready is not latched.
-    /// Use: Low (first open). Scope: recipients table migration.
+    /// Adds holder column when missing.
+    /// Use: Low (first open). Scope: recipients schema.
     /// </summary>
-    private static async Task TryAddRecipientColumnAsync(SqliteConnection conn, string ddl)
+    private static async Task TryAddHolderColumnAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand alter = conn.CreateCommand();
+        alter.CommandText = "ALTER TABLE recipients ADD COLUMN holder TEXT";
+        await TryExecuteSchemaAsync(alter).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Adds bank column when missing.
+    /// Use: Low (first open). Scope: recipients schema.
+    /// </summary>
+    private static async Task TryAddBankColumnAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand alter = conn.CreateCommand();
+        alter.CommandText = "ALTER TABLE recipients ADD COLUMN bank TEXT";
+        await TryExecuteSchemaAsync(alter).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Adds routing column when missing.
+    /// Use: Low (first open). Scope: recipients schema.
+    /// </summary>
+    private static async Task TryAddRoutingColumnAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand alter = conn.CreateCommand();
+        alter.CommandText = "ALTER TABLE recipients ADD COLUMN routing TEXT";
+        await TryExecuteSchemaAsync(alter).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Adds account column when missing.
+    /// Use: Low (first open). Scope: recipients schema.
+    /// </summary>
+    private static async Task TryAddAccountColumnAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand alter = conn.CreateCommand();
+        alter.CommandText = "ALTER TABLE recipients ADD COLUMN account TEXT";
+        await TryExecuteSchemaAsync(alter).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Adds account_type column when missing.
+    /// Use: Low (first open). Scope: recipients schema.
+    /// </summary>
+    private static async Task TryAddAccountTypeColumnAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand alter = conn.CreateCommand();
+        alter.CommandText = "ALTER TABLE recipients ADD COLUMN account_type TEXT";
+        await TryExecuteSchemaAsync(alter).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Adds memo column when missing.
+    /// Use: Low (first open). Scope: recipients schema.
+    /// </summary>
+    private static async Task TryAddMemoColumnAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand alter = conn.CreateCommand();
+        alter.CommandText = "ALTER TABLE recipients ADD COLUMN memo TEXT";
+        await TryExecuteSchemaAsync(alter).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Runs schema DDL, ignoring duplicate-column failures.
+    /// Use: Low (migration). Scope: recipients schema helpers.
+    /// </summary>
+    private static async Task TryExecuteSchemaAsync(SqliteCommand cmd)
     {
         try
         {
-            await using SqliteCommand alter = conn.CreateCommand();
-            alter.CommandText = ddl;
-            await alter.ExecuteNonQueryAsync().ConfigureAwait(false);
+            await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
         }
         catch (SqliteException ex) when (IsDuplicateColumn(ex))
         {
@@ -193,46 +256,79 @@ public sealed class RecipientRepository : IRecipientRepository
     /// </summary>
     private static async Task ClearSensitiveRecipientColumnsAsync(SqliteConnection conn)
     {
-        foreach (var sql in new[]
-                 {
-                     "UPDATE recipients SET account = NULL WHERE account IS NOT NULL",
-                     "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL",
-                     "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL",
-                 })
+        await TryClearAccountAsync(conn).ConfigureAwait(false);
+        await TryClearRoutingAsync(conn).ConfigureAwait(false);
+        await TryClearAccountFullAsync(conn).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Clears legacy account cleartext when the column exists.
+    /// Use: Low. Scope: recipients scrub.
+    /// </summary>
+    private static async Task TryClearAccountAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE recipients SET account = NULL WHERE account IS NOT NULL";
+        await TryExecuteOptionalColumnAsync(cmd).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Clears legacy routing cleartext when the column exists.
+    /// Use: Low. Scope: recipients scrub.
+    /// </summary>
+    private static async Task TryClearRoutingAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL";
+        await TryExecuteOptionalColumnAsync(cmd).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Clears legacy account_full cleartext when the column exists.
+    /// Use: Low. Scope: recipients scrub.
+    /// </summary>
+    private static async Task TryClearAccountFullAsync(SqliteConnection conn)
+    {
+        await using SqliteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL";
+        await TryExecuteOptionalColumnAsync(cmd).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Runs scrub SQL, ignoring missing-column failures on fresh schemas.
+    /// Use: Low. Scope: recipients scrub helpers.
+    /// </summary>
+    private static async Task TryExecuteOptionalColumnAsync(SqliteCommand cmd)
+    {
+        try
         {
-            try
-            {
-                await using SqliteCommand cmd = conn.CreateCommand();
-                cmd.CommandText = sql;
-                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-            }
-            catch (SqliteException)
-            {
-                // Column absent on fresh schemas that never had the legacy column.
-            }
+            await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+        catch (SqliteException)
+        {
+            // Column absent on fresh schemas that never had the legacy column.
         }
     }
-#pragma warning restore CA2100
 
     /// <summary>
     /// SQLite reports duplicate-column ALTERs as SqliteException (message contains "duplicate column").
     /// Use: Low. Scope: schema migration catch filter.
     /// </summary>
-    private static bool IsDuplicateColumn(SqliteException ex)
+    private static bool IsDuplicateColumn(Exception ex)
         => ex.Message.Contains("duplicate column", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Reads a nullable TEXT column without sync IsDBNull.
     /// Use: High (list paths). Scope: RecipientRepository row hydrate.
     /// </summary>
-    private static async Task<string?> ReadOptionalStringAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+    private static async Task<string?> ReadOptionalStringAsync(System.Data.Common.DbDataReader reader, int ordinal)
         => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
 
     /// <summary>
     /// Reads account_type with checking default when null/empty.
     /// Use: High (list paths). Scope: RecipientRepository row hydrate.
     /// </summary>
-    private static async Task<string> ReadAccountTypeAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+    private static async Task<string> ReadAccountTypeAsync(System.Data.Common.DbDataReader reader, int ordinal)
     {
         if (await reader.IsDBNullAsync(ordinal).ConfigureAwait(false))
         {

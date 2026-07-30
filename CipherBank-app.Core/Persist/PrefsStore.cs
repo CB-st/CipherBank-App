@@ -26,15 +26,9 @@ public sealed class PrefsStore : IPrefsStore
         cmd.CommandText = "SELECT value FROM prefs WHERE key=$k";
         cmd.Parameters.AddWithValue("$k", Key);
         var val = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
-        UserPrefs prefs;
-        if (val is string json && !string.IsNullOrWhiteSpace(json))
-        {
-            prefs = JsonSerializer.Deserialize<UserPrefs>(json) ?? new UserPrefs();
-        }
-        else
-        {
-            prefs = new UserPrefs();
-        }
+        UserPrefs prefs = val is string json && !string.IsNullOrWhiteSpace(json)
+            ? JsonSerializer.Deserialize<UserPrefs>(json) ?? new UserPrefs()
+            : new UserPrefs();
 
         prefs.NormalizeHomeSections();
         return prefs;

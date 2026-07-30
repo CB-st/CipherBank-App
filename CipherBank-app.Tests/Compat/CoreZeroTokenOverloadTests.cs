@@ -158,7 +158,7 @@ public class CoreZeroTokenOverloadTests
     /// <summary>Records the token every CancellationToken-required member receives.</summary>
     private abstract class TokenRecorder
     {
-        public List<CancellationToken> Seen { get; } = new();
+        public List<CancellationToken> Seen { get; } = [];
 
         /// <summary>Captures a token and completes with the type default. Use: High (per stubbed call). Scope: one fixture stub.</summary>
         protected Task<T> Record<T>(CancellationToken ct)
@@ -302,7 +302,7 @@ public class CoreZeroTokenOverloadTests
 
         public string? LastError => null;
 
-        public List<TimeSpan> Windows { get; } = new();
+        public List<TimeSpan> Windows { get; } = [];
 
         public Task<bool> PresentAsync(NfcPresentmentPayload payload, TimeSpan timeout, CancellationToken ct)
         {

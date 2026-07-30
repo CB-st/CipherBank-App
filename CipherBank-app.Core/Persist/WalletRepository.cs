@@ -85,6 +85,6 @@ public sealed class WalletRepository : IWalletRepository
     /// Reads a nullable TEXT column without sync IsDBNull.
     /// Use: High (wallet list). Scope: WalletRepository row hydrate.
     /// </summary>
-    private static async Task<string?> ReadOptionalStringAsync(Microsoft.Data.Sqlite.SqliteDataReader reader, int ordinal)
+    private static async Task<string?> ReadOptionalStringAsync(System.Data.Common.DbDataReader reader, int ordinal)
         => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
 }

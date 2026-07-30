@@ -36,8 +36,5 @@ public class AchRecipientValidationTests
     }
 
     [Fact]
-    public void MaskAccount_KeepsLastFour()
-    {
-        AchRecipientValidation.MaskAccount("88210001").Should().Be("•••• 0001");
-    }
+    public void MaskAccount_KeepsLastFour() => AchRecipientValidation.MaskAccount("88210001").Should().Be("•••• 0001");
 }

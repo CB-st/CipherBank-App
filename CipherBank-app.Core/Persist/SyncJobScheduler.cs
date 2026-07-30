@@ -103,7 +103,19 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
         {
             await job.Work(CancellationToken.None).ConfigureAwait(false);
         }
-        catch
+        catch (OperationCanceledException)
+        {
+            // Jobs own their errors.
+        }
+        catch (ObjectDisposedException)
+        {
+            // Jobs own their errors.
+        }
+        catch (InvalidOperationException)
+        {
+            // Jobs own their errors.
+        }
+        catch (IOException)
         {
             // Jobs own their errors.
         }

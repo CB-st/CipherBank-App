@@ -51,8 +51,5 @@ public class ChartMathTests
     }
 
     [Fact]
-    public void ToIndexed_Empty_ReturnsEmpty()
-    {
-        ChartMath.ToIndexed(Array.Empty<ChartPoint>()).Should().BeEmpty();
-    }
+    public void ToIndexed_Empty_ReturnsEmpty() => ChartMath.ToIndexed(Array.Empty<ChartPoint>()).Should().BeEmpty();
 }

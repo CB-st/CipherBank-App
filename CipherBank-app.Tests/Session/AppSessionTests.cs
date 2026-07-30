@@ -126,7 +126,7 @@ public class AppSessionTests
 
     private sealed class MemStore : ISecureStore
     {
-        private readonly Dictionary<string, string> _data = new();
+        private readonly Dictionary<string, string> _data = [];
 
         public Task SetAsync(string key, string value)
         {
@@ -146,7 +146,7 @@ public class AppSessionTests
 
     private sealed class FakeWallets : IWalletRepository
     {
-        public List<LocalWalletRow> Rows { get; } = new();
+        public List<LocalWalletRow> Rows { get; } = [];
 
         public Task<IReadOnlyList<LocalWalletRow>> ListAsync()
             => Task.FromResult<IReadOnlyList<LocalWalletRow>>(Rows);
@@ -180,7 +180,7 @@ public class AppSessionTests
 
     private sealed class MemRecipients : IRecipientRepository
     {
-        public List<AchRecipientRow> Rows { get; } = new();
+        public List<AchRecipientRow> Rows { get; } = [];
 
         public Task EnsureSchemaAsync() => Task.CompletedTask;
 

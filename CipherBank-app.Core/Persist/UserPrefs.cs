@@ -82,7 +82,7 @@ public sealed class UserPrefs
     /// Replaces <see cref="HomeVisible"/> contents (JSON/wire apply and tests).
     /// Use: Medium (prefs sync). Scope: this prefs model.
     /// </summary>
-    public void ReplaceHomeVisible(IEnumerable<KeyValuePair<string, bool>> visible)
+    public void ReplaceHomeVisible(IReadOnlyDictionary<string, bool> visible)
     {
         HomeVisible.Clear();
         foreach (KeyValuePair<string, bool> item in visible)

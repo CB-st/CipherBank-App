@@ -203,6 +203,10 @@ dotnet_diagnostic.S4055.severity = none
 [CipherBank-app.Core/Persist/LocalDb.cs]
 dotnet_diagnostic.S4055.severity = none
 
+# Test-injected System.Random for deterministic BackupQuiz; production uses RandomNumberGenerator.
+[CipherBank-app.Core/Custody/BackupQuiz.cs]
+dotnet_diagnostic.CA5394.severity = none
+
 # XML files
 [*.{xml,xaml,csproj,props,targets}]
 indent_size = 2

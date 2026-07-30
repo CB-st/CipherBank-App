@@ -14,6 +14,10 @@ public static partial class AddressValidate
     private const int XmrAddressMaxLength = 106;
     private const int GenericAddressMinLength = 8;
 
+    /// <summary>
+    /// Validates a watch-only deposit address for a known asset symbol.
+    /// Use: High (add-watch / send paths). Scope: AddressValidate helpers.
+    /// </summary>
     public static bool IsValid(string symbol, string address)
     {
         var sym = symbol.ToUpperInvariant();
@@ -35,7 +39,19 @@ public static partial class AddressValidate
                 _ => addr.Length >= GenericAddressMinLength,
             };
         }
-        catch
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return false;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (NotSupportedException)
         {
             return false;
         }
