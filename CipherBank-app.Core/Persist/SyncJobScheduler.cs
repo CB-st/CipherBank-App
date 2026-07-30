@@ -1,11 +1,11 @@
-// <copyright file="SyncJobQueue.cs" company="CipherBank">
+// <copyright file="SyncJobScheduler.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
-public sealed class SyncJobQueue : ISyncJobQueue
+public sealed class SyncJobScheduler : ISyncJobScheduler
 {
     private const int MaxConcurrency = 2;
 

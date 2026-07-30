@@ -106,7 +106,7 @@ public class AppSessionTests
         var hub = new StreamHub(stream);
         var prefsSync = new PrefsSyncService(prefs, api);
         var bootstrap = new AccountBootstrapService(api, prefs, recipients);
-        return new AppSession(
+        return new AppSession(new AppSessionDeps(
             custody,
             api,
             stream,
@@ -115,7 +115,7 @@ public class AppSessionTests
             prefs,
             prefsSync,
             bootstrap,
-            productSessions);
+            productSessions));
     }
 
     private sealed class MemStore : ISecureStore

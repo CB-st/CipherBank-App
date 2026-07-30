@@ -1,4 +1,4 @@
-// <copyright file="SyncJobQueueTests.cs" company="CipherBank">
+// <copyright file="SyncJobSchedulerTests.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
@@ -8,12 +8,12 @@ using Xunit;
 
 namespace CipherBank_app.Tests.Persist;
 
-public class SyncJobQueueTests
+public class SyncJobSchedulerTests
 {
     [Fact]
     public async Task Enqueue_P2ThenP1_P1RunsBeforeWaitingP2_WhenConcurrencyAllows()
     {
-        var queue = new SyncJobQueue();
+        var queue = new SyncJobScheduler();
         var order = new List<string>();
         var gate1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var gate2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -101,7 +101,7 @@ public class SyncJobQueueTests
     [Fact]
     public async Task Enqueue_DuplicateKey_SkipsSecondWhileInFlight()
     {
-        var queue = new SyncJobQueue();
+        var queue = new SyncJobScheduler();
         int runCount = 0;
         var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 

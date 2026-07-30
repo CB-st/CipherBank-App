@@ -18,9 +18,15 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     private ClientWebSocket? _ws;
     private CancellationTokenSource? _cts;
 
-    public ClientWebSocketStreamService(string wssUrl)
+    public ClientWebSocketStreamService(Uri wssUrl)
     {
-        _uri = new Uri(wssUrl);
+        ArgumentNullException.ThrowIfNull(wssUrl);
+        _uri = wssUrl;
+    }
+
+    public ClientWebSocketStreamService(string wssUrl)
+        : this(new Uri(wssUrl))
+    {
     }
 
     public event EventHandler<StreamEvent>? EventReceived;

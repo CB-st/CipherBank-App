@@ -38,7 +38,7 @@ public static class PaymentUri
         }
 
         string suffix = BuildQuerySuffix(sym, amount, label, message);
-        return MapSchemeUri(sym, addr, suffix, amount);
+        return MapSchemeUri(sym, addr, suffix, amount).OriginalString;
     }
 
     public static string Shorten(string address)
@@ -88,11 +88,11 @@ public static class PaymentUri
     /// Dispatches a symbol to its scheme-specific URI builder (simple prefix, account-based, or fiat).
     /// Use: High (every receive-address render). Scope: PaymentUri.Build.
     /// </summary>
-    private static string MapSchemeUri(string sym, string addr, string suffix, string? amount)
+    private static Uri MapSchemeUri(string sym, string addr, string suffix, string? amount)
     {
         if (SimpleSchemePrefixes.TryGetValue(sym, out string? prefix))
         {
-            return $"{prefix}:{addr}{suffix}";
+            return new Uri($"{prefix}:{addr}{suffix}", UriKind.Absolute);
         }
 
         if (sym == "ETH")
@@ -105,15 +105,25 @@ public static class PaymentUri
             return BuildAccountUri("monero", "tx_amount", addr, amount);
         }
 
-        return FiatCurrencies.Contains(sym) ? $"cipherbank:receive/{sym}?address={Uri.EscapeDataString(addr)}" : addr;
+        if (FiatCurrencies.Contains(sym))
+        {
+            return new Uri($"cipherbank:receive/{sym}?address={Uri.EscapeDataString(addr)}", UriKind.Absolute);
+        }
+
+        return Uri.TryCreate(addr, UriKind.Absolute, out Uri? parsed)
+            ? parsed
+            : new Uri(addr, UriKind.Relative);
     }
 
     /// <summary>
     /// Formats an account-model (non-UTXO) receive URI, appending the amount query param when present.
     /// Use: High (every receive-address render for ETH/XMR). Scope: PaymentUri.MapSchemeUri.
     /// </summary>
-    private static string BuildAccountUri(string scheme, string amountParam, string addr, string? amount)
-        => string.IsNullOrEmpty(amount)
+    private static Uri BuildAccountUri(string scheme, string amountParam, string addr, string? amount)
+    {
+        string uriString = string.IsNullOrEmpty(amount)
             ? $"{scheme}:{addr}"
             : $"{scheme}:{addr}?{amountParam}={Uri.EscapeDataString(amount)}";
+        return new Uri(uriString, UriKind.Absolute);
+    }
 }

@@ -16,5 +16,5 @@ public sealed class ReceiveDto
     public string Address { get; set; } = string.Empty;
 
     [JsonPropertyName("URI")]
-    public string? Uri { get; set; }
+    public System.Uri? Uri { get; set; }
 }

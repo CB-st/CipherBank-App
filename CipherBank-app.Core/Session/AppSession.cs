@@ -9,6 +9,18 @@ using CipherBank_app.Wallets;
 
 namespace CipherBank_app.Session;
 
+/// <summary>Constructor dependencies for <see cref="AppSession"/>.</summary>
+public readonly record struct AppSessionDeps(
+    ICustodyService Custody,
+    IProductApi Api,
+    IStreamService Stream,
+    IStreamHub StreamHub,
+    ILocalWalletSeeder Seeder,
+    IPrefsStore Prefs,
+    IPrefsSyncService PrefsSync,
+    IAccountBootstrapService Bootstrap,
+    IProductSessionStore ProductSessions);
+
 /// <inheritdoc />
 public sealed class AppSession : IAppSession
 {
@@ -26,26 +38,17 @@ public sealed class AppSession : IAppSession
     private readonly IProductSessionStore _productSessions;
     private DateTimeOffset _lastTouch = DateTimeOffset.UtcNow;
 
-    public AppSession(
-        ICustodyService custody,
-        IProductApi api,
-        IStreamService stream,
-        IStreamHub streamHub,
-        ILocalWalletSeeder seeder,
-        IPrefsStore prefs,
-        IPrefsSyncService prefsSync,
-        IAccountBootstrapService bootstrap,
-        IProductSessionStore productSessions)
+    public AppSession(AppSessionDeps deps)
     {
-        _custody = custody;
-        _api = api;
-        _stream = stream;
-        _streamHub = streamHub;
-        _seeder = seeder;
-        _prefs = prefs;
-        _prefsSync = prefsSync;
-        _bootstrap = bootstrap;
-        _productSessions = productSessions;
+        _custody = deps.Custody;
+        _api = deps.Api;
+        _stream = deps.Stream;
+        _streamHub = deps.StreamHub;
+        _seeder = deps.Seeder;
+        _prefs = deps.Prefs;
+        _prefsSync = deps.PrefsSync;
+        _bootstrap = deps.Bootstrap;
+        _productSessions = deps.ProductSessions;
         IdleMs = DefaultIdleMs;
     }
 
