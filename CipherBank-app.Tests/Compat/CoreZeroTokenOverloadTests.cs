@@ -147,7 +147,7 @@ public class CoreZeroTokenOverloadTests
         debouncer.FireCount.Should().Be(1);
 
         var stages = new List<string>();
-        await foreach (string stage in EmvExchangeSimulator.RunAsync())
+        await foreach (var stage in EmvExchangeSimulator.RunAsync())
         {
             stages.Add(stage);
         }

@@ -16,8 +16,8 @@ public static partial class AddressValidate
 
     public static bool IsValid(string symbol, string address)
     {
-        string sym = symbol.ToUpperInvariant();
-        string addr = address.Trim();
+        var sym = symbol.ToUpperInvariant();
+        var addr = address.Trim();
         if (string.IsNullOrEmpty(addr))
         {
             return false;

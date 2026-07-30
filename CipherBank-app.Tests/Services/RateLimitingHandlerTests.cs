@@ -25,7 +25,7 @@ public class RateLimitingHandlerTests
 
         // Act - Make 100 requests (the limit)
         var successCount = 0;
-        for (int i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
         {
             if (await rateLimiter.TryAcquireAsync(default))
             {
@@ -37,7 +37,7 @@ public class RateLimitingHandlerTests
         successCount.Should().Be(100);
 
         // 101st request should fail
-        bool overLimit = await rateLimiter.TryAcquireAsync(default);
+        var overLimit = await rateLimiter.TryAcquireAsync(default);
         overLimit.Should().BeFalse();
     }
 
@@ -49,7 +49,7 @@ public class RateLimitingHandlerTests
         var tasks = new Task<bool>[100];
 
         // Act - Make 100 concurrent requests
-        for (int i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
         {
             tasks[i] = rateLimiter.TryAcquireAsync(default);
         }
@@ -68,7 +68,7 @@ public class RateLimitingHandlerTests
         var rateLimiter = new RateLimiter(null, 5, TimeSpan.FromMilliseconds(200));
 
         // Act - Burst of requests
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             await rateLimiter.TryAcquireAsync(default);
         }
@@ -81,7 +81,7 @@ public class RateLimitingHandlerTests
         await Task.Delay(250);
 
         // Should be able to make requests again
-        bool afterWait = await rateLimiter.TryAcquireAsync(default);
+        var afterWait = await rateLimiter.TryAcquireAsync(default);
         afterWait.Should().BeTrue();
     }
 

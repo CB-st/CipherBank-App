@@ -19,7 +19,7 @@ public class NfcPresentmentPayloadTests
             TokenRef = "tok_xyz",
             MerchantId = "m1",
         };
-        string json = payload.ToJson();
+        var json = payload.ToJson();
         json.Should().Contain("sessionId");
         json.Should().Contain("tokenRef");
         json.Should().NotContain("PAN");

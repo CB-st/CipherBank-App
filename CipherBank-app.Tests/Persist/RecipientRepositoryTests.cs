@@ -14,7 +14,7 @@ public class RecipientRepositoryTests
     [Fact]
     public async Task SeedAndList_Works()
     {
-        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        var path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
         var db = new LocalDb(path);
         await db.InitializeAsync();
         var repo = new RecipientRepository(db);
@@ -28,7 +28,7 @@ public class RecipientRepositoryTests
     [Fact]
     public async Task DeleteAsync_RemovesOnlyRecipientWithMatchingId()
     {
-        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        var path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
         var db = new LocalDb(path);
         await db.InitializeAsync();
         var repo = new RecipientRepository(db);
@@ -56,7 +56,7 @@ public class RecipientRepositoryTests
     [Fact]
     public async Task UpsertAsync_DoesNotPersistCleartextAccountOrRouting()
     {
-        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        var path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
         var db = new LocalDb(path);
         await db.InitializeAsync();
         var repo = new RecipientRepository(db);

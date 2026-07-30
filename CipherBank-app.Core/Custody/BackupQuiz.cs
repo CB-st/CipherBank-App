@@ -22,15 +22,15 @@ public static class BackupQuiz
             return Array.Empty<(int, string)>();
         }
 
-        int take = Math.Min(count, words.Length);
-        int[] indices = Enumerable.Range(0, words.Length).ToArray();
+        var take = Math.Min(count, words.Length);
+        var indices = Enumerable.Range(0, words.Length).ToArray();
         Random shared = Random.Shared;
 
         // Fisher–Yates partial shuffle
-        for (int i = 0; i < take; i++)
+        for (var i = 0; i < take; i++)
         {
 #pragma warning disable CA5394 // Random.Shared for non-deterministic quiz picks; test RNG when rng is set
-            int j = rng is null
+            var j = rng is null
                 ? shared.Next(i, indices.Length)
                 : rng.Next(i, indices.Length);
 #pragma warning restore CA5394

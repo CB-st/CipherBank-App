@@ -32,17 +32,17 @@ public static class ChartMath
             return new ChartPathResult();
         }
 
-        double x0 = series.Min(p => p.T);
-        double x1 = series.Max(p => p.T);
-        double lo = min ?? series.Min(p => p.V);
-        double hi = max ?? series.Max(p => p.V);
-        double dx = x1 - x0;
+        var x0 = series.Min(p => p.T);
+        var x1 = series.Max(p => p.T);
+        var lo = min ?? series.Min(p => p.V);
+        var hi = max ?? series.Max(p => p.V);
+        var dx = x1 - x0;
         if (NearlyZero(dx))
         {
             dx = 1;
         }
 
-        double dy = hi - lo;
+        var dy = hi - lo;
         if (NearlyZero(dy))
         {
             dy = 1;
@@ -50,22 +50,22 @@ public static class ChartMath
 
         var pts = series.Select(p =>
         {
-            double x = ((p.T - x0) / dx) * w;
-            double y = (h - pad) - (((p.V - lo) / dy) * (h - (pad * 2)));
+            var x = ((p.T - x0) / dx) * w;
+            var y = (h - pad) - (((p.V - lo) / dy) * (h - (pad * 2)));
             return (x, y);
         }).ToList();
 
         var lineParts = new List<string>(pts.Count);
-        for (int i = 0; i < pts.Count; i++)
+        for (var i = 0; i < pts.Count; i++)
         {
-            string cmd = i == 0 ? "M" : "L";
+            var cmd = i == 0 ? "M" : "L";
             lineParts.Add(string.Create(
                 CultureInfo.InvariantCulture,
                 $"{cmd}{pts[i].x:0.0} {pts[i].y:0.0}"));
         }
 
-        string line = string.Join(" ", lineParts);
-        string area = string.Create(
+        var line = string.Join(" ", lineParts);
+        var area = string.Create(
             CultureInfo.InvariantCulture,
             $"{line} L{w:0.0} {h:0.0} L0 {h:0.0} Z");
         return new ChartPathResult { Line = line, Area = area, Pts = pts };
@@ -78,7 +78,7 @@ public static class ChartMath
             return series;
         }
 
-        double bas = NearlyZero(series[0].V) ? 1 : series[0].V;
+        var bas = NearlyZero(series[0].V) ? 1 : series[0].V;
         return series.Select(p => new ChartPoint(p.T, ((p.V / bas) - 1) * PercentScale)).ToList();
     }
 

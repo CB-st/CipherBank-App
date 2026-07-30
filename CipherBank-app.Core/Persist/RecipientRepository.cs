@@ -59,15 +59,15 @@ public sealed class RecipientRepository : IRecipientRepository
             """;
         var list = new List<AchRecipientRow>();
         await using SqliteDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
-        int ordId = reader.GetOrdinal("id");
-        int ordName = reader.GetOrdinal("name");
-        int ordHolder = reader.GetOrdinal("holder");
-        int ordBank = reader.GetOrdinal("bank");
-        int ordAccountType = reader.GetOrdinal("account_type");
-        int ordMemo = reader.GetOrdinal("memo");
-        int ordAccountMask = reader.GetOrdinal("account_mask");
-        int ordRoutingMask = reader.GetOrdinal("routing_mask");
-        int ordCreatedAt = reader.GetOrdinal("created_at");
+        var ordId = reader.GetOrdinal("id");
+        var ordName = reader.GetOrdinal("name");
+        var ordHolder = reader.GetOrdinal("holder");
+        var ordBank = reader.GetOrdinal("bank");
+        var ordAccountType = reader.GetOrdinal("account_type");
+        var ordMemo = reader.GetOrdinal("memo");
+        var ordAccountMask = reader.GetOrdinal("account_mask");
+        var ordRoutingMask = reader.GetOrdinal("routing_mask");
+        var ordCreatedAt = reader.GetOrdinal("created_at");
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
             list.Add(new AchRecipientRow(
@@ -94,9 +94,9 @@ public sealed class RecipientRepository : IRecipientRepository
     public async Task UpsertAsync(AchRecipientRow row)
     {
         await EnsureSchemaAsync().ConfigureAwait(false);
-        string? accountMask = row.AccountMask
+        var accountMask = row.AccountMask
             ?? (string.IsNullOrWhiteSpace(row.Account) ? null : AchRecipientValidation.MaskAccount(row.Account));
-        string? routingMask = row.RoutingMask
+        var routingMask = row.RoutingMask
             ?? (string.IsNullOrWhiteSpace(row.Routing) ? null : AchRecipientValidation.MaskRouting(row.Routing));
 
         await using SqliteConnection conn = _db.Open();
@@ -193,7 +193,7 @@ public sealed class RecipientRepository : IRecipientRepository
     /// </summary>
     private static async Task ClearSensitiveRecipientColumnsAsync(SqliteConnection conn)
     {
-        foreach (string sql in new[]
+        foreach (var sql in new[]
                  {
                      "UPDATE recipients SET account = NULL WHERE account IS NOT NULL",
                      "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL",
@@ -239,7 +239,7 @@ public sealed class RecipientRepository : IRecipientRepository
             return DefaultAccountType;
         }
 
-        string value = reader.GetString(ordinal);
+        var value = reader.GetString(ordinal);
         return string.IsNullOrEmpty(value) ? DefaultAccountType : value;
     }
 }

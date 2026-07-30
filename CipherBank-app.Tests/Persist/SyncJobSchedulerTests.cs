@@ -102,7 +102,7 @@ public class SyncJobSchedulerTests
     public async Task Enqueue_DuplicateKey_SkipsSecondWhileInFlight()
     {
         var queue = new SyncJobScheduler();
-        int runCount = 0;
+        var runCount = 0;
         var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         queue.Enqueue("btc", SyncPriority.P1, async ct =>
@@ -127,7 +127,7 @@ public class SyncJobSchedulerTests
 
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)
     {
-        long deadline = Environment.TickCount64 + timeoutMs;
+        var deadline = Environment.TickCount64 + timeoutMs;
         while (!predicate())
         {
             if (Environment.TickCount64 >= deadline)

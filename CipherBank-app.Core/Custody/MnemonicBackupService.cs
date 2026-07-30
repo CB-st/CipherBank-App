@@ -53,12 +53,12 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
             throw new ArgumentException("Mnemonic is invalid.", nameof(mnemonic));
         }
 
-        byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
-        byte[] nonce = RandomNumberGenerator.GetBytes(NonceSize);
-        byte[] key = DeriveKey(recoveryPassword, salt);
-        byte[] plaintext = Encoding.UTF8.GetBytes(MnemonicHelper.Normalize(mnemonic));
-        byte[] ciphertext = new byte[plaintext.Length];
-        byte[] tag = new byte[TagSize];
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
+        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
+        var key = DeriveKey(recoveryPassword, salt);
+        var plaintext = Encoding.UTF8.GetBytes(MnemonicHelper.Normalize(mnemonic));
+        var ciphertext = new byte[plaintext.Length];
+        var tag = new byte[TagSize];
 
         try
         {
@@ -132,14 +132,14 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
             throw new CryptographicException(InvalidRecoveryFileMessage);
         }
 
-        byte[] key = DeriveKey(recoveryPassword, salt);
-        byte[] plaintext = new byte[ciphertext.Length];
+        var key = DeriveKey(recoveryPassword, salt);
+        var plaintext = new byte[ciphertext.Length];
 
         try
         {
             using var aes = new AesGcm(key, TagSize);
             aes.Decrypt(nonce, ciphertext, tag, plaintext);
-            string mnemonic = Encoding.UTF8.GetString(plaintext);
+            var mnemonic = Encoding.UTF8.GetString(plaintext);
             if (!MnemonicHelper.Validate(mnemonic))
             {
                 throw new CryptographicException("Recovery file does not contain a valid mnemonic.");
@@ -156,7 +156,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
 
     private static byte[] DeriveKey(string recoveryPassword, byte[] salt)
     {
-        byte[] passwordBytes = Encoding.UTF8.GetBytes(recoveryPassword);
+        var passwordBytes = Encoding.UTF8.GetBytes(recoveryPassword);
         try
         {
             return Rfc2898DeriveBytes.Pbkdf2(

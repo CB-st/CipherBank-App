@@ -59,7 +59,7 @@ public sealed class UserPrefs
     public void ReplaceHomeOrder(IEnumerable<string> order)
     {
         HomeOrder.Clear();
-        foreach (string item in order)
+        foreach (var item in order)
         {
             HomeOrder.Add(item);
         }
@@ -72,7 +72,7 @@ public sealed class UserPrefs
     public void ReplaceEnabledCurrencies(IEnumerable<string> currencies)
     {
         EnabledCurrencies.Clear();
-        foreach (string item in currencies)
+        foreach (var item in currencies)
         {
             EnabledCurrencies.Add(item);
         }
@@ -108,7 +108,7 @@ public sealed class UserPrefs
             return;
         }
 
-        int idx = HomeOrder.IndexOf(SectionLegacyAssets);
+        var idx = HomeOrder.IndexOf(SectionLegacyAssets);
         HomeOrder.RemoveAt(idx);
         if (!HomeOrder.Contains(SectionHoldings))
         {
@@ -124,7 +124,7 @@ public sealed class UserPrefs
 
     private void EnsureHomeSectionKeys()
     {
-        foreach (string key in DefaultHomeOrder)
+        foreach (var key in DefaultHomeOrder)
         {
             if (!HomeOrder.Contains(key))
             {
@@ -156,7 +156,7 @@ public sealed class UserPrefs
             return true;
         }
 
-        return HomeVisible.TryGetValue(SectionLegacyAssets, out bool assetsVisible) && assetsVisible;
+        return HomeVisible.TryGetValue(SectionLegacyAssets, out var assetsVisible) && assetsVisible;
     }
 
     private void NormalizeAssetsLayout()

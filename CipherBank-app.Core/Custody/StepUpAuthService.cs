@@ -19,7 +19,7 @@ public sealed class StepUpAuthService : IStepUpAuth
     public async Task<bool> RequireAsync(AuthReason reason, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        string prompt = PromptFor(reason);
+        var prompt = PromptFor(reason);
 
         if (_challenges.BiometricsPreferred
             && await _challenges.TryBiometricsAsync(prompt, ct).ConfigureAwait(false))
@@ -27,7 +27,7 @@ public sealed class StepUpAuthService : IStepUpAuth
             return true;
         }
 
-        string? entered = await _challenges.PromptForPinAsync(prompt, ct).ConfigureAwait(false);
+        var entered = await _challenges.PromptForPinAsync(prompt, ct).ConfigureAwait(false);
         if (string.IsNullOrEmpty(entered))
         {
             return false;

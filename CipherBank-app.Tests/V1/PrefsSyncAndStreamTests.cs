@@ -43,7 +43,7 @@ public class PrefsSyncAndStreamTests
     {
         var stream = new MockStreamService();
         var hub = new StreamHub(stream);
-        int count = 0;
+        var count = 0;
         hub.EventReceived += (_, _) => count++;
         hub.Start();
         hub.Start();
@@ -58,7 +58,7 @@ public class PrefsSyncAndStreamTests
     public async Task EventDebouncer_CoalescesBursts()
     {
         var debounce = new EventDebouncer(TimeSpan.FromMilliseconds(40));
-        int runs = 0;
+        var runs = 0;
         await Task.WhenAll(
             debounce.DebounceAsync(
                 () =>

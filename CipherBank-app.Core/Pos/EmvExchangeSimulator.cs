@@ -25,7 +25,7 @@ public static class EmvExchangeSimulator
 
     public static async IAsyncEnumerable<string> RunAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
-        foreach (string stage in Stages)
+        foreach (var stage in Stages)
         {
             ct.ThrowIfCancellationRequested();
             await Task.Delay(StageDelayMs, ct).ConfigureAwait(false);

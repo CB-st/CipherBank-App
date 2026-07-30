@@ -21,5 +21,5 @@ public static class CoraLines
     };
 
     public static string For(string screen)
-        => Lines.TryGetValue(screen, out string? line) ? line : "CipherBank.";
+        => Lines.TryGetValue(screen, out var line) ? line : "CipherBank.";
 }

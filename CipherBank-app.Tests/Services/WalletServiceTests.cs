@@ -83,7 +83,7 @@ public class WalletServiceTests
             .ReturnsAsync(1.5m);
 
         // Act
-        decimal result = await mockService.Object.GetWalletBalanceAsync("wallet1", default);
+        var result = await mockService.Object.GetWalletBalanceAsync("wallet1", default);
 
         // Assert
         result.Should().Be(1.5m);

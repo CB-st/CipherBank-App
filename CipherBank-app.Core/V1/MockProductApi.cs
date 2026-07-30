@@ -76,11 +76,11 @@ public sealed class MockProductApi : IProductApi
 
     public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
     {
-        long now = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
-        (int points, int stepSeconds) = ResolveHistoryShape(range);
+        var now = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
+        (var points, var stepSeconds) = ResolveHistoryShape(range);
         var pts = new List<HistoryPointDto>(points + 1);
-        double v = HistoryBaseValue;
-        for (int i = points; i >= 0; i--)
+        var v = HistoryBaseValue;
+        for (var i = points; i >= 0; i--)
         {
             v += (Math.Sin(i / HistoryWavePeriod) * HistoryWaveAmplitude) + HistoryWaveOffset;
             pts.Add(new HistoryPointDto { T = now - (i * (long)stepSeconds), V = v });
@@ -126,17 +126,17 @@ public sealed class MockProductApi : IProductApi
 
     public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct)
     {
-        string modeKey = string.IsNullOrWhiteSpace(request.Mode) ? "MANAGED" : request.Mode.ToUpperInvariant();
-        string mode = modeKey switch
+        var modeKey = string.IsNullOrWhiteSpace(request.Mode) ? "MANAGED" : request.Mode.ToUpperInvariant();
+        var mode = modeKey switch
         {
             "MANAGED" => "managed",
             "WATCH" => "watch",
             _ => request.Mode.Trim(),
         };
-        string symbol = string.IsNullOrWhiteSpace(request.Symbol) ? "XMR" : request.Symbol.ToUpperInvariant();
-        string label = string.IsNullOrWhiteSpace(request.Label) ? $"CipherBank {mode}" : request.Label;
-        string walletId = "wlt_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockWalletIdSuffixLength];
-        string? address = modeKey switch
+        var symbol = string.IsNullOrWhiteSpace(request.Symbol) ? "XMR" : request.Symbol.ToUpperInvariant();
+        var label = string.IsNullOrWhiteSpace(request.Label) ? $"CipherBank {mode}" : request.Label;
+        var walletId = "wlt_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockWalletIdSuffixLength];
+        var address = modeKey switch
         {
             "MANAGED" => "4" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture) + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockManagedAddressSuffixLength],
             "WATCH" => request.Address,

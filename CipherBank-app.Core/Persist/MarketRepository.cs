@@ -22,11 +22,11 @@ public sealed class MarketRepository : IMarketRepository
         IEnumerable<(long T, double V)> points,
         CancellationToken ct)
     {
-        string normalizedSymbol = symbol.ToUpperInvariant();
+        var normalizedSymbol = symbol.ToUpperInvariant();
         await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync(ct).ConfigureAwait(false);
         await using var transaction = (Microsoft.Data.Sqlite.SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
-        foreach ((long timestamp, double value) in points)
+        foreach ((var timestamp, var value) in points)
         {
             await using SqliteCommand cmd = conn.CreateCommand();
             cmd.Transaction = transaction;

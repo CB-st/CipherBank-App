@@ -22,7 +22,7 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 10, TimeSpan.FromMinutes(1));
 
         // Act
-        bool result = await rateLimiter.TryAcquireAsync(default);
+        var result = await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         result.Should().BeTrue();
@@ -40,7 +40,7 @@ public class RateLimiterTests
         await rateLimiter.TryAcquireAsync(default);
 
         // 4th request should fail
-        bool result = await rateLimiter.TryAcquireAsync(default);
+        var result = await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         result.Should().BeFalse();
@@ -55,7 +55,7 @@ public class RateLimiterTests
         // Act - Make request, wait for window, make another
         await rateLimiter.TryAcquireAsync(default);
         await Task.Delay(100); // Wait for window to expire
-        bool result = await rateLimiter.TryAcquireAsync(default);
+        var result = await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         result.Should().BeTrue();
@@ -167,7 +167,7 @@ public class RateLimiterTests
         // Act
         await rateLimiter.TryAcquireAsync(default); // Request 1
         await rateLimiter.TryAcquireAsync(default); // Request 2
-        bool atLimit = await rateLimiter.TryAcquireAsync(default); // Should fail
+        var atLimit = await rateLimiter.TryAcquireAsync(default); // Should fail
 
         atLimit.Should().BeFalse();
 
@@ -175,7 +175,7 @@ public class RateLimiterTests
         await Task.Delay(150);
 
         // Now should be able to make requests again
-        bool afterExpiry = await rateLimiter.TryAcquireAsync(default);
+        var afterExpiry = await rateLimiter.TryAcquireAsync(default);
 
         // Assert
         afterExpiry.Should().BeTrue();

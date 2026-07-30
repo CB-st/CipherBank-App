@@ -17,10 +17,10 @@ public class MnemonicBackupServiceTests
     public async Task RoundTrip_opens_same_mnemonic()
     {
         var svc = new MnemonicBackupService();
-        string mnemonic = MnemonicHelper.Generate();
+        var mnemonic = MnemonicHelper.Generate();
 
-        byte[] file = await svc.CreateBackupFileAsync(mnemonic, "correct-horse-battery-staple", default);
-        string opened = await svc.OpenBackupFileAsync(file, "correct-horse-battery-staple", default);
+        var file = await svc.CreateBackupFileAsync(mnemonic, "correct-horse-battery-staple", default);
+        var opened = await svc.OpenBackupFileAsync(file, "correct-horse-battery-staple", default);
 
         opened.Should().Be(MnemonicHelper.Normalize(mnemonic));
         Encoding.UTF8.GetString(file).Should().NotContain(MnemonicHelper.Normalize(mnemonic));
@@ -46,7 +46,7 @@ public class MnemonicBackupServiceTests
     public async Task WrongPassword_throws()
     {
         var svc = new MnemonicBackupService();
-        byte[] file = await svc.CreateBackupFileAsync(
+        var file = await svc.CreateBackupFileAsync(
             MnemonicHelper.Generate(),
             "correct-horse-battery-staple",
             default);
@@ -72,7 +72,7 @@ public class MnemonicBackupServiceTests
     public async Task Missing_or_minimum_created_at_rejected(bool includeMinimumCreatedAt)
     {
         var svc = new MnemonicBackupService();
-        byte[] validFile = await svc.CreateBackupFileAsync(
+        var validFile = await svc.CreateBackupFileAsync(
             MnemonicHelper.Generate(),
             "correct-horse-battery-staple",
             default);
@@ -86,7 +86,7 @@ public class MnemonicBackupServiceTests
             fields["CREATED_AT"] = JsonSerializer.SerializeToElement(DateTimeOffset.MinValue);
         }
 
-        byte[] invalidFile = JsonSerializer.SerializeToUtf8Bytes(fields);
+        var invalidFile = JsonSerializer.SerializeToUtf8Bytes(fields);
         Func<Task> act = async () =>
             await svc.OpenBackupFileAsync(invalidFile, "correct-horse-battery-staple", default);
 

@@ -53,7 +53,7 @@ public static class WalletRegistry
 
     public static WalletModule Get(string symbol)
     {
-        string sym = symbol.ToUpperInvariant();
+        var sym = symbol.ToUpperInvariant();
         if (Modules.TryGetValue(sym, out WalletModule? mod))
         {
             return mod;

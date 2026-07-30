@@ -71,7 +71,7 @@ public class StepUpAuthTests
         }
 
         public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
+            => Task.FromResult(_data.TryGetValue(key, out var v) ? v : null);
 
         public Task RemoveAsync(string key)
         {

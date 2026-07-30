@@ -25,7 +25,7 @@ public class PinAndCustodyTests
         var store = new MemStore();
         var pin = new PinService(store);
         var custody = new CustodyService(store, pin);
-        string mnemonic = MnemonicHelper.Generate();
+        var mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         custody.Lock();
         (await custody.UnlockAsync("123456")).Should().BeTrue();
@@ -43,7 +43,7 @@ public class PinAndCustodyTests
         }
 
         public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
+            => Task.FromResult(_data.TryGetValue(key, out var v) ? v : null);
 
         public Task RemoveAsync(string key)
         {

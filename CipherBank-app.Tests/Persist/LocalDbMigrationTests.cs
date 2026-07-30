@@ -14,7 +14,7 @@ public class LocalDbMigrationTests
     [Fact]
     public async Task InitializeAsync_CreatesRatesSnapshotAndSyncMetaTables()
     {
-        string path = Path.Combine(Path.GetTempPath(), "cb-migrate-" + Guid.NewGuid().ToString("N") + ".db");
+        var path = Path.Combine(Path.GetTempPath(), "cb-migrate-" + Guid.NewGuid().ToString("N") + ".db");
         var db = new LocalDb(path);
         await db.InitializeAsync();
 

@@ -13,7 +13,7 @@ public class PrefsStoreTests
     [Fact]
     public async Task SaveLoad_IdleSecondsRoundTrip()
     {
-        string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
+        var path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
         var db = new LocalDb(path);
         await db.InitializeAsync();
         var store = new PrefsStore(db);

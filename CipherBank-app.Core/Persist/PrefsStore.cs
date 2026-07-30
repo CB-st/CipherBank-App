@@ -25,7 +25,7 @@ public sealed class PrefsStore : IPrefsStore
         await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT value FROM prefs WHERE key=$k";
         cmd.Parameters.AddWithValue("$k", Key);
-        object? val = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+        var val = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
         UserPrefs prefs;
         if (val is string json && !string.IsNullOrWhiteSpace(json))
         {
@@ -43,7 +43,7 @@ public sealed class PrefsStore : IPrefsStore
     public async Task SaveAsync(UserPrefs prefs)
     {
         prefs.NormalizeHomeSections();
-        string json = JsonSerializer.Serialize(prefs);
+        var json = JsonSerializer.Serialize(prefs);
         await using SqliteConnection conn = _db.Open();
         await conn.OpenAsync().ConfigureAwait(false);
         await using SqliteCommand cmd = conn.CreateCommand();

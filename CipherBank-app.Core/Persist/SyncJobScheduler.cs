@@ -31,7 +31,7 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
             _queue.Add(new QueuedJob(key, priority, work, Environment.TickCount64));
             _queue.Sort(static (left, right) =>
             {
-                int byPriority = left.Priority.CompareTo(right.Priority);
+                var byPriority = left.Priority.CompareTo(right.Priority);
                 return byPriority != 0 ? byPriority : left.EnqueuedAt.CompareTo(right.EnqueuedAt);
             });
         }
@@ -76,7 +76,7 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
                     return;
                 }
 
-                int nextIndex = _queue.FindIndex(candidate =>
+                var nextIndex = _queue.FindIndex(candidate =>
                     !_inFlightKeys.Contains(candidate.Key));
                 if (nextIndex < 0)
                 {

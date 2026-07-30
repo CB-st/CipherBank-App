@@ -73,7 +73,7 @@ public sealed class PrefsWireDto
     public void ReplaceHomeOrder(IEnumerable<string> order)
     {
         HomeOrder.Clear();
-        foreach (string item in order)
+        foreach (var item in order)
         {
             HomeOrder.Add(item);
         }
@@ -91,7 +91,7 @@ public sealed class PrefsWireDto
     public void ReplaceEnabledCurrencies(IEnumerable<string> currencies)
     {
         EnabledCurrencies.Clear();
-        foreach (string item in currencies)
+        foreach (var item in currencies)
         {
             EnabledCurrencies.Add(item);
         }

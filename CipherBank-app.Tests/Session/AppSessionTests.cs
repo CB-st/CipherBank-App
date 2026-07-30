@@ -29,7 +29,7 @@ public class AppSessionTests
         var productSessions = new InMemoryProductSessionStore();
         AppSession session = CreateSession(custody, wallets, productSessions: productSessions);
 
-        string mnemonic = MnemonicHelper.Generate();
+        var mnemonic = MnemonicHelper.Generate();
         await session.FinishCustodySetupAsync(mnemonic, "123456");
 
         session.IsUnlocked.Should().BeTrue();
@@ -135,7 +135,7 @@ public class AppSessionTests
         }
 
         public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
+            => Task.FromResult(_data.TryGetValue(key, out var v) ? v : null);
 
         public Task RemoveAsync(string key)
         {

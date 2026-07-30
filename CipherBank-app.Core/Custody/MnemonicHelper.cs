@@ -49,16 +49,16 @@ public static class MnemonicHelper
     /// </summary>
     public static byte[] Entropy(string phrase)
     {
-        int[] indices = Parse(phrase).Indices;
-        int totalBits = indices.Length * BitsPerWordIndex;
-        int checksumBits = totalBits / ChecksumDivisor;
-        int entropyBits = totalBits - checksumBits;
-        byte[] entropy = new byte[entropyBits / BitsPerByte];
+        var indices = Parse(phrase).Indices;
+        var totalBits = indices.Length * BitsPerWordIndex;
+        var checksumBits = totalBits / ChecksumDivisor;
+        var entropyBits = totalBits - checksumBits;
+        var entropy = new byte[entropyBits / BitsPerByte];
 
-        int bitPos = 0;
-        foreach (int index in indices)
+        var bitPos = 0;
+        foreach (var index in indices)
         {
-            for (int i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
+            for (var i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
             {
                 if (((index >> i) & 1) == 1)
                 {

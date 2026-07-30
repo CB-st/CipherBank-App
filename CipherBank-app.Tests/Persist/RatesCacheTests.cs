@@ -13,7 +13,7 @@ public class RatesCacheTests
     [Fact]
     public async Task UpsertThenGet_FiltersBySymbol()
     {
-        string path = Path.Combine(Path.GetTempPath(), "cb-rates-" + Guid.NewGuid().ToString("N") + ".db");
+        var path = Path.Combine(Path.GetTempPath(), "cb-rates-" + Guid.NewGuid().ToString("N") + ".db");
         var db = new LocalDb(path);
         await db.InitializeAsync();
         var cache = new RatesCache(db);

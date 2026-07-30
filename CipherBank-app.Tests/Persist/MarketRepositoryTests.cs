@@ -13,7 +13,7 @@ public class MarketRepositoryTests
     [Fact]
     public async Task UpsertThenGet_ReturnsPointsOrderedByTimestamp()
     {
-        string path = Path.Combine(Path.GetTempPath(), "cb-market-" + Guid.NewGuid().ToString("N") + ".db");
+        var path = Path.Combine(Path.GetTempPath(), "cb-market-" + Guid.NewGuid().ToString("N") + ".db");
         var db = new LocalDb(path);
         await db.InitializeAsync();
         var repository = new MarketRepository(db);

@@ -30,14 +30,14 @@ public static class PaymentUri
 
     public static string Build(string symbol, string address, string? amount, string? label, string? message)
     {
-        string sym = symbol.ToUpperInvariant();
-        string addr = address.Trim();
+        var sym = symbol.ToUpperInvariant();
+        var addr = address.Trim();
         if (string.IsNullOrEmpty(addr))
         {
             return string.Empty;
         }
 
-        string suffix = BuildQuerySuffix(sym, amount, label, message);
+        var suffix = BuildQuerySuffix(sym, amount, label, message);
         return MapSchemeUri(sym, addr, suffix, amount).OriginalString;
     }
 
@@ -49,7 +49,7 @@ public static class PaymentUri
 
     public static string Shorten(string address, int head, int tail)
     {
-        string a = address.Trim();
+        var a = address.Trim();
         if (a.Length <= head + tail + 1)
         {
             return a;
@@ -90,7 +90,7 @@ public static class PaymentUri
     /// </summary>
     private static Uri MapSchemeUri(string sym, string addr, string suffix, string? amount)
     {
-        if (SimpleSchemePrefixes.TryGetValue(sym, out string? prefix))
+        if (SimpleSchemePrefixes.TryGetValue(sym, out var prefix))
         {
             return new Uri($"{prefix}:{addr}{suffix}", UriKind.Absolute);
         }
@@ -121,7 +121,7 @@ public static class PaymentUri
     /// </summary>
     private static Uri BuildAccountUri(string scheme, string amountParam, string addr, string? amount)
     {
-        string uriString = string.IsNullOrEmpty(amount)
+        var uriString = string.IsNullOrEmpty(amount)
             ? $"{scheme}:{addr}"
             : $"{scheme}:{addr}?{amountParam}={Uri.EscapeDataString(amount)}";
         return new Uri(uriString, UriKind.Absolute);

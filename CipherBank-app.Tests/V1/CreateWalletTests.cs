@@ -26,7 +26,7 @@ public sealed class CreateWalletTests
         result.WalletId.Should().StartWith("wlt_");
         result.Mode.Should().Be("managed");
         result.Address.Should().NotBeNullOrWhiteSpace();
-        string json = System.Text.Json.JsonSerializer.Serialize(result).ToLowerInvariant();
+        var json = System.Text.Json.JsonSerializer.Serialize(result).ToLowerInvariant();
         json.Should().NotContain("spend");
         json.Should().NotContain("viewkey");
         json.Should().NotContain("mnemonic");

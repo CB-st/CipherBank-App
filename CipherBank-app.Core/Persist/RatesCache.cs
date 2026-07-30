@@ -47,7 +47,7 @@ public sealed class RatesCache : IRatesCache
         IEnumerable<string>? symbols,
         CancellationToken ct)
     {
-        string[] requestedSymbols = symbols?
+        var requestedSymbols = symbols?
             .Select(symbol => symbol.ToUpperInvariant())
             .Distinct(StringComparer.Ordinal)
             .ToArray() ?? [];
@@ -62,13 +62,13 @@ public sealed class RatesCache : IRatesCache
             ? null
             : requestedSymbols.ToHashSet(StringComparer.Ordinal);
         await using SqliteDataReader reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
-        int ordSymbol = reader.GetOrdinal("symbol");
-        int ordUsd = reader.GetOrdinal("usd");
-        int ordChange24h = reader.GetOrdinal("change24h");
-        int ordUpdatedAt = reader.GetOrdinal("updated_at");
+        var ordSymbol = reader.GetOrdinal("symbol");
+        var ordUsd = reader.GetOrdinal("usd");
+        var ordChange24h = reader.GetOrdinal("change24h");
+        var ordUpdatedAt = reader.GetOrdinal("updated_at");
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
         {
-            string symbol = reader.GetString(ordSymbol);
+            var symbol = reader.GetString(ordSymbol);
             if (requestedSet is not null && !requestedSet.Contains(symbol))
             {
                 continue;

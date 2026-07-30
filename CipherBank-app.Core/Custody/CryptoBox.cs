@@ -28,18 +28,18 @@ public static class CryptoBox
 
     public static string Seal(string plaintext, string pin)
     {
-        byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
-        byte[] key = DeriveKey(pin, salt);
-        byte[] nonce = RandomNumberGenerator.GetBytes(NonceSize);
-        byte[] plain = Encoding.UTF8.GetBytes(plaintext);
-        byte[] cipher = new byte[plain.Length];
-        byte[] tag = new byte[TagSize];
+        var salt = RandomNumberGenerator.GetBytes(SaltSize);
+        var key = DeriveKey(pin, salt);
+        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
+        var plain = Encoding.UTF8.GetBytes(plaintext);
+        var cipher = new byte[plain.Length];
+        var tag = new byte[TagSize];
         using (var aes = new AesGcm(key, TagSize))
         {
             aes.Encrypt(nonce, plain, cipher, tag);
         }
 
-        byte[] packed = new byte[SaltSize + NonceSize + TagSize + cipher.Length];
+        var packed = new byte[SaltSize + NonceSize + TagSize + cipher.Length];
         Buffer.BlockCopy(salt, 0, packed, 0, SaltSize);
         Buffer.BlockCopy(nonce, 0, packed, SaltSize, NonceSize);
         Buffer.BlockCopy(tag, 0, packed, SaltSize + NonceSize, TagSize);
@@ -51,18 +51,18 @@ public static class CryptoBox
 
     public static string Open(string sealedB64, string pin)
     {
-        byte[] packed = Convert.FromBase64String(sealedB64);
+        var packed = Convert.FromBase64String(sealedB64);
         if (packed.Length < SaltSize + NonceSize + TagSize + 1)
         {
             throw new CryptographicException("Invalid sealed blob.");
         }
 
-        byte[] salt = packed.AsSpan(0, SaltSize).ToArray();
-        byte[] nonce = packed.AsSpan(SaltSize, NonceSize).ToArray();
-        byte[] tag = packed.AsSpan(SaltSize + NonceSize, TagSize).ToArray();
-        byte[] cipher = packed.AsSpan(SaltSize + NonceSize + TagSize).ToArray();
-        byte[] key = DeriveKey(pin, salt);
-        byte[] plain = new byte[cipher.Length];
+        var salt = packed.AsSpan(0, SaltSize).ToArray();
+        var nonce = packed.AsSpan(SaltSize, NonceSize).ToArray();
+        var tag = packed.AsSpan(SaltSize + NonceSize, TagSize).ToArray();
+        var cipher = packed.AsSpan(SaltSize + NonceSize + TagSize).ToArray();
+        var key = DeriveKey(pin, salt);
+        var plain = new byte[cipher.Length];
         try
         {
             using var aes = new AesGcm(key, TagSize);

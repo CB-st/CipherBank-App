@@ -15,7 +15,7 @@ public class BiometricUnlockContractTests
     {
         var store = new MemStore();
         var custody = new CustodyService(store, new PinService(store));
-        string mnemonic = MnemonicHelper.Generate();
+        var mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         custody.Lock();
 
@@ -30,7 +30,7 @@ public class BiometricUnlockContractTests
         var store = new MemStore();
         var pin = new PinService(store);
         await pin.SetPinAsync("654321");
-        string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
+        var mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
         await store.SetAsync("cb_custody_blob", CryptoBox.Seal(mnemonic, "654321"));
 
         var custody = new CustodyService(store, pin);
@@ -49,7 +49,7 @@ public class BiometricUnlockContractTests
         var store = new MemStore();
         var pin = new PinService(store);
         await pin.SetPinAsync("246810");
-        string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
+        var mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
         await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, "246810"));
 
         // Simulate old bug: device secret persisted, blob still PIN-sealed.
@@ -70,8 +70,8 @@ public class BiometricUnlockContractTests
         var store = new MemStore();
         var pin = new PinService(store);
         await pin.SetPinAsync("135791");
-        string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
-        string deviceSecret = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+        var mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
+        var deviceSecret = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
         await store.SetAsync(CustodyService.StagingDeviceSecretKey, deviceSecret);
         await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, deviceSecret));
 
@@ -103,7 +103,7 @@ public class BiometricUnlockContractTests
         }
 
         public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
+            => Task.FromResult(_data.TryGetValue(key, out var v) ? v : null);
 
         public Task RemoveAsync(string key)
         {
