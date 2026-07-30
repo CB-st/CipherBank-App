@@ -28,6 +28,10 @@ These may remain on a foundation PR after the P0–P2 pass. Softening the **qual
 | **csharpsquid:S109** residual fixture literals in `MockProductApi` | One-off demo balances / timestamps in the mock API are story fixtures, not protocol constants. Named where reused. | Keep naming new reused literals |
 | **Record / property initializers** (e.g. `PricePoint` optional volume, layout defaults) | Not method optional parameters (S2360); changing record shape is API churn without maintainability win. | Leave |
 | **INFO / LOW cosmetic** beyond gate INFO budget | Noise after HIGH/MAJOR cleanup. | Batch only if gate still red |
+| **external_roslyn:IDE0007 / IDE0008** | Analyzers disagree (var vs explicit); flip-flops on re-scan. Ignored in `sonar.yml` multicriteria. | Leave |
+| **csharpsquid:S4136** (overload ordering) | Zero-token DIM overload pairs are intentional (S2360 avoidance). Ignored in `sonar.yml`; CPD-excluded on those interfaces. | Leave |
+
+Scanner also ignores deferred S6354/S4055/S4004/S3956 and IDE0021/22/28 via `sonar.issue.ignore.multicriteria` in `.github/workflows/sonar.yml` so they do not inflate `new_violations` on stacked PRs after the P0–P2 pass.
 
 ## Suggested gate softening (server)
 
