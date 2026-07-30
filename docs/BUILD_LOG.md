@@ -73,7 +73,7 @@ Analyzer note: Core demotes dense StyleCop / Nethereum `NU1608` via `WarningsNot
 
 ## M3 — MAUI Shell
 
-**Lives:** `CipherBank-app/**`, `AGENTS.md`, `docs/MAUI_FUNCTION_REF.md`, `docs/CB_MauiFunctionRef.html`.
+**Lives:** `CipherBank-app/**`, `AGENTS.md`, `docs/MAUI_FUNCTION_REF.md`.
 
 | Area | Path | Connects to |
 |------|------|-------------|
@@ -126,9 +126,9 @@ Later waves (market, wallets, fund, pay, cards) remain vertical-slice work: Auto
 
 ## Docs kept vs removed
 
-**Kept (operational):** `docs/README.md`, `architecture.md`, `app/`, `core/`, `config/`, `tests/`, function refs, this `BUILD_LOG.md`, `AGENTS.md`.
+**Kept (operational):** `docs/README.md`, `architecture.md`, `app/`, `core/`, `config/`, `tests/`, `MAUI_FUNCTION_REF.md`, this `BUILD_LOG.md`, `AGENTS.md`, Sonar/lint ops docs (`SONAR_GATE.md`, `SONAR_STRUCTURAL_PLAN.md`, `LOCAL_LINT.md`, `LOCAL_SONAR_LINT.md`).
 
-**Historical plans retained** under `docs/superpowers/plans/` (Stage 1 mechanical / Phase 4 ratchet notes) for audit; operational truth lives in this BUILD_LOG + `AGENTS.md`. Spent SDD/spec trees and Expo handoff remain out of the MAUI merge path.
+**Removed when implemented:** spent `docs/superpowers/plans|specs` trees, generated `CB_MauiFunctionRef.html` twin, and other one-shot planning notes once their checklist landed in code. Operational truth stays in this BUILD_LOG + `AGENTS.md`. Expo handoff remains out of the MAUI merge path.
 
 ---
 

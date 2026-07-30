@@ -2,7 +2,6 @@
 
 Pre-push / agent lint that mirrors Sonar-style smell checking for **C#** (same Roslyn engine as SonarQube) and portable stand-ins for **Shell, Python, C++, Make** so Cursor checkouts across CipherBank (tooling Python, backend C++, Makefiles) share one workflow.
 
-**Spec:** [superpowers/specs/2026-07-30-local-multi-lang-lint-design.md](superpowers/specs/2026-07-30-local-multi-lang-lint-design.md)  
 **Sonar policy:** [SONAR_GATE.md](SONAR_GATE.md) · **Server:** https://sonar.cipherbank.money
 
 ## Quick start

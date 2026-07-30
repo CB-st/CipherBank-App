@@ -2,7 +2,7 @@
 
 The **on-device** contract: how the .NET 10 MAUI app (`CipherBank-app` + `CipherBank-app.Core` + `CipherBank-app.ChallengePass`) boots, seals custody, opens sessions, moves money, and locks. Shaped like [`design_handoff_cipherbank/starter/API.md`](../design_handoff_cipherbank/starter/API.md) — each entry is an **INVOKE** (not an HTTP path) with inputs → logic → outputs.
 
-**Navigable HTML (CB_FullAPIRef style):** [`CB_MauiFunctionRef.html`](CB_MauiFunctionRef.html) · **94 INVOKEs** · regenerate: `node docs/scripts/generate-maui-function-ref.mjs`
+**94 INVOKEs.** Regenerate companion HTML locally if needed: `node docs/scripts/generate-maui-function-ref.mjs` (HTML twin is not kept in-tree — review churn).
 
 Companion wire docs:
 - Product `/v1`: [`design_handoff_cipherbank/starter/src/mocks/API_CONTRACT.md`](../design_handoff_cipherbank/starter/src/mocks/API_CONTRACT.md)
@@ -591,8 +591,7 @@ Payload is **token reference only** — never PAN.
 
 | Doc | Role |
 |---|---|
-| [CB_MauiFunctionRef.html](CB_MauiFunctionRef.html) | Navigable HTML |
 | [architecture.md](architecture.md) | Layers, HTTP pipeline |
 | [app/viewmodels.md](app/viewmodels.md) | Legacy VM notes |
 | [core/services.md](core/services.md) | Older service index |
-| Plans under `docs/superpowers/plans/` | Cora MAUI / challenge-pass / PQ channel |
+| [BUILD_LOG.md](BUILD_LOG.md) | What shipped / layer map |
