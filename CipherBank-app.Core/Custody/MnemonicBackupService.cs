@@ -40,7 +40,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         CancellationToken ct)
         => CreateBackupFileAsync(mnemonic, recoveryPassword, null, ct);
 
-    public async Task<byte[]> CreateBackupFileAsync(
+    public Task<byte[]> CreateBackupFileAsync(
         string mnemonic,
         string recoveryPassword,
         string? hint,
@@ -54,11 +54,10 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
         }
 
         var normalized = MnemonicHelper.Normalize(mnemonic);
-        return await Task.Run(() => CreateBackupFileCore(normalized, recoveryPassword, hint), ct)
-            .ConfigureAwait(false);
+        return CreateBackupFileValidatedAsync(normalized, recoveryPassword, hint, ct);
     }
 
-    public async Task<string> OpenBackupFileAsync(
+    public Task<string> OpenBackupFileAsync(
         ReadOnlyMemory<byte> fileBytes,
         string recoveryPassword,
         CancellationToken ct)
@@ -68,9 +67,23 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
 
         // Copy so Task.Run work owns a stable buffer (caller may reuse the Memory).
         var fileCopy = fileBytes.ToArray();
-        return await Task.Run(() => OpenBackupFileCore(fileCopy, recoveryPassword), ct)
-            .ConfigureAwait(false);
+        return OpenBackupFileValidatedAsync(fileCopy, recoveryPassword, ct);
     }
+
+    private async Task<byte[]> CreateBackupFileValidatedAsync(
+        string normalizedMnemonic,
+        string recoveryPassword,
+        string? hint,
+        CancellationToken ct)
+        => await Task.Run(() => CreateBackupFileCore(normalizedMnemonic, recoveryPassword, hint), ct)
+            .ConfigureAwait(false);
+
+    private async Task<string> OpenBackupFileValidatedAsync(
+        byte[] fileCopy,
+        string recoveryPassword,
+        CancellationToken ct)
+        => await Task.Run(() => OpenBackupFileCore(fileCopy, recoveryPassword), ct)
+            .ConfigureAwait(false);
 
     private static string OpenBackupFileCore(byte[] fileBytes, string recoveryPassword)
     {

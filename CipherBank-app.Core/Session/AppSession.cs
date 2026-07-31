@@ -251,9 +251,7 @@ public sealed class AppSession : IAppSession
     /// Use: Medium (lock / unlock failure). Scope: AppSession stream lifecycle.
     /// </summary>
     private void QueueDisconnect()
-    {
-        _pendingDisconnect = DisconnectQuietlyAsync();
-    }
+        => _pendingDisconnect = DisconnectQuietlyAsync();
 
     private async Task DisconnectQuietlyAsync()
     {

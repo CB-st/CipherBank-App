@@ -57,7 +57,10 @@ public class AccountBootstrapServiceTests
         private readonly AccountBootstrapDto _bootstrap;
         private readonly MockProductApi _inner = new();
 
-        public BootstrapApi(AccountBootstrapDto bootstrap) => _bootstrap = bootstrap;
+        public BootstrapApi(AccountBootstrapDto bootstrap)
+        {
+            _bootstrap = bootstrap;
+        }
 
         public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
             => Task.FromResult(_bootstrap);
