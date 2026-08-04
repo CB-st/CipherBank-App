@@ -28,6 +28,8 @@
     <PackageReference Include="NBitcoin.Altcoins" Version="3.0.33" />
     <PackageReference Include="Nethereum.HdWallet" Version="6.1.0" />
     <PackageReference Include="QRCoder" Version="1.6.0" />
+    <!-- Same Modern BC as ChallengePass Hybrid; used for deterministic RSA enroll (userdata). -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
   </ItemGroup>
 
   <ItemGroup>

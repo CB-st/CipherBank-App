@@ -1,6 +1,6 @@
 # Encrypted user-data blocks
 
-**Status:** Design — Core KDF + pack codec in progress (`feat/userdata-pack-core`). Deterministic enroll RSA, `IUserDataClient`, and prefs sync migration are follow-up PRs.  
+**Status:** Design — Core KDF + pack codec + modular crypto suites + RSA-OAEP enroll shipped on `feat/userdata-pack-core`. `IUserDataClient` and prefs sync migration remain follow-up.  
 **Audience:** Core / Shell / CipherBank-src maintainers  
 **Related code (today):** `Core/Custody/*`, `Core/Persist/UserPrefs.cs`, `Core/V1/PrefsWireDto.cs`, `Core/V1/PrefsSyncService.cs`  
 **Related backend:** CipherBank-src `user_data` + `two_factor_auth` on branch `csp-create-user-module`  
@@ -164,7 +164,21 @@ Inputs:
 | `cipherbank-userdata-v1/enroll-seed` | 64 bytes | Seed material for deterministic RSA-2048 keypair → PEM for `ENROLL_USER` and challenge decrypt |
 | `cipherbank-userdata-v1/aad-context` | UTF-8 string (not raw key) | Bound into per-block AAD together with username hash and pack `content_version` |
 
-**Deterministic RSA:** Implementation MUST document the exact generator (e.g. hash-expand enroll-seed into candidate primes with a fixed algorithm, or a well-specified library helper) so PEM fingerprints are stable across platforms. Until Core ships, treat “same seed → same PKCS#8 / SPKI PEM” as a required test vector.
+**Deterministic RSA (shipped):** `RsaOaepSha256UserDataEnrollAlgorithm` uses BouncyCastle `RsaKeyPairGenerator` with `DigestRandomGenerator(SHA-256)` seeded **only** from the 64-byte enroll-seed (no OS entropy). Challenge crypto is RSAES-OAEP with SHA-256 and MGF1-SHA-256. Fixture mnemonic SPKI fingerprint: `4b23a249439ab9c80705fc2785ec5625f3eb556f8632b054bd88008a5d04957d`.
+
+### Semi-modular crypto suites
+
+Userdata crypto is composed like ChallengePass suites (independent slots), under `CipherBank_app.UserData` — **not** ChallengePass Hybrid keys:
+
+| Slot | Interface | v1 impl | Future PQ swap |
+|------|-----------|---------|----------------|
+| Enroll / challenge | `IUserDataEnrollAlgorithm` | `RsaOaepSha256UserDataEnrollAlgorithm` (`rsa-oaep-sha256-v1`) | New algo + suite id e.g. `userdata-pq-aesgcm-v1`; **re-enroll** required |
+| Pack blocks | `IUserDataBlockCipher` | `AesGcmUserDataBlockCipher` | Format-id bump if AEAD changes |
+| Internal symmetric | `IUserDataSymmetricCipher` | `AesGcmUserDataSymmetricCipher` | Shared by blocks + Core-internal wrapping |
+
+Catalog: `IUserDataCryptoCatalog` / `UserDataCryptoCatalog` (default `userdata-rsa-aesgcm-v1`). Pack codec accepts an injected `IUserDataBlockCipher` so Active.Blocks can be used without static AES hard-coding.
+
+PQ session crypto in ChallengePass Hybrid remains a **separate key domain**; do not reuse Hybrid identities for userdata enroll.
 
 ### Lifetime / wipe rules
 
@@ -388,12 +402,14 @@ Implementations MUST pin these before shipping.
 |--------|-------------|
 | Fixture mnemonic `abandon … about` | BIP39 seed `5eb00bbd…e38e4` (SHA512 PBKDF2) |
 | HKDF `…/kek` | `7a820e2ef0b659c68c3f9b447f04ab25df9ba7df6d64cd08696a4d9ac047e3a2` |
-| HKDF `…/enroll-seed` | `06ede38b…4a058a` (64 bytes; RSA PEM follow-up) |
+| HKDF `…/enroll-seed` | `06ede38b…4a058a` (64 bytes) |
+| RSA-2048 SPKI fingerprint (SHA-256) | `4b23a249439ab9c80705fc2785ec5625f3eb556f8632b054bd88008a5d04957d` |
 | `alice` username hash prefix | `2bd806c9` |
 | Seal `prefs` / zero nonce / version 1 | tag `VG+E7OtAqIML1QgpsCaB+g==`, ct `MdzUOSWkOwN15+hJB/NkSyMpq3pu` |
 | Open pack from fixture Base64 `USER_DATA_BLOB` | Round-trip equals original prefs JSON |
 | Wrong username hash in AAD | Open throws / authentication failure |
-| Dispose key material | Further `Kek` access throws `ObjectDisposedException` |
+| Dispose key material / enroll keys | Further access throws `ObjectDisposedException` |
+| OAEP encrypt/decrypt 96-byte challenge | Round-trip under rematerialized RSA |
 
 ---
 

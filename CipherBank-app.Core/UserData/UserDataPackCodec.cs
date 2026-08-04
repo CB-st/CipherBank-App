@@ -3,13 +3,13 @@
 // </copyright>
 
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
 namespace CipherBank_app.UserData;
 
 /// <summary>
 /// Seals/opens cipherbank-userdata-pack-v1 blocks and Base64-encodes the pack as USER_DATA_BLOB.
+/// Delegates AEAD to <see cref="IUserDataBlockCipher"/> (default AES-GCM suite slot).
 /// </summary>
 public static class UserDataPackCodec
 {
@@ -18,6 +18,8 @@ public static class UserDataPackCodec
         PropertyNamingPolicy = null,
         WriteIndented = false,
     };
+
+    private static readonly AesGcmUserDataBlockCipher DefaultBlocks = new();
 
     /// <summary>
     /// Seals plaintext blocks under the KEK and builds a pack envelope for the username.
@@ -28,8 +30,21 @@ public static class UserDataPackCodec
         uint contentVersion,
         ReadOnlySpan<byte> kek,
         IReadOnlyList<UserDataPlainBlock> plainBlocks)
+        => SealPack(username, contentVersion, kek, plainBlocks, DefaultBlocks);
+
+    /// <summary>
+    /// Seals a pack with an injected block cipher (suite / tests).
+    /// Use: Medium (catalog Active.Blocks). Scope: userdata sync.
+    /// </summary>
+    public static UserDataPackWire SealPack(
+        string username,
+        uint contentVersion,
+        ReadOnlySpan<byte> kek,
+        IReadOnlyList<UserDataPlainBlock> plainBlocks,
+        IUserDataBlockCipher blockCipher)
     {
         ArgumentNullException.ThrowIfNull(plainBlocks);
+        ArgumentNullException.ThrowIfNull(blockCipher);
         EnsureKek(kek);
 
         string usernameHashHex = UserDataUsernameHash.HashHex(username);
@@ -42,7 +57,7 @@ public static class UserDataPackCodec
 
         foreach (UserDataPlainBlock plain in plainBlocks)
         {
-            pack.Blocks.Add(SealBlock(plain, kek, usernameHashHex, contentVersion));
+            pack.Blocks.Add(blockCipher.Seal(plain, kek, usernameHashHex, contentVersion));
         }
 
         return pack;
@@ -57,38 +72,7 @@ public static class UserDataPackCodec
         ReadOnlySpan<byte> kek,
         string usernameHashHex,
         uint contentVersion)
-    {
-        ArgumentNullException.ThrowIfNull(plain);
-        EnsureKek(kek);
-
-        byte[] nonce = RandomNumberGenerator.GetBytes(UserDataConstants.NonceSize);
-        byte[] plaintext = Encoding.UTF8.GetBytes(plain.PlaintextUtf8);
-        byte[] ciphertext = new byte[plaintext.Length];
-        byte[] tag = new byte[UserDataConstants.TagSize];
-        byte[] aad = UserDataAad.Build(usernameHashHex, plain.Type, plain.Id, contentVersion);
-
-        try
-        {
-            using var aes = new AesGcm(kek, UserDataConstants.TagSize);
-            aes.Encrypt(nonce, plaintext, ciphertext, tag, aad);
-
-            return new UserDataBlockWire
-            {
-                Id = plain.Id,
-                Type = plain.Type,
-                Seq = plain.Seq,
-                Algorithm = UserDataConstants.BlockAlgorithm,
-                NonceBase64 = Convert.ToBase64String(nonce),
-                TagBase64 = Convert.ToBase64String(tag),
-                CiphertextBase64 = Convert.ToBase64String(ciphertext),
-            };
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(plaintext);
-            CryptographicOperations.ZeroMemory(aad);
-        }
-    }
+        => DefaultBlocks.Seal(plain, kek, usernameHashHex, contentVersion);
 
     /// <summary>
     /// Opens one block; GCM failure throws <see cref="CryptographicException"/>.
@@ -99,35 +83,10 @@ public static class UserDataPackCodec
         ReadOnlySpan<byte> kek,
         string usernameHashHex,
         uint contentVersion)
-    {
-        ArgumentNullException.ThrowIfNull(block);
-        EnsureKek(kek);
-        ValidateBlockHeader(block);
-
-        byte[] nonce = DecodeExact(block.NonceBase64, UserDataConstants.NonceSize, "nonce");
-        byte[] tag = DecodeExact(block.TagBase64, UserDataConstants.TagSize, "tag");
-        byte[] ciphertext = DecodeAtLeast(block.CiphertextBase64, minLength: 1, "ciphertext");
-        byte[] plaintext = new byte[ciphertext.Length];
-        byte[] aad = UserDataAad.Build(usernameHashHex, block.Type, block.Id, contentVersion);
-
-        try
-        {
-            using var aes = new AesGcm(kek, UserDataConstants.TagSize);
-            aes.Decrypt(nonce, ciphertext, tag, plaintext, aad);
-            return Encoding.UTF8.GetString(plaintext);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(plaintext);
-            CryptographicOperations.ZeroMemory(aad);
-            CryptographicOperations.ZeroMemory(nonce);
-            CryptographicOperations.ZeroMemory(tag);
-            CryptographicOperations.ZeroMemory(ciphertext);
-        }
-    }
+        => DefaultBlocks.Open(block, kek, usernameHashHex, contentVersion);
 
     /// <summary>
-    /// Opens every block; skips unknown types that fail authentication only when skipUnknown is true.
+    /// Opens every block; skips unknown types when <paramref name="skipUnknownTypes"/> is true.
     /// Use: High (GRAB apply). Scope: userdata restore.
     /// </summary>
     public static Dictionary<string, string> OpenPack(
@@ -135,8 +94,20 @@ public static class UserDataPackCodec
         string username,
         ReadOnlySpan<byte> kek,
         bool skipUnknownTypes = true)
+        => OpenPack(pack, username, kek, DefaultBlocks, skipUnknownTypes);
+
+    /// <summary>
+    /// Opens a pack with an injected block cipher. Use: Medium (suite). Scope: userdata restore.
+    /// </summary>
+    public static Dictionary<string, string> OpenPack(
+        UserDataPackWire pack,
+        string username,
+        ReadOnlySpan<byte> kek,
+        IUserDataBlockCipher blockCipher,
+        bool skipUnknownTypes = true)
     {
         ArgumentNullException.ThrowIfNull(pack);
+        ArgumentNullException.ThrowIfNull(blockCipher);
         EnsureKek(kek);
         ValidatePackHeader(pack, username);
 
@@ -150,7 +121,7 @@ public static class UserDataPackCodec
                 continue;
             }
 
-            opened[block.Id] = OpenBlock(block, kek, usernameHashHex, pack.ContentVersion);
+            opened[block.Id] = blockCipher.Open(block, kek, usernameHashHex, pack.ContentVersion);
         }
 
         return opened;
@@ -218,42 +189,7 @@ public static class UserDataPackCodec
         string usernameHashHex,
         uint contentVersion,
         ReadOnlySpan<byte> nonce)
-    {
-        ArgumentNullException.ThrowIfNull(plain);
-        EnsureKek(kek);
-        if (nonce.Length != UserDataConstants.NonceSize)
-        {
-            throw new ArgumentException($"Nonce must be {UserDataConstants.NonceSize} bytes.", nameof(nonce));
-        }
-
-        byte[] plaintext = Encoding.UTF8.GetBytes(plain.PlaintextUtf8);
-        byte[] ciphertext = new byte[plaintext.Length];
-        byte[] tag = new byte[UserDataConstants.TagSize];
-        byte[] aad = UserDataAad.Build(usernameHashHex, plain.Type, plain.Id, contentVersion);
-        byte[] nonceBytes = nonce.ToArray();
-
-        try
-        {
-            using var aes = new AesGcm(kek, UserDataConstants.TagSize);
-            aes.Encrypt(nonceBytes, plaintext, ciphertext, tag, aad);
-
-            return new UserDataBlockWire
-            {
-                Id = plain.Id,
-                Type = plain.Type,
-                Seq = plain.Seq,
-                Algorithm = UserDataConstants.BlockAlgorithm,
-                NonceBase64 = Convert.ToBase64String(nonceBytes),
-                TagBase64 = Convert.ToBase64String(tag),
-                CiphertextBase64 = Convert.ToBase64String(ciphertext),
-            };
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(plaintext);
-            CryptographicOperations.ZeroMemory(aad);
-        }
-    }
+        => DefaultBlocks.SealWithNonce(plain, kek, usernameHashHex, contentVersion, nonce);
 
     private static void EnsureKek(ReadOnlySpan<byte> kek)
     {
@@ -278,67 +214,6 @@ public static class UserDataPackCodec
         if (!string.Equals(pack.UsernameHashPrefix, expectedPrefix, StringComparison.Ordinal))
         {
             throw new CryptographicException("Userdata pack username hash prefix mismatch.");
-        }
-    }
-
-    /// <summary>
-    /// Rejects blocks with missing/unsupported algorithm or empty identity fields.
-    /// Use: High (OpenBlock). Scope: UserDataPackCodec.
-    /// </summary>
-    private static void ValidateBlockHeader(UserDataBlockWire block)
-    {
-        if (block.Algorithm != UserDataConstants.BlockAlgorithm)
-        {
-            throw new CryptographicException("Unsupported userdata block algorithm.");
-        }
-
-        if (string.IsNullOrWhiteSpace(block.Id) || string.IsNullOrWhiteSpace(block.Type))
-        {
-            throw new CryptographicException("Userdata block id/type missing.");
-        }
-    }
-
-    /// <summary>
-    /// Base64-decodes a field and requires an exact byte length.
-    /// Use: High (OpenBlock). Scope: UserDataPackCodec.
-    /// </summary>
-    private static byte[] DecodeExact(string base64, int exactLength, string fieldName)
-    {
-        byte[] bytes = DecodeAtLeast(base64, minLength: exactLength, fieldName);
-        if (bytes.Length != exactLength)
-        {
-            CryptographicOperations.ZeroMemory(bytes);
-            throw new CryptographicException($"Invalid userdata block {fieldName} length.");
-        }
-
-        return bytes;
-    }
-
-    /// <summary>
-    /// Base64-decodes a field and requires at least <paramref name="minLength"/> bytes.
-    /// Use: High (OpenBlock). Scope: UserDataPackCodec.
-    /// </summary>
-    private static byte[] DecodeAtLeast(string base64, int minLength, string fieldName)
-    {
-        if (string.IsNullOrWhiteSpace(base64))
-        {
-            throw new CryptographicException($"Missing userdata block {fieldName}.");
-        }
-
-        try
-        {
-            byte[] bytes = Convert.FromBase64String(base64);
-            if (bytes.Length < minLength)
-            {
-                CryptographicOperations.ZeroMemory(bytes);
-                throw new CryptographicException($"Invalid userdata block {fieldName} length.");
-            }
-
-            return bytes;
-        }
-        catch (FormatException ex)
-        {
-            throw new CryptographicException($"Invalid userdata block {fieldName} encoding.", ex);
         }
     }
 }
