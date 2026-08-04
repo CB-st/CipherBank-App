@@ -429,6 +429,8 @@ JSON blob under prefs key `user_prefs` → `UserPrefs` (home order/visibility, *
 
 Local SQLite ↔ `GET/PUT /prefs` via `PrefsMerge.Merge` (preserves local `AssetsLayout` if remote omits).
 
+**Pack migration:** inject `UserDataPrefsSyncService` via `AddUserDataPrefsSync()` (see [`USER_DATA_ENCRYPTION.md`](USER_DATA_ENCRYPTION.md) §11). Pull prefers userdata pack GRAB when unlocked; push OVERWRITEs sealed prefs and optionally dual-writes product prefs until the successful-pack threshold. Legacy `PrefsSyncService` remains for plaintext-only tests.
+
 **Design successor:** privacy-sensitive prefs move into a mnemonic-derived encrypted userdata pack on CipherBank-src (`USER_DATA_BLOB`). See [`USER_DATA_ENCRYPTION.md`](USER_DATA_ENCRYPTION.md). Plaintext product prefs push is deprecated once that path ships.
 
 ### `INVOKE AccountBootstrapService.ApplyAsync`

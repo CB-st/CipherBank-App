@@ -1,8 +1,8 @@
 # Encrypted user-data blocks
 
-**Status:** Design — Core KDF/pack + modular crypto + RSA enroll shipped; **IUserDataClient / Mock / TCP loopback transport** on `feat/userdata-client-wire`. Prefs sync migration remains follow-up.  
+**Status:** Design — Core KDF/pack + modular crypto + RSA enroll shipped; **IUserDataClient / Mock / TCP loopback** + **`UserDataPrefsSyncService`** (dual-write migration) on `feat/userdata-client-wire`. Shell DI: call `AddUserDataPrefsSync()` in place of `PrefsSyncService` when composing on M3.  
 **Audience:** Core / Shell / CipherBank-src maintainers  
-**Related code (today):** `Core/Custody/*`, `Core/Persist/UserPrefs.cs`, `Core/V1/PrefsWireDto.cs`, `Core/V1/PrefsSyncService.cs`  
+**Related code (today):** `Core/UserData/*`, `Core/Custody/*`, `Core/Persist/UserPrefs.cs`, `Core/V1/PrefsWireDto.cs`, `Core/V1/PrefsSyncService.cs`  
 **Related backend:** CipherBank-src `user_data` + `two_factor_auth` on branch `csp-create-user-module`  
 **Operational map:** [`BUILD_LOG.md`](BUILD_LOG.md) · invoke surface: [`MAUI_FUNCTION_REF.md`](MAUI_FUNCTION_REF.md)
 
@@ -24,7 +24,7 @@ This document defines how the MAUI app stores user preferences and configs as a 
 - Cloud backup of the mnemonic or PIN (offline file format remains `cipherbank-recovery-v1`).
 - Giving CipherBank plaintext of prefs / configs / private keys.
 - Replacing on-device SQLite as the working cache (local-first; cloud pack is durable sync).
-- Implementing Core codecs, Shell wiring, or src handler changes in this design pass.
+- Replacing CipherBank-src handlers in this client PR (pack + wire live in CB-APP Core).
 - Real EMAIL / SMS / TOTP delivery (document the hook; src 2FA may still stub `ALWAYS_ALLOW`).
 
 ---
@@ -385,26 +385,46 @@ sequenceDiagram
 | ChallengePass (M2) | Session / PQ auth channel; userdata is a separate internal service |
 | `AccountBootstrapService` | Recipient masks may seed the `recipients` block; bootstrap must not receive decrypted pack secrets from the server |
 
-### Future implementation owners (later PRs)
+### Implementation owners
 
-1. Core: HKDF helpers, deterministic enroll RSA, pack codec, block seal/open.
-2. Core: `IUserDataClient` façade over user_data messages (+ 2FA preference).
-3. Core: sync service replacing plaintext `PrefsSyncService` push path.
-4. Shell: restore / onboarding hooks after mnemonic seal; debounce dirty pushes.
-5. Tests: vectors below + round-trip pack tests (no network).
+| Item | Status |
+|------|--------|
+| Core HKDF / pack codec / RSA enroll | Done (`feat/userdata-pack-core`) |
+| `IUserDataClient` + Mock + TCP loopback | Done (`feat/userdata-client-wire`) |
+| `UserDataPrefsSyncService` + dual-write options + pack meta + mapper | Done (same PR as wire) |
+| `AddUserDataPrefsSync()` DI helper | Done — Shell swaps on M3 composition root |
+| Shell custody → `IUserDataAccountContext` adapter | Follow-up (mutable context for lab / tests today) |
+| SQLite-backed pack meta | Follow-up |
+| Debounced dirty pushes / onboarding restore UX | Follow-up |
 
 ---
 
 ## 11. Migration from `PrefsWireDto` sync
 
-1. **Ship pack reader/writer** beside existing prefs sync (feature flag / build define).
-2. On unlock: if pack exists → GRAB + apply; else fall back to `GetPrefsAsync` once.
-3. On save: write local SQLite, seal pack, OVERWRITE; optionally still `PutPrefsAsync` during a dual-write window.
-4. After N successful pack round-trips (or app version gate): stop plaintext `PutPrefsAsync` for full `UserPrefs`.
-5. Server-side plaintext prefs rows become unused; no requirement to delete until product API owns that cleanup.
-6. Bootstrap prefs merge: prefer pack-derived prefs when both present.
+**Implemented in Core:** `UserDataPrefsSyncService` (`IPrefsSyncService`) with `UserDataPrefsSyncOptions` (`DualWrite()` / `PackOnly()`).
 
-Dual-write window must assume product prefs are still **company-readable**; users who need the privacy property should be on pack-only builds.
+1. **Ship pack reader/writer** beside existing prefs sync — `EnablePackSync` / dual-write knobs.
+2. On unlock pull: if unlocked + pack GRAB opens → apply prefs block; else fall back to `GetPrefsAsync`.
+3. On save: local store → seal prefs block → OVERWRITE; when dual-write is on, also `PutPrefsAsync` while `SuccessfulPackWrites <= DisableProductPushAfterSuccessfulPackWrites`.
+4. After the Nth successful pack OVERWRITE, the next pack success skips plaintext PutPrefs.
+5. Server-side plaintext prefs rows become unused; no requirement to delete until product API owns that cleanup.
+6. Bootstrap prefs merge: pack wins when present (`Pull_PrefersPackOverProduct` coverage).
+
+**Shell (M3):** replace
+
+```csharp
+services.AddSingleton<IPrefsSyncService, PrefsSyncService>();
+```
+
+with
+
+```csharp
+services.AddUserDataPrefsSync(); // or AddUserDataPrefsSync(UserDataPrefsSyncOptions.PackOnly())
+```
+
+Then set `MutableUserDataAccountContext.Username` / `.Mnemonic` after unlock (or register a custody-backed `IUserDataAccountContext`). Pass a TCP `IUserDataClient` factory when leaving mock loopback.
+
+Dual-write window must assume product prefs are still **company-readable**; users who need the privacy property should use `PackOnly()`.
 
 ---
 
