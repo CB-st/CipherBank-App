@@ -42,6 +42,7 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 | [LOCAL_SONAR_LINT.md](LOCAL_SONAR_LINT.md) | C# SonarAnalyzer deep dive + SonarQube for IDE Connected Mode |
 | [SONAR_STRUCTURAL_PLAN.md](SONAR_STRUCTURAL_PLAN.md) | Stage 2 SA1402/SA1649 inventory, callers, split targets, execution status |
 | [MAUI_FUNCTION_REF.md](MAUI_FUNCTION_REF.md) | Monolithic INVOKE-style map of MAUI/Core/ChallengePass functions (API.md format) |
+| [USER_DATA_ENCRYPTION.md](USER_DATA_ENCRYPTION.md) | Design: mnemonic-derived encrypted data blocks + CipherBank-src user_data opaque stash |
 | [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
 | [core/README.md](core/README.md) | Core library overview |
 | [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |

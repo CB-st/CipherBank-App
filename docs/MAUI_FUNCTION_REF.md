@@ -429,6 +429,8 @@ JSON blob under prefs key `user_prefs` → `UserPrefs` (home order/visibility, *
 
 Local SQLite ↔ `GET/PUT /prefs` via `PrefsMerge.Merge` (preserves local `AssetsLayout` if remote omits).
 
+**Design successor:** privacy-sensitive prefs move into a mnemonic-derived encrypted userdata pack on CipherBank-src (`USER_DATA_BLOB`). See [`USER_DATA_ENCRYPTION.md`](USER_DATA_ENCRYPTION.md). Plaintext product prefs push is deprecated once that path ships.
+
 ### `INVOKE AccountBootstrapService.ApplyAsync`
 
 `GET /account/bootstrap` → merge prefs → upsert recipients. **Does not touch custody.**  
