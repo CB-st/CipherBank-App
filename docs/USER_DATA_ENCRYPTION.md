@@ -1,6 +1,6 @@
 # Encrypted user-data blocks
 
-**Status:** Design — Core KDF + pack codec + modular crypto suites + RSA-OAEP enroll shipped on `feat/userdata-pack-core`. `IUserDataClient` and prefs sync migration remain follow-up.  
+**Status:** Design — Core KDF/pack + modular crypto + RSA enroll shipped; **IUserDataClient / Mock / TCP loopback transport** on `feat/userdata-client-wire`. Prefs sync migration remains follow-up.  
 **Audience:** Core / Shell / CipherBank-src maintainers  
 **Related code (today):** `Core/Custody/*`, `Core/Persist/UserPrefs.cs`, `Core/V1/PrefsWireDto.cs`, `Core/V1/PrefsSyncService.cs`  
 **Related backend:** CipherBank-src `user_data` + `two_factor_auth` on branch `csp-create-user-module`  
@@ -259,6 +259,20 @@ Unknown `type` values: skip with a warning on restore; never fail the whole pack
 ## 7. Wire mapping (CipherBank-src user_data)
 
 Service: `UserData_Handler` / `UserData_APIMessage` on `csp-create-user-module` (default port **53809**, namespace `CIPHERBANK_INTERNAL`). 2FA companion on port **53810**.
+
+### MAUI client stack (shipped)
+
+| Piece | Role |
+|-------|------|
+| `IUserDataClient` | Enroll / Challenge / Grab / Overwrite port |
+| `MockUserDataClient` | In-process logic via `UserDataServiceLogic` + `InMemoryUserDataStore` |
+| `UserDataClient` + `TcpUserDataTransport` | CIPHERBANK_INTERNAL TCP (frame + `\r\n\r\n` EOF) |
+| `UserDataEndpointOptions` | Flexible target: `Production()` → `internal.cipherbank.money:53809`, `Loopback(port)` → `127.0.0.1` |
+| `UserDataLoopbackServer` | Localhost self-server for unit/E2E cross-substantiation (swap options to production when not testing) |
+| `PlainJsonUserDataWireCodec` | Loopback payload mode (`PAYLOAD` as nested JSON) |
+| MasterKeyEncrypted | Reserved for src `Encrypter(timeStamp, …)` when CB_MASTER_KEY is wired |
+
+Shared store lets Mock and loopback TCP **cross-substantiate** the same enrollments/stashes.
 
 ### Message flows
 
