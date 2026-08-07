@@ -1,18 +1,20 @@
 // <copyright file="WalletSurfaceCoverageTests.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
+
 using CipherBank_app.Pos;
 using CipherBank_app.Wallets;
 using FluentAssertions;
 using Xunit;
+
 namespace CipherBank_app.Tests.Wallets;
 
 /// <summary>Coverlet pad for wallet URI/derive/validate + null NFC. Use: High (CI). Scope: Core wallets/POS.</summary>
 public sealed class WalletSurfaceCoverageTests
 {
-
     private const string KnownMnemonic =
         "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
     /// <summary>PaymentUri schemes and Shorten. Use: High. Scope: PaymentUri.</summary>
     [Fact]
     public void PaymentUri_CoversSchemesAndShorten()
@@ -30,6 +32,7 @@ public sealed class WalletSurfaceCoverageTests
         PaymentUri.Shorten("short").Should().Be("short");
         PaymentUri.Shorten("abcdefghijklmnopqrstuvwxyz", 4, 3).Should().Be("abcd…xyz");
     }
+
     /// <summary>AddressValidate branches. Use: High. Scope: AddressValidate.</summary>
     [Fact]
     public void AddressValidate_CoversSymbolsAndFailures()
@@ -43,6 +46,7 @@ public sealed class WalletSurfaceCoverageTests
         AddressValidate.IsValid("XYZ", "long-enough").Should().BeTrue();
         AddressValidate.IsValid("XYZ", "tiny").Should().BeFalse();
     }
+
     /// <summary>AddressDerive dispatch including LTC/DOGE. Use: High. Scope: AddressDerive.</summary>
     [Fact]
     public void AddressDerive_CoversDispatchAndLtcDoge()
@@ -50,16 +54,20 @@ public sealed class WalletSurfaceCoverageTests
         AddressDerive.IsDerivable("btc").Should().BeTrue();
         AddressDerive.IsDerivable("XMR").Should().BeFalse();
         AddressDerive.Derive("XMR", KnownMnemonic).Should().BeNull();
+
         DerivedAddress? viaDispatch = AddressDerive.Derive("BTC", KnownMnemonic, 0);
         viaDispatch.Should().NotBeNull();
         viaDispatch!.Address.Should().StartWith("bc1");
+
         DerivedAddress ltc = AddressDerive.DeriveLtc(KnownMnemonic, 0);
         ltc.Address.Should().NotBeNullOrWhiteSpace();
         ltc.Path.Should().Contain("84'/2'");
+
         DerivedAddress doge = AddressDerive.DeriveDoge(KnownMnemonic, 0);
         doge.Address.Should().NotBeNullOrWhiteSpace();
         doge.Path.Should().Contain("44'/3'");
     }
+
     /// <summary>WalletModule.SourceFor mapping. Use: Medium. Scope: WalletModule.</summary>
     [Fact]
     public void WalletModule_SourceFor_MapsModes()
@@ -74,6 +82,7 @@ public sealed class WalletSurfaceCoverageTests
         local.SourceFor(WalletUiMode.Watch).Should().Be(WalletSource.Watch);
         local.SourceFor(WalletUiMode.Managed).Should().Be(WalletSource.Server);
         local.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Local);
+
         var server = new WalletModule
         {
             Symbol = "XMR",
@@ -83,6 +92,7 @@ public sealed class WalletSurfaceCoverageTests
         };
         server.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Server);
     }
+
     /// <summary>QR PNG generation. Use: Medium. Scope: QrCodeGenerator.</summary>
     [Fact]
     public void QrCodeGenerator_ProducesPngBytes()
@@ -91,6 +101,7 @@ public sealed class WalletSurfaceCoverageTests
         png.Should().NotBeEmpty();
         png[0].Should().Be(0x89);
     }
+
     /// <summary>NullNfcPresentmentService failure path. Use: Medium. Scope: NullNfcPresentmentService.</summary>
     [Fact]
     public async Task NullNfcPresentmentService_ReportsUnsupported()

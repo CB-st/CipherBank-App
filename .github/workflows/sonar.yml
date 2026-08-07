@@ -12,12 +12,8 @@ concurrency:
   group: sonar-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-# Author gate: PR runs require allowlisted PR author AND github.actor (who
-# opened/synced/marked ready). Push runs require allowlisted actor or commit
-# author. PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob".
-# Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
-# split()/replace(), so membership uses comma-padded contains().
-
+# Author gate: CSV PIPELINE_ALLOWED_AUTHOR (default RED-FLAG-DEVELOPMENT); PR needs
+# author+actor; push needs actor or commit author. Membership via comma-padded contains().
 # Coverlet→OpenCover for Sonar. Artifacts: sonar-context-<sha>. Gate via Sonar GH check.
 
 jobs:
@@ -143,15 +139,8 @@ jobs:
       pr_title:    ${{ github.event.pull_request.title }}
       pr_author:   ${{ github.event.pull_request.user.login }}
 
-  # SonarQube static analysis -- after coverage. Produces:
-  #   * SonarQube's own GitHub check for quality gate + issue annotations
-  #   * `sonar-context-<full_sha>` + `sonar-report-task-<full_sha>` artifacts
-  #     (gate + issues JSON) that central AI Review merges into REVIEW_DIR/sonar/
-  #
-  # Runs on non-draft PRs and on pushes to the same branches as above.
-  # Artifact names are keyed only by the scanned commit SHA so consumers
-  # resolve Sonar the same way they resolve commits. Imports Coverlet from
-  # the `coverage` job before `sonarscanner begin`.
+  # Sonar after coverage: GH quality-gate check + sonar-context-/report-task-<sha>
+  # artifacts for AI Review. Same author gate as coverage; imports Coverlet first.
   sonar:
     needs: [coverage]
     if: >-
