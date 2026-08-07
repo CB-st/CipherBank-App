@@ -17,7 +17,6 @@ concurrency:
 # Coverlet→OpenCover for Sonar. Artifacts: sonar-context-<sha>. Gate via Sonar GH check.
 
 jobs:
-  # Coverlet for Sonar. Consumers: sonar + context.
   coverage:
     if: >-
       (
