@@ -18,12 +18,10 @@ concurrency:
 # Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
 # split()/replace(), so membership uses comma-padded contains().
 
-# Coverlet → OpenCover for Sonar; AI coverage prose lives on M1b.
-# Scanner artifacts: sonar-context-<sha>, sonar-report-task-<sha>.
-# Gate status is Sonar's GitHub check (job stays green); URL via vars.SONAR_HOST_URL.
+# Coverlet→OpenCover for Sonar. Artifacts: sonar-context-<sha>. Gate via Sonar GH check.
 
 jobs:
-  # Unit tests + Coverlet for Sonar OpenCover import. Consumers: sonar + context.
+  # Coverlet for Sonar. Consumers: sonar + context.
   coverage:
     if: >-
       (

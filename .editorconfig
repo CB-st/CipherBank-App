@@ -111,7 +111,7 @@ dotnet_diagnostic.SA1309.severity = none   # Allow _camelCase private fields —
 dotnet_diagnostic.SA1200.severity = none   # Allow usings outside namespace — required for file-scoped namespaces
 dotnet_diagnostic.SA0001.severity = none   # Don't require XML comment analysis on all files
 
-# M1a Sonar gate lock — prefer var when apparent; silence IDE0008 flip-flop.
+# M1a Sonar gate lock (IDE0008 silence; prefer var when apparent).
 csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = false:suggestion
@@ -121,7 +121,7 @@ dotnet_diagnostic.S1451.severity = none
 dotnet_diagnostic.S3990.severity = none
 dotnet_diagnostic.S3992.severity = none
 
-# Deferred: UserPrefs setters for PrefsStore STJ replace; Persist SQL ≠ UI copy (SONAR_GATE).
+# Deferred S4004/S4055 (SONAR_GATE): UserPrefs setters; Persist SQL ≠ UI copy.
 [CipherBank-app.Core/Persist/UserPrefs.cs]
 dotnet_diagnostic.S4004.severity = none
 [CipherBank-app.Core/Persist/*.cs]
