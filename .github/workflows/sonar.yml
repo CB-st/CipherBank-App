@@ -18,29 +18,9 @@ concurrency:
 # Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
 # split()/replace(), so membership uses comma-padded contains().
 
-# Coverage job runs CipherBank-app.Tests with Coverlet (opencover + cobertura)
-# and uploads `coverage-report` for Sonar. `sonar` and `context` need coverage.
-# AI coverage summary text lands on M1b to keep this PR under the review budget.
-#
-# SonarScanner for .NET runs against library/test projects (MAUI host deferred
-# until a full build stage exists), polls the server until analysis finishes,
-# fetches the quality gate + PR- or branch-scoped issues, and uploads them as
-# `sonar-context-<full_git_sha>` (and `sonar-report-task-<full_git_sha>`) so
-# consumers resolve artifacts by the scanned commit only.
-#
-# Two Sonar deliverables, both consumed downstream:
-#   1. `sonar-report-task-<sha>` -- raw report-task.txt from the scanner.
-#   2. `sonar-context-<sha>` -- normalised JSON (quality-gate.json +
-#      issues.json + sonar-env.json) that central AI review merges into
-#      REVIEW_DIR/sonar/.
-#
-# Quality gate pass/fail is surfaced by SonarQube's own GitHub check; the
-# sonar job does not exit non-zero on a red gate so PRs are not double-marked.
-# `sonar-env.json` still records `gate_status` for central AI review policy.
-#
-# NB: SONAR_HOST_URL is read from `vars.SONAR_HOST_URL`, not from a secret.
-# The URL itself isn't sensitive, so burning a secret slot on it isn't worth
-# it. `vars` also renders the URL cleanly in logs for reachability triage.
+# Coverlet → OpenCover for Sonar; AI coverage prose lives on M1b.
+# Scanner artifacts: sonar-context-<sha>, sonar-report-task-<sha>.
+# Gate status is Sonar's GitHub check (job stays green); URL via vars.SONAR_HOST_URL.
 
 jobs:
   # Unit tests + Coverlet for Sonar OpenCover import. Consumers: sonar + context.
