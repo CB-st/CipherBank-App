@@ -18,10 +18,9 @@ concurrency:
 # Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
 # split()/replace(), so membership uses comma-padded contains().
 
-# Coverage job runs CipherBank-app.Tests with Coverlet (cobertura) and uploads
-# `coverage-report` for both Sonar (`reports/coverage.cobertura.xml`) and the
-# AI context bundle (`cipherbank_coverage_report.txt`). `sonar` and `context`
-# both `needs: coverage`.
+# Coverage job runs CipherBank-app.Tests with Coverlet (opencover + cobertura)
+# and uploads `coverage-report` for Sonar. `sonar` and `context` need coverage.
+# AI coverage summary text lands on M1b to keep this PR under the review budget.
 #
 # SonarScanner for .NET runs against library/test projects (MAUI host deferred
 # until a full build stage exists), polls the server until analysis finishes,
@@ -44,8 +43,7 @@ concurrency:
 # it. `vars` also renders the URL cleanly in logs for reachability triage.
 
 jobs:
-  # Unit tests + Coverlet — shared by Sonar (cobertura import) and AI context
-  # (human-readable summary). Must finish before either consumer starts.
+  # Unit tests + Coverlet for Sonar OpenCover import. Consumers: sonar + context.
   coverage:
     if: >-
       (
@@ -107,8 +105,7 @@ jobs:
             exit 1
           fi
           mkdir -p reports
-          # Dual format: OpenCover for sonar.cs.opencover.reportsPaths (supported C# property);
-          # cobertura retained for the AI coverage summary parser.
+          # OpenCover for sonar.cs.opencover.reportsPaths; cobertura for tooling.
           dotnet test "${test_proj}" -c Release --nologo \
             -p:CollectCoverage=true \
             -p:CoverletOutputFormat=\"cobertura,opencover\" \
@@ -116,34 +113,6 @@ jobs:
             -p:Threshold=0
           test -f reports/coverage.cobertura.xml
           test -f reports/coverage.opencover.xml
-          echo "Coverlet wrote reports/coverage.cobertura.xml ($(wc -c < reports/coverage.cobertura.xml) bytes)."
-          echo "Coverlet wrote reports/coverage.opencover.xml ($(wc -c < reports/coverage.opencover.xml) bytes)."
-
-      - name: Summarize coverage for AI reviewers
-        run: |
-          set -euo pipefail
-          python3 <<'PY'
-          import xml.etree.ElementTree as ET
-          from pathlib import Path
-
-          root = ET.parse("reports/coverage.cobertura.xml").getroot()
-          line_pct = float(root.attrib.get("line-rate", "0")) * 100
-          branch_pct = float(root.attrib.get("branch-rate", "0")) * 100
-          lines = [
-              "CipherBank unit coverage (Coverlet / CipherBank-app.Tests)",
-              f"line-rate:   {line_pct:.2f}%  ({root.attrib.get('lines-covered', '?')}/{root.attrib.get('lines-valid', '?')} lines)",
-              f"branch-rate: {branch_pct:.2f}%  ({root.attrib.get('branches-covered', '?')}/{root.attrib.get('branches-valid', '?')} branches)",
-              "modules:",
-          ]
-          for pkg in root.findall("packages/package"):
-              name = pkg.attrib.get("name", "?")
-              lp = float(pkg.attrib.get("line-rate", "0")) * 100
-              bp = float(pkg.attrib.get("branch-rate", "0")) * 100
-              lines.append(f"  - {name}: line {lp:.2f}% / branch {bp:.2f}%")
-          lines.append("report: coverage.cobertura.xml")
-          Path("reports/cipherbank_coverage_report.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
-          print(Path("reports/cipherbank_coverage_report.txt").read_text(encoding="utf-8"))
-          PY
 
       - name: Stage coverage artifact
         run: |
@@ -151,7 +120,6 @@ jobs:
           mkdir -p artifact-coverage
           cp -f reports/coverage.cobertura.xml artifact-coverage/
           cp -f reports/coverage.opencover.xml artifact-coverage/
-          cp -f reports/cipherbank_coverage_report.txt artifact-coverage/
 
       - name: Upload coverage-report artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -168,8 +136,7 @@ jobs:
   # this repo only packages PR facts and Sonar for this app (no siblings).
   #
   # The draft / non-PR skip gate lives here (not on `review`) so a draft PR
-  # never spends context-build cost either. Waits on `coverage` so the
-  # coverage-report artifact (cipherbank_coverage_report.txt) is present.
+  # never spends context-build cost either. Waits on `coverage`.
   context:
     needs: [coverage]
     if: >-
@@ -289,7 +256,7 @@ jobs:
           fi
 
       ### 3. Coverlet from coverage job #########################################
-      # coverage-report is flat (opencover + cobertura + AI summary). Fail closed:
+      # coverage-report is flat (opencover + cobertura). Fail closed:
       # a scan without OpenCover leaves new_coverage at 0% and reds the gate.
       - name: Download coverage-report
         uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
