@@ -251,17 +251,12 @@ jobs:
           cobertura=reports/coverage.cobertura.xml
           if [ ! -f "${opencover}" ]; then
             echo "Missing ${opencover} after coverage-report download." >&2
-            ls -la reports >&2 || true
             exit 1
           fi
           if [ ! -f "${cobertura}" ]; then
             echo "Missing ${cobertura} after coverage-report download." >&2
-            ls -la reports >&2 || true
             exit 1
           fi
-          echo "OpenCover report ($(wc -c < "${opencover}") bytes) at ${opencover}."
-          echo "Cobertura report ($(wc -c < "${cobertura}") bytes) at ${cobertura}."
-          # Keep the alternate path Sonar begin also lists, for local/CI parity.
           mkdir -p CipherBank-app.Tests/coverage
           cp -f "${cobertura}" CipherBank-app.Tests/coverage/coverage.cobertura.xml
           cp -f "${opencover}" CipherBank-app.Tests/coverage/coverage.opencover.xml
@@ -283,11 +278,7 @@ jobs:
         run: dotnet tool install --global dotnet-sonarscanner
 
       ### 5. Begin / build / end ################################################
-      # C# analysis requires SonarScanner for .NET wrapping a real compile.
-      # Until MAUI/Android CI exists, scan portable library + unit-test
-      # projects that exist on this branch. Skip missing .csproj paths so a
-      # feature project (e.g. ChallengePass) absent from main does not fail
-      # the scan. MAUI host is excluded so Linux runners need no Android workloads.
+      # Scan Core + Tests when present; skip missing .csproj paths; no MAUI host.
       - name: Begin SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
