@@ -9,19 +9,13 @@ using Xunit;
 
 namespace CipherBank_app.Tests.Wallets;
 
-/// <summary>
-/// Coverage for wallet URI/derive/validate helpers and null NFC presentment.
-/// Use: High (CI). Scope: Core wallet/POS surfaces with low Coverlet hit rates.
-/// </summary>
+/// <summary>Coverlet pad for wallet URI/derive/validate + null NFC. Use: High (CI). Scope: Core wallets/POS.</summary>
 public sealed class WalletSurfaceCoverageTests
 {
     private const string KnownMnemonic =
         "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
-    /// <summary>
-    /// Exercises PaymentUri schemes (UTXO, account, fiat) and Shorten.
-    /// Use: High. Scope: PaymentUri.
-    /// </summary>
+    /// <summary>PaymentUri schemes and Shorten. Use: High. Scope: PaymentUri.</summary>
     [Fact]
     public void PaymentUri_CoversSchemesAndShorten()
     {
@@ -39,10 +33,7 @@ public sealed class WalletSurfaceCoverageTests
         PaymentUri.Shorten("abcdefghijklmnopqrstuvwxyz", 4, 3).Should().Be("abcd…xyz");
     }
 
-    /// <summary>
-    /// Exercises AddressValidate branches including invalid catch paths.
-    /// Use: High. Scope: AddressValidate.
-    /// </summary>
+    /// <summary>AddressValidate branches. Use: High. Scope: AddressValidate.</summary>
     [Fact]
     public void AddressValidate_CoversSymbolsAndFailures()
     {
@@ -56,10 +47,7 @@ public sealed class WalletSurfaceCoverageTests
         AddressValidate.IsValid("XYZ", "tiny").Should().BeFalse();
     }
 
-    /// <summary>
-    /// Exercises AddressDerive dispatch including LTC/DOGE and non-derivable symbols.
-    /// Use: High. Scope: AddressDerive.
-    /// </summary>
+    /// <summary>AddressDerive dispatch including LTC/DOGE. Use: High. Scope: AddressDerive.</summary>
     [Fact]
     public void AddressDerive_CoversDispatchAndLtcDoge()
     {
@@ -80,10 +68,7 @@ public sealed class WalletSurfaceCoverageTests
         doge.Path.Should().Contain("44'/3'");
     }
 
-    /// <summary>
-    /// Exercises WalletModule.SourceFor mapping.
-    /// Use: Medium. Scope: WalletModule.
-    /// </summary>
+    /// <summary>WalletModule.SourceFor mapping. Use: Medium. Scope: WalletModule.</summary>
     [Fact]
     public void WalletModule_SourceFor_MapsModes()
     {
@@ -108,22 +93,16 @@ public sealed class WalletSurfaceCoverageTests
         server.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Server);
     }
 
-    /// <summary>
-    /// Exercises QR PNG generation for a receive URI payload.
-    /// Use: Medium. Scope: QrCodeGenerator.
-    /// </summary>
+    /// <summary>QR PNG generation. Use: Medium. Scope: QrCodeGenerator.</summary>
     [Fact]
     public void QrCodeGenerator_ProducesPngBytes()
     {
         var png = QrCodeGenerator.ToPngBytes("bitcoin:bc1qtest");
         png.Should().NotBeEmpty();
-        png[0].Should().Be(0x89); // PNG magic
+        png[0].Should().Be(0x89);
     }
 
-    /// <summary>
-    /// Exercises NullNfcPresentmentService failure path.
-    /// Use: Medium. Scope: NullNfcPresentmentService.
-    /// </summary>
+    /// <summary>NullNfcPresentmentService failure path. Use: Medium. Scope: NullNfcPresentmentService.</summary>
     [Fact]
     public async Task NullNfcPresentmentService_ReportsUnsupported()
     {

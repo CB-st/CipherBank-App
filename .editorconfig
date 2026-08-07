@@ -111,8 +111,7 @@ dotnet_diagnostic.SA1309.severity = none   # Allow _camelCase private fields —
 dotnet_diagnostic.SA1200.severity = none   # Allow usings outside namespace — required for file-scoped namespaces
 dotnet_diagnostic.SA0001.severity = none   # Don't require XML comment analysis on all files
 
-# --- M1a Sonar gate lock (keep this PR under new_violations=0) ---
-# Prefer var when apparent; silence IDE0007/IDE0008 flip-flop (see docs/SONAR_GATE.md on M1b).
+# M1a Sonar gate lock — prefer var when apparent; silence IDE0008 flip-flop.
 csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = false:suggestion
@@ -122,22 +121,10 @@ dotnet_diagnostic.S1451.severity = none
 dotnet_diagnostic.S3990.severity = none
 dotnet_diagnostic.S3992.severity = none
 
-# Deferred S4004: UserPrefs setters required for PrefsStore STJ replace semantics.
+# Deferred: UserPrefs setters for PrefsStore STJ replace; Persist SQL ≠ UI copy (SONAR_GATE).
 [CipherBank-app.Core/Persist/UserPrefs.cs]
 dotnet_diagnostic.S4004.severity = none
-
-# Deferred S4055: Persist SQL/schema CommandText is not UI copy.
-[CipherBank-app.Core/Persist/WalletRepository.cs]
-dotnet_diagnostic.S4055.severity = none
-[CipherBank-app.Core/Persist/RecipientRepository.cs]
-dotnet_diagnostic.S4055.severity = none
-[CipherBank-app.Core/Persist/MarketRepository.cs]
-dotnet_diagnostic.S4055.severity = none
-[CipherBank-app.Core/Persist/PrefsStore.cs]
-dotnet_diagnostic.S4055.severity = none
-[CipherBank-app.Core/Persist/RatesCache.cs]
-dotnet_diagnostic.S4055.severity = none
-[CipherBank-app.Core/Persist/LocalDb.cs]
+[CipherBank-app.Core/Persist/*.cs]
 dotnet_diagnostic.S4055.severity = none
 
 # XML files
