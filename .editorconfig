@@ -112,14 +112,10 @@ dotnet_diagnostic.SA1200.severity = none   # Allow usings outside namespace — 
 dotnet_diagnostic.SA0001.severity = none   # Don't require XML comment analysis on all files
 
 # M1a Sonar gate lock (IDE0008 silence; prefer var when apparent).
-csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = false:suggestion
 dotnet_diagnostic.IDE0007.severity = suggestion
 dotnet_diagnostic.IDE0008.severity = none
-dotnet_diagnostic.S1451.severity = none
-dotnet_diagnostic.S3990.severity = none
-dotnet_diagnostic.S3992.severity = none
 
 # Deferred S4004/S4055 (SONAR_GATE): UserPrefs setters; Persist SQL ≠ UI copy.
 [CipherBank-app.Core/Persist/UserPrefs.cs]
