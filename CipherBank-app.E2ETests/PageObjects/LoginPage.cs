@@ -1,3 +1,7 @@
+// <copyright file="LoginPage.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 
@@ -16,7 +20,11 @@ public class LoginPage : BasePage
     private static readonly By ErrorMessage = By.Id("ErrorLabel");
     private static readonly By BiometricButton = By.Id("BiometricLoginButton");
 
-    public LoginPage(AppiumDriver driver) : base(driver)
+    /// <summary>
+    /// Initializes LoginPage with its Appium/test collaborators. Use: High. Scope: one LoginPage instance.
+    /// </summary>
+    public LoginPage(AppiumDriver driver)
+        : base(driver)
     {
     }
 
@@ -91,6 +99,9 @@ public class LoginPage : BasePage
         return new DashboardPage(Driver);
     }
 
+    /// <summary>
+    /// Waits until the LoginPage anchor control is visible. Use: High. Scope: LoginPage.
+    /// </summary>
     public override void WaitForPageLoad()
     {
         WaitForElement(LoginButton);

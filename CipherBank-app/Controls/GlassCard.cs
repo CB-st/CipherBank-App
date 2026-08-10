@@ -52,7 +52,7 @@ public class GlassCard : ContentView
         _bodyHost = new ContentView { Padding = new Thickness(18) };
 
         _tint = new BoxView { InputTransparent = true };
-        Grid layers = new Grid();
+        var layers = new Grid();
 
 #if IOS || MACCATALYST
         _blur = new BlurBackdropView { InputTransparent = true };
@@ -115,7 +115,7 @@ public class GlassCard : ContentView
         {
             _tint.Color = ThemeTokens.Get("DeepPurple");
             _frame.StrokeThickness = 0;
-            _frame.Shadow = null;
+            _frame.Shadow = new Shadow { Opacity = 0 }; // clear elevation without assigning null to Shadow
             return;
         }
 

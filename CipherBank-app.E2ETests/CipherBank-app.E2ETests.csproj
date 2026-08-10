@@ -6,6 +6,12 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- Keep warnings-as-errors; demote only enumerated legacy IDs while Phases 2–3 burn them down.
+         Style/CA demotions shrink in Phase 3–4; do not add CS86*/CA1001/CA2016 permanently. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);SA1117;SA1118;SA1128;SA1201;SA1202;SA1203;SA1204;SA1401;SA1413;SA1516;CA1051;CA1822;CA1859</WarningsNotAsErrors>
+    <!-- CA1707: xUnit Story/Fact method underscores are intentional identifiers. -->
+    <NoWarn>$(NoWarn);IDE0005;CA1707</NoWarn>
   </PropertyGroup>
 
   <!-- Code Coverage Configuration -->
@@ -18,6 +24,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
+    <!-- Produces a real runtime Skipped result for E2E_RUN-gated facts. -->
+    <PackageReference Include="Xunit.SkippableFact" />
     <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -34,6 +42,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
 
 </Project>

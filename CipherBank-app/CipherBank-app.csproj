@@ -39,10 +39,11 @@
         <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
         <WindowsPackageType>None</WindowsPackageType>
 
-        <!-- Prototype Shell surface has dense StyleCop/nullable debt vs main's TreatWarningsAsErrors.
-             Security CAs remain errors via Directory.Build.props WarningsAsErrors. -->
-        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-        <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608</WarningsNotAsErrors>
+        <!-- Prototype Shell: TreatWarningsAsErrors on; demote only measured style IDs (Phase 4 Task 3).
+             Shrink WarningsNotAsErrors over time — see docs/warnings-baseline-2026-07-27.md.
+             Security CAs + NU1608/NU1605/NU1107 remain errors via Directory.Build.props. -->
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsNotAsErrors>$(WarningsNotAsErrors);SA1028;SA1116;SA1117;SA1118;SA1201;SA1202;SA1203;SA1204;SA1210;SA1402;SA1507;SA1515;SA1518;SA1600;SA1611;SA1615;SA1618;SA1623;SA1629;SA1633;SA1642;SA1649;CA1826;CA1873</WarningsNotAsErrors>
         <NoWarn>$(NoWarn);IDE0005;IDE0052</NoWarn>
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>

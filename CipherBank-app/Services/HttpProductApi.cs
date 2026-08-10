@@ -66,7 +66,7 @@ public sealed class HttpProductApi : IProductClient
     {
         // Lab stub today; ISessionProofBuilder will swap to challenge/pass without changing this call site.
         object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, SessionPath)
+        using var req = new HttpRequestMessage(HttpMethod.Post, SessionPath)
         {
             Content = JsonContent.Create(body),
         };
@@ -80,7 +80,7 @@ public sealed class HttpProductApi : IProductClient
 
     public async Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default)
     {
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, SessionChallengePath)
+        using var req = new HttpRequestMessage(HttpMethod.Post, SessionChallengePath)
         {
             Content = JsonContent.Create(new { ACCOUNT_PUBLIC_KEY = accountPublicKeyWire }),
         };
@@ -92,7 +92,7 @@ public sealed class HttpProductApi : IProductClient
 
     public async Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default)
     {
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, SessionKeySharePath)
+        using var req = new HttpRequestMessage(HttpMethod.Post, SessionKeySharePath)
         {
             Content = JsonContent.Create(request),
         };
@@ -105,14 +105,14 @@ public sealed class HttpProductApi : IProductClient
     public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default)
         => PostMutationAsync<CreateWalletResultDto>(WalletsPath, request, Guid.NewGuid().ToString("N"), ct);
 
-    public Task<QuoteDto> GetQuoteAsync(string from, string to, CancellationToken ct = default)
-        => GetAsync<QuoteDto>($"{QuotePath}?from={Uri.EscapeDataString(from)}&to={Uri.EscapeDataString(to)}", ct);
+    public Task<QuoteDto> GetQuoteAsync(string from, string toAsset, CancellationToken ct = default)
+        => GetAsync<QuoteDto>($"{QuotePath}?from={Uri.EscapeDataString(from)}&to={Uri.EscapeDataString(toAsset)}", ct);
 
-    public Task<MoneyMoveDto> ConvertAsync(string from, string to, string amount, string idempotencyKey, CancellationToken ct = default)
-        => PostMutationAsync<MoneyMoveDto>(ConvertPath, new { FROM = from, TO = to, AMOUNT = amount }, idempotencyKey, ct);
+    public Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct = default)
+        => PostMutationAsync<MoneyMoveDto>(ConvertPath, new { FROM = from, TO = toAsset, AMOUNT = amount }, idempotencyKey, ct);
 
-    public Task<MoneyMoveDto> TransferAsync(string to, string amount, string speed, string idempotencyKey, CancellationToken ct = default)
-        => PostMutationAsync<MoneyMoveDto>(TransfersPath, new { TO = to, AMOUNT = amount, SPEED = speed }, idempotencyKey, ct);
+    public Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct = default)
+        => PostMutationAsync<MoneyMoveDto>(TransfersPath, new { TO = destination, AMOUNT = amount, SPEED = speed }, idempotencyKey, ct);
 
     public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct = default)
         => PostMutationAsync<MoneyMoveDto>(PaymentsPath, new { AMOUNT = amount, MIX = mix }, idempotencyKey, ct);
@@ -217,7 +217,7 @@ public sealed class HttpProductApi : IProductClient
         var stored = await _sessions.GetAsync().ConfigureAwait(false)
             ?? throw new UnauthorizedAccessException("Product session missing.");
 
-        using HttpRequestMessage refreshReq = new HttpRequestMessage(HttpMethod.Post, SessionRefreshPath)
+        using var refreshReq = new HttpRequestMessage(HttpMethod.Post, SessionRefreshPath)
         {
             Content = JsonContent.Create(new { REFRESH_TOKEN = stored.Refresh }),
         };
@@ -235,7 +235,7 @@ public sealed class HttpProductApi : IProductClient
         string? idempotencyKey,
         CancellationToken ct)
     {
-        using HttpRequestMessage req = new HttpRequestMessage(method, path);
+        using var req = new HttpRequestMessage(method, path);
         if (bodyUtf8 is not null)
         {
             req.Content = new ByteArrayContent(bodyUtf8);

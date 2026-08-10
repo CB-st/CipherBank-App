@@ -1,3 +1,8 @@
+// <copyright file="WalletPage.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using System.Globalization;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 
@@ -24,7 +29,11 @@ public class WalletPage : BasePage
     private static readonly By ConfirmSendButton = By.Id("ConfirmSendButton");
     private static readonly By CancelSendButton = By.Id("CancelSendButton");
 
-    public WalletPage(AppiumDriver driver) : base(driver)
+    /// <summary>
+    /// Initializes WalletPage with its Appium/test collaborators. Use: High. Scope: one WalletPage instance.
+    /// </summary>
+    public WalletPage(AppiumDriver driver)
+        : base(driver)
     {
     }
 
@@ -85,7 +94,7 @@ public class WalletPage : BasePage
     /// </summary>
     public WalletPage EnterSendAmount(decimal amount)
     {
-        EnterText(SendAmountField, amount.ToString());
+        EnterText(SendAmountField, amount.ToString("0.########", CultureInfo.InvariantCulture));
         return this;
     }
 
@@ -136,6 +145,9 @@ public class WalletPage : BasePage
         return new DashboardPage(Driver);
     }
 
+    /// <summary>
+    /// Waits until the WalletPage anchor control is visible. Use: High. Scope: WalletPage.
+    /// </summary>
     public override void WaitForPageLoad()
     {
         WaitForElement(WalletBalanceLabel);

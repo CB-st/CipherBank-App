@@ -23,17 +23,20 @@ Source tip before split: `feat/cora-redesign-maui` @ `7034e4b` (backup ref `refs
 ## Connection diagram
 
 ```
-scripts/e2e-android.sh ──► AVD + Appium (full Story Facts on M4)
+scripts/e2e-android.sh ──► AVD CipherBank_API34 + Appium UiAutomator2
          │
          ▼
-CipherBank-app.E2ETests (scaffold here; account wave on M4)
-         │
+CipherBank-app.E2ETests ── AutomationIds / page objects ──► CipherBank-app (Shell)
+         │                                                      │
+         │                                                      ├──► CipherBank-app.Core
+         │                                                      └──► CipherBank-app.ChallengePass
          ▼
-CipherBank-app (Shell) ──► Core + ChallengePass
+docs/tests/gaps/   ◄── Fact fail under E2E_RUN=1 (no soft-pass)
+StoryJournal       ◄── PIN / mnemonic / steps (dev/test OK to log under gitignored artifacts/)
 ```
 
 **Package wipe (MAUI):** `adb shell pm clear com.companyname.cipherbankapp`  
-**E2E harness credentials (M4 Story Facts):** env or gitignored `artifacts/e2e-local.env` — template: [`docs/tests/e2e-local.env.example`](tests/e2e-local.env.example).
+**E2E harness credentials:** required via env or gitignored `artifacts/e2e-local.env` (not source literals). Suggested lab values: [`docs/tests/e2e-tests.md`](tests/e2e-tests.md) § Harness credentials.
 
 ---
 
@@ -70,7 +73,7 @@ Analyzer note: dense StyleCop IDs stay on a shrinking `WarningsNotAsErrors` allo
 
 ## M3 — MAUI Shell
 
-**Lives:** `CipherBank-app/**`, `AGENTS.md`, `docs/MAUI_FUNCTION_REF.md`.
+**Lives:** `CipherBank-app/**`, `AGENTS.md`, `docs/MAUI_FUNCTION_REF.md`, `docs/CB_MauiFunctionRef.html`.
 
 | Area | Path | Connects to |
 |------|------|-------------|
@@ -86,26 +89,46 @@ Expo is **not** shipped here and is not required to build or run MAUI.
 
 ---
 
-## M4 — Appium E2E + harness (ships on `prototype/maui-m4`)
+## M4 — Appium E2E + harness
 
-**Not present in the M1b docs slice.** Full account-wave Facts, `STORY_ID_MAP.md`,
-`AppiumFixture` / `StoryJournal` / `GapNotes`, and the trait-bearing Stories tree
-land on M4. This branch carries only the early harness skeleton
-(`scripts/e2e-android.sh`, `scripts/lib/android-env.sh`) plus
-`docs/tests/e2e-local.env.example` so operators can prepare credentials before M4.
+**Lives:** `CipherBank-app.E2ETests/`, `scripts/e2e-android.sh`, `scripts/lib/android-env.sh`, `docs/tests/*`.
 
-Until `[Trait("Story", …)]` Facts exist under `CipherBank-app.E2ETests`, the harness
-defers `--story` / `--wave` and does not require PIN env vars for `--all`.
+### Harness
 
-See `prototype/maui-m4` / PR #23 for the live E2E map and wave status.
+| Piece | Path | Role |
+|-------|------|------|
+| Runner script | `scripts/e2e-android.sh` | Boot AVD, build/install APK, Appium, filter (`--story`, `--wave account`, `--all`) |
+| Env | `scripts/lib/android-env.sh` | `ANDROID_HOME`, `JAVA_HOME` (default `$HOME/.local/jdk-17`), `DOTNET` path |
+| Fixture / reset / profiles | `E2ETests/Support/{AppiumFixture,EmulatorReset,DeviceState,Adb}.cs` | Fresh / Sealed setup |
+| Journal | `Support/StoryJournal.cs` | In-memory + on-disk PIN/mnemonic/steps |
+| Gaps | `Support/GapNotes.cs` → `docs/tests/gaps/` | Failures drive next feature work |
+| Catalog / procedures | `Stories/{StoryIds,StoryCatalog,StoryProcedures,AutomationIdMap}.cs` | Scaffold `CB-*` / `US-*` |
+| Page objects | `PageObjects/*` | Map to Shell `AutomationId`s |
+| Account Facts | `Tests/AccountStories.cs` | Wave 0–1 proven on emulator |
+| Runbook | `CipherBank-app.E2ETests/README.md`, `docs/tests/e2e-tests.md`, `STORY_ID_MAP.md` | How to run / story map |
+
+### Wave status (account)
+
+Proven under `E2E_RUN=1` / `--wave account` (filter includes `CB_ACCOUNT|US_ONB_03|US_ONB_04`):
+
+- CB-ACCOUNT-001, US-ONB-03, US-ONB-04, CB-ACCOUNT-PIN-CHANGE, CB-ACCOUNT-002
+
+Later waves (market, wallets, fund, pay, cards) remain vertical-slice work: AutomationIds → page objects → Fact → gap notes on fail — **no soft-pass**.
+
+### Policy (locked)
+
+- Stories fail → gap notes, not greenwash.
+- Dynamic PIN: journaled PIN + change-PIN flow (not a forever fixed production PIN).
+- Dev/test journaling of PINs/mnemonics on emulators is allowed.
+- Coding standards: purpose + **Use High|Medium|Low** + **Scope**; dedicated in-memory owners; background process objects for boot/Appium/install; max **2** loop layers; prefer ternary / dictionary dispatch (`AGENTS.md`).
 
 ---
 
 ## Docs kept vs removed
 
-**Kept (operational):** `docs/README.md`, `architecture.md`, `app/`, `core/`, `config/`, `tests/`, `MAUI_FUNCTION_REF.md`, this `BUILD_LOG.md`, `AGENTS.md`, Sonar/lint ops docs (`SONAR_GATE.md`, `SONAR_STRUCTURAL_PLAN.md`, `LOCAL_LINT.md`, `LOCAL_SONAR_LINT.md`).
+**Kept (operational):** `docs/README.md`, `architecture.md`, `app/`, `core/`, `config/`, `tests/`, function refs, this `BUILD_LOG.md`, `AGENTS.md`.
 
-**Removed when implemented:** spent `docs/superpowers/plans|specs` trees, generated `CB_MauiFunctionRef.html` twin, and other one-shot planning notes once their checklist landed in code. Operational truth stays in this BUILD_LOG + `AGENTS.md`. Expo handoff remains out of the MAUI merge path.
+**Historical plans retained** under `docs/superpowers/plans/` (Stage 1 mechanical / Phase 4 ratchet notes) for audit; operational truth lives in this BUILD_LOG + `AGENTS.md`. Spent SDD/spec trees and Expo handoff remain out of the MAUI merge path.
 
 ---
 

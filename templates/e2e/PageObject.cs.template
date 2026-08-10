@@ -1,0 +1,28 @@
+// <copyright file="__PAGE__Page.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using OpenQA.Selenium.Appium;
+
+namespace CipherBank_app.E2ETests.PageObjects;
+
+/// <summary>Owns stable selectors and screen actions for __PAGE__.</summary>
+public sealed class __PAGE__Page : BasePage
+{
+    private const string RootId = "__ROOT_AUTOMATION_ID__";
+
+    public __PAGE__Page(AppiumDriver driver)
+        : base(driver)
+    {
+    }
+
+    /// <summary>Confirms the __PAGE__ root is visible. Use: High. Scope: one Appium screen.</summary>
+    public bool IsLoaded() => IsDisplayed(RootId);
+
+    /// <summary>Performs __ACTION__ and returns the next page. Use: High. Scope: __STORY_ID__ transition.</summary>
+    public __NEXT_PAGE__ PerformAction()
+    {
+        Tap("__ACTION_AUTOMATION_ID__");
+        return new __NEXT_PAGE__(Driver);
+    }
+}
