@@ -7,7 +7,7 @@ namespace CipherBank_app.Configuration;
 /// <summary>Settings for the on-device EF Core database.</summary>
 public sealed class PersistenceOptions
 {
-    public const string SectionName = "Persistence";
+    public static string SectionName { get; } = "Persistence";
 
     public string DatabaseName { get; set; } = "cipherbank.db";
 }

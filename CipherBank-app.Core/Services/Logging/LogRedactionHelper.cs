@@ -129,14 +129,14 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        var atIndex = email.IndexOf('@', StringComparison.Ordinal);
+        int atIndex = email.IndexOf('@', StringComparison.Ordinal);
         if (atIndex <= 0)
         {
             return RedactionMarker;
         }
 
-        var localPart = email[..atIndex];
-        var domain = email[atIndex..];
+        string localPart = email[..atIndex];
+        string domain = email[atIndex..];
 
         if (localPart.Length <= EmailLocalPrefixLength)
         {

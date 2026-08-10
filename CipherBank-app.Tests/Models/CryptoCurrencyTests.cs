@@ -15,7 +15,7 @@ public class CryptoCurrencyTests
     public void IsPriceUp_WhenPositiveChange_ReturnsTrue()
     {
         // Arrange
-        var crypto = new CryptoCurrency(
+        CryptoCurrency crypto = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000m,
@@ -33,7 +33,7 @@ public class CryptoCurrencyTests
     public void IsPriceUp_WhenNegativeChange_ReturnsFalse()
     {
         // Arrange
-        var crypto = new CryptoCurrency(
+        CryptoCurrency crypto = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000m,
@@ -51,7 +51,7 @@ public class CryptoCurrencyTests
     public void IsPriceUp_WhenZeroChange_ReturnsTrue()
     {
         // Arrange
-        var crypto = new CryptoCurrency(
+        CryptoCurrency crypto = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000m,
@@ -69,7 +69,7 @@ public class CryptoCurrencyTests
     public void FormattedPrice_ReturnsCorrectFormat()
     {
         // Arrange
-        var crypto = new CryptoCurrency(
+        CryptoCurrency crypto = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000.50m,
@@ -80,7 +80,7 @@ public class CryptoCurrencyTests
             new Uri("https://example.com/btc.png"));
 
         // Act
-        var result = crypto.FormattedPrice;
+        string result = crypto.FormattedPrice;
 
         // Assert - format depends on culture, but should contain the price
         result.Should().Contain("50");
@@ -89,7 +89,7 @@ public class CryptoCurrencyTests
     [Fact]
     public void FormattedPrice_UsesDollarSymbolAndInvariantGrouping()
     {
-        var crypto = new CryptoCurrency("BTC", "Bitcoin", 50000m, 0, 0, 0, 0, null);
+        CryptoCurrency crypto = new CryptoCurrency("BTC", "Bitcoin", 50000m, 0, 0, 0, 0, null);
         crypto.FormattedPrice.Should().Be("$50,000.00");
     }
 
@@ -97,7 +97,7 @@ public class CryptoCurrencyTests
     public void FormattedPercentChange_WhenPositive_IncludesPlusSign()
     {
         // Arrange
-        var crypto = new CryptoCurrency(
+        CryptoCurrency crypto = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000m,
@@ -108,7 +108,7 @@ public class CryptoCurrencyTests
             new Uri("https://example.com/btc.png"));
 
         // Act
-        var result = crypto.FormattedPercentChange;
+        string result = crypto.FormattedPercentChange;
 
         // Assert
         result.Should().StartWith("+");
@@ -119,7 +119,7 @@ public class CryptoCurrencyTests
     public void FormattedPercentChange_WhenNegative_DoesNotIncludePlusSign()
     {
         // Arrange
-        var crypto = new CryptoCurrency(
+        CryptoCurrency crypto = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000m,
@@ -130,7 +130,7 @@ public class CryptoCurrencyTests
             new Uri("https://example.com/btc.png"));
 
         // Act
-        var result = crypto.FormattedPercentChange;
+        string result = crypto.FormattedPercentChange;
 
         // Assert
         result.Should().NotStartWith("+");
@@ -141,7 +141,7 @@ public class CryptoCurrencyTests
     public void Record_EqualityWorks()
     {
         // Arrange
-        var crypto1 = new CryptoCurrency(
+        CryptoCurrency crypto1 = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000m,
@@ -151,7 +151,7 @@ public class CryptoCurrencyTests
             50000000m,
             new Uri("https://example.com/btc.png"));
 
-        var crypto2 = new CryptoCurrency(
+        CryptoCurrency crypto2 = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000m,
@@ -169,7 +169,7 @@ public class CryptoCurrencyTests
     public void Record_WithExpression_CreatesModifiedCopy()
     {
         // Arrange
-        var crypto = new CryptoCurrency(
+        CryptoCurrency crypto = new CryptoCurrency(
             "BTC",
             "Bitcoin",
             50000m,
@@ -180,7 +180,7 @@ public class CryptoCurrencyTests
             new Uri("https://example.com/btc.png"));
 
         // Act
-        var modified = crypto with { CurrentPrice = 55000m };
+        CryptoCurrency modified = crypto with { CurrentPrice = 55000m };
 
         // Assert
         modified.CurrentPrice.Should().Be(55000m);

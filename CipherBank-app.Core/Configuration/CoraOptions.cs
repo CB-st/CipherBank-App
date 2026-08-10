@@ -7,9 +7,10 @@ namespace CipherBank_app.Configuration;
 /// <summary>Localizable Cora copy keyed by stable screen identifier.</summary>
 public sealed class CoraOptions
 {
-    public const string SectionName = "Cora";
+    public static string SectionName { get; } = "Cora";
 
     public string Fallback { get; set; } = "CipherBank.";
 
-    public Dictionary<string, string> Lines { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    [System.Text.Json.Serialization.JsonInclude]
+    public Dictionary<string, string> Lines { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
 }

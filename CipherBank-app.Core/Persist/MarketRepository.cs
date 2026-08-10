@@ -18,45 +18,14 @@ public sealed class MarketRepository : IMarketRepository
     }
 
     /// <inheritdoc />
-    public async Task UpsertOhlcAsync(
+    public Task UpsertOhlcAsync(
         string symbol,
         IEnumerable<(long T, double V)> points,
         CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
         ArgumentNullException.ThrowIfNull(points);
-        var normalizedSymbol = symbol.ToUpperInvariant();
-        var latestByTimestamp = points
-            .GroupBy(point => point.T)
-            .ToDictionary(group => group.Key, group => group.Last().V);
-        if (latestByTimestamp.Count == 0)
-        {
-            return;
-        }
-
-        await using var context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
-        var timestamps = latestByTimestamp.Keys.ToArray();
-        var existing = await context.OhlcPoints
-            .Where(entity => entity.Symbol == normalizedSymbol && timestamps.Contains(entity.Timestamp))
-            .ToDictionaryAsync(entity => entity.Timestamp, ct)
-            .ConfigureAwait(false);
-
-        foreach (var point in latestByTimestamp)
-        {
-            if (!existing.TryGetValue(point.Key, out var entity))
-            {
-                entity = new OhlcPointEntity
-                {
-                    Symbol = normalizedSymbol,
-                    Timestamp = point.Key,
-                };
-                context.OhlcPoints.Add(entity);
-            }
-
-            entity.Value = point.Value;
-        }
-
-        await context.SaveChangesAsync(ct).ConfigureAwait(false);
+        return UpsertOhlcCoreAsync(symbol, points, ct);
     }
 
     /// <inheritdoc />
@@ -72,14 +41,53 @@ public sealed class MarketRepository : IMarketRepository
         CancellationToken ct)
         => GetOhlcCoreAsync(symbol, fromT, ct);
 
+    private async Task UpsertOhlcCoreAsync(
+        string symbol,
+        IEnumerable<(long T, double V)> points,
+        CancellationToken ct)
+    {
+        string normalizedSymbol = symbol.ToUpperInvariant();
+        Dictionary<long, double> latestByTimestamp = points
+            .GroupBy(point => point.T)
+            .ToDictionary(group => group.Key, group => group.Last().V);
+        if (latestByTimestamp.Count == 0)
+        {
+            return;
+        }
+
+        await using CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        long[] timestamps = latestByTimestamp.Keys.ToArray();
+        Dictionary<long, OhlcPointEntity> existing = await context.OhlcPoints
+            .Where(entity => entity.Symbol == normalizedSymbol && timestamps.Contains(entity.Timestamp))
+            .ToDictionaryAsync(entity => entity.Timestamp, ct)
+            .ConfigureAwait(false);
+
+        foreach (KeyValuePair<long, double> point in latestByTimestamp)
+        {
+            if (!existing.TryGetValue(point.Key, out OhlcPointEntity? entity))
+            {
+                entity = new OhlcPointEntity
+                {
+                    Symbol = normalizedSymbol,
+                    Timestamp = point.Key,
+                };
+                context.OhlcPoints.Add(entity);
+            }
+
+            entity.Value = point.Value;
+        }
+
+        await context.SaveChangesAsync(ct).ConfigureAwait(false);
+    }
+
     private async Task<IReadOnlyList<(long T, double V)>> GetOhlcCoreAsync(
         string symbol,
         long? fromT,
         CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
-        var normalizedSymbol = symbol.ToUpperInvariant();
-        await using var context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        string normalizedSymbol = symbol.ToUpperInvariant();
+        await using CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
         IQueryable<OhlcPointEntity> query = context.OhlcPoints
             .AsNoTracking()
             .Where(entity => entity.Symbol == normalizedSymbol);
@@ -88,7 +96,7 @@ public sealed class MarketRepository : IMarketRepository
             query = query.Where(entity => entity.Timestamp >= fromT.Value);
         }
 
-        var entities = await query
+        List<OhlcPointEntity> entities = await query
             .OrderBy(entity => entity.Timestamp)
             .ToListAsync(ct)
             .ConfigureAwait(false);

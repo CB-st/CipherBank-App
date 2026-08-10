@@ -4,7 +4,7 @@
 
 namespace CipherBank_app.Persist.Entities;
 
-internal sealed class RecipientEntity
+public sealed class RecipientEntity
 {
     public string Id { get; set; } = string.Empty;
 

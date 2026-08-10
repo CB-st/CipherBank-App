@@ -17,7 +17,7 @@ public static class MnemonicHelper
 
     public static string Generate()
     {
-        var mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
+        Mnemonic mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
         return mnemonic.ToString();
     }
 
@@ -61,16 +61,16 @@ public static class MnemonicHelper
     /// </summary>
     public static byte[] Entropy(string phrase)
     {
-        var indices = Parse(phrase).Indices;
-        var totalBits = indices.Length * BitsPerWordIndex;
-        var checksumBits = totalBits / ChecksumDivisor;
-        var entropyBits = totalBits - checksumBits;
-        var entropy = new byte[entropyBits / BitsPerByte];
+        int[] indices = Parse(phrase).Indices;
+        int totalBits = indices.Length * BitsPerWordIndex;
+        int checksumBits = totalBits / ChecksumDivisor;
+        int entropyBits = totalBits - checksumBits;
+        byte[] entropy = new byte[entropyBits / BitsPerByte];
 
-        var bitPos = 0;
-        foreach (var index in indices)
+        int bitPos = 0;
+        foreach (int index in indices)
         {
-            for (var i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
+            for (int i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
             {
                 if (((index >> i) & 1) == 1)
                 {

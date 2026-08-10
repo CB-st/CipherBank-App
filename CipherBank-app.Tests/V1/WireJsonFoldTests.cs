@@ -18,7 +18,7 @@ public class WireJsonFoldTests
         const string json = """{"coraEnabled":false,"assetsLayout":"combined","appLockIdleSec":90}""";
         PrefsWireDto? dto = JsonSerializer.Deserialize<PrefsWireDto>(json);
         dto.Should().NotBeNull();
-        var prefs = new UserPrefs();
+        UserPrefs prefs = new UserPrefs();
         dto!.ApplyOnto(prefs);
         prefs.CoraEnabled.Should().BeFalse();
         prefs.AssetsLayout.Should().Be("combined");

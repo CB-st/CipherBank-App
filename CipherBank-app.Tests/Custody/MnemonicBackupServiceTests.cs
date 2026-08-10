@@ -16,16 +16,16 @@ public class MnemonicBackupServiceTests
     [Fact]
     public async Task RoundTrip_opens_same_mnemonic()
     {
-        var svc = new MnemonicBackupService();
-        var mnemonic = MnemonicHelper.Generate();
+        MnemonicBackupService svc = new MnemonicBackupService();
+        string mnemonic = MnemonicHelper.Generate();
 
-        var file = await svc.CreateBackupFileAsync(mnemonic, "correct-horse-battery-staple", default);
-        var opened = await svc.OpenBackupFileAsync(file, "correct-horse-battery-staple", default);
+        byte[] file = await svc.CreateBackupFileAsync(mnemonic, "correct-horse-battery-staple", default);
+        string opened = await svc.OpenBackupFileAsync(file, "correct-horse-battery-staple", default);
 
         opened.Should().Be(MnemonicHelper.Normalize(mnemonic));
         Encoding.UTF8.GetString(file).Should().NotContain(MnemonicHelper.Normalize(mnemonic));
 
-        using var json = JsonDocument.Parse(file);
+        using JsonDocument json = JsonDocument.Parse(file);
         JsonElement root = json.RootElement;
         root.GetProperty("FORMAT").GetString().Should().Be("cipherbank-recovery-v1");
         root.GetProperty("KDF").GetString().Should().Be("PBKDF2-SHA256");
@@ -45,8 +45,8 @@ public class MnemonicBackupServiceTests
     [Fact]
     public async Task WrongPassword_throws()
     {
-        var svc = new MnemonicBackupService();
-        var file = await svc.CreateBackupFileAsync(
+        MnemonicBackupService svc = new MnemonicBackupService();
+        byte[] file = await svc.CreateBackupFileAsync(
             MnemonicHelper.Generate(),
             "correct-horse-battery-staple",
             default);
@@ -59,7 +59,7 @@ public class MnemonicBackupServiceTests
     [Fact]
     public async Task ShortPassword_rejected_on_create()
     {
-        var svc = new MnemonicBackupService();
+        MnemonicBackupService svc = new MnemonicBackupService();
 
         Func<Task> act = async () => await svc.CreateBackupFileAsync(MnemonicHelper.Generate(), "short", default);
 
@@ -71,13 +71,13 @@ public class MnemonicBackupServiceTests
     [InlineData(true)]
     public async Task Missing_or_minimum_created_at_rejected(bool includeMinimumCreatedAt)
     {
-        var svc = new MnemonicBackupService();
-        var validFile = await svc.CreateBackupFileAsync(
+        MnemonicBackupService svc = new MnemonicBackupService();
+        byte[] validFile = await svc.CreateBackupFileAsync(
             MnemonicHelper.Generate(),
             "correct-horse-battery-staple",
             default);
-        using var validJson = JsonDocument.Parse(validFile);
-        var fields = validJson.RootElement.EnumerateObject()
+        using JsonDocument validJson = JsonDocument.Parse(validFile);
+        Dictionary<string, JsonElement> fields = validJson.RootElement.EnumerateObject()
             .Where(property => property.Name != "CREATED_AT")
             .ToDictionary(property => property.Name, property => property.Value.Clone());
 
@@ -86,7 +86,7 @@ public class MnemonicBackupServiceTests
             fields["CREATED_AT"] = JsonSerializer.SerializeToElement(DateTimeOffset.MinValue);
         }
 
-        var invalidFile = JsonSerializer.SerializeToUtf8Bytes(fields);
+        byte[] invalidFile = JsonSerializer.SerializeToUtf8Bytes(fields);
         Func<Task> act = async () =>
             await svc.OpenBackupFileAsync(invalidFile, "correct-horse-battery-staple", default);
 
@@ -98,7 +98,7 @@ public class MnemonicBackupServiceTests
     [InlineData("""{"FORMAT":"cipherbank-recovery-v1","KDF":"PBKDF2-SHA256","ITERATIONS":600000,"SALT_B64":"***","NONCE_B64":"AAAAAAAAAAAAAAAA","TAG_B64":"AAAAAAAAAAAAAAAAAAAAAA==","CIPHERTEXT_B64":"AA==","CREATED_AT":"2026-07-20T00:00:00+00:00"}""")]
     public async Task Malformed_recovery_file_throws_cryptographic_exception(string invalidJson)
     {
-        var svc = new MnemonicBackupService();
+        MnemonicBackupService svc = new MnemonicBackupService();
 
         Func<Task> act = async () => await svc.OpenBackupFileAsync(
             Encoding.UTF8.GetBytes(invalidJson),

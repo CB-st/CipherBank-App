@@ -28,9 +28,12 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
     {
         _taskScheduler = taskScheduler ?? throw new ArgumentNullException(nameof(taskScheduler));
         ArgumentNullException.ThrowIfNull(options);
-        if (options.MaxConcurrency is < 1 or > 8)
+        if (options.MaxConcurrency is < SyncSchedulerOptions.MinConcurrency
+            or > SyncSchedulerOptions.MaxAllowedConcurrency)
         {
-            throw new ArgumentOutOfRangeException(nameof(options), "MaxConcurrency must be between 1 and 8.");
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                $"MaxConcurrency must be between {SyncSchedulerOptions.MinConcurrency} and {SyncSchedulerOptions.MaxAllowedConcurrency}.");
         }
 
         _maxConcurrency = options.MaxConcurrency;
@@ -49,7 +52,7 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
                 return;
             }
 
-            var sequence = ++_sequence;
+            long sequence = ++_sequence;
             _queue.Enqueue(new QueuedJob(key, work), ((int)priority, sequence));
             _queuedKeys.Add(key);
         }
@@ -103,7 +106,7 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
             _ = Task.Factory.StartNew(
                     static state =>
                     {
-                        var dispatch = (DispatchState)state!;
+                        DispatchState dispatch = (DispatchState)state!;
                         return dispatch.Owner.RunJobAsync(dispatch.Job);
                     },
                     new DispatchState(this, job),

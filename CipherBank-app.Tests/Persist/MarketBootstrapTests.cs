@@ -14,9 +14,9 @@ public class MarketBootstrapTests
     [Fact]
     public void ToRateRow_MapsInverseQuoteRateAndTimestamp()
     {
-        var quote = new PublicQuote("btc", 1m, "USD", 67_123.45m);
+        PublicQuote quote = new PublicQuote("btc", 1m, "USD", 67_123.45m);
 
-        var row = MarketBootstrap.ToRateRow(quote, updatedAtMs: 1_000);
+        RateRow row = MarketBootstrap.ToRateRow(quote, updatedAtMs: 1_000);
 
         row.Should().Be(new RateRow("BTC", 67_123.45d, 0d, 1_000));
     }

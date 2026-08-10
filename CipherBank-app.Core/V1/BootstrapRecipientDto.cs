@@ -55,7 +55,7 @@ public sealed class BootstrapRecipientDto
 
             // Stable synthetic key so re-bootstrap does not duplicate the same payee.
             // Lowercase kept for id stability across app versions (S4040 Upper would rewrite keys).
-            var seed = ResolvedName.Trim().ToLowerInvariant(); // NOSONAR (S4040)
+            string seed = ResolvedName.Trim().ToLowerInvariant(); // NOSONAR (S4040)
             if (string.IsNullOrEmpty(seed))
             {
                 seed = (ResolvedLast4 ?? string.Empty) + "|" + (ResolvedRouting ?? string.Empty);
@@ -121,7 +121,7 @@ public sealed class BootstrapRecipientDto
         get
         {
             FoldAlternateNames();
-            var type = (AccountType ?? "checking").ToUpperInvariant();
+            string type = (AccountType ?? "checking").ToUpperInvariant();
             return type == "SAVINGS" ? "savings" : "checking";
         }
     }

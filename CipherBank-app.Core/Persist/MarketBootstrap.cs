@@ -33,7 +33,7 @@ public static class MarketBootstrap
     {
         TimeProvider clock = timeProvider ?? TimeProvider.System;
 
-        var requestedSymbols = symbols
+        string[] requestedSymbols = symbols
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
             .Select(symbol => symbol.ToUpperInvariant())
             .Distinct(StringComparer.Ordinal)
@@ -44,15 +44,15 @@ public static class MarketBootstrap
         }
 
         IReadOnlyList<RateRow> cachedRows = await cache.GetAsync(requestedSymbols, ct).ConfigureAwait(false);
-        var nowMs = clock.GetUtcNow().ToUnixTimeMilliseconds();
+        long nowMs = clock.GetUtcNow().ToUnixTimeMilliseconds();
         if (cachedRows.Count == requestedSymbols.Length
             && cachedRows.All(row => nowMs - row.UpdatedAtMs <= MaxRateAge.TotalMilliseconds))
         {
             return;
         }
 
-        var refreshedRows = new List<RateRow>(requestedSymbols.Length);
-        foreach (var symbol in requestedSymbols)
+        List<RateRow> refreshedRows = new List<RateRow>(requestedSymbols.Length);
+        foreach (string? symbol in requestedSymbols)
         {
             PublicQuote quote = await publicQuotes
                 .GetInverseQuoteAsync(symbol, 1m, "USD", ct)

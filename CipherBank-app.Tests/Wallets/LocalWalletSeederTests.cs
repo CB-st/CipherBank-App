@@ -14,7 +14,7 @@ public class LocalWalletSeederTests
     [Fact]
     public async Task EnsureDerivedAsync_UpdatesAddressWhenDerivedRowExistsForDifferentSeed()
     {
-        var wallets = new FakeWallets();
+        FakeWallets wallets = new FakeWallets();
         wallets.Rows.Add(new LocalWalletRow(
             "old-btc",
             "BTC",
@@ -25,7 +25,7 @@ public class LocalWalletSeederTests
             "derived",
             DateTimeOffset.UtcNow));
 
-        var seeder = new LocalWalletSeeder(wallets);
+        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
         const string mnemonic =
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 

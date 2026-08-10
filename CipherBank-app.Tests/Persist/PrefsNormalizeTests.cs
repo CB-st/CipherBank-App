@@ -13,7 +13,7 @@ public class PrefsNormalizeTests
     [Fact]
     public void Normalize_MigratesLegacyAssets_ToHoldingsAndLocal()
     {
-        var prefs = new UserPrefs();
+        UserPrefs prefs = new UserPrefs();
         prefs.ReplaceHomeVisible(new Dictionary<string, bool>
         {
             ["cora"] = true,
@@ -35,7 +35,7 @@ public class PrefsNormalizeTests
     [Fact]
     public void Normalize_EmptyEnabledCurrencies_Defaults()
     {
-        var prefs = new UserPrefs();
+        UserPrefs prefs = new UserPrefs();
         prefs.ReplaceEnabledCurrencies([]);
         prefs.NormalizeHomeSections();
         prefs.EnabledCurrencies.Should().BeEquivalentTo(UserPrefs.DefaultEnabledCurrencies);
@@ -44,7 +44,7 @@ public class PrefsNormalizeTests
     [Fact]
     public void Normalize_InvalidSendSpeed_DefaultsToInstant()
     {
-        var prefs = new UserPrefs { DefaultSendSpeed = "warp" };
+        UserPrefs prefs = new UserPrefs { DefaultSendSpeed = "warp" };
         prefs.NormalizeHomeSections();
         prefs.DefaultSendSpeed.Should().Be("instant");
     }

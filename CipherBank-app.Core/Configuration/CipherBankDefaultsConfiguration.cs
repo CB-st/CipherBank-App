@@ -22,9 +22,9 @@ public static class CipherBankDefaultsConfiguration
     /// <summary>Builds the default configuration in deterministic theme order.</summary>
     public static IConfigurationRoot Build()
     {
-        var builder = new ConfigurationBuilder();
-        var assembly = typeof(CipherBankDefaultsConfiguration).Assembly;
-        foreach (var resourceName in ResourceNames)
+        ConfigurationBuilder builder = new ConfigurationBuilder();
+        Assembly assembly = typeof(CipherBankDefaultsConfiguration).Assembly;
+        foreach (string resourceName in ResourceNames)
         {
             builder.AddJsonStream(OpenRequiredResource(assembly, resourceName));
         }

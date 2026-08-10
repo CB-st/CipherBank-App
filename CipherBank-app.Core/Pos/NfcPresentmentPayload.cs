@@ -25,7 +25,7 @@ public sealed class NfcPresentmentPayload
     {
         try
         {
-            using var doc = JsonDocument.Parse(json);
+            using JsonDocument doc = JsonDocument.Parse(json);
             JsonElement root = doc.RootElement;
             return new NfcPresentmentPayload
             {

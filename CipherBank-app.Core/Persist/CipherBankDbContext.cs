@@ -91,7 +91,7 @@ public sealed class CipherBankDbContext : DbContext
             entity.HasKey(value => value.Symbol);
             entity.Property(value => value.Symbol).HasColumnName("symbol");
             entity.Property(value => value.Usd).HasColumnName("usd");
-            entity.Property(value => value.Change24h).HasColumnName("change24h");
+            entity.Property(value => value.Change24H).HasColumnName("change24h");
             entity.Property(value => value.UpdatedAtMs).HasColumnName("updated_at");
         });
 

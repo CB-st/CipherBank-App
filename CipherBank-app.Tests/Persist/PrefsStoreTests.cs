@@ -13,10 +13,10 @@ public class PrefsStoreTests
     [Fact]
     public async Task SaveLoad_IdleSecondsRoundTrip()
     {
-        var path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
-        var db = new LocalDb(path);
+        string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(path);
         await db.InitializeAsync();
-        var store = new PrefsStore(db);
+        PrefsStore store = new PrefsStore(db);
         UserPrefs prefs = await store.LoadAsync();
         prefs.LockIdleSeconds = 90;
         prefs.Appearance = "light";

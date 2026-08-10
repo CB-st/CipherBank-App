@@ -14,10 +14,10 @@ public class SyncJobSchedulerTests
     [Fact]
     public async Task Enqueue_P2ThenP1_P1RunsBeforeWaitingP2_WhenConcurrencyAllows()
     {
-        var queue = new SyncJobScheduler();
-        var order = new List<string>();
-        var gate1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var gate2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        SyncJobScheduler queue = new SyncJobScheduler();
+        List<string> order = new List<string>();
+        TaskCompletionSource gate1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource gate2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         queue.Enqueue("p2-a", SyncPriority.P2, async ct =>
         {
@@ -102,9 +102,9 @@ public class SyncJobSchedulerTests
     [Fact]
     public async Task Enqueue_DuplicateKey_SkipsSecondWhileInFlight()
     {
-        var queue = new SyncJobScheduler();
-        var runCount = 0;
-        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        SyncJobScheduler queue = new SyncJobScheduler();
+        int runCount = 0;
+        TaskCompletionSource gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         queue.Enqueue("btc", SyncPriority.P1, async ct =>
         {
@@ -129,11 +129,11 @@ public class SyncJobSchedulerTests
     [Fact]
     public async Task Enqueue_DispatchesThroughInjectedTaskScheduler()
     {
-        var taskScheduler = new RecordingTaskScheduler();
-        var queue = new SyncJobScheduler(
+        RecordingTaskScheduler taskScheduler = new RecordingTaskScheduler();
+        SyncJobScheduler queue = new SyncJobScheduler(
             taskScheduler,
             new SyncSchedulerOptions { MaxConcurrency = 1 });
-        var runs = 0;
+        int runs = 0;
 
         queue.Enqueue("btc", SyncPriority.P1, _ =>
         {
@@ -148,7 +148,7 @@ public class SyncJobSchedulerTests
 
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)
     {
-        var deadline = Environment.TickCount64 + timeoutMs;
+        long deadline = Environment.TickCount64 + timeoutMs;
         while (!predicate())
         {
             if (Environment.TickCount64 >= deadline)

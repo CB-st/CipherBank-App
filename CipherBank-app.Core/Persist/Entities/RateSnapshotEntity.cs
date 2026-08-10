@@ -4,13 +4,13 @@
 
 namespace CipherBank_app.Persist.Entities;
 
-internal sealed class RateSnapshotEntity
+public sealed class RateSnapshotEntity
 {
     public string Symbol { get; set; } = string.Empty;
 
     public double Usd { get; set; }
 
-    public double Change24h { get; set; }
+    public double Change24H { get; set; }
 
     public long UpdatedAtMs { get; set; }
 }

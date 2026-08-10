@@ -41,32 +41,32 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
 
         foreach (BootstrapRecipientDto contact in bootstrap.ResolvedRecipients)
         {
-            var routing = contact.ResolvedRouting;
+            string? routing = contact.ResolvedRouting;
             if (string.IsNullOrWhiteSpace(routing))
             {
                 continue;
             }
 
-            var digits = new string(routing.Where(char.IsDigit).ToArray());
+            string digits = new string(routing.Where(char.IsDigit).ToArray());
             if (digits.Length != AchRecipientValidation.RoutingNumberDigitCount)
             {
                 continue;
             }
 
-            var name = contact.ResolvedName;
+            string name = contact.ResolvedName;
             if (string.IsNullOrWhiteSpace(name))
             {
                 continue;
             }
 
-            var last4 = contact.ResolvedLast4;
+            string? last4 = contact.ResolvedLast4;
             if (string.IsNullOrWhiteSpace(last4))
             {
                 // Do not substitute routing trailing digits for a missing account mask.
                 continue;
             }
 
-            var accountPlaceholder = "****" + last4;
+            string accountPlaceholder = "****" + last4;
             await _recipients.UpsertAsync(new AchRecipientRow(
                 contact.ResolvedId,
                 name.Trim(),

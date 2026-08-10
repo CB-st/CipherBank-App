@@ -42,7 +42,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<string> symbols)
     {
         IReadOnlyList<LocalWalletRow> existing = await _wallets.ListAsync().ConfigureAwait(false);
-        foreach (var sym in symbols)
+        foreach (string sym in symbols)
         {
             WalletModule module = WalletRegistry.Get(sym);
             if (!module.CanDerive)

@@ -12,7 +12,7 @@ public sealed class SessionProofBuilderTests
     [Fact]
     public async Task Lab_builder_posts_device_attestation_stub()
     {
-        var body = await new LabSessionProofBuilder().BuildOpenBodyAsync(default);
+        object body = await new LabSessionProofBuilder().BuildOpenBodyAsync(default);
         Dictionary<string, string> map = Assert.IsType<Dictionary<string, string>>(body);
         Assert.Equal(LabSessionProofBuilder.LabAttestation, map["DEVICE_ATTESTATION"]);
         Assert.DoesNotContain(map.Keys, k => k.Contains("MNEMONIC", StringComparison.OrdinalIgnoreCase));
@@ -23,8 +23,8 @@ public sealed class SessionProofBuilderTests
     [Fact]
     public void Challenge_and_pass_dtos_have_no_seed_fields()
     {
-        var challengeNames = typeof(SessionChallengeDto).GetProperties().Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var passNames = typeof(SessionPassDto).GetProperties().Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> challengeNames = typeof(SessionChallengeDto).GetProperties().Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        HashSet<string> passNames = typeof(SessionPassDto).GetProperties().Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         Assert.DoesNotContain("Mnemonic", challengeNames);
         Assert.DoesNotContain("Seed", challengeNames);

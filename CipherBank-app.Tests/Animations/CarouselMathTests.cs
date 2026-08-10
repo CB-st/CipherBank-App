@@ -15,7 +15,7 @@ public class CarouselMathTests
     [Fact]
     public void ComputeCardTransform_AtCenter_IsNeutral()
     {
-        var t = CarouselMath.ComputeCardTransform(0, Config);
+        CardTransform t = CarouselMath.ComputeCardTransform(0, Config);
 
         t.TranslationX.Should().Be(0);
         t.TranslationY.Should().Be(0);
@@ -28,7 +28,7 @@ public class CarouselMathTests
     [Fact]
     public void ComputeCardTransform_RightNeighbor_TiltsAndRecedes()
     {
-        var t = CarouselMath.ComputeCardTransform(1, Config);
+        CardTransform t = CarouselMath.ComputeCardTransform(1, Config);
 
         t.TranslationX.Should().BeApproximately(Config.Stride, 0.0001);
         t.RotationY.Should().Be(-Config.MaxTilt);
@@ -39,7 +39,7 @@ public class CarouselMathTests
     [Fact]
     public void ComputeCardTransform_FarCard_ClampsScaleAndOpacityAndTilt()
     {
-        var t = CarouselMath.ComputeCardTransform(10, Config);
+        CardTransform t = CarouselMath.ComputeCardTransform(10, Config);
 
         t.Scale.Should().Be(Config.MinScale);
         t.Opacity.Should().Be(Config.MinOpacity);
@@ -49,8 +49,8 @@ public class CarouselMathTests
     [Fact]
     public void ComputeCardTransform_IsSymmetricInTiltDirection()
     {
-        var left = CarouselMath.ComputeCardTransform(-1, Config);
-        var right = CarouselMath.ComputeCardTransform(1, Config);
+        CardTransform left = CarouselMath.ComputeCardTransform(-1, Config);
+        CardTransform right = CarouselMath.ComputeCardTransform(1, Config);
 
         left.RotationY.Should().Be(-right.RotationY);
         left.TranslationX.Should().Be(-right.TranslationX);
@@ -85,7 +85,7 @@ public class CarouselMathTests
     [Fact]
     public void SpringStep_Underdamped_ConvergesToTarget()
     {
-        var end = RunSpring(0, 0, target: 1, zeta: 0.75, omega: 12, steps: 600, out _);
+        SpringState end = RunSpring(0, 0, target: 1, zeta: 0.75, omega: 12, steps: 600, out _);
 
         end.Position.Should().BeApproximately(1.0, 0.001);
         end.Velocity.Should().BeApproximately(0.0, 0.001);
@@ -94,7 +94,7 @@ public class CarouselMathTests
     [Fact]
     public void SpringStep_Underdamped_OvershootsTarget()
     {
-        RunSpring(0, 0, target: 1, zeta: 0.6, omega: 12, steps: 600, out var maxPosition);
+        RunSpring(0, 0, target: 1, zeta: 0.6, omega: 12, steps: 600, out double maxPosition);
 
         maxPosition.Should().BeGreaterThan(1.0); // a single overshoot past the target
     }
@@ -102,7 +102,7 @@ public class CarouselMathTests
     [Fact]
     public void SpringStep_CriticallyDamped_DoesNotOvershoot()
     {
-        RunSpring(0, 0, target: 1, zeta: 1.0, omega: 12, steps: 600, out var maxPosition);
+        RunSpring(0, 0, target: 1, zeta: 1.0, omega: 12, steps: 600, out double maxPosition);
 
         maxPosition.Should().BeLessThanOrEqualTo(1.0001); // no meaningful overshoot
     }
@@ -110,7 +110,7 @@ public class CarouselMathTests
     [Fact]
     public void SpringStep_RespectsSeedVelocity()
     {
-        var first = CarouselMath.SpringStep(0, velocity: 4, target: 1, dt: 1.0 / 60.0, dampingRatio: 0.75, angularFrequency: 12);
+        SpringState first = CarouselMath.SpringStep(0, velocity: 4, target: 1, dt: 1.0 / 60.0, dampingRatio: 0.75, angularFrequency: 12);
 
         first.Position.Should().BeGreaterThan(0); // moves in the seeded direction immediately
     }
@@ -124,9 +124,9 @@ public class CarouselMathTests
         int steps,
         out double maxPosition)
     {
-        var state = new SpringState(start, startVelocity);
+        SpringState state = new SpringState(start, startVelocity);
         maxPosition = start;
-        for (var i = 0; i < steps; i++)
+        for (int i = 0; i < steps; i++)
         {
             state = CarouselMath.SpringStep(state.Position, state.Velocity, target, 1.0 / 60.0, zeta, omega);
             maxPosition = Math.Max(maxPosition, state.Position);

@@ -13,12 +13,12 @@ public sealed class RepositoryStructureTests
     [Fact]
     public void PackageVersions_AreDeclaredOnlyInCentralPackageManagement()
     {
-        var root = FindRepositoryRoot();
-        var projectFiles = Directory
+        string root = FindRepositoryRoot();
+        IEnumerable<string> projectFiles = Directory
             .EnumerateFiles(root, "*.*proj", SearchOption.AllDirectories)
             .Concat(Directory.EnumerateFiles(root, "Directory.Build.props", SearchOption.TopDirectoryOnly));
 
-        var offenders = projectFiles
+        string[] offenders = projectFiles
             .Where(path => !IsGenerated(path))
             .SelectMany(path => XDocument.Load(path)
                 .Descendants("PackageReference")
@@ -32,19 +32,19 @@ public sealed class RepositoryStructureTests
     [Fact]
     public void ProductionCode_HasNoLegacyAssemblyInfoOrScatteredSql()
     {
-        var root = FindRepositoryRoot();
+        string root = FindRepositoryRoot();
         Directory.EnumerateFiles(root, "AssemblyInfo.cs", SearchOption.AllDirectories)
             .Where(path => path.Contains($"{Path.DirectorySeparatorChar}Properties{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(path => !IsGenerated(path))
             .Should().BeEmpty();
 
-        var core = Path.Combine(root, "CipherBank-app.Core");
-        var sqlOwner = Path.Combine(core, "Persist", "Sql", "LocalDbSql.cs");
-        var sqlOffenders = Directory.EnumerateFiles(core, "*.cs", SearchOption.AllDirectories)
+        string core = Path.Combine(root, "CipherBank-app.Core");
+        string sqlOwner = Path.Combine(core, "Persist", "Sql", "LocalDbSql.cs");
+        IEnumerable<string> sqlOffenders = Directory.EnumerateFiles(core, "*.cs", SearchOption.AllDirectories)
             .Where(path => !IsGenerated(path) && !string.Equals(path, sqlOwner, StringComparison.Ordinal))
             .Where(path =>
             {
-                var source = File.ReadAllText(path);
+                string source = File.ReadAllText(path);
                 return source.Contains("CommandText =", StringComparison.Ordinal)
                     || source.Contains("FromSqlRaw", StringComparison.Ordinal)
                     || source.Contains("ExecuteSqlRaw", StringComparison.Ordinal);

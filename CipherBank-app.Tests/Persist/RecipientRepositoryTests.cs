@@ -15,10 +15,10 @@ public class RecipientRepositoryTests
     [Fact]
     public async Task SeedAndList_Works()
     {
-        var path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        var db = new LocalDb(path);
+        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(path);
         await db.InitializeAsync();
-        var repo = new RecipientRepository(db);
+        RecipientRepository repo = new RecipientRepository(db);
         await repo.SeedDefaultsIfEmptyAsync();
         IReadOnlyList<AchRecipientRow> list = await repo.ListAsync();
         list.Should().HaveCountGreaterThanOrEqualTo(2);
@@ -29,11 +29,11 @@ public class RecipientRepositoryTests
     [Fact]
     public async Task DeleteAsync_RemovesOnlyRecipientWithMatchingId()
     {
-        var path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        var db = new LocalDb(path);
+        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(path);
         await db.InitializeAsync();
-        var repo = new RecipientRepository(db);
-        var recipientToDelete = new AchRecipientRow(
+        RecipientRepository repo = new RecipientRepository(db);
+        AchRecipientRow recipientToDelete = new AchRecipientRow(
             "delete-me",
             "Delete me",
             null,
@@ -57,10 +57,10 @@ public class RecipientRepositoryTests
     [Fact]
     public async Task UpsertAsync_DoesNotPersistCleartextAccountOrRouting()
     {
-        var path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        var db = new LocalDb(path);
+        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(path);
         await db.InitializeAsync();
-        var repo = new RecipientRepository(db);
+        RecipientRepository repo = new RecipientRepository(db);
         await repo.UpsertAsync(new AchRecipientRow(
             "payee-1",
             "Payee",
@@ -82,7 +82,7 @@ public class RecipientRepositoryTests
         listed[0].RoutingMask.Should().Be(AchRecipientValidation.MaskRouting("021000021"));
 
         await using CipherBankDbContext context = await db.CreateContextAsync();
-        var conn = (SqliteConnection)context.Database.GetDbConnection();
+        SqliteConnection conn = (SqliteConnection)context.Database.GetDbConnection();
         await conn.OpenAsync();
         await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT account_mask, routing_mask FROM recipients WHERE id=$id";
@@ -95,7 +95,7 @@ public class RecipientRepositoryTests
 
         await using SqliteCommand schema = conn.CreateCommand();
         schema.CommandText = "SELECT name FROM pragma_table_info('recipients')";
-        var columns = new List<string>();
+        List<string> columns = new List<string>();
         await using SqliteDataReader schemaReader = await schema.ExecuteReaderAsync();
         while (await schemaReader.ReadAsync())
         {

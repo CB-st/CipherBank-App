@@ -40,19 +40,19 @@ public sealed class AesGcmCryptoBox : ICryptoBox
 
     public string Seal(string plaintext, string pin)
     {
-        var salt = RandomNumberGenerator.GetBytes(_options.SaltSizeBytes);
-        var key = DeriveKey(pin, salt);
-        var nonce = RandomNumberGenerator.GetBytes(_options.NonceSizeBytes);
-        var plain = Encoding.UTF8.GetBytes(plaintext);
-        var cipher = new byte[plain.Length];
-        var tag = new byte[_options.TagSizeBytes];
+        byte[] salt = RandomNumberGenerator.GetBytes(_options.SaltSizeBytes);
+        byte[] key = DeriveKey(pin, salt);
+        byte[] nonce = RandomNumberGenerator.GetBytes(_options.NonceSizeBytes);
+        byte[] plain = Encoding.UTF8.GetBytes(plaintext);
+        byte[] cipher = new byte[plain.Length];
+        byte[] tag = new byte[_options.TagSizeBytes];
         try
         {
-            using var aes = new AesGcm(key, _options.TagSizeBytes);
+            using AesGcm aes = new AesGcm(key, _options.TagSizeBytes);
             aes.Encrypt(nonce, plain, cipher, tag);
 
-            var packed = new byte[salt.Length + nonce.Length + tag.Length + cipher.Length];
-            var offset = 0;
+            byte[] packed = new byte[salt.Length + nonce.Length + tag.Length + cipher.Length];
+            int offset = 0;
             Buffer.BlockCopy(salt, 0, packed, offset, salt.Length);
             offset += salt.Length;
             Buffer.BlockCopy(nonce, 0, packed, offset, nonce.Length);
@@ -71,26 +71,26 @@ public sealed class AesGcmCryptoBox : ICryptoBox
 
     public string Open(string sealedB64, string pin)
     {
-        var packed = Convert.FromBase64String(sealedB64);
-        var headerSize = _options.SaltSizeBytes + _options.NonceSizeBytes + _options.TagSizeBytes;
+        byte[] packed = Convert.FromBase64String(sealedB64);
+        int headerSize = _options.SaltSizeBytes + _options.NonceSizeBytes + _options.TagSizeBytes;
         if (packed.Length <= headerSize)
         {
             throw new CryptographicException("Invalid sealed blob.");
         }
 
-        var offset = 0;
-        var salt = packed.AsSpan(offset, _options.SaltSizeBytes).ToArray();
+        int offset = 0;
+        byte[] salt = packed.AsSpan(offset, _options.SaltSizeBytes).ToArray();
         offset += salt.Length;
-        var nonce = packed.AsSpan(offset, _options.NonceSizeBytes).ToArray();
+        byte[] nonce = packed.AsSpan(offset, _options.NonceSizeBytes).ToArray();
         offset += nonce.Length;
-        var tag = packed.AsSpan(offset, _options.TagSizeBytes).ToArray();
+        byte[] tag = packed.AsSpan(offset, _options.TagSizeBytes).ToArray();
         offset += tag.Length;
-        var cipher = packed.AsSpan(offset).ToArray();
-        var key = DeriveKey(pin, salt);
-        var plain = new byte[cipher.Length];
+        byte[] cipher = packed.AsSpan(offset).ToArray();
+        byte[] key = DeriveKey(pin, salt);
+        byte[] plain = new byte[cipher.Length];
         try
         {
-            using var aes = new AesGcm(key, _options.TagSizeBytes);
+            using AesGcm aes = new AesGcm(key, _options.TagSizeBytes);
             aes.Decrypt(nonce, cipher, tag, plain);
             return Encoding.UTF8.GetString(plain);
         }

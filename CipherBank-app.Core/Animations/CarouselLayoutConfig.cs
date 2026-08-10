@@ -9,7 +9,7 @@ namespace CipherBank_app.Animations;
 /// </summary>
 public sealed record CarouselLayoutConfig
 {
-    public const string SectionName = "Carousel";
+    public static string SectionName { get; } = "Carousel";
 
     /// <summary>Horizontal spacing (device-independent px) between adjacent cards.</summary>
     public double Stride { get; init; } = 220;

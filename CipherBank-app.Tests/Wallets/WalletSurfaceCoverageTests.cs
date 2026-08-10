@@ -72,7 +72,7 @@ public sealed class WalletSurfaceCoverageTests
     [Fact]
     public void WalletModule_SourceFor_MapsModes()
     {
-        var local = new WalletModule
+        WalletModule local = new WalletModule
         {
             Symbol = "BTC",
             AddModes = [WalletUiMode.Watch, WalletUiMode.Unmanaged],
@@ -83,7 +83,7 @@ public sealed class WalletSurfaceCoverageTests
         local.SourceFor(WalletUiMode.Managed).Should().Be(WalletSource.Server);
         local.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Local);
 
-        var server = new WalletModule
+        WalletModule server = new WalletModule
         {
             Symbol = "XMR",
             AddModes = [WalletUiMode.Managed],
@@ -97,7 +97,7 @@ public sealed class WalletSurfaceCoverageTests
     [Fact]
     public void QrCodeGenerator_ProducesPngBytes()
     {
-        var png = QrCodeGenerator.ToPngBytes("bitcoin:bc1qtest");
+        byte[] png = QrCodeGenerator.ToPngBytes("bitcoin:bc1qtest");
         png.Should().NotBeEmpty();
         png[0].Should().Be(0x89);
     }
@@ -106,13 +106,13 @@ public sealed class WalletSurfaceCoverageTests
     [Fact]
     public async Task NullNfcPresentmentService_ReportsUnsupported()
     {
-        var nfc = new NullNfcPresentmentService();
+        NullNfcPresentmentService nfc = new NullNfcPresentmentService();
         nfc.IsSupported.Should().BeFalse();
         nfc.LastError.Should().Contain("Android");
-        var ok = await nfc.PresentAsync(new NfcPresentmentPayload(), CancellationToken.None);
+        bool ok = await nfc.PresentAsync(new NfcPresentmentPayload(), CancellationToken.None);
         ok.Should().BeFalse();
         nfc.LastError.Should().Contain("Simulate");
-        var ok2 = await nfc.PresentAsync(new NfcPresentmentPayload(), TimeSpan.FromSeconds(1), CancellationToken.None);
+        bool ok2 = await nfc.PresentAsync(new NfcPresentmentPayload(), TimeSpan.FromSeconds(1), CancellationToken.None);
         ok2.Should().BeFalse();
     }
 }

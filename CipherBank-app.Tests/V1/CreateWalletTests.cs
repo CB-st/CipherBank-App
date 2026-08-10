@@ -13,7 +13,7 @@ public sealed class CreateWalletTests
     [Fact]
     public async Task Mock_managed_xmr_returns_wallet_without_spend_key_fields()
     {
-        var api = new InMemoryProductClient();
+        InMemoryProductClient api = new InMemoryProductClient();
         CreateWalletResultDto result = await api.CreateWalletAsync(
             new CreateWalletRequestDto
             {
@@ -26,7 +26,7 @@ public sealed class CreateWalletTests
         result.WalletId.Should().StartWith("wlt_");
         result.Mode.Should().Be("managed");
         result.Address.Should().NotBeNullOrWhiteSpace();
-        var json = System.Text.Json.JsonSerializer.Serialize(result).ToLowerInvariant();
+        string json = System.Text.Json.JsonSerializer.Serialize(result).ToLowerInvariant();
         json.Should().NotContain("spend");
         json.Should().NotContain("viewkey");
         json.Should().NotContain("mnemonic");

@@ -89,7 +89,7 @@ internal static class WireJson
             return null;
         }
 
-        return el.ValueKind == JsonValueKind.Number && el.TryGetInt64(out var value) ? value : null;
+        return el.ValueKind == JsonValueKind.Number && el.TryGetInt64(out long value) ? value : null;
     }
 
     /// <summary>

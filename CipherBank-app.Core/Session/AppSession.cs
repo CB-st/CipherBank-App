@@ -143,7 +143,7 @@ public sealed class AppSession : IAppSession
         await _pendingDisconnect.ConfigureAwait(false);
         try
         {
-            var result = await _productSession
+            ProductSessionStartResult result = await _productSession
                 .StartAsync(applyBootstrap, CancellationToken.None)
                 .ConfigureAwait(false);
             AccessToken = result.AccessToken;

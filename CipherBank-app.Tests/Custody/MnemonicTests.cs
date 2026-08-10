@@ -13,7 +13,7 @@ public class MnemonicTests
     [Fact]
     public void Generate_IsValidTwelveWords()
     {
-        var phrase = MnemonicHelper.Generate();
+        string phrase = MnemonicHelper.Generate();
         MnemonicHelper.Validate(phrase).Should().BeTrue();
         MnemonicHelper.Words(phrase).Should().HaveCount(12);
     }
@@ -24,7 +24,7 @@ public class MnemonicTests
         // BIP39: 128-bit zero entropy → fixed 12-word English mnemonic.
         const string phrase =
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-        var entropy = MnemonicHelper.Entropy(phrase);
+        byte[] entropy = MnemonicHelper.Entropy(phrase);
         entropy.Should().HaveCount(16);
         entropy.Should().OnlyContain(b => b == 0);
     }
@@ -32,9 +32,9 @@ public class MnemonicTests
     [Fact]
     public void Entropy_IsStableAcrossNormalize()
     {
-        var phrase = MnemonicHelper.Generate();
-        var a = MnemonicHelper.Entropy(phrase);
-        var b = MnemonicHelper.Entropy("  " + phrase.ToUpperInvariant() + "  ");
+        string phrase = MnemonicHelper.Generate();
+        byte[] a = MnemonicHelper.Entropy(phrase);
+        byte[] b = MnemonicHelper.Entropy("  " + phrase.ToUpperInvariant() + "  ");
         a.Should().Equal(b);
     }
 }

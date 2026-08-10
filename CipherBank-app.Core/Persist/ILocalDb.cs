@@ -9,7 +9,11 @@ public interface ILocalDb
 {
     string Path { get; }
 
-    Task InitializeAsync(CancellationToken ct = default);
+    Task InitializeAsync();
 
-    ValueTask<CipherBankDbContext> CreateContextAsync(CancellationToken ct = default);
+    Task InitializeAsync(CancellationToken ct);
+
+    ValueTask<CipherBankDbContext> CreateContextAsync();
+
+    ValueTask<CipherBankDbContext> CreateContextAsync(CancellationToken ct);
 }

@@ -49,8 +49,8 @@ public sealed class PinService : IPinService
 
     public async Task SetPinAsync(string pin)
     {
-        var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = HashPin(pin, salt);
+        byte[] salt = RandomNumberGenerator.GetBytes(16);
+        string hash = HashPin(pin, salt);
         await _store.SetAsync(SaltKey, Convert.ToBase64String(salt)).ConfigureAwait(false);
         await _store.SetAsync(HashKey, hash).ConfigureAwait(false);
         await _store.SetAsync(FailKey, "0").ConfigureAwait(false);
@@ -86,15 +86,15 @@ public sealed class PinService : IPinService
             return false;
         }
 
-        var saltB64 = await _store.GetAsync(SaltKey).ConfigureAwait(false);
-        var hash = await _store.GetAsync(HashKey).ConfigureAwait(false);
+        string? saltB64 = await _store.GetAsync(SaltKey).ConfigureAwait(false);
+        string? hash = await _store.GetAsync(HashKey).ConfigureAwait(false);
         if (string.IsNullOrEmpty(saltB64) || string.IsNullOrEmpty(hash))
         {
             return false;
         }
 
-        var salt = Convert.FromBase64String(saltB64);
-        var attempt = HashPin(pin, salt);
+        byte[] salt = Convert.FromBase64String(saltB64);
+        string attempt = HashPin(pin, salt);
         if (CryptographicOperations.FixedTimeEquals(
                 Encoding.UTF8.GetBytes(attempt),
                 Encoding.UTF8.GetBytes(hash)))
@@ -121,7 +121,7 @@ public sealed class PinService : IPinService
 
     private static string HashPin(string pin, byte[] salt)
     {
-        var hash = Rfc2898DeriveBytes.Pbkdf2(
+        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
             Encoding.UTF8.GetBytes(pin),
             salt,
             120_000,
@@ -132,10 +132,10 @@ public sealed class PinService : IPinService
 
     private async Task RefreshLockAsync()
     {
-        var fails = await _store.GetAsync(FailKey).ConfigureAwait(false);
-        FailedAttempts = int.TryParse(fails, out var f) ? f : 0;
-        var lockMs = await _store.GetAsync(LockKey).ConfigureAwait(false);
-        if (long.TryParse(lockMs, out var ms))
+        string? fails = await _store.GetAsync(FailKey).ConfigureAwait(false);
+        FailedAttempts = int.TryParse(fails, out int f) ? f : 0;
+        string? lockMs = await _store.GetAsync(LockKey).ConfigureAwait(false);
+        if (long.TryParse(lockMs, out long ms))
         {
             _lockUntilUtc = DateTimeOffset.FromUnixTimeMilliseconds(ms);
             if (_lockUntilUtc <= _timeProvider.GetUtcNow())

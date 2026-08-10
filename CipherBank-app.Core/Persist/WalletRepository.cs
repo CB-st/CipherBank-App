@@ -19,7 +19,7 @@ public sealed class WalletRepository : IWalletRepository
 
     public async Task<IReadOnlyList<LocalWalletRow>> ListAsync()
     {
-        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
         return await context.Wallets
             .AsNoTracking()
             .OrderBy(entity => entity.CreatedAt)
@@ -36,11 +36,30 @@ public sealed class WalletRepository : IWalletRepository
             .ConfigureAwait(false);
     }
 
-    public async Task UpsertAsync(LocalWalletRow row)
+    public Task UpsertAsync(LocalWalletRow row)
     {
         ArgumentNullException.ThrowIfNull(row);
-        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
-        var entity = await context.Wallets.FindAsync(row.Id).ConfigureAwait(false);
+        return UpsertCoreAsync(row);
+    }
+
+    public async Task DeleteAsync(string id)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        WalletEntity? entity = await context.Wallets.FindAsync(id).ConfigureAwait(false);
+        if (entity is null)
+        {
+            return;
+        }
+
+        context.Wallets.Remove(entity);
+        await context.SaveChangesAsync().ConfigureAwait(false);
+    }
+
+    private async Task UpsertCoreAsync(LocalWalletRow row)
+    {
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        WalletEntity? entity = await context.Wallets.FindAsync(row.Id).ConfigureAwait(false);
         if (entity is null)
         {
             entity = new WalletEntity { Id = row.Id, CreatedAt = row.CreatedAt };
@@ -53,20 +72,6 @@ public sealed class WalletRepository : IWalletRepository
         entity.Path = row.Path;
         entity.AccountIndex = row.AccountIndex;
         entity.Kind = row.Kind;
-        await context.SaveChangesAsync().ConfigureAwait(false);
-    }
-
-    public async Task DeleteAsync(string id)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(id);
-        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
-        var entity = await context.Wallets.FindAsync(id).ConfigureAwait(false);
-        if (entity is null)
-        {
-            return;
-        }
-
-        context.Wallets.Remove(entity);
         await context.SaveChangesAsync().ConfigureAwait(false);
     }
 }

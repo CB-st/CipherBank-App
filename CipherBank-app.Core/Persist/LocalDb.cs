@@ -21,7 +21,7 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
         _path = System.IO.Path.GetFullPath(databasePath);
-        var connectionString = new SqliteConnectionStringBuilder { DataSource = _path }.ToString();
+        string connectionString = new SqliteConnectionStringBuilder { DataSource = _path }.ToString();
         _options = new DbContextOptionsBuilder<CipherBankDbContext>()
             .UseSqlite(connectionString)
             .Options;
@@ -29,7 +29,9 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 
     public string Path => _path;
 
-    public async Task InitializeAsync(CancellationToken ct = default)
+    public Task InitializeAsync() => InitializeAsync(CancellationToken.None);
+
+    public async Task InitializeAsync(CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -47,7 +49,7 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
             }
 
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
-            await using var context = new CipherBankDbContext(_options);
+            await using CipherBankDbContext context = new CipherBankDbContext(_options);
             await context.Database.EnsureCreatedAsync(ct).ConfigureAwait(false);
             await LocalDbSql.ApplyCompatibilityAsync(context.Database.GetDbConnection(), ct).ConfigureAwait(false);
             _initialized = true;
@@ -58,7 +60,10 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
         }
     }
 
-    public async ValueTask<CipherBankDbContext> CreateContextAsync(CancellationToken ct = default)
+    public ValueTask<CipherBankDbContext> CreateContextAsync()
+        => CreateContextAsync(CancellationToken.None);
+
+    public async ValueTask<CipherBankDbContext> CreateContextAsync(CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         await InitializeAsync(ct).ConfigureAwait(false);

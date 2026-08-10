@@ -9,5 +9,7 @@ public interface IEmvExchangeSimulator
 {
     IReadOnlyList<string> Stages { get; }
 
-    IAsyncEnumerable<string> RunAsync(CancellationToken ct = default);
+    IAsyncEnumerable<string> RunAsync();
+
+    IAsyncEnumerable<string> RunAsync(CancellationToken ct);
 }

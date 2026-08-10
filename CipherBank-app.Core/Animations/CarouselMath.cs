@@ -14,18 +14,18 @@ public static class CarouselMath
     /// </summary>
     public static CardTransform ComputeCardTransform(double distance, CarouselLayoutConfig config)
     {
-        var abs = Math.Abs(distance);
-        var sign = Math.Sign(distance);
-        var spread = Math.Min(abs, 1.0) + (config.EdgeCompression * Math.Max(abs - 1.0, 0.0));
+        double abs = Math.Abs(distance);
+        int sign = Math.Sign(distance);
+        double spread = Math.Min(abs, 1.0) + (config.EdgeCompression * Math.Max(abs - 1.0, 0.0));
 
         // Lay cards horizontally along a compressed arc, then tilt, shrink, fade,
         // and stack them as their distance from the focused card increases.
-        var translationX = sign * config.Stride * spread;
-        var translationY = config.ArcDrop * distance * distance;
-        var rotationY = Math.Clamp(-distance * config.MaxTilt, -config.MaxTilt, config.MaxTilt);
-        var scale = Math.Max(config.MinScale, 1.0 - (config.ScaleFalloff * abs));
-        var opacity = Math.Max(config.MinOpacity, 1.0 - (config.OpacityFalloff * abs));
-        var zIndex = -(int)Math.Round(abs * 100, MidpointRounding.AwayFromZero);
+        double translationX = sign * config.Stride * spread;
+        double translationY = config.ArcDrop * distance * distance;
+        double rotationY = Math.Clamp(-distance * config.MaxTilt, -config.MaxTilt, config.MaxTilt);
+        double scale = Math.Max(config.MinScale, 1.0 - (config.ScaleFalloff * abs));
+        double opacity = Math.Max(config.MinOpacity, 1.0 - (config.OpacityFalloff * abs));
+        int zIndex = -(int)Math.Round(abs * 100, MidpointRounding.AwayFromZero);
 
         return new CardTransform(translationX, translationY, rotationY, scale, opacity, zIndex);
     }
@@ -46,14 +46,14 @@ public static class CarouselMath
         int target;
         if (Math.Abs(velocity) >= flickThreshold)
         {
-            var direction = Math.Sign(velocity);
+            int direction = Math.Sign(velocity);
             target = direction > 0
                 ? (int)Math.Floor(position) + 1
                 : (int)Math.Ceiling(position) - 1;
 
             // Very fast gestures intentionally carry across additional cards. Each
             // two threshold units adds one card while preserving a one-card minimum.
-            var additionalCards = (int)((Math.Abs(velocity) - flickThreshold) / (flickThreshold * 2.0));
+            int additionalCards = (int)((Math.Abs(velocity) - flickThreshold) / (flickThreshold * 2.0));
             target += direction * additionalCards;
         }
         else
@@ -81,14 +81,14 @@ public static class CarouselMath
         double dampingRatio,
         double angularFrequency)
     {
-        var k = angularFrequency * angularFrequency;
-        var c = 2.0 * dampingRatio * angularFrequency;
+        double k = angularFrequency * angularFrequency;
+        double c = 2.0 * dampingRatio * angularFrequency;
 
-        var displacement = position - target;
-        var acceleration = (-k * displacement) - (c * velocity);
+        double displacement = position - target;
+        double acceleration = (-k * displacement) - (c * velocity);
 
-        var newVelocity = velocity + (acceleration * dt);
-        var newPosition = position + (newVelocity * dt);
+        double newVelocity = velocity + (acceleration * dt);
+        double newPosition = position + (newVelocity * dt);
 
         return new SpringState(newPosition, newVelocity);
     }

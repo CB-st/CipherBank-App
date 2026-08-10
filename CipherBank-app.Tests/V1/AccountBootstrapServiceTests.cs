@@ -14,9 +14,9 @@ public class AccountBootstrapServiceTests
     [Fact]
     public async Task ApplyAsync_SkipsRecipientWhenAccountLast4Missing()
     {
-        var prefs = new MemPrefs();
-        var recipients = new MemRecipients();
-        var api = new BootstrapApi(new AccountBootstrapDto
+        MemPrefs prefs = new MemPrefs();
+        MemRecipients recipients = new MemRecipients();
+        BootstrapApi api = new BootstrapApi(new AccountBootstrapDto
         {
             Prefs = new PrefsWireDto { DefaultSendSpeed = "instant", CoraEnabled = true },
             Recipients =
@@ -44,7 +44,7 @@ public class AccountBootstrapServiceTests
             },
         });
 
-        var svc = new AccountBootstrapService(api, prefs, recipients);
+        AccountBootstrapService svc = new AccountBootstrapService(api, prefs, recipients);
         await svc.ApplyAsync(CancellationToken.None);
 
         recipients.Rows.Should().ContainSingle(r => r.Id == "with-last4");

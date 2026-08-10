@@ -14,9 +14,9 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public async Task PrefsSync_RoundTripsThroughMockApi()
     {
-        var store = new MemPrefs();
-        var api = new InMemoryProductClient();
-        var sync = new PrefsSyncService(store, api);
+        MemPrefs store = new MemPrefs();
+        InMemoryProductClient api = new InMemoryProductClient();
+        PrefsSyncService sync = new PrefsSyncService(store, api);
 
         store.Current.CoraEnabled = false;
         store.Current.AssetsLayout = "combined";
@@ -31,8 +31,8 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public void PrefsMerge_KeepsLocalAssetsLayout_WhenRemoteOmitsIt()
     {
-        var local = new UserPrefs { AssetsLayout = "combined", CoraEnabled = true };
-        var remote = new PrefsWireDto { CoraEnabled = false };
+        UserPrefs local = new UserPrefs { AssetsLayout = "combined", CoraEnabled = true };
+        PrefsWireDto remote = new PrefsWireDto { CoraEnabled = false };
         PrefsMerge.Merge(local, remote);
         local.AssetsLayout.Should().Be("combined");
         local.CoraEnabled.Should().BeFalse();
@@ -41,9 +41,9 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public void StreamHub_FansOutOnce_WithoutDoubleSubscribe()
     {
-        var stream = new MockStreamService();
-        var hub = new StreamHub(stream);
-        var count = 0;
+        MockStreamService stream = new MockStreamService();
+        StreamHub hub = new StreamHub(stream);
+        int count = 0;
         hub.EventReceived += (_, _) => count++;
         hub.Start();
         hub.Start();
@@ -57,8 +57,8 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public async Task EventDebouncer_CoalescesBursts()
     {
-        var debounce = new EventDebouncer(TimeSpan.FromMilliseconds(40));
-        var runs = 0;
+        EventDebouncer debounce = new EventDebouncer(TimeSpan.FromMilliseconds(40));
+        int runs = 0;
         await Task.WhenAll(
             debounce.DebounceAsync(
                 () =>

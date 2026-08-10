@@ -13,10 +13,10 @@ public class MarketRepositoryTests
     [Fact]
     public async Task UpsertThenGet_ReturnsPointsOrderedByTimestamp()
     {
-        var path = Path.Combine(Path.GetTempPath(), "cb-market-" + Guid.NewGuid().ToString("N") + ".db");
-        var db = new LocalDb(path);
+        string path = Path.Combine(Path.GetTempPath(), "cb-market-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(path);
         await db.InitializeAsync();
-        var repository = new MarketRepository(db);
+        MarketRepository repository = new MarketRepository(db);
 
         await repository.UpsertOhlcAsync("BTC", [(300, 3.0), (100, 1.0), (200, 2.0)], default);
         await repository.UpsertOhlcAsync("BTC", [(200, 2.5)], default);

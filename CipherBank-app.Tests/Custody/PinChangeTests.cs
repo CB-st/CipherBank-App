@@ -81,7 +81,7 @@ public class PinChangeTests
     [Fact]
     public async Task ChangePinAsync_OnPinService_VerifiesBeforeReplacing()
     {
-        var pin = new PinService(new MemStore());
+        PinService pin = new PinService(new MemStore());
         await pin.SetPinAsync(CurrentPin);
 
         (await pin.ChangePinAsync("000000", NextPin)).Should().BeFalse();
@@ -99,10 +99,10 @@ public class PinChangeTests
     [Fact]
     public async Task Change_RefusedOnLegacyBlob_WithoutDeviceSecret_PreservesOldPin()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        string mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
 
         PinChangeOutcome outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
 
@@ -121,10 +121,10 @@ public class PinChangeTests
     [Fact]
     public async Task Change_AllowedAfterMigration_KeepsMnemonicReachableWithNewPin()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        string mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
         (await custody.UnlockAsync(CurrentPin)).Should().BeTrue();
 
         PinChangeOutcome outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
@@ -142,9 +142,9 @@ public class PinChangeTests
     [Fact]
     public async Task CustodyChangePin_ReportsDeviceSecretMissing_DistinctFromWrongPin()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
         await SeedLegacyPinDerivedBlobAsync(store, pin);
 
         (await custody.ChangePinAsync(CurrentPin, NextPin))
@@ -182,9 +182,9 @@ public class PinChangeTests
     /// </summary>
     private static async Task<(PinService Pin, PinChangeCoordinator Coordinator)> SeededAsync()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
         await custody.SealAsync(MnemonicHelper.Generate(), CurrentPin);
         return (pin, new PinChangeCoordinator(custody));
     }
@@ -196,7 +196,7 @@ public class PinChangeTests
     /// </summary>
     private static async Task<string> SeedLegacyPinDerivedBlobAsync(MemStore store, PinService pin)
     {
-        var mnemonic = MnemonicHelper.Generate();
+        string mnemonic = MnemonicHelper.Generate();
         await pin.SetPinAsync(CurrentPin);
         await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, CurrentPin));
         return mnemonic;
@@ -217,7 +217,7 @@ public class PinChangeTests
         }
 
         public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out var v) ? v : null);
+            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
 
         public Task RemoveAsync(string key)
         {

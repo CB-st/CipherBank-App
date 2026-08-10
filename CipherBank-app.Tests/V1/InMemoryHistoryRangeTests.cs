@@ -17,7 +17,7 @@ public class InMemoryHistoryRangeTests
     [InlineData("1y", 53)]
     public async Task GetHistoryAsync_HonorsRangePointCounts(string range, int expectedCount)
     {
-        var api = new InMemoryProductClient();
+        InMemoryProductClient api = new InMemoryProductClient();
         IReadOnlyList<HistoryPointDto> pts = await api.GetHistoryAsync("BTC", range, default);
         pts.Should().HaveCount(expectedCount);
     }

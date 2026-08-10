@@ -5,6 +5,7 @@
 using System.Globalization;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using FluentAssertions;
 using Xunit;
 
@@ -15,8 +16,8 @@ public class IndicativeQuoteMapperTests
     [Fact]
     public void ToQuoteDto_MapsRateAndClientExpiry()
     {
-        var quote = new PublicQuote("BTC", 0.0015m, "USD", 100m);
-        var dto = IndicativeQuoteMapper.ToQuoteDto(quote, nowMs: 1_000_000, ttlMs: 15_000);
+        PublicQuote quote = new PublicQuote("BTC", 0.0015m, "USD", 100m);
+        QuoteDto dto = IndicativeQuoteMapper.ToQuoteDto(quote, nowMs: 1_000_000, ttlMs: 15_000);
 
         dto.From.Should().Be("BTC");
         dto.To.Should().Be("USD");
@@ -27,8 +28,8 @@ public class IndicativeQuoteMapperTests
     [Fact]
     public void ToQuoteDto_ZeroInputYieldsZeroRate()
     {
-        var quote = new PublicQuote("BTC", 0m, "USD", 0m);
-        var dto = IndicativeQuoteMapper.ToQuoteDto(quote, nowMs: 0);
+        PublicQuote quote = new PublicQuote("BTC", 0m, "USD", 0m);
+        QuoteDto dto = IndicativeQuoteMapper.ToQuoteDto(quote, nowMs: 0);
 
         dto.Rate.Should().Be("0");
         dto.ExpiresAt.Should().Be(IndicativeQuoteMapper.DefaultTtlMs);

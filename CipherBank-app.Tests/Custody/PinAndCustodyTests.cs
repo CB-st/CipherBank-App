@@ -14,7 +14,7 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Pin_VerifySucceedsAfterSet()
     {
-        var pin = new PinService(new MemStore());
+        PinService pin = new PinService(new MemStore());
         await pin.SetPinAsync("654321");
         (await pin.VerifyPinAsync("654321")).Should().BeTrue();
         (await pin.VerifyPinAsync("000000")).Should().BeFalse();
@@ -23,10 +23,10 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Custody_SealUnlockRoundTrip()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var mnemonic = MnemonicHelper.Generate();
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        string mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         custody.Lock();
         (await custody.UnlockAsync("123456")).Should().BeTrue();
@@ -36,19 +36,19 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Custody_DeviceSecretUnlock_RecoversInterruptedReseal()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
         await custody.SealAsync(mnemonic, "123456");
         custody.Lock();
 
-        var stalePromoted = await store.GetAsync(CustodyService.DeviceSecretKey);
+        string? stalePromoted = await store.GetAsync(CustodyService.DeviceSecretKey);
         stalePromoted.Should().NotBeNullOrEmpty();
 
         // Interrupted PersistDeviceSecretSealAsync after blob rewrite: new seal + staged secret,
         // old promoted secret still present.
-        var stagedSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+        string stagedSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
         await store.SetAsync(CustodyService.StagingDeviceSecretKey, stagedSecret);
         await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, stagedSecret));
 
@@ -69,7 +69,7 @@ public class PinAndCustodyTests
         }
 
         public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out var v) ? v : null);
+            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
 
         public Task RemoveAsync(string key)
         {

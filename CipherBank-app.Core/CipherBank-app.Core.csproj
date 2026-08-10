@@ -74,4 +74,12 @@
                       LogicalName="CipherBank_app.Config.ui.carousel.json" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <!-- Compatibility SQL is enum-selected compile-time literals only; CA2100 false positive. -->
+    <Compile Update="Persist/Sql/LocalDbSql.cs">
+      <NoWarn>$(NoWarn);CA2100</NoWarn>
+    </Compile>
+  </ItemGroup>
+
 </Project>

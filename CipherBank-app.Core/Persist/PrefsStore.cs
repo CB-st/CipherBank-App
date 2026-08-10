@@ -21,14 +21,14 @@ public sealed class PrefsStore : IPrefsStore
 
     public async Task<UserPrefs> LoadAsync()
     {
-        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
-        var json = await context.Preferences
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        string? json = await context.Preferences
             .AsNoTracking()
             .Where(entity => entity.Key == Key)
             .Select(entity => entity.Value)
             .SingleOrDefaultAsync()
             .ConfigureAwait(false);
-        var prefs = string.IsNullOrWhiteSpace(json)
+        UserPrefs prefs = string.IsNullOrWhiteSpace(json)
             ? new UserPrefs()
             : JsonSerializer.Deserialize<UserPrefs>(json) ?? new UserPrefs();
 
@@ -36,13 +36,18 @@ public sealed class PrefsStore : IPrefsStore
         return prefs;
     }
 
-    public async Task SaveAsync(UserPrefs prefs)
+    public Task SaveAsync(UserPrefs prefs)
     {
         ArgumentNullException.ThrowIfNull(prefs);
         prefs.NormalizeHomeSections();
-        var json = JsonSerializer.Serialize(prefs);
-        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
-        var entity = await context.Preferences.FindAsync(Key).ConfigureAwait(false);
+        return SaveCoreAsync(prefs);
+    }
+
+    private async Task SaveCoreAsync(UserPrefs prefs)
+    {
+        string json = JsonSerializer.Serialize(prefs);
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        PreferenceEntity? entity = await context.Preferences.FindAsync(Key).ConfigureAwait(false);
         if (entity is null)
         {
             context.Preferences.Add(new PreferenceEntity { Key = Key, Value = json });

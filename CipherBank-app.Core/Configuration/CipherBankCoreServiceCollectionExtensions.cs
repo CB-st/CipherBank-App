@@ -31,34 +31,57 @@ public static class CipherBankCoreServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentException.ThrowIfNullOrWhiteSpace(databaseDirectory);
 
+        services.AddCipherBankCoreOptions(configuration);
+        services.AddCipherBankCoreServices(databaseDirectory);
+        return services;
+    }
+
+    private static void AddCipherBankCoreOptions(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
         services.AddOptions<CryptographyOptions>()
             .Bind(configuration.GetSection(CryptographyOptions.SectionName))
-            .Validate(options => options.IsValid(), "Cryptography parameters are unsafe or blob-incompatible.")
+            .Validate(
+                static options => options.IsValid(),
+                ConfigurationValidationMessages.CryptographyUnsafe)
             .ValidateOnStart();
         services.AddOptions<SyncSchedulerOptions>()
             .Bind(configuration.GetSection(SyncSchedulerOptions.SectionName))
-            .Validate(options => options.MaxConcurrency is >= 1 and <= 8, "Sync concurrency must be between 1 and 8.")
+            .Validate(
+                static options => options.MaxConcurrency is >= SyncSchedulerOptions.MinConcurrency
+                    and <= SyncSchedulerOptions.MaxAllowedConcurrency,
+                ConfigurationValidationMessages.SyncConcurrencyOutOfRange)
             .ValidateOnStart();
         services.AddOptions<PersistenceOptions>()
             .Bind(configuration.GetSection(PersistenceOptions.SectionName))
-            .Validate(options => !string.IsNullOrWhiteSpace(options.DatabaseName), "DatabaseName is required.")
-            .Validate(options => Path.GetFileName(options.DatabaseName) == options.DatabaseName, "DatabaseName must not contain a path.")
+            .Validate(
+                static options => !string.IsNullOrWhiteSpace(options.DatabaseName),
+                ConfigurationValidationMessages.DatabaseNameRequired)
+            .Validate(
+                static options => Path.GetFileName(options.DatabaseName) == options.DatabaseName,
+                ConfigurationValidationMessages.DatabaseNameMustBeFileName)
             .ValidateOnStart();
         services.AddOptions<CoraOptions>()
             .Bind(configuration.GetSection(CoraOptions.SectionName));
         services.AddOptions<CarouselLayoutConfig>()
             .Bind(configuration.GetSection(CarouselLayoutConfig.SectionName));
+    }
 
+    private static void AddCipherBankCoreServices(
+        this IServiceCollection services,
+        string databaseDirectory)
+    {
         services.AddSingleton<ICryptoBox, AesGcmCryptoBox>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ICoraLineProvider, CoraLineProvider>();
         services.AddSingleton<IEmvExchangeSimulator, EmvExchangeSimulator>();
-        services.AddSingleton<ISyncJobScheduler>(provider => new SyncJobScheduler(
+        services.AddSingleton<ISyncJobScheduler>(static provider => new SyncJobScheduler(
             TaskScheduler.Default,
             provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value));
         services.AddSingleton<ILocalDb>(provider =>
         {
-            var options = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
+            PersistenceOptions options = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
             return new LocalDb(Path.Combine(databaseDirectory, options.DatabaseName));
         });
         services.AddSingleton<IMarketRepository, MarketRepository>();
@@ -66,7 +89,5 @@ public static class CipherBankCoreServiceCollectionExtensions
         services.AddSingleton<IRatesCache, RatesCache>();
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
         services.AddSingleton<IWalletRepository, WalletRepository>();
-
-        return services;
     }
 }

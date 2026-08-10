@@ -17,10 +17,10 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
 
-        var cryptography = configuration
+        CryptographyOptions? cryptography = configuration
             .GetSection(CryptographyOptions.SectionName)
             .Get<CryptographyOptions>();
-        var scheduler = configuration
+        SyncSchedulerOptions? scheduler = configuration
             .GetSection(SyncSchedulerOptions.SectionName)
             .Get<SyncSchedulerOptions>();
 
@@ -34,12 +34,12 @@ public sealed class ConfigurationTests
     public void AesGcmCryptoBox_ConfiguredDefaults_RoundTrips()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
-        var options = configuration
+        CryptographyOptions options = configuration
             .GetSection(CryptographyOptions.SectionName)
             .Get<CryptographyOptions>()!;
         AesGcmCryptoBox cryptoBox = new(options);
 
-        var sealedBlob = cryptoBox.Seal("alpha beta gamma", "123456");
+        string sealedBlob = cryptoBox.Seal("alpha beta gamma", "123456");
 
         cryptoBox.Open(sealedBlob, "123456").Should().Be("alpha beta gamma");
     }

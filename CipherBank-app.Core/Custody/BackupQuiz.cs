@@ -46,12 +46,12 @@ public static class BackupQuiz
             return Array.Empty<(int, string)>();
         }
 
-        var take = Math.Min(count, words.Length);
-        var indices = Enumerable.Range(0, words.Length).ToArray();
+        int take = Math.Min(count, words.Length);
+        int[] indices = Enumerable.Range(0, words.Length).ToArray();
 
-        for (var i = 0; i < take; i++)
+        for (int i = 0; i < take; i++)
         {
-            var j = nextInclusiveExclusive?.Invoke(i, indices.Length)
+            int j = nextInclusiveExclusive?.Invoke(i, indices.Length)
                 ?? RandomNumberGenerator.GetInt32(i, indices.Length);
             (indices[i], indices[j]) = (indices[j], indices[i]);
         }

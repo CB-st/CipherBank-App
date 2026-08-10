@@ -13,14 +13,14 @@ public class CryptoBoxTests
     [Fact]
     public void SealOpen_RoundTripsPlaintext()
     {
-        var sealedBlob = CryptoBox.Seal("alpha beta gamma", "123456");
+        string sealedBlob = CryptoBox.Seal("alpha beta gamma", "123456");
         CryptoBox.Open(sealedBlob, "123456").Should().Be("alpha beta gamma");
     }
 
     [Fact]
     public void Open_WithWrongPin_Throws()
     {
-        var sealedBlob = CryptoBox.Seal("secret", "123456");
+        string sealedBlob = CryptoBox.Seal("secret", "123456");
         Action act = () => CryptoBox.Open(sealedBlob, "000000");
         act.Should().Throw<Exception>();
     }

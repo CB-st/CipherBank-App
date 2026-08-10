@@ -42,12 +42,12 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator
     /// <inheritdoc />
     public async Task<ProductSessionStartResult> StartAsync(bool applyBootstrap, CancellationToken ct)
     {
-        var session = await _client.CreateSessionAsync(ct).ConfigureAwait(false);
+        SessionDto session = await _client.CreateSessionAsync(ct).ConfigureAwait(false);
         await _productSessions.SaveAsync(session).ConfigureAwait(false);
         await _stream.ConnectAsync(ct).ConfigureAwait(false);
         _streamHub.Start();
 
-        var lockIdleSeconds = 0;
+        int lockIdleSeconds = 0;
         try
         {
             await _prefsSync.PullMergeAsync(ct).ConfigureAwait(false);
@@ -56,7 +56,7 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator
                 await _bootstrap.ApplyAsync(ct).ConfigureAwait(false);
             }
 
-            var prefs = await _prefs.LoadAsync().ConfigureAwait(false);
+            UserPrefs prefs = await _prefs.LoadAsync().ConfigureAwait(false);
             lockIdleSeconds = prefs.LockIdleSeconds;
         }
         catch (InvalidOperationException)

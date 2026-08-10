@@ -31,7 +31,7 @@ public sealed class RecipientRepository : IRecipientRepository
 
     public async Task<IReadOnlyList<AchRecipientRow>> ListAsync()
     {
-        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
         return await context.Recipients
             .AsNoTracking()
             .OrderBy(entity => entity.Name)
@@ -54,39 +54,17 @@ public sealed class RecipientRepository : IRecipientRepository
     /// <summary>
     /// Upserts payee metadata and masks only; cleartext account/routing inputs never enter the EF model.
     /// </summary>
-    public async Task UpsertAsync(AchRecipientRow row)
+    public Task UpsertAsync(AchRecipientRow row)
     {
         ArgumentNullException.ThrowIfNull(row);
-        var accountMask = row.AccountMask
-            ?? (string.IsNullOrWhiteSpace(row.Account) ? null : AchRecipientValidation.MaskAccount(row.Account));
-        var routingMask = row.RoutingMask
-            ?? (string.IsNullOrWhiteSpace(row.Routing) ? null : AchRecipientValidation.MaskRouting(row.Routing));
-
-        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
-        var entity = await context.Recipients.FindAsync(row.Id).ConfigureAwait(false);
-        if (entity is null)
-        {
-            entity = new RecipientEntity { Id = row.Id, CreatedAt = row.CreatedAt };
-            context.Recipients.Add(entity);
-        }
-
-        entity.Name = row.Name;
-        entity.Holder = row.Holder;
-        entity.Bank = row.Bank;
-        entity.AccountType = string.IsNullOrWhiteSpace(row.AccountType)
-            ? DefaultAccountType
-            : row.AccountType;
-        entity.Memo = row.Memo;
-        entity.AccountMask = accountMask;
-        entity.RoutingMask = routingMask;
-        await context.SaveChangesAsync().ConfigureAwait(false);
+        return UpsertCoreAsync(row);
     }
 
     public async Task DeleteAsync(string id)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
-        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
-        var entity = await context.Recipients.FindAsync(id).ConfigureAwait(false);
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        RecipientEntity? entity = await context.Recipients.FindAsync(id).ConfigureAwait(false);
         if (entity is null)
         {
             return;
@@ -98,7 +76,7 @@ public sealed class RecipientRepository : IRecipientRepository
 
     public async Task SeedDefaultsIfEmptyAsync()
     {
-        await using (var context = await _db.CreateContextAsync().ConfigureAwait(false))
+        await using (CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false))
         {
             if (await context.Recipients.AnyAsync().ConfigureAwait(false))
             {
@@ -130,5 +108,32 @@ public sealed class RecipientRepository : IRecipientRepository
             null,
             null,
             _timeProvider.GetUtcNow())).ConfigureAwait(false);
+    }
+
+    private async Task UpsertCoreAsync(AchRecipientRow row)
+    {
+        string? accountMask = row.AccountMask
+            ?? (string.IsNullOrWhiteSpace(row.Account) ? null : AchRecipientValidation.MaskAccount(row.Account));
+        string? routingMask = row.RoutingMask
+            ?? (string.IsNullOrWhiteSpace(row.Routing) ? null : AchRecipientValidation.MaskRouting(row.Routing));
+
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        RecipientEntity? entity = await context.Recipients.FindAsync(row.Id).ConfigureAwait(false);
+        if (entity is null)
+        {
+            entity = new RecipientEntity { Id = row.Id, CreatedAt = row.CreatedAt };
+            context.Recipients.Add(entity);
+        }
+
+        entity.Name = row.Name;
+        entity.Holder = row.Holder;
+        entity.Bank = row.Bank;
+        entity.AccountType = string.IsNullOrWhiteSpace(row.AccountType)
+            ? DefaultAccountType
+            : row.AccountType;
+        entity.Memo = row.Memo;
+        entity.AccountMask = accountMask;
+        entity.RoutingMask = routingMask;
+        await context.SaveChangesAsync().ConfigureAwait(false);
     }
 }

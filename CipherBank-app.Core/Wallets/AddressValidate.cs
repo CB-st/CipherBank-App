@@ -20,8 +20,8 @@ public static partial class AddressValidate
     /// </summary>
     public static bool IsValid(string symbol, string address)
     {
-        var sym = symbol.ToUpperInvariant();
-        var addr = address.Trim();
+        string sym = symbol.ToUpperInvariant();
+        string addr = address.Trim();
         if (string.IsNullOrEmpty(addr))
         {
             return false;

@@ -84,8 +84,8 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         streamEvent = null;
         try
         {
-            using var doc = JsonDocument.Parse(json);
-            var type = ExtractEventType(doc.RootElement);
+            using JsonDocument doc = JsonDocument.Parse(json);
+            string type = ExtractEventType(doc.RootElement);
             streamEvent = new StreamEventArgs { Type = type, Payload = doc.RootElement.Clone() };
             return true;
         }
@@ -157,8 +157,8 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     /// </summary>
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
-        var buffer = new byte[ReceiveBufferBytes];
-        using var message = new MemoryStream();
+        byte[] buffer = new byte[ReceiveBufferBytes];
+        using MemoryStream message = new MemoryStream();
         while (_ws is { State: WebSocketState.Open } && !ct.IsCancellationRequested)
         {
             WebSocketReceiveResult result = await _ws.ReceiveAsync(buffer, ct).ConfigureAwait(false);
@@ -191,7 +191,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
             return;
         }
 
-        var json = Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length);
+        string json = Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length);
         message.SetLength(0);
         if (!TryParseStreamEvent(json, out StreamEventArgs? streamEvent) || streamEvent is null)
         {

@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Collections.ObjectModel;
+using System.Text.Json.Serialization;
 
 namespace CipherBank_app.Persist;
 
@@ -22,9 +23,11 @@ public sealed class UserPrefs
 
     public static string SectionLegacyAssets { get; } = "assets";
 
-    public Collection<string> HomeOrder { get; set; } = new(DefaultHomeOrder.ToList());
+    [JsonInclude]
+    public Collection<string> HomeOrder { get; private set; } = new(DefaultHomeOrder.ToList());
 
-    public Dictionary<string, bool> HomeVisible { get; set; } = new()
+    [JsonInclude]
+    public Dictionary<string, bool> HomeVisible { get; private set; } = new()
     {
         ["cora"] = true,
         ["balance"] = true,
@@ -48,7 +51,8 @@ public sealed class UserPrefs
     public string BaseCurrency { get; set; } = "USD";
 
     /// <summary>Symbols visible on Home selectors / charts (uppercase tickers).</summary>
-    public Collection<string> EnabledCurrencies { get; set; } = new(DefaultEnabledCurrencies.ToList());
+    [JsonInclude]
+    public Collection<string> EnabledCurrencies { get; private set; } = new(DefaultEnabledCurrencies.ToList());
 
     public int LockIdleSeconds { get; set; } = 120;
 
@@ -59,7 +63,7 @@ public sealed class UserPrefs
     public void ReplaceHomeOrder(IEnumerable<string> order)
     {
         HomeOrder.Clear();
-        foreach (var item in order)
+        foreach (string item in order)
         {
             HomeOrder.Add(item);
         }
@@ -72,7 +76,7 @@ public sealed class UserPrefs
     public void ReplaceEnabledCurrencies(IEnumerable<string> currencies)
     {
         EnabledCurrencies.Clear();
-        foreach (var item in currencies)
+        foreach (string item in currencies)
         {
             EnabledCurrencies.Add(item);
         }
@@ -108,7 +112,7 @@ public sealed class UserPrefs
             return;
         }
 
-        var idx = HomeOrder.IndexOf(SectionLegacyAssets);
+        int idx = HomeOrder.IndexOf(SectionLegacyAssets);
         HomeOrder.RemoveAt(idx);
         if (!HomeOrder.Contains(SectionHoldings))
         {
@@ -124,7 +128,7 @@ public sealed class UserPrefs
 
     private void EnsureHomeSectionKeys()
     {
-        foreach (var key in DefaultHomeOrder)
+        foreach (string key in DefaultHomeOrder)
         {
             if (!HomeOrder.Contains(key))
             {
@@ -156,7 +160,7 @@ public sealed class UserPrefs
             return true;
         }
 
-        return HomeVisible.TryGetValue(SectionLegacyAssets, out var assetsVisible) && assetsVisible;
+        return HomeVisible.TryGetValue(SectionLegacyAssets, out bool assetsVisible) && assetsVisible;
     }
 
     private void NormalizeAssetsLayout()
@@ -176,7 +180,7 @@ public sealed class UserPrefs
             return;
         }
 
-        var normalized = EnabledCurrencies
+        List<string> normalized = EnabledCurrencies
             .Where(s => !string.IsNullOrWhiteSpace(s))
             .Select(s => s.Trim().ToUpperInvariant())
             .Distinct(StringComparer.OrdinalIgnoreCase)

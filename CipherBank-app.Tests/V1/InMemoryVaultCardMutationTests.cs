@@ -13,7 +13,7 @@ public sealed class InMemoryVaultCardMutationTests
     [Fact]
     public async Task Add_vault_card_persists_returned_card_metadata()
     {
-        var api = new InMemoryProductClient();
+        InMemoryProductClient api = new InMemoryProductClient();
 
         VaultCardDto added = await api.AddVaultCardAsync(
             new VaultCardDto
@@ -39,7 +39,7 @@ public sealed class InMemoryVaultCardMutationTests
     [Fact]
     public async Task Delete_vault_card_removes_only_requested_card()
     {
-        var api = new InMemoryProductClient();
+        InMemoryProductClient api = new InMemoryProductClient();
         VaultCardDto added = await api.AddVaultCardAsync(
             new VaultCardDto { Last4 = "9876", Brand = "mastercard", Label = "Travel card", HardwareTest = false },
             "delete-card-1",

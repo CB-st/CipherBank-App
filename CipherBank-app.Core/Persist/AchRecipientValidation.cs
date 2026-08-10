@@ -58,7 +58,7 @@ public static class AchRecipientValidation
     /// </summary>
     public static string MaskAccount(string account)
     {
-        var trimmed = account.Trim();
+        string trimmed = account.Trim();
         if (trimmed.Length <= MaskVisibleTrailingDigits)
         {
             return "•••• " + trimmed;
@@ -73,7 +73,7 @@ public static class AchRecipientValidation
     /// </summary>
     public static string MaskRouting(string routing)
     {
-        var digits = DigitsOnly(routing);
+        string digits = DigitsOnly(routing);
         if (digits.Length < MaskVisibleTrailingDigits)
         {
             return "••••";
@@ -120,7 +120,7 @@ public static class AchRecipientValidation
     /// </summary>
     private static string? ValidateAccountType(string accountType)
     {
-        var type = accountType.Trim().ToUpperInvariant();
+        string type = accountType.Trim().ToUpperInvariant();
         return type is "CHECKING" or "SAVINGS"
             ? null
             : Strings.AchAccountTypeMustBeCheckingOrSavings;

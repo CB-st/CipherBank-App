@@ -4,7 +4,7 @@
 
 namespace CipherBank_app.Persist.Entities;
 
-internal sealed class OhlcPointEntity
+public sealed class OhlcPointEntity
 {
     public string Symbol { get; set; } = string.Empty;
 

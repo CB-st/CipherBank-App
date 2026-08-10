@@ -28,7 +28,7 @@ public class CoraLineProviderTests
     private static CoraLineProvider CreateProvider()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
-        var options = configuration.GetSection(CoraOptions.SectionName).Get<CoraOptions>()!;
+        CoraOptions options = configuration.GetSection(CoraOptions.SectionName).Get<CoraOptions>()!;
         return new CoraLineProvider(Options.Create(options));
     }
 }

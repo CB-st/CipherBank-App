@@ -21,5 +21,5 @@ public sealed class CoraLineProvider : ICoraLineProvider
 
     /// <inheritdoc />
     public string GetLine(string screen)
-        => _lines.TryGetValue(screen, out var line) ? line : _options.Fallback;
+        => _lines.TryGetValue(screen, out string? line) ? line : _options.Fallback;
 }

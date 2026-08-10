@@ -14,7 +14,7 @@ public static class HoldingVisibility
         IEnumerable<HoldingDto> holdings,
         IEnumerable<string>? enabledCurrencies)
     {
-        var enabled = (enabledCurrencies ?? Array.Empty<string>())
+        HashSet<string> enabled = (enabledCurrencies ?? Array.Empty<string>())
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
             .Select(symbol => symbol.Trim())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -24,8 +24,8 @@ public static class HoldingVisibility
             enabled.UnionWith(UserPrefs.DefaultEnabledCurrencies);
         }
 
-        var visible = new List<HoldingDto>();
-        var other = new List<HoldingDto>();
+        List<HoldingDto> visible = new List<HoldingDto>();
+        List<HoldingDto> other = new List<HoldingDto>();
         foreach (HoldingDto holding in holdings)
         {
             if (enabled.Contains(holding.Symbol))

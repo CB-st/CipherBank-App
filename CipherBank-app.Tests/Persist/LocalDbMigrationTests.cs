@@ -15,16 +15,16 @@ public class LocalDbMigrationTests
     [Fact]
     public async Task InitializeAsync_CreatesRatesSnapshotAndSyncMetaTables()
     {
-        var path = Path.Combine(Path.GetTempPath(), "cb-migrate-" + Guid.NewGuid().ToString("N") + ".db");
-        var db = new LocalDb(path);
+        string path = Path.Combine(Path.GetTempPath(), "cb-migrate-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(path);
         await db.InitializeAsync();
 
         await using CipherBankDbContext context = await db.CreateContextAsync();
-        var conn = (SqliteConnection)context.Database.GetDbConnection();
+        SqliteConnection conn = (SqliteConnection)context.Database.GetDbConnection();
         await conn.OpenAsync();
         await using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name";
-        var tables = new List<string>();
+        List<string> tables = new List<string>();
         await using SqliteDataReader reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
         {
@@ -39,8 +39,8 @@ public class LocalDbMigrationTests
     [Fact]
     public async Task InitializeAsync_LegacyRecipientSchema_AddsMetadataAndScrubsCleartext()
     {
-        var path = Path.Combine(Path.GetTempPath(), "cb-legacy-" + Guid.NewGuid().ToString("N") + ".db");
-        await using (var legacy = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path }.ToString()))
+        string path = Path.Combine(Path.GetTempPath(), "cb-legacy-" + Guid.NewGuid().ToString("N") + ".db");
+        await using (SqliteConnection legacy = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path }.ToString()))
         {
             await legacy.OpenAsync();
             await using SqliteCommand create = legacy.CreateCommand();
@@ -58,11 +58,11 @@ public class LocalDbMigrationTests
             await create.ExecuteNonQueryAsync();
         }
 
-        var db = new LocalDb(path);
+        LocalDb db = new LocalDb(path);
         await db.InitializeAsync();
 
         await using CipherBankDbContext context = await db.CreateContextAsync();
-        var connection = (SqliteConnection)context.Database.GetDbConnection();
+        SqliteConnection connection = (SqliteConnection)context.Database.GetDbConnection();
         await connection.OpenAsync();
         await using SqliteCommand inspect = connection.CreateCommand();
         inspect.CommandText = "SELECT account, routing, account_type FROM recipients WHERE id = 'legacy'";

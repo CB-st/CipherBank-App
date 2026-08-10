@@ -24,14 +24,14 @@ public class AppSessionTests
     [Fact]
     public async Task FinishSetup_UnlocksSeedsWalletsAndSession()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var wallets = new FakeWallets();
-        var productSessions = new InMemoryProductSessionStore();
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        FakeWallets wallets = new FakeWallets();
+        InMemoryProductSessionStore productSessions = new InMemoryProductSessionStore();
         AppSession session = CreateSession(custody, wallets, productSessions: productSessions);
 
-        var mnemonic = MnemonicHelper.Generate();
+        string mnemonic = MnemonicHelper.Generate();
         await session.FinishCustodySetupAsync(mnemonic, "123456");
 
         session.IsUnlocked.Should().BeTrue();
@@ -45,9 +45,9 @@ public class AppSessionTests
     [Fact]
     public async Task IdleLock_LocksAfterTimeout()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
         AppSession session = CreateSession(custody, new FakeWallets());
         await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         session.IdleMs = 1;
@@ -59,11 +59,11 @@ public class AppSessionTests
     [Fact]
     public async Task Unlock_PullsBootstrapRecipients_WithoutTouchingCustodySeal()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var recipients = new MemRecipients();
-        var prefs = new FakePrefs();
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        MemRecipients recipients = new MemRecipients();
+        FakePrefs prefs = new FakePrefs();
         AppSession session = CreateSession(custody, new FakeWallets(), prefs, recipients);
         await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         session.Lock();
@@ -78,10 +78,10 @@ public class AppSessionTests
     [Fact]
     public async Task Unlock_WhenCreateSessionFails_RelocksCustody()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var productSessions = new InMemoryProductSessionStore();
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        InMemoryProductSessionStore productSessions = new InMemoryProductSessionStore();
         AppSession okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
         await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         okSession.Lock();
@@ -100,10 +100,10 @@ public class AppSessionTests
     [Fact]
     public async Task Unlock_WhenCreateSessionThrowsHttpRequestException_RelocksCustody()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var productSessions = new InMemoryProductSessionStore();
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        InMemoryProductSessionStore productSessions = new InMemoryProductSessionStore();
         AppSession okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
         await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         okSession.Lock();
@@ -131,11 +131,11 @@ public class AppSessionTests
         recipients ??= new MemRecipients();
         api ??= new InMemoryProductClient();
         productSessions ??= new InMemoryProductSessionStore();
-        var stream = new MockStreamService();
-        var hub = new StreamHub(stream);
-        var prefsSync = new PrefsSyncService(prefs, api);
-        var bootstrap = new AccountBootstrapService(api, prefs, recipients);
-        var productSession = new ProductSessionCoordinator(
+        MockStreamService stream = new MockStreamService();
+        StreamHub hub = new StreamHub(stream);
+        PrefsSyncService prefsSync = new PrefsSyncService(prefs, api);
+        AccountBootstrapService bootstrap = new AccountBootstrapService(api, prefs, recipients);
+        ProductSessionCoordinator productSession = new ProductSessionCoordinator(
             api,
             stream,
             hub,
@@ -153,7 +153,7 @@ public class AppSessionTests
 
     private static IProductClient CreateFailingApi(Exception exception)
     {
-        var api = new Mock<IProductClient>(MockBehavior.Strict);
+        Mock<IProductClient> api = new Mock<IProductClient>(MockBehavior.Strict);
         api.Setup(value => value.CreateSessionAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.FromException<SessionDto>(exception));
         return api.Object;
@@ -170,7 +170,7 @@ public class AppSessionTests
         }
 
         public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out var v) ? v : null);
+            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
 
         public Task RemoveAsync(string key)
         {

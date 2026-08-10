@@ -30,14 +30,14 @@ public static class PaymentUri
 
     public static string Build(string symbol, string address, string? amount, string? label, string? message)
     {
-        var sym = symbol.ToUpperInvariant();
-        var addr = address.Trim();
+        string sym = symbol.ToUpperInvariant();
+        string addr = address.Trim();
         if (string.IsNullOrEmpty(addr))
         {
             return string.Empty;
         }
 
-        var suffix = BuildQuerySuffix(sym, amount, label, message);
+        string suffix = BuildQuerySuffix(sym, amount, label, message);
         return MapSchemeUri(sym, addr, suffix, amount).OriginalString;
     }
 
@@ -49,7 +49,7 @@ public static class PaymentUri
 
     public static string Shorten(string address, int head, int tail)
     {
-        var a = address.Trim();
+        string a = address.Trim();
         if (a.Length <= head + tail + 1)
         {
             return a;
@@ -65,7 +65,7 @@ public static class PaymentUri
             return string.Empty;
         }
 
-        var parts = new List<string>();
+        List<string> parts = new List<string>();
         if (!string.IsNullOrEmpty(amount))
         {
             parts.Add("amount=" + Uri.EscapeDataString(amount));
@@ -90,7 +90,7 @@ public static class PaymentUri
     /// </summary>
     private static Uri MapSchemeUri(string sym, string addr, string suffix, string? amount)
     {
-        if (SimpleSchemePrefixes.TryGetValue(sym, out var prefix))
+        if (SimpleSchemePrefixes.TryGetValue(sym, out string? prefix))
         {
             return new Uri($"{prefix}:{addr}{suffix}", UriKind.Absolute);
         }
@@ -121,7 +121,7 @@ public static class PaymentUri
     /// </summary>
     private static Uri BuildAccountUri(string scheme, string amountParam, string addr, string? amount)
     {
-        var uriString = string.IsNullOrEmpty(amount)
+        string uriString = string.IsNullOrEmpty(amount)
             ? $"{scheme}:{addr}"
             : $"{scheme}:{addr}?{amountParam}={Uri.EscapeDataString(amount)}";
         return new Uri(uriString, UriKind.Absolute);

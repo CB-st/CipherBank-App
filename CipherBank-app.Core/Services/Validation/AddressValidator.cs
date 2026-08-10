@@ -168,7 +168,7 @@ public static partial class AddressValidator
     private static bool IsValidBech32(string address)
     {
         // Bech32 uses lowercase a-z and 0-9, excluding 1, b, i, o
-        var bech32Data = address.Substring(Bech32HrpLength); // Remove bc1 or tb1 prefix
+        string bech32Data = address.Substring(Bech32HrpLength); // Remove bc1 or tb1 prefix
         const string bech32Alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
         return bech32Data.All(c => bech32Alphabet.Contains(char.ToLowerInvariant(c)) || char.IsDigit(c));

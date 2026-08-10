@@ -16,9 +16,9 @@ public static class QrCodeGenerator
 
     public static byte[] ToPngBytes(string payload, int pixelsPerModule)
     {
-        using var gen = new QRCodeGenerator();
+        using QRCodeGenerator gen = new QRCodeGenerator();
         using QRCodeData data = gen.CreateQrCode(payload, QRCodeGenerator.ECCLevel.M);
-        var png = new PngByteQRCode(data);
+        PngByteQRCode png = new PngByteQRCode(data);
         return png.GetGraphic(pixelsPerModule);
     }
 }

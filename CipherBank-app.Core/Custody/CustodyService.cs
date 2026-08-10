@@ -98,13 +98,13 @@ public sealed class CustodyService : ICustodyService
             return CustodyPinChangeResult.DeviceSecretMissing;
         }
 
-        var changed = await _pin.ChangePinAsync(oldPin, newPin).ConfigureAwait(false);
+        bool changed = await _pin.ChangePinAsync(oldPin, newPin).ConfigureAwait(false);
         return MapPinChangeResult(changed);
     }
 
     public Task SealAsync(string mnemonic, string pin)
     {
-        var normalized = MnemonicHelper.Normalize(mnemonic);
+        string normalized = MnemonicHelper.Normalize(mnemonic);
         if (!MnemonicHelper.Validate(normalized))
         {
             throw new ArgumentException("Invalid mnemonic.", nameof(mnemonic));
@@ -124,7 +124,7 @@ public sealed class CustodyService : ICustodyService
             return false;
         }
 
-        var blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
+        string? blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
         if (string.IsNullOrEmpty(blob))
         {
             return false;
@@ -134,7 +134,7 @@ public sealed class CustodyService : ICustodyService
         {
             if (!await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false))
             {
-                if (!TryOpen(blob, pin, out var legacyOpened) || legacyOpened is null)
+                if (!TryOpen(blob, pin, out string? legacyOpened) || legacyOpened is null)
                 {
                     _mnemonic = null;
                     _expires = null;
@@ -174,7 +174,7 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     public async Task<bool> UnlockWithDeviceSecretAsync()
     {
-        var blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
+        string? blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
         if (string.IsNullOrEmpty(blob))
         {
             return false;
@@ -301,8 +301,8 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private async Task PersistDeviceSecretSealAsync(string mnemonic)
     {
-        var deviceSecret = CreateDeviceSecret();
-        var sealedBlob = _cryptoBox.Seal(mnemonic, deviceSecret);
+        string deviceSecret = CreateDeviceSecret();
+        string sealedBlob = _cryptoBox.Seal(mnemonic, deviceSecret);
         await _store.SetAsync(StagingDeviceSecretKey, deviceSecret).ConfigureAwait(false);
         await _store.SetAsync(BlobKey, sealedBlob).ConfigureAwait(false);
         await _store.SetAsync(DeviceSecretKey, deviceSecret).ConfigureAwait(false);
@@ -315,13 +315,13 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private async Task<string?> ResolveDeviceSecretAsync()
     {
-        var promoted = await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
+        string? promoted = await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(promoted))
         {
             return promoted;
         }
 
-        var staged = await _store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
+        string? staged = await _store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
         return string.IsNullOrEmpty(staged) ? null : staged;
     }
 
@@ -333,16 +333,16 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private async Task<bool> TryUnlockWithDeviceSecretsAsync(string blob)
     {
-        var promoted = await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(promoted) && TryOpen(blob, promoted, out var opened) && opened is not null)
+        string? promoted = await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(promoted) && TryOpen(blob, promoted, out string? opened) && opened is not null)
         {
             _mnemonic = opened;
             await CommitWorkingDeviceSecretAsync(promoted).ConfigureAwait(false);
             return true;
         }
 
-        var staged = await _store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(staged) && TryOpen(blob, staged, out var stagedOpened) && stagedOpened is not null)
+        string? staged = await _store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(staged) && TryOpen(blob, staged, out string? stagedOpened) && stagedOpened is not null)
         {
             _mnemonic = stagedOpened;
             await CommitWorkingDeviceSecretAsync(staged).ConfigureAwait(false);
