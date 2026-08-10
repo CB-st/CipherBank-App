@@ -1,0 +1,18 @@
+{
+  "localBundlePath": "/workspace/PR_M1a-M4",
+  "localBundleFound": false,
+  "stack": [
+    {"layer":"M1a","pr":25,"base":"main","head":"prototype/maui-m1a","tip":"a424890","files":171,"insertions":9998,"deletions":242,"commits":15},
+    {"layer":"M1b","pr":26,"base":"prototype/maui-m1a","head":"prototype/maui-m1b","tip":"ccdcf7f","files":30,"insertions":2545,"deletions":286,"commits":7,"reviewDecision":"CHANGES_REQUESTED"},
+    {"layer":"M2","pr":21,"base":"prototype/maui-m1b","head":"prototype/maui-m2","tip":"14a4c11","files":47,"insertions":2876,"deletions":2,"commits":21},
+    {"layer":"M3","pr":22,"base":"prototype/maui-m2","head":"prototype/maui-m3","tip":"9aee1a3","files":118,"insertions":7955,"deletions":334,"commits":8},
+    {"layer":"M4","pr":23,"base":"prototype/maui-m3","head":"prototype/maui-m4","tip":"171ffb1","files":76,"insertions":5004,"deletions":322,"commits":35}
+  ],
+  "divergentRelated": {
+    "branch":"prototype/maui-m5",
+    "tip":"099c5d8",
+    "ancestorOfM4": false,
+    "notableWins": ["Directory.Packages.props CPM", "Release build fixes", "WireMock/integration compile", "iOS/MacCatalyst package conditioning"]
+  },
+  "adoptionDefault": "parallel stacked cursor/maui-m*-overhaul-579a branches superseding PRs 25/26/21/22/23 after upload"
+}
