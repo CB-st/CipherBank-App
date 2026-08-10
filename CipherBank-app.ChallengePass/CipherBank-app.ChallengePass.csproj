@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CipherBank_app.ChallengePass</RootNamespace>
+    <Company>CipherBank</Company>
+    <Product>CipherBank ChallengePass</Product>
+    <Description>Pluggable challenge/pass session auth: swap algorithm, challenge template, and protocol structure independently.</Description>
+    <RepositoryUrl>https://github.com/CB-st/CipherBank-App</RepositoryUrl>
+      <!-- Phase 3: SA1402/SA1649 removed after Stage 2 splits. CA1707 kept for RootNamespace CipherBank_app. -->
+      <WarningsNotAsErrors>$(WarningsNotAsErrors);IDE0005</WarningsNotAsErrors>
+      <NoWarn>$(NoWarn);IDE0005;CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.CLSCompliantAttribute">
+      <_Parameter1>false</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.InteropServices.ComVisibleAttribute">
+      <_Parameter1>false</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\config\challenge-pass\challenge-pass.json"
+                      Link="config\challenge-pass\challenge-pass.json"
+                      LogicalName="CipherBank_app.ChallengePass.Config.challenge-pass.json" />
+  </ItemGroup>
+
+</Project>

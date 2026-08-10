@@ -8,6 +8,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Typography.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
@@ -15,8 +16,14 @@
             <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
             <converters:StringToBoolConverter x:Key="StringToBoolConverter" />
             <converters:ObjectToBoolConverter x:Key="ObjectToBoolConverter" />
-            <converters:BoolToColorConverter x:Key="PriceChangeColorConverter" TrueColor="#0BA360" FalseColor="#DC3545" />
-            <converters:BoolToColorConverter x:Key="StatusColorConverter" TrueColor="#D9F5E8" FalseColor="#FBDDE1" />
+            <converters:BoolToColorConverter
+                x:Key="PriceChangeColorConverter"
+                TrueColor="{AppThemeBinding Light={StaticResource Success}, Dark={StaticResource SuccessDark}}"
+                FalseColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
+            <converters:BoolToColorConverter
+                x:Key="StatusColorConverter"
+                TrueColor="{AppThemeBinding Light={StaticResource SuccessSurface}, Dark={StaticResource SuccessSurfaceDark}}"
+                FalseColor="{AppThemeBinding Light={StaticResource DangerSurface}, Dark={StaticResource DangerSurfaceDark}}" />
             <converters:CoinColorConverter x:Key="CoinColorConverter"
                                            BtcColor="{StaticResource CoinBtc}"
                                            EthColor="{StaticResource CoinEth}"

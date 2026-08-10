@@ -17,7 +17,7 @@ Conventions:
 - **INVOKE:** `Type.Method(args)` — async methods return `Task` / `Task<T>` unless noted.
 - **Auth surface:** product Bearer token lives in `IAppSession.AccessToken` after unlock; challenge/pass proof is built *before* that token exists.
 - **Money:** Core DTOs follow wire SCREAMING_SNAKE; ViewModels keep UI camelCase.
-- **Idempotency:** convert / transfer / pay pass client-generated `Idempotency-Key` through `IProductApi`.
+- **Idempotency:** convert / transfer / pay pass client-generated `Idempotency-Key` through `IProductClient`.
 - **Errors:** ViewModels surface `Error` strings or `IDialogService` alerts; Core throws on crypto/custody failure.
 - **Never on the wire:** mnemonic, BIP39 entropy, PIN plaintext, device secret, account private key, spend keys, PAN/CVV, full ACH account numbers (bootstrap stores `****`+last4 only).
 
@@ -31,7 +31,7 @@ Conventions:
 | 2 | **Custody & PIN** | Seal mnemonic, verify PIN, TTL wipe | `Custody.Seal/Unlock/IsUnlocked`, `Pin.Set/Verify/Refresh` |
 | 3 | **Session** | Unlock, lock, idle, product token | `AppSession.Unlock*`, `Lock`, `FinishCustodySetup` |
 | 4 | **Challenge / pass** | Lab · A1 · A2 session open body | `SessionProof.BuildOpenBody`, suites A1/A2 |
-| 5 | **Product API** | Portfolio, settle convert, vault | `IProductApi.*` → HTTP or mock |
+| 5 | **Product API** | Portfolio, settle convert, vault | `IProductClient.*` → HTTP or mock |
 | 5b | **Public quotes** | Live `/iquote` / `/quote` / `/currencies` | `IPublicQuoteService`, `CurrencySymbolMap` |
 | 6 | **Stream** | Live balance / rate ticks | `Stream.Connect` (disconnect-first), `StreamHub.Start` |
 | 7 | **Persist** | SQLite wallets, prefs, recipients | `LocalDb.*`, `EnabledCurrencies`, prefs sync |
@@ -210,7 +210,7 @@ Logic: `Custody.UnlockWithDeviceSecretAsync` → same complete unlock with boots
 ```
 
 Logic (exact order):
-1. **Required:** `IProductApi.CreateSessionAsync` → `AccessToken = session.AccessToken` → `IStreamService.ConnectAsync` → `IStreamHub.Start`.
+1. **Required:** `IProductClient.CreateSessionAsync` → `AccessToken = session.AccessToken` → `IStreamService.ConnectAsync` → `IStreamHub.Start`.
 2. **Best-effort try:** `PrefsSync.PullMergeAsync`; if `applyBootstrap` then `AccountBootstrap.ApplyAsync`; reload `IdleMs` from prefs. Failures are **swallowed** (custody already unlocked).
 3. `Touch()`; return `true`.
 
@@ -235,7 +235,7 @@ Logic: dispatcher timer → `CheckIdleAndMaybeLock`. On `Locked`: `IPqChannel.Cl
 
 ## 4 · Challenge / pass (session open body)
 
-Built by `ISessionProofBuilder` inside `HttpProductApi.CreateSessionAsync` (or mock). Mode from settings: **Lab** | **ChallengePassA1** | **ChallengePassA2**.
+Built by `ISessionProofBuilder` inside `HttpProductClient.CreateSessionAsync` (or mock). Mode from settings: **Lab** | **ChallengePassA1** | **ChallengePassA2**.
 
 ### `INVOKE LabSessionProofBuilder.BuildOpenBodyAsync` → `object`
 
@@ -307,11 +307,11 @@ Registered via `AddChallengePassModule(services, activeSuiteId)`.
 
 ---
 
-## 5 · Product API (`IProductApi`)
+## 5 · Product API (`IProductClient`)
 
-Implementations: `MockProductApi` (Core, DEBUG) · `HttpProductApi` (MAUI). Paths align with product `/v1` contract.
+Implementations: `InMemoryProductClient` (Core, DEBUG) · `HttpProductClient` (MAUI). Paths align with product `/v1` contract.
 
-### `INVOKE IProductApi.CreateSessionAsync` → `SessionDto`
+### `INVOKE IProductClient.CreateSessionAsync` → `SessionDto`
 
 ```
 { proofBody from ISessionProofBuilder } → { TOKEN, REFRESH_TOKEN, EXPIRES_AT, … }
@@ -388,7 +388,7 @@ Live PriceCache host (`api.cipherbank.money`). Impl: `PublicApiClient` / `MockPu
 | `GetInverseQuoteAsync(in, amt, out)` | `POST /iquote` | Fixed input → output (**Convert.LockQuote**) |
 | `GetQuoteAsync(in, outAmt, out)` | `POST /quote` | Fixed output → input |
 
-`IndicativeQuoteMapper.ToQuoteDto` attaches a **client-side TTL (default 15_000 ms)** so Convert can countdown before product settle. The indicative quote is **not** sent to `IProductApi.ConvertAsync`.
+`IndicativeQuoteMapper.ToQuoteDto` attaches a **client-side TTL (default 15_000 ms)** so Convert can countdown before product settle. The indicative quote is **not** sent to `IProductClient.ConvertAsync`.
 
 ## 6 · Stream
 
@@ -526,7 +526,7 @@ CommunityToolkit `[RelayCommand]` → `XxxCommand`. Query attrs via `IQueryAttri
 
 ### Cora FAB + Bar
 
-- `CoraFab` — floating; `CoraLines.For(ScreenKey)`; visibility from `UserPrefs.CoraEnabled`.
+- `CoraFab` — floating; `ICoraLineProvider.For(ScreenKey)`; visibility from `UserPrefs.CoraEnabled`.
 - `CoraBar` — inline Expo-parity strip on money tabs; same line source / pref gate.
 - Copy-only; no network.
 
@@ -560,7 +560,7 @@ Payload is **token reference only** — never PAN.
 | `IPinService` / `ICustodyService` | Core |
 | `ILocalDb` + repos + seeder | Core SQLite |
 | `ISessionProofBuilder` | Lab / A1 / A2 from `SessionProofMode` |
-| `IProductApi` | `HttpProductApi` / `MockProductApi` |
+| `IProductClient` | `HttpProductClient` / `InMemoryProductClient` |
 | `IPublicQuoteService` | `PublicApiClient` / `MockPublicQuoteService` |
 | `IStreamService` | WSS / `MockStreamService` |
 | `IAppSession` | `AppSession` |

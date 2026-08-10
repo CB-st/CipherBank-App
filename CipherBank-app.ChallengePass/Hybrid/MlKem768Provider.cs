@@ -1,0 +1,106 @@
+// <copyright file="MlKem768Provider.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using System.Security.Cryptography;
+using Org.BouncyCastle.Crypto.Kems;
+using Org.BouncyCastle.Crypto.Parameters;
+
+namespace CipherBank_app.ChallengePass.Hybrid;
+
+/// <summary>
+/// Portable ML-KEM-768 via BouncyCastle.Cryptography.
+/// Uses <see cref="MLKemPrivateKeyParameters.FromSeed"/> only — avoids SecureRandom
+/// ambiguity with legacy BouncyCastle.Crypto pulled by NBitcoin.
+/// </summary>
+public static class MlKem768Provider
+{
+    public static readonly MLKemParameters Parameters = MLKemParameters.ml_kem_768;
+
+    private const int SeedSizeBytes = 64;
+
+    /// <summary>
+    /// Deterministic keygen from 64-byte seed (ML-KEM-768 seed length).
+    /// Temporary seed array for BouncyCastle is zeroed before return.
+    /// Use: High (hybrid identity derive). Scope: MlKem768Provider.
+    /// </summary>
+    public static (byte[] PublicKey, byte[] PrivateKey) GenerateKeyPairFromSeed(ReadOnlySpan<byte> seed64)
+    {
+        if (seed64.Length != SeedSizeBytes)
+        {
+            throw new ArgumentException("ML-KEM-768 seed must be 64 bytes.", nameof(seed64));
+        }
+
+        var seedCopy = seed64.ToArray();
+        try
+        {
+            var priv = MLKemPrivateKeyParameters.FromSeed(Parameters, seedCopy);
+            var pub = priv.GetPublicKey();
+            return (pub.GetEncoded(), priv.GetEncoded());
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(seedCopy);
+        }
+    }
+
+    /// <summary>
+    /// Random keygen for tests / ephemeral use; zeroes the RNG seed after keygen returns.
+    /// Use: Medium (tests / ephemeral). Scope: MlKem768Provider.
+    /// </summary>
+    public static (byte[] PublicKey, byte[] PrivateKey) GenerateKeyPair()
+    {
+        var seed = RandomNumberGenerator.GetBytes(SeedSizeBytes);
+        try
+        {
+            return GenerateKeyPairFromSeed(seed);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(seed);
+        }
+    }
+
+    public static (byte[] Ciphertext, byte[] SharedSecret) Encapsulate(ReadOnlySpan<byte> recipientPublicKey)
+    {
+        var pubCopy = recipientPublicKey.ToArray();
+        try
+        {
+            var pub = MLKemPublicKeyParameters.FromEncoding(Parameters, pubCopy);
+            MLKemEncapsulator enc = new(Parameters);
+            enc.Init(pub);
+            var secret = new byte[enc.SecretLength];
+            var cipher = new byte[enc.EncapsulationLength];
+            enc.Encapsulate(cipher, 0, cipher.Length, secret, 0, secret.Length);
+            return (cipher, secret);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(pubCopy);
+        }
+    }
+
+    /// <summary>
+    /// Decapsulates a ciphertext; temporary private-key / ciphertext arrays for BouncyCastle are zeroed.
+    /// Use: High (A2 channel establish). Scope: MlKem768Provider.
+    /// </summary>
+    public static byte[] Decapsulate(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> recipientPrivateKey)
+    {
+        var privCopy = recipientPrivateKey.ToArray();
+        var ctCopy = ciphertext.ToArray();
+        try
+        {
+            var priv = MLKemPrivateKeyParameters.FromEncoding(Parameters, privCopy);
+            MLKemDecapsulator dec = new(Parameters);
+            dec.Init(priv);
+            var secret = new byte[dec.SecretLength];
+            dec.Decapsulate(ctCopy, 0, ctCopy.Length, secret, 0, secret.Length);
+            return secret;
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(privCopy);
+            CryptographicOperations.ZeroMemory(ctCopy);
+        }
+    }
+}
