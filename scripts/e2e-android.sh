@@ -54,7 +54,6 @@ Usage:
 Harness credentials (required once Story-trait Facts land on M4):
   E2E_TEST_PIN / E2E_TEST_PIN_ALT / E2E_RECOVERY_PASSWORD
   Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
-  Optional fallback: .env.e2e.local at repo root (also gitignored via .env*.local)
 
 Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave
 exit with a clear deferral (those Facts ship on M4). --all may run the scaffold
@@ -302,7 +301,7 @@ ensure_appium_running() {
   die "Appium did not become ready on :$APPIUM_PORT — check $APPIUM_LOG"
 }
 
-# Loads gitignored lab credentials (artifacts/e2e-local.env or .env.e2e.local) into the
+# Loads gitignored lab credentials from artifacts/e2e-local.env into the
 # process environment when present, then requires PIN / alt / recovery password to be set.
 # Skipped until Story-trait Facts exist (M4) so the scaffold suite is not blocked.
 # Use: High (every harness run before device tests that need credentials). Scope: scripts/e2e-android.sh.
@@ -312,14 +311,10 @@ ensure_e2e_credentials() {
     return 0
   fi
   local env_file="$ROOT/artifacts/e2e-local.env"
-  local dotenv_file="$ROOT/.env.e2e.local"
   local example="$ROOT/docs/tests/e2e-local.env.example"
   if [[ -f "$env_file" ]]; then
     log "Loading harness credentials from artifacts/e2e-local.env (export-if-unset)"
     apply_e2e_env_file_if_unset "$env_file"
-  elif [[ -f "$dotenv_file" ]]; then
-    log "Loading harness credentials from .env.e2e.local (export-if-unset)"
-    apply_e2e_env_file_if_unset "$dotenv_file"
   fi
   if [[ -z "${E2E_TEST_PIN:-}" || -z "${E2E_TEST_PIN_ALT:-}" || -z "${E2E_RECOVERY_PASSWORD:-}" ]]; then
     die "Missing E2E harness credentials. Copy $example to $env_file and fill lab values, or export E2E_TEST_PIN, E2E_TEST_PIN_ALT, and E2E_RECOVERY_PASSWORD."
