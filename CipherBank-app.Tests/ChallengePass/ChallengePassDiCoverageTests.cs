@@ -8,6 +8,7 @@ using CipherBank_app.ChallengePass.Configuration;
 using CipherBank_app.ChallengePass.Hybrid;
 using CipherBank_app.ChallengePass.Structures;
 using CipherBank_app.ChallengePass.Templates;
+using CipherBank_app.Custody;
 using CipherBank_app.V1;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
@@ -43,6 +44,7 @@ public sealed class ChallengePassDiCoverageTests
         services.AddSingleton<IPqChannelChallengeSource>(challenges);
         services.AddSingleton(channel);
         services.AddSingleton<IAccountKeySource>(new LockedAccountKeySource());
+        RegisterCustody(services);
         services.AddChallengePassModule(ChallengePassServiceCollectionExtensions.SuiteA2Id);
 
         using ServiceProvider sp = services.BuildServiceProvider();
@@ -176,6 +178,38 @@ public sealed class ChallengePassDiCoverageTests
     }
 
     /// <summary>
+    /// Proves the ChallengePass composition root clears A2 identity on ICustodyService.Locked.
+    /// Use: High. Scope: ChallengePassServiceCollectionExtensions custody lock wiring.
+    /// </summary>
+    [Fact]
+    public async Task AddChallengePassModule_ClearsA2IdentityOnCustodyLock()
+    {
+        ServiceCollection services = new ServiceCollection();
+        RegisterRequiredPorts(services);
+        services.AddChallengePassModule(ChallengePassServiceCollectionExtensions.SuiteA2Id);
+
+        using ServiceProvider sp = services.BuildServiceProvider();
+        ICustodyService custody = sp.GetRequiredService<ICustodyService>();
+        PqChannelChallengePassStructure structure = sp.GetRequiredService<PqChannelChallengePassStructure>();
+        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridPrivateIdentity device = agreement.DeriveIdentity(
+            System.Security.Cryptography.RandomNumberGenerator.GetBytes(16));
+        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(sp.GetRequiredService<IPqChannel>());
+        ChallengeIdNonceSha256Template template = sp.GetRequiredService<ChallengeIdNonceSha256Template>();
+        InMemoryPqKeyShareClient keyShare = (InMemoryPqKeyShareClient)sp.GetRequiredService<IPqKeyShareClient>();
+
+        await structure.BuildSessionOpenBodyWithIdentityAsync(seal, template, device, CancellationToken.None);
+        keyShare.EstablishCount.Should().Be(1);
+
+        custody.Lock();
+
+        HybridPrivateIdentity device2 = agreement.DeriveIdentity(
+            System.Security.Cryptography.RandomNumberGenerator.GetBytes(16));
+        await structure.BuildSessionOpenBodyWithIdentityAsync(seal, template, device2, CancellationToken.None);
+        keyShare.EstablishCount.Should().Be(2, "custody lock must clear A2 so the next build re-shares");
+    }
+
+    /// <summary>
     /// Registers the ports that a host owns while leaving suite composition to the module.
     /// Use: Low (configuration test setup). Scope: this fixture.
     /// </summary>
@@ -188,5 +222,39 @@ public sealed class ChallengePassDiCoverageTests
         services.AddSingleton<IPqKeyShareClient>(keyShare);
         services.AddSingleton<IPqChannelChallengeSource>(new InMemoryPqChannelChallengeSource(keyShare));
         services.AddSingleton<IAccountKeySource>(new LockedAccountKeySource());
+        RegisterCustody(services);
+    }
+
+    /// <summary>
+    /// Registers an in-memory custody stack so A2 DI can subscribe to Locked.
+    /// Use: Low (DI fixtures). Scope: ChallengePassDiCoverageTests.
+    /// </summary>
+    private static void RegisterCustody(IServiceCollection services)
+    {
+        MemStore store = new MemStore();
+        services.AddSingleton<ISecureStore>(store);
+        services.AddSingleton<IPinService>(new PinService(store));
+        services.AddSingleton<ICustodyService, CustodyService>();
+    }
+
+    /// <summary>In-memory secure store for DI lock-wiring fixtures. Use: Low. Scope: this test class.</summary>
+    private sealed class MemStore : ISecureStore
+    {
+        private readonly Dictionary<string, string> _data = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        public Task SetAsync(string key, string value)
+        {
+            _data[key] = value;
+            return Task.CompletedTask;
+        }
+
+        public Task<string?> GetAsync(string key)
+            => Task.FromResult(_data.TryGetValue(key, out string? value) ? value : null);
+
+        public Task RemoveAsync(string key)
+        {
+            _data.Remove(key);
+            return Task.CompletedTask;
+        }
     }
 }
