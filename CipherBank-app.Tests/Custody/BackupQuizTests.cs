@@ -18,6 +18,7 @@ public class BackupQuizTests
         picks.Should().HaveCount(3);
         picks.Select(p => p.Index).Should().OnlyHaveUniqueItems();
         picks.Select(p => p.Index).Should().BeInAscendingOrder();
+        picks.Select(p => p.Index).Should().OnlyContain(index => index >= 0);
         foreach ((var index, var word) in picks)
         {
             word.Should().Be(words[index]);

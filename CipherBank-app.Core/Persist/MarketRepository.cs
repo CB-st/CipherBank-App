@@ -2,7 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
-using Microsoft.Data.Sqlite;
+using CipherBank_app.Persist.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Persist;
 
@@ -22,26 +23,40 @@ public sealed class MarketRepository : IMarketRepository
         IEnumerable<(long T, double V)> points,
         CancellationToken ct)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(points);
         var normalizedSymbol = symbol.ToUpperInvariant();
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using var transaction = (Microsoft.Data.Sqlite.SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
-        foreach ((var timestamp, var value) in points)
+        var latestByTimestamp = points
+            .GroupBy(point => point.T)
+            .ToDictionary(group => group.Key, group => group.Last().V);
+        if (latestByTimestamp.Count == 0)
         {
-            await using SqliteCommand cmd = conn.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText = """
-                INSERT INTO ohlc (symbol, t, v)
-                VALUES ($symbol, $timestamp, $value)
-                ON CONFLICT(symbol, t) DO UPDATE SET v=$value
-                """;
-            cmd.Parameters.AddWithValue("$symbol", normalizedSymbol);
-            cmd.Parameters.AddWithValue("$timestamp", timestamp);
-            cmd.Parameters.AddWithValue("$value", value);
-            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            return;
         }
 
-        await transaction.CommitAsync(ct).ConfigureAwait(false);
+        await using var context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        var timestamps = latestByTimestamp.Keys.ToArray();
+        var existing = await context.OhlcPoints
+            .Where(entity => entity.Symbol == normalizedSymbol && timestamps.Contains(entity.Timestamp))
+            .ToDictionaryAsync(entity => entity.Timestamp, ct)
+            .ConfigureAwait(false);
+
+        foreach (var point in latestByTimestamp)
+        {
+            if (!existing.TryGetValue(point.Key, out var entity))
+            {
+                entity = new OhlcPointEntity
+                {
+                    Symbol = normalizedSymbol,
+                    Timestamp = point.Key,
+                };
+                context.OhlcPoints.Add(entity);
+            }
+
+            entity.Value = point.Value;
+        }
+
+        await context.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -62,25 +77,21 @@ public sealed class MarketRepository : IMarketRepository
         long? fromT,
         CancellationToken ct)
     {
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            SELECT t, v
-            FROM ohlc
-            WHERE symbol=$symbol AND ($fromT IS NULL OR t >= $fromT)
-            ORDER BY t
-            """;
-        cmd.Parameters.AddWithValue("$symbol", symbol.ToUpperInvariant());
-        cmd.Parameters.AddWithValue("$fromT", (object?)fromT ?? DBNull.Value);
-
-        var points = new List<(long T, double V)>();
-        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
-        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        var normalizedSymbol = symbol.ToUpperInvariant();
+        await using var context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        IQueryable<OhlcPointEntity> query = context.OhlcPoints
+            .AsNoTracking()
+            .Where(entity => entity.Symbol == normalizedSymbol);
+        if (fromT.HasValue)
         {
-            points.Add((reader.GetInt64(0), reader.GetDouble(1)));
+            query = query.Where(entity => entity.Timestamp >= fromT.Value);
         }
 
-        return points;
+        var entities = await query
+            .OrderBy(entity => entity.Timestamp)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+        return entities.Select(entity => (entity.Timestamp, entity.Value)).ToList();
     }
 }

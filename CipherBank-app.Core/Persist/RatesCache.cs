@@ -2,7 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
-using Microsoft.Data.Sqlite;
+using CipherBank_app.Persist.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Persist;
 
@@ -19,27 +20,39 @@ public sealed class RatesCache : IRatesCache
     /// <inheritdoc />
     public async Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct)
     {
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using var transaction = (Microsoft.Data.Sqlite.SqliteTransaction)await conn.BeginTransactionAsync(ct).ConfigureAwait(false);
-        foreach (RateRow row in rows)
+        ArgumentNullException.ThrowIfNull(rows);
+        var normalized = rows
+            .Select(row => row with { Symbol = row.Symbol.ToUpperInvariant() })
+            .GroupBy(row => row.Symbol, StringComparer.Ordinal)
+            .Select(group => group.Last())
+            .ToArray();
+        if (normalized.Length == 0)
         {
-            await using SqliteCommand cmd = conn.CreateCommand();
-            cmd.Transaction = transaction;
-            cmd.CommandText = """
-                INSERT INTO rates_snapshot (symbol, usd, change24h, updated_at)
-                VALUES ($symbol, $usd, $change24h, $updatedAt)
-                ON CONFLICT(symbol) DO UPDATE SET
-                  usd=$usd, change24h=$change24h, updated_at=$updatedAt
-                """;
-            cmd.Parameters.AddWithValue("$symbol", row.Symbol.ToUpperInvariant());
-            cmd.Parameters.AddWithValue("$usd", row.Usd);
-            cmd.Parameters.AddWithValue("$change24h", row.Change24h);
-            cmd.Parameters.AddWithValue("$updatedAt", row.UpdatedAtMs);
-            await cmd.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            return;
         }
 
-        await transaction.CommitAsync(ct).ConfigureAwait(false);
+        await using var context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        var symbols = normalized.Select(row => row.Symbol).ToArray();
+        var existingRows = await context.RateSnapshots
+            .Where(entity => symbols.Contains(entity.Symbol))
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+        var existing = existingRows.ToDictionary(entity => entity.Symbol, StringComparer.Ordinal);
+
+        foreach (var row in normalized)
+        {
+            if (!existing.TryGetValue(row.Symbol, out var entity))
+            {
+                entity = new RateSnapshotEntity { Symbol = row.Symbol };
+                context.RateSnapshots.Add(entity);
+            }
+
+            entity.Usd = row.Usd;
+            entity.Change24h = row.Change24h;
+            entity.UpdatedAtMs = row.UpdatedAtMs;
+        }
+
+        await context.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -48,39 +61,26 @@ public sealed class RatesCache : IRatesCache
         CancellationToken ct)
     {
         var requestedSymbols = symbols?
+            .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
             .Select(symbol => symbol.ToUpperInvariant())
             .Distinct(StringComparer.Ordinal)
             .ToArray() ?? [];
 
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync(ct).ConfigureAwait(false);
-        await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT symbol, usd, change24h, updated_at FROM rates_snapshot ORDER BY symbol";
-
-        var rows = new List<RateRow>();
-        HashSet<string>? requestedSet = requestedSymbols.Length == 0
-            ? null
-            : requestedSymbols.ToHashSet(StringComparer.Ordinal);
-        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
-        var ordSymbol = reader.GetOrdinal("symbol");
-        var ordUsd = reader.GetOrdinal("usd");
-        var ordChange24h = reader.GetOrdinal("change24h");
-        var ordUpdatedAt = reader.GetOrdinal("updated_at");
-        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        await using var context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        IQueryable<RateSnapshotEntity> query = context.RateSnapshots.AsNoTracking();
+        if (requestedSymbols.Length > 0)
         {
-            var symbol = reader.GetString(ordSymbol);
-            if (requestedSet is not null && !requestedSet.Contains(symbol))
-            {
-                continue;
-            }
-
-            rows.Add(new RateRow(
-                symbol,
-                reader.GetDouble(ordUsd),
-                reader.GetDouble(ordChange24h),
-                reader.GetInt64(ordUpdatedAt)));
+            query = query.Where(entity => requestedSymbols.Contains(entity.Symbol));
         }
 
-        return rows;
+        return await query
+            .OrderBy(entity => entity.Symbol)
+            .Select(entity => new RateRow(
+                entity.Symbol,
+                entity.Usd,
+                entity.Change24h,
+                entity.UpdatedAtMs))
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
     }
 }

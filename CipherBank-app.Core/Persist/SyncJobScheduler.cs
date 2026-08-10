@@ -2,18 +2,39 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.Configuration;
+
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
 public sealed class SyncJobScheduler : ISyncJobScheduler
 {
-    private const int MaxConcurrency = 2;
-
     private readonly object _gate = new();
-    private readonly List<QueuedJob> _queue = [];
+    private readonly PriorityQueue<QueuedJob, (int Priority, long Sequence)> _queue = new();
+    private readonly HashSet<string> _queuedKeys = new(StringComparer.Ordinal);
     private readonly HashSet<string> _inFlightKeys = new(StringComparer.Ordinal);
+    private readonly TaskScheduler _taskScheduler;
+    private readonly int _maxConcurrency;
+    private long _sequence;
     private int _running;
     private TaskCompletionSource? _idleSignal;
+
+    public SyncJobScheduler()
+        : this(TaskScheduler.Default, new SyncSchedulerOptions())
+    {
+    }
+
+    public SyncJobScheduler(TaskScheduler taskScheduler, SyncSchedulerOptions options)
+    {
+        _taskScheduler = taskScheduler ?? throw new ArgumentNullException(nameof(taskScheduler));
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.MaxConcurrency is < 1 or > 8)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "MaxConcurrency must be between 1 and 8.");
+        }
+
+        _maxConcurrency = options.MaxConcurrency;
+    }
 
     /// <inheritdoc />
     public void Enqueue(string key, SyncPriority priority, Func<CancellationToken, Task> work)
@@ -23,17 +44,14 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
 
         lock (_gate)
         {
-            if (_inFlightKeys.Contains(key) || _queue.Exists(job => job.Key == key))
+            if (_inFlightKeys.Contains(key) || _queuedKeys.Contains(key))
             {
                 return;
             }
 
-            _queue.Add(new QueuedJob(key, priority, work, Environment.TickCount64));
-            _queue.Sort(static (left, right) =>
-            {
-                var byPriority = left.Priority.CompareTo(right.Priority);
-                return byPriority != 0 ? byPriority : left.EnqueuedAt.CompareTo(right.EnqueuedAt);
-            });
+            var sequence = ++_sequence;
+            _queue.Enqueue(new QueuedJob(key, work), ((int)priority, sequence));
+            _queuedKeys.Add(key);
         }
 
         Pump();
@@ -68,28 +86,31 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
     {
         while (true)
         {
-            QueuedJob? job = null;
+            QueuedJob job;
             lock (_gate)
             {
-                if (_running >= MaxConcurrency || _queue.Count == 0)
+                if (_running >= _maxConcurrency || _queue.Count == 0)
                 {
                     return;
                 }
 
-                var nextIndex = _queue.FindIndex(candidate =>
-                    !_inFlightKeys.Contains(candidate.Key));
-                if (nextIndex < 0)
-                {
-                    return;
-                }
-
-                job = _queue[nextIndex];
-                _queue.RemoveAt(nextIndex);
+                job = _queue.Dequeue();
+                _queuedKeys.Remove(job.Key);
                 _running++;
                 _inFlightKeys.Add(job.Key);
             }
 
-            _ = RunJobAsync(job);
+            _ = Task.Factory.StartNew(
+                    static state =>
+                    {
+                        var dispatch = (DispatchState)state!;
+                        return dispatch.Owner.RunJobAsync(dispatch.Job);
+                    },
+                    new DispatchState(this, job),
+                    CancellationToken.None,
+                    TaskCreationOptions.DenyChildAttach,
+                    _taskScheduler)
+                .Unwrap();
         }
     }
 
@@ -138,7 +159,7 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
 
     private sealed record QueuedJob(
         string Key,
-        SyncPriority Priority,
-        Func<CancellationToken, Task> Work,
-        long EnqueuedAt);
+        Func<CancellationToken, Task> Work);
+
+    private sealed record DispatchState(SyncJobScheduler Owner, QueuedJob Job);
 }

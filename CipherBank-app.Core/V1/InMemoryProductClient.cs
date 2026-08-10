@@ -1,4 +1,4 @@
-// <copyright file="MockProductApi.cs" company="CipherBank">
+// <copyright file="InMemoryProductClient.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
@@ -6,8 +6,8 @@ using System.Globalization;
 
 namespace CipherBank_app.V1;
 
-/// <summary>In-process /v1 mock (Cora fixtures parity).</summary>
-public sealed class MockProductApi : IProductApi
+/// <summary>Stateful in-memory product client for development and integration fixtures.</summary>
+public sealed class InMemoryProductClient : IProductClient
 {
     // --- Fixture constants ---
     private const string MockAccessToken = "mock-access";
@@ -50,12 +50,12 @@ public sealed class MockProductApi : IProductApi
 
     private PrefsWireDto _prefs;
 
-    public MockProductApi()
+    public InMemoryProductClient()
         : this(TimeProvider.System)
     {
     }
 
-    public MockProductApi(TimeProvider timeProvider)
+    public InMemoryProductClient(TimeProvider timeProvider)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
         _prefs = CreateDefaultPrefs();
@@ -100,7 +100,7 @@ public sealed class MockProductApi : IProductApi
     public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
         // Prefer ISessionChallengeClient / IPqChannelChallengeSource in DI for real crypto.
-        // This stub satisfies IProductApi for callers that hit MockProductApi directly.
+        // This stub satisfies IProductClient for callers that hit InMemoryProductClient directly.
         _ = accountPublicKeyWire;
         return Task.FromResult(new SessionChallengeDto
         {
@@ -274,7 +274,7 @@ public sealed class MockProductApi : IProductApi
 
     /// <summary>
     /// Builds a fixture bootstrap recipient (shared shape for mock twins).
-    /// Use: Low (GetAccountBootstrapAsync). Scope: MockProductApi.
+    /// Use: Low (GetAccountBootstrapAsync). Scope: InMemoryProductClient.
     /// </summary>
     private static BootstrapRecipientDto CreateBootstrapRecipient(
         string id,

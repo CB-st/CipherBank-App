@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.Configuration;
 using CipherBank_app.Persist;
 using FluentAssertions;
 using Xunit;
@@ -125,6 +126,26 @@ public class SyncJobSchedulerTests
         runCount.Should().Be(1);
     }
 
+    [Fact]
+    public async Task Enqueue_DispatchesThroughInjectedTaskScheduler()
+    {
+        var taskScheduler = new RecordingTaskScheduler();
+        var queue = new SyncJobScheduler(
+            taskScheduler,
+            new SyncSchedulerOptions { MaxConcurrency = 1 });
+        var runs = 0;
+
+        queue.Enqueue("btc", SyncPriority.P1, _ =>
+        {
+            runs++;
+            return Task.CompletedTask;
+        });
+        await queue.DrainAsync(default);
+
+        runs.Should().Be(1);
+        taskScheduler.QueuedTasks.Should().BeGreaterThan(0);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)
     {
         var deadline = Environment.TickCount64 + timeoutMs;
@@ -137,5 +158,20 @@ public class SyncJobSchedulerTests
 
             await Task.Delay(10);
         }
+    }
+
+    private sealed class RecordingTaskScheduler : TaskScheduler
+    {
+        public int QueuedTasks { get; private set; }
+
+        protected override IEnumerable<Task>? GetScheduledTasks() => Array.Empty<Task>();
+
+        protected override void QueueTask(Task task)
+        {
+            QueuedTasks++;
+            TryExecuteTask(task).Should().BeTrue();
+        }
+
+        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
     }
 }

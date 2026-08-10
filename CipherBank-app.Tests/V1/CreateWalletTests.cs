@@ -13,7 +13,7 @@ public sealed class CreateWalletTests
     [Fact]
     public async Task Mock_managed_xmr_returns_wallet_without_spend_key_fields()
     {
-        var api = new MockProductApi();
+        var api = new InMemoryProductClient();
         CreateWalletResultDto result = await api.CreateWalletAsync(
             new CreateWalletRequestDto
             {

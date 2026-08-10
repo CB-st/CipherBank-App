@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Numerics;
+
 namespace CipherBank_app.Charts;
 
 /// <summary>Result of mapping a series into a drawable path within a box.</summary>
@@ -11,5 +13,6 @@ public sealed class ChartPathResult
 
     public string Area { get; init; } = string.Empty;
 
-    public IReadOnlyList<(double X, double Y)> Pts { get; init; } = Array.Empty<(double, double)>();
+    /// <summary>Rendered device-independent pixel coordinates.</summary>
+    public IReadOnlyList<Vector2> Points { get; init; } = Array.Empty<Vector2>();
 }

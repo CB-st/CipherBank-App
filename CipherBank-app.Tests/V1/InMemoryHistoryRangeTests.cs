@@ -1,4 +1,4 @@
-// <copyright file="MockHistoryRangeTests.cs" company="CipherBank">
+// <copyright file="InMemoryHistoryRangeTests.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
@@ -8,7 +8,7 @@ using Xunit;
 
 namespace CipherBank_app.Tests.V1;
 
-public class MockHistoryRangeTests
+public class InMemoryHistoryRangeTests
 {
     [Theory]
     [InlineData("1d", 25)]
@@ -17,7 +17,7 @@ public class MockHistoryRangeTests
     [InlineData("1y", 53)]
     public async Task GetHistoryAsync_HonorsRangePointCounts(string range, int expectedCount)
     {
-        var api = new MockProductApi();
+        var api = new InMemoryProductClient();
         IReadOnlyList<HistoryPointDto> pts = await api.GetHistoryAsync("BTC", range, default);
         pts.Should().HaveCount(expectedCount);
     }

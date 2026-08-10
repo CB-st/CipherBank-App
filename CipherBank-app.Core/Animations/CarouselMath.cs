@@ -15,9 +15,11 @@ public static class CarouselMath
     public static CardTransform ComputeCardTransform(double distance, CarouselLayoutConfig config)
     {
         var abs = Math.Abs(distance);
-        double sign = Math.Sign(distance);
+        var sign = Math.Sign(distance);
         var spread = Math.Min(abs, 1.0) + (config.EdgeCompression * Math.Max(abs - 1.0, 0.0));
 
+        // Lay cards horizontally along a compressed arc, then tilt, shrink, fade,
+        // and stack them as their distance from the focused card increases.
         var translationX = sign * config.Stride * spread;
         var translationY = config.ArcDrop * distance * distance;
         var rotationY = Math.Clamp(-distance * config.MaxTilt, -config.MaxTilt, config.MaxTilt);
@@ -35,6 +37,7 @@ public static class CarouselMath
     /// </summary>
     public static int ComputeTargetIndex(double position, double velocity, int count, double flickThreshold)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(flickThreshold);
         if (count <= 0)
         {
             return 0;
@@ -43,13 +46,15 @@ public static class CarouselMath
         int target;
         if (Math.Abs(velocity) >= flickThreshold)
         {
-            var direction = velocity > 0 ? 1 : -1;
+            var direction = Math.Sign(velocity);
             target = direction > 0
                 ? (int)Math.Floor(position) + 1
                 : (int)Math.Ceiling(position) - 1;
 
-            var extra = (int)((Math.Abs(velocity) - flickThreshold) / (flickThreshold * 2.0));
-            target += direction * extra;
+            // Very fast gestures intentionally carry across additional cards. Each
+            // two threshold units adds one card while preserving a one-card minimum.
+            var additionalCards = (int)((Math.Abs(velocity) - flickThreshold) / (flickThreshold * 2.0));
+            target += direction * additionalCards;
         }
         else
         {

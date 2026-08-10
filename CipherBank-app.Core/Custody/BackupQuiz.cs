@@ -10,6 +10,11 @@ namespace CipherBank_app.Custody;
 public static class BackupQuiz
 {
     /// <summary>Pick <paramref name="count"/> distinct random word indices (sorted ascending).</summary>
+    /// <remarks>
+    /// The index is intentionally <see cref="int"/> because arrays, <c>Enumerable.Range</c>,
+    /// and <c>RandomNumberGenerator.GetInt32</c> use signed 32-bit indices. This method
+    /// never returns a negative value.
+    /// </remarks>
     public static IReadOnlyList<(int Index, string Word)> PickRandom(string[] words, int count)
         => PickRandom(words, count, nextInclusiveExclusive: null);
 

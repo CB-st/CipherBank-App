@@ -21,14 +21,14 @@ namespace CipherBank_app.Tests.Compat;
 public class CoreZeroTokenOverloadTests
 {
     /// <summary>
-    /// Exercises every IProductApi zero-token overload and asserts each forwards CancellationToken.None.
+    /// Exercises every IProductClient zero-token overload and asserts each forwards CancellationToken.None.
     /// Use: Low (regression gate). Scope: this fixture.
     /// </summary>
     [Fact]
     public async Task ProductApi_ZeroTokenOverloads_ForwardNone()
     {
         var stub = new RecordingProductApi();
-        IProductApi api = stub;
+        IProductClient api = stub;
 
         await api.GetPortfolioAsync();
         await api.GetHistoryAsync("BTC", "1d");
@@ -146,13 +146,14 @@ public class CoreZeroTokenOverloadTests
         await debouncer.DebounceAsync(() => Task.CompletedTask);
         debouncer.FireCount.Should().Be(1);
 
+        var simulator = new EmvExchangeSimulator();
         var stages = new List<string>();
-        await foreach (var stage in EmvExchangeSimulator.RunAsync())
+        await foreach (var stage in simulator.RunAsync())
         {
             stages.Add(stage);
         }
 
-        stages.Should().Equal(EmvExchangeSimulator.Stages);
+        stages.Should().Equal(simulator.Stages);
     }
 
     /// <summary>Records the token every CancellationToken-required member receives.</summary>
@@ -175,8 +176,8 @@ public class CoreZeroTokenOverloadTests
         }
     }
 
-    /// <summary>IProductApi stub implementing only the token-required members.</summary>
-    private sealed class RecordingProductApi : TokenRecorder, IProductApi
+    /// <summary>IProductClient stub implementing only the token-required members.</summary>
+    private sealed class RecordingProductApi : TokenRecorder, IProductClient
     {
         public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct) => Record<PortfolioDto>(ct);
 

@@ -110,13 +110,8 @@ dotnet_diagnostic.SA1101.severity = none   # Don't require 'this.' prefix — mo
 dotnet_diagnostic.SA1309.severity = none   # Allow _camelCase private fields — matches project naming rules above
 dotnet_diagnostic.SA1200.severity = none   # Allow usings outside namespace — required for file-scoped namespaces
 dotnet_diagnostic.SA0001.severity = none   # Don't require XML comment analysis on all files
-
-# M1a Sonar lock: IDE0008 none; S4004/S4055 deferred (SONAR_GATE).
-dotnet_diagnostic.IDE0008.severity = none
-[CipherBank-app.Core/Persist/UserPrefs.cs]
-dotnet_diagnostic.S4004.severity = none
-[CipherBank-app.Core/Persist/*.cs]
-dotnet_diagnostic.S4055.severity = none
+dotnet_diagnostic.IDE0007.severity = suggestion
+dotnet_diagnostic.SA1515.severity = suggestion
 
 # XML files
 [*.{xml,xaml,csproj,props,targets}]

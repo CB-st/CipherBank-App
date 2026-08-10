@@ -5,6 +5,7 @@
 using CipherBank_app.Persist;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CipherBank_app.Tests.Persist;
@@ -80,15 +81,29 @@ public class RecipientRepositoryTests
         listed[0].AccountMask.Should().Be(AchRecipientValidation.MaskAccount("88210001"));
         listed[0].RoutingMask.Should().Be(AchRecipientValidation.MaskRouting("021000021"));
 
-        await using SqliteConnection conn = db.Open();
+        await using CipherBankDbContext context = await db.CreateContextAsync();
+        var conn = (SqliteConnection)context.Database.GetDbConnection();
         await conn.OpenAsync();
         await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT account, routing, account_mask, routing_mask FROM recipients WHERE id='payee-1'";
+        cmd.CommandText = "SELECT account_mask, routing_mask FROM recipients WHERE id=$id";
+        cmd.Parameters.AddWithValue("$id", "payee-1");
         await using SqliteDataReader reader = await cmd.ExecuteReaderAsync();
         (await reader.ReadAsync()).Should().BeTrue();
-        reader.IsDBNull(0).Should().BeTrue();
-        reader.IsDBNull(1).Should().BeTrue();
-        reader.GetString(2).Should().Contain("0001");
-        reader.GetString(3).Should().Contain("0021");
+        reader.GetString(0).Should().Contain("0001");
+        reader.GetString(1).Should().Contain("0021");
+        await reader.DisposeAsync();
+
+        await using SqliteCommand schema = conn.CreateCommand();
+        schema.CommandText = "SELECT name FROM pragma_table_info('recipients')";
+        var columns = new List<string>();
+        await using SqliteDataReader schemaReader = await schema.ExecuteReaderAsync();
+        while (await schemaReader.ReadAsync())
+        {
+            columns.Add(schemaReader.GetString(0));
+        }
+
+        columns.Should().NotContain("account");
+        columns.Should().NotContain("routing");
+        columns.Should().NotContain("account_full");
     }
 }

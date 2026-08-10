@@ -3,11 +3,13 @@
 // </copyright>
 
 using System.Globalization;
+using CipherBank_app.Configuration;
 using CipherBank_app.Extensions;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Mocks;
 using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 
@@ -97,6 +99,12 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder RegisterServices(this MauiAppBuilder mauiAppBuilder)
     {
+        // Load repository-owned defaults first; later providers can override them.
+        mauiAppBuilder.Configuration.AddConfiguration(CipherBankDefaultsConfiguration.Build());
+        mauiAppBuilder.Services.AddCipherBankCore(
+            mauiAppBuilder.Configuration,
+            FileSystem.Current.AppDataDirectory);
+
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
 

@@ -2,8 +2,8 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
-using System.Globalization;
-using Microsoft.Data.Sqlite;
+using CipherBank_app.Persist.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Persist;
 
@@ -19,72 +19,54 @@ public sealed class WalletRepository : IWalletRepository
 
     public async Task<IReadOnlyList<LocalWalletRow>> ListAsync()
     {
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync().ConfigureAwait(false);
-        await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, symbol, label, address, path, account_index, kind, created_at FROM wallets ORDER BY created_at";
-        var list = new List<LocalWalletRow>();
-        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
-        var ordId = reader.GetOrdinal("id");
-        var ordSymbol = reader.GetOrdinal("symbol");
-        var ordLabel = reader.GetOrdinal("label");
-        var ordAddress = reader.GetOrdinal("address");
-        var ordPath = reader.GetOrdinal("path");
-        var ordAccountIndex = reader.GetOrdinal("account_index");
-        var ordKind = reader.GetOrdinal("kind");
-        var ordCreatedAt = reader.GetOrdinal("created_at");
-        while (await reader.ReadAsync().ConfigureAwait(false))
-        {
-            list.Add(new LocalWalletRow(
-                reader.GetString(ordId),
-                reader.GetString(ordSymbol),
-                await ReadOptionalStringAsync(reader, ordLabel).ConfigureAwait(false),
-                await ReadOptionalStringAsync(reader, ordAddress).ConfigureAwait(false),
-                await ReadOptionalStringAsync(reader, ordPath).ConfigureAwait(false),
-                reader.GetInt32(ordAccountIndex),
-                reader.GetString(ordKind),
-                DateTimeOffset.Parse(reader.GetString(ordCreatedAt), System.Globalization.CultureInfo.InvariantCulture)));
-        }
-
-        return list;
+        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
+        return await context.Wallets
+            .AsNoTracking()
+            .OrderBy(entity => entity.CreatedAt)
+            .Select(entity => new LocalWalletRow(
+                entity.Id,
+                entity.Symbol,
+                entity.Label,
+                entity.Address,
+                entity.Path,
+                entity.AccountIndex,
+                entity.Kind,
+                entity.CreatedAt))
+            .ToListAsync()
+            .ConfigureAwait(false);
     }
 
     public async Task UpsertAsync(LocalWalletRow row)
     {
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync().ConfigureAwait(false);
-        await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO wallets (id, symbol, label, address, path, account_index, kind, created_at)
-            VALUES ($id, $symbol, $label, $address, $path, $idx, $kind, $created)
-            ON CONFLICT(id) DO UPDATE SET
-              symbol=$symbol, label=$label, address=$address, path=$path, account_index=$idx, kind=$kind
-            """;
-        cmd.Parameters.AddWithValue("$id", row.Id);
-        cmd.Parameters.AddWithValue("$symbol", row.Symbol);
-        cmd.Parameters.AddWithValue("$label", (object?)row.Label ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$address", (object?)row.Address ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$path", (object?)row.Path ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("$idx", row.AccountIndex);
-        cmd.Parameters.AddWithValue("$kind", row.Kind);
-        cmd.Parameters.AddWithValue("$created", row.CreatedAt.ToString("O", CultureInfo.InvariantCulture));
-        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(row);
+        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
+        var entity = await context.Wallets.FindAsync(row.Id).ConfigureAwait(false);
+        if (entity is null)
+        {
+            entity = new WalletEntity { Id = row.Id, CreatedAt = row.CreatedAt };
+            context.Wallets.Add(entity);
+        }
+
+        entity.Symbol = row.Symbol;
+        entity.Label = row.Label;
+        entity.Address = row.Address;
+        entity.Path = row.Path;
+        entity.AccountIndex = row.AccountIndex;
+        entity.Kind = row.Kind;
+        await context.SaveChangesAsync().ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(string id)
     {
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync().ConfigureAwait(false);
-        await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "DELETE FROM wallets WHERE id=$id";
-        cmd.Parameters.AddWithValue("$id", id);
-        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
-    }
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
+        var entity = await context.Wallets.FindAsync(id).ConfigureAwait(false);
+        if (entity is null)
+        {
+            return;
+        }
 
-    /// <summary>
-    /// Reads a nullable TEXT column without sync IsDBNull.
-    /// Use: High (wallet list). Scope: WalletRepository row hydrate.
-    /// </summary>
-    private static async Task<string?> ReadOptionalStringAsync(System.Data.Common.DbDataReader reader, int ordinal)
-        => await reader.IsDBNullAsync(ordinal).ConfigureAwait(false) ? null : reader.GetString(ordinal);
+        context.Wallets.Remove(entity);
+        await context.SaveChangesAsync().ConfigureAwait(false);
+    }
 }

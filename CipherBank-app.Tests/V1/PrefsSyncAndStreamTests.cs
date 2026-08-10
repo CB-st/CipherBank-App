@@ -15,7 +15,7 @@ public class PrefsSyncAndStreamTests
     public async Task PrefsSync_RoundTripsThroughMockApi()
     {
         var store = new MemPrefs();
-        var api = new MockProductApi();
+        var api = new InMemoryProductClient();
         var sync = new PrefsSyncService(store, api);
 
         store.Current.CoraEnabled = false;

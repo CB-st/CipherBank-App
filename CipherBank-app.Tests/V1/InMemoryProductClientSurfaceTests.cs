@@ -1,4 +1,4 @@
-// <copyright file="MockProductApiSurfaceTests.cs" company="CipherBank">
+// <copyright file="InMemoryProductClientSurfaceTests.cs" company="CipherBank">
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
@@ -9,19 +9,19 @@ using Xunit;
 namespace CipherBank_app.Tests.V1;
 
 /// <summary>
-/// Broad surface coverage for MockProductApi endpoints under-exercised by story Facts.
-/// Use: High (CI / Sonar new_coverage). Scope: MockProductApi.
+/// Broad surface coverage for InMemoryProductClient endpoints under-exercised by story Facts.
+/// Use: High (CI / Sonar new_coverage). Scope: InMemoryProductClient.
 /// </summary>
-public sealed class MockProductApiSurfaceTests
+public sealed class InMemoryProductClientSurfaceTests
 {
     /// <summary>
     /// Exercises portfolio, history, session, quote, money-move, receive, prefs, bootstrap, POS.
-    /// Use: High. Scope: MockProductApi happy paths.
+    /// Use: High. Scope: InMemoryProductClient happy paths.
     /// </summary>
     [Fact]
-    public async Task MockProductApi_HappyPaths_ReturnFixtures()
+    public async Task InMemoryProductClient_HappyPaths_ReturnFixtures()
     {
-        var api = new MockProductApi();
+        var api = new InMemoryProductClient();
 
         PortfolioDto portfolio = await api.GetPortfolioAsync(default);
         portfolio.TotalUsd.Should().NotBeNullOrWhiteSpace();

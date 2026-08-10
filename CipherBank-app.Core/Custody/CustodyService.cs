@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Security.Cryptography;
+using CipherBank_app.Configuration;
 
 namespace CipherBank_app.Custody;
 
@@ -24,19 +25,35 @@ public sealed class CustodyService : ICustodyService
 
     private readonly ISecureStore _store;
     private readonly IPinService _pin;
+    private readonly ICryptoBox _cryptoBox;
     private readonly TimeProvider _timeProvider;
     private string? _mnemonic;
     private DateTimeOffset? _expires;
 
     public CustodyService(ISecureStore store, IPinService pin)
-        : this(store, pin, TimeProvider.System)
+        : this(store, pin, new AesGcmCryptoBox(CryptographyOptions.Default), TimeProvider.System)
     {
     }
 
     public CustodyService(ISecureStore store, IPinService pin, TimeProvider timeProvider)
+        : this(store, pin, new AesGcmCryptoBox(CryptographyOptions.Default), timeProvider)
+    {
+    }
+
+    public CustodyService(ISecureStore store, IPinService pin, ICryptoBox cryptoBox)
+        : this(store, pin, cryptoBox, TimeProvider.System)
+    {
+    }
+
+    public CustodyService(
+        ISecureStore store,
+        IPinService pin,
+        ICryptoBox cryptoBox,
+        TimeProvider timeProvider)
     {
         _store = store;
         _pin = pin;
+        _cryptoBox = cryptoBox;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -202,15 +219,18 @@ public sealed class CustodyService : ICustodyService
     public string? ExportMnemonic()
         => IsUnlocked ? _mnemonic : null;
 
+    private static string CreateDeviceSecret()
+        => Convert.ToBase64String(RandomNumberGenerator.GetBytes(DeviceSecretByteLength));
+
     /// <summary>
     /// Opens a sealed blob without throwing so unlock can try the next key material.
     /// Use: High (unlock paths). Scope: single CryptoBox open attempt.
     /// </summary>
-    private static bool TryOpen(string blob, string keyMaterial, out string? mnemonic)
+    private bool TryOpen(string blob, string keyMaterial, out string? mnemonic)
     {
         try
         {
-            mnemonic = CryptoBox.Open(blob, keyMaterial);
+            mnemonic = _cryptoBox.Open(blob, keyMaterial);
             return true;
         }
         catch (CryptographicException)
@@ -234,9 +254,6 @@ public sealed class CustodyService : ICustodyService
             return false;
         }
     }
-
-    private static string CreateDeviceSecret()
-        => Convert.ToBase64String(RandomNumberGenerator.GetBytes(DeviceSecretByteLength));
 
     /// <summary>
     /// Clears in-memory custody session state after a failed unlock attempt.
@@ -285,7 +302,7 @@ public sealed class CustodyService : ICustodyService
     private async Task PersistDeviceSecretSealAsync(string mnemonic)
     {
         var deviceSecret = CreateDeviceSecret();
-        var sealedBlob = CryptoBox.Seal(mnemonic, deviceSecret);
+        var sealedBlob = _cryptoBox.Seal(mnemonic, deviceSecret);
         await _store.SetAsync(StagingDeviceSecretKey, deviceSecret).ConfigureAwait(false);
         await _store.SetAsync(BlobKey, sealedBlob).ConfigureAwait(false);
         await _store.SetAsync(DeviceSecretKey, deviceSecret).ConfigureAwait(false);

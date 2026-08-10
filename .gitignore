@@ -72,12 +72,6 @@ out/
 *.svclog
 *.scc
 
-# Top-level docs (architecture, summaries)
-/*.md
-/*.mmd
-!/AGENTS.md
-!/README.md
-
 # Test results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*

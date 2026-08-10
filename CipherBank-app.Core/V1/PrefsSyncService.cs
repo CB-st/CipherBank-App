@@ -12,9 +12,9 @@ namespace CipherBank_app.V1;
 public sealed class PrefsSyncService : IPrefsSyncService
 {
     private readonly IPrefsStore _store;
-    private readonly IProductApi _api;
+    private readonly IProductClient _api;
 
-    public PrefsSyncService(IPrefsStore store, IProductApi api)
+    public PrefsSyncService(IPrefsStore store, IProductClient api)
     {
         _store = store;
         _api = api;

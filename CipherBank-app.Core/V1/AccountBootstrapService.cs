@@ -9,18 +9,18 @@ namespace CipherBank_app.V1;
 /// <inheritdoc />
 public sealed class AccountBootstrapService : IAccountBootstrapService
 {
-    private readonly IProductApi _api;
+    private readonly IProductClient _api;
     private readonly IPrefsStore _prefs;
     private readonly IRecipientRepository _recipients;
     private readonly TimeProvider _timeProvider;
 
-    public AccountBootstrapService(IProductApi api, IPrefsStore prefs, IRecipientRepository recipients)
+    public AccountBootstrapService(IProductClient api, IPrefsStore prefs, IRecipientRepository recipients)
         : this(api, prefs, recipients, TimeProvider.System)
     {
     }
 
     public AccountBootstrapService(
-        IProductApi api,
+        IProductClient api,
         IPrefsStore prefs,
         IRecipientRepository recipients,
         TimeProvider timeProvider)

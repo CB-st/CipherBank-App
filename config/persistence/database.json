@@ -1,0 +1,6 @@
+{
+  "_comment": "Names the on-device EF Core SQLite database. Directory is supplied by the platform host.",
+  "Persistence": {
+    "DatabaseName": "cipherbank.db"
+  }
+}

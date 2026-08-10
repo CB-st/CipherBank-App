@@ -7,9 +7,9 @@ using System.Net.WebSockets;
 using System.Text.Json;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
-using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Session;
 
@@ -20,30 +20,25 @@ public sealed class AppSession : IAppSession
     private const int MillisecondsPerSecond = 1000;
 
     private readonly ICustodyService _custody;
-    private readonly IProductApi _api;
-    private readonly IStreamService _stream;
-    private readonly IStreamHub _streamHub;
+    private readonly IProductSessionCoordinator _productSession;
     private readonly ILocalWalletSeeder _seeder;
     private readonly IPrefsStore _prefs;
-    private readonly IPrefsSyncService _prefsSync;
-    private readonly IAccountBootstrapService _bootstrap;
-    private readonly IProductSessionStore _productSessions;
     private readonly TimeProvider _timeProvider;
     private DateTimeOffset _lastTouch;
     private Task _pendingDisconnect = Task.CompletedTask;
 
-    public AppSession(AppSessionDeps deps)
+    public AppSession(
+        ICustodyService custody,
+        IProductSessionCoordinator productSession,
+        ILocalWalletSeeder seeder,
+        IPrefsStore prefs,
+        TimeProvider timeProvider)
     {
-        _custody = deps.Custody;
-        _api = deps.Api;
-        _stream = deps.Stream;
-        _streamHub = deps.StreamHub;
-        _seeder = deps.Seeder;
-        _prefs = deps.Prefs;
-        _prefsSync = deps.PrefsSync;
-        _bootstrap = deps.Bootstrap;
-        _productSessions = deps.ProductSessions;
-        _timeProvider = deps.Time ?? TimeProvider.System;
+        _custody = custody;
+        _productSession = productSession;
+        _seeder = seeder;
+        _prefs = prefs;
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _lastTouch = _timeProvider.GetUtcNow();
         IdleMs = DefaultIdleMs;
     }
@@ -102,10 +97,9 @@ public sealed class AppSession : IAppSession
 
     public void Lock()
     {
-        _streamHub.StopStreaming();
+        _productSession.StopSession();
         _custody.Lock();
         AccessToken = null;
-        _productSessions.Clear();
         QueueDisconnect();
         Locked?.Invoke(this, EventArgs.Empty);
     }
@@ -149,43 +143,13 @@ public sealed class AppSession : IAppSession
         await _pendingDisconnect.ConfigureAwait(false);
         try
         {
-            SessionDto session = await _api.CreateSessionAsync(CancellationToken.None).ConfigureAwait(false);
-            AccessToken = session.AccessToken;
-            await _productSessions.SaveAsync(session).ConfigureAwait(false);
-            await _stream.ConnectAsync(CancellationToken.None).ConfigureAwait(false);
-            _streamHub.Start();
-
-            try
-            {
-                await _prefsSync.PullMergeAsync(CancellationToken.None).ConfigureAwait(false);
-                if (applyBootstrap)
-                {
-                    await _bootstrap.ApplyAsync(CancellationToken.None).ConfigureAwait(false);
-                }
-
-                UserPrefs prefs = await _prefs.LoadAsync().ConfigureAwait(false);
-                IdleMs = prefs.LockIdleSeconds > 0 ? prefs.LockIdleSeconds * MillisecondsPerSecond : DefaultIdleMs;
-            }
-            catch (InvalidOperationException)
-            {
-                // Prefs/bootstrap are best-effort after a successful product session.
-            }
-            catch (FormatException)
-            {
-                // Prefs/bootstrap are best-effort after a successful product session.
-            }
-            catch (ArgumentException)
-            {
-                // Prefs/bootstrap are best-effort after a successful product session.
-            }
-            catch (SqliteException)
-            {
-                // Prefs/bootstrap are best-effort after a successful product session.
-            }
-            catch (JsonException)
-            {
-                // Prefs/bootstrap are best-effort after a successful product session.
-            }
+            var result = await _productSession
+                .StartAsync(applyBootstrap, CancellationToken.None)
+                .ConfigureAwait(false);
+            AccessToken = result.AccessToken;
+            IdleMs = result.LockIdleSeconds > 0
+                ? result.LockIdleSeconds * MillisecondsPerSecond
+                : DefaultIdleMs;
 
             Touch();
             return true;
@@ -206,6 +170,11 @@ public sealed class AppSession : IAppSession
             return false;
         }
         catch (SqliteException)
+        {
+            RollbackFailedUnlock();
+            return false;
+        }
+        catch (DbUpdateException)
         {
             RollbackFailedUnlock();
             return false;
@@ -239,10 +208,9 @@ public sealed class AppSession : IAppSession
     /// </summary>
     private void RollbackFailedUnlock()
     {
-        _streamHub.StopStreaming();
+        _productSession.StopSession();
         _custody.Lock();
         AccessToken = null;
-        _productSessions.Clear();
         QueueDisconnect();
     }
 
@@ -257,7 +225,7 @@ public sealed class AppSession : IAppSession
     {
         try
         {
-            await _stream.DisconnectAsync().ConfigureAwait(false);
+            await _productSession.DisconnectAsync().ConfigureAwait(false);
         }
         catch (WebSocketException)
         {

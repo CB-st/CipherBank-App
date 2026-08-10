@@ -3,7 +3,8 @@
 // </copyright>
 
 using System.Text.Json;
-using Microsoft.Data.Sqlite;
+using CipherBank_app.Persist.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Persist;
 
@@ -20,15 +21,16 @@ public sealed class PrefsStore : IPrefsStore
 
     public async Task<UserPrefs> LoadAsync()
     {
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync().ConfigureAwait(false);
-        await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT value FROM prefs WHERE key=$k";
-        cmd.Parameters.AddWithValue("$k", Key);
-        var val = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
-        UserPrefs prefs = val is string json && !string.IsNullOrWhiteSpace(json)
-            ? JsonSerializer.Deserialize<UserPrefs>(json) ?? new UserPrefs()
-            : new UserPrefs();
+        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
+        var json = await context.Preferences
+            .AsNoTracking()
+            .Where(entity => entity.Key == Key)
+            .Select(entity => entity.Value)
+            .SingleOrDefaultAsync()
+            .ConfigureAwait(false);
+        var prefs = string.IsNullOrWhiteSpace(json)
+            ? new UserPrefs()
+            : JsonSerializer.Deserialize<UserPrefs>(json) ?? new UserPrefs();
 
         prefs.NormalizeHomeSections();
         return prefs;
@@ -36,17 +38,20 @@ public sealed class PrefsStore : IPrefsStore
 
     public async Task SaveAsync(UserPrefs prefs)
     {
+        ArgumentNullException.ThrowIfNull(prefs);
         prefs.NormalizeHomeSections();
         var json = JsonSerializer.Serialize(prefs);
-        await using SqliteConnection conn = _db.Open();
-        await conn.OpenAsync().ConfigureAwait(false);
-        await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            INSERT INTO prefs (key, value) VALUES ($k, $v)
-            ON CONFLICT(key) DO UPDATE SET value=$v
-            """;
-        cmd.Parameters.AddWithValue("$k", Key);
-        cmd.Parameters.AddWithValue("$v", json);
-        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+        await using var context = await _db.CreateContextAsync().ConfigureAwait(false);
+        var entity = await context.Preferences.FindAsync(Key).ConfigureAwait(false);
+        if (entity is null)
+        {
+            context.Preferences.Add(new PreferenceEntity { Key = Key, Value = json });
+        }
+        else
+        {
+            entity.Value = json;
+        }
+
+        await context.SaveChangesAsync().ConfigureAwait(false);
     }
 }

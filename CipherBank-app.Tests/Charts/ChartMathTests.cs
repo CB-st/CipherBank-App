@@ -19,7 +19,7 @@ public class ChartMathTests
         ChartPathResult result = ChartMath.ToPath(series, 100, 40);
         result.Line.Should().StartWith("M");
         result.Area.Should().EndWith("Z");
-        result.Pts.Should().HaveCount(2);
+        result.Points.Should().HaveCount(2);
     }
 
     [Fact]
@@ -52,4 +52,22 @@ public class ChartMathTests
 
     [Fact]
     public void ToIndexed_Empty_ReturnsEmpty() => ChartMath.ToIndexed(Array.Empty<ChartPoint>()).Should().BeEmpty();
+
+    [Fact]
+    public void ToPath_ZeroSpans_CentersCoordinates()
+    {
+        ChartPoint[] series = [new(1, 5), new(1, 5)];
+
+        ChartPathResult result = ChartMath.ToPath(series, 100, 40);
+
+        result.Points.Should().OnlyContain(point => point.X == 50 && point.Y == 20);
+    }
+
+    [Fact]
+    public void ToIndexed_ZeroBaseline_RejectsUndefinedPercentChange()
+    {
+        Action act = () => ChartMath.ToIndexed([new ChartPoint(0, 0), new ChartPoint(1, 2)]);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
 }

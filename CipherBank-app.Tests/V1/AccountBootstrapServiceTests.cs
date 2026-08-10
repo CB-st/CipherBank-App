@@ -52,10 +52,10 @@ public class AccountBootstrapServiceTests
         recipients.Rows.Single().AccountMask.Should().Be(AchRecipientValidation.MaskAccount("****4021"));
     }
 
-    private sealed class BootstrapApi : IProductApi
+    private sealed class BootstrapApi : IProductClient
     {
         private readonly AccountBootstrapDto _bootstrap;
-        private readonly MockProductApi _inner = new();
+        private readonly InMemoryProductClient _inner = new();
 
         public BootstrapApi(AccountBootstrapDto bootstrap)
         {

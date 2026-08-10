@@ -9,6 +9,7 @@ using CipherBank_app.Session;
 using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using FluentAssertions;
+using Moq;
 using Xunit;
 
 namespace CipherBank_app.Tests.Session;
@@ -88,7 +89,7 @@ public class AppSessionTests
         AppSession failing = CreateSession(
             custody,
             new FakeWallets(),
-            api: new FailingSessionApi(),
+            api: CreateFailingApi(new InvalidOperationException("offline")),
             productSessions: productSessions);
         (await failing.UnlockAsync("123456")).Should().BeFalse();
         custody.IsUnlocked.Should().BeFalse();
@@ -110,7 +111,7 @@ public class AppSessionTests
         AppSession failing = CreateSession(
             custody,
             new FakeWallets(),
-            api: new FailingSessionApi(new HttpRequestException("offline")),
+            api: CreateFailingApi(new HttpRequestException("offline")),
             productSessions: productSessions);
         (await failing.UnlockAsync("123456")).Should().BeFalse();
         custody.IsUnlocked.Should().BeFalse();
@@ -123,28 +124,39 @@ public class AppSessionTests
         FakeWallets wallets,
         FakePrefs? prefs = null,
         MemRecipients? recipients = null,
-        IProductApi? api = null,
+        IProductClient? api = null,
         InMemoryProductSessionStore? productSessions = null)
     {
         prefs ??= new FakePrefs();
         recipients ??= new MemRecipients();
-        api ??= new MockProductApi();
+        api ??= new InMemoryProductClient();
         productSessions ??= new InMemoryProductSessionStore();
         var stream = new MockStreamService();
         var hub = new StreamHub(stream);
         var prefsSync = new PrefsSyncService(prefs, api);
         var bootstrap = new AccountBootstrapService(api, prefs, recipients);
-        return new AppSession(new AppSessionDeps(
-            custody,
+        var productSession = new ProductSessionCoordinator(
             api,
             stream,
             hub,
-            new LocalWalletSeeder(wallets),
             prefs,
             prefsSync,
             bootstrap,
-            productSessions,
-            TimeProvider.System));
+            productSessions);
+        return new AppSession(
+            custody,
+            productSession,
+            new LocalWalletSeeder(wallets),
+            prefs,
+            TimeProvider.System);
+    }
+
+    private static IProductClient CreateFailingApi(Exception exception)
+    {
+        var api = new Mock<IProductClient>(MockBehavior.Strict);
+        api.Setup(value => value.CreateSessionAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.FromException<SessionDto>(exception));
+        return api.Object;
     }
 
     private sealed class MemStore : ISecureStore
@@ -224,83 +236,5 @@ public class AppSessionTests
         }
 
         public Task SeedDefaultsIfEmptyAsync() => Task.CompletedTask;
-    }
-
-    private sealed class FailingSessionApi : IProductApi
-    {
-        private readonly MockProductApi _inner = new();
-        private readonly Exception _createSessionFailure;
-
-        public FailingSessionApi()
-            : this(new InvalidOperationException("offline"))
-        {
-        }
-
-        public FailingSessionApi(Exception createSessionFailure)
-        {
-            _createSessionFailure = createSessionFailure;
-        }
-
-        public Task<SessionDto> CreateSessionAsync(CancellationToken ct)
-            => Task.FromException<SessionDto>(_createSessionFailure);
-
-        public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct) => _inner.GetPortfolioAsync(ct);
-
-        public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
-            => _inner.GetHistoryAsync(symbol, range, ct);
-
-        public Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
-            => _inner.CreateSessionChallengeAsync(accountPublicKeyWire, ct);
-
-        public Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct)
-            => _inner.EstablishKeyShareAsync(request, ct);
-
-        public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct)
-            => _inner.CreateWalletAsync(request, ct);
-
-        public Task<QuoteDto> GetQuoteAsync(string from, string toAsset, CancellationToken ct)
-            => _inner.GetQuoteAsync(from, toAsset, ct);
-
-        public Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct)
-            => _inner.ConvertAsync(from, toAsset, amount, idempotencyKey, ct);
-
-        public Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct)
-            => _inner.TransferAsync(destination, amount, speed, idempotencyKey, ct);
-
-        public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct)
-            => _inner.PayAsync(amount, mix, idempotencyKey, ct);
-
-        public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct)
-            => _inner.GetReceiveAsync(asset, ct);
-
-        public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct)
-            => _inner.GetVaultCardsAsync(ct);
-
-        public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct)
-            => _inner.AddVaultCardAsync(card, idempotencyKey, ct);
-
-        public Task DeleteVaultCardAsync(string cardId, CancellationToken ct)
-            => _inner.DeleteVaultCardAsync(cardId, ct);
-
-        public Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct)
-            => _inner.GetVaultBinariesAsync(ct);
-
-        public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct)
-            => _inner.CreatePosSessionAsync(ct);
-
-        public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct)
-            => _inner.AuthorizePosAsync(sessionId, ct);
-
-        public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct)
-            => _inner.ConfirmPosAsync(sessionId, ct);
-
-        public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct)
-            => _inner.GetPrefsAsync(ct);
-
-        public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct)
-            => _inner.PutPrefsAsync(prefs, ct);
-
-        public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
-            => _inner.GetAccountBootstrapAsync(ct);
     }
 }
