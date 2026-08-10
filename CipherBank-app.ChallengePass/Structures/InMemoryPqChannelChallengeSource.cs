@@ -36,6 +36,7 @@ public sealed class InMemoryPqChannelChallengeSource : IPqChannelChallengeSource
     public Task<SessionChallengeDto> RequestChallengeAsync(CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ct.ThrowIfCancellationRequested();
         if (_keyShare.LastChannelKey is null || _keyShare.LastKeyShareId is null)
         {
             throw new InvalidOperationException("Key share must complete before challenge.");
