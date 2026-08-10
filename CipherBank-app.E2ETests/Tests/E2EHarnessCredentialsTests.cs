@@ -114,7 +114,7 @@ public class E2EHarnessCredentialsTests
 
     /// <summary>
     /// Isolates local dotenv files so Resolve tests do not pick up a developer's lab file.
-    /// Use: High (credential Facts). Scope: artifacts/e2e-local.env and .env.e2e.local.
+    /// Use: High (credential Facts). Scope: artifacts/e2e-local.env.
     /// </summary>
     private sealed class LocalEnvIsolation : IDisposable
     {
@@ -126,7 +126,6 @@ public class E2EHarnessCredentialsTests
         {
             var isolation = new LocalEnvIsolation();
             isolation.Suspend(RepoPaths.ResolveFromRoot(E2EHarnessCredentials.LocalEnvRelativePath));
-            isolation.Suspend(RepoPaths.ResolveFromRoot(E2EHarnessCredentials.DotEnvRelativePath));
             return isolation;
         }
 
