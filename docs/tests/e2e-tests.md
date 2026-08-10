@@ -20,8 +20,9 @@ CipherBank-app.E2ETests/
 │   ├── PosLabPage.cs
 │   └── … (legacy Login/Dashboard/Wallet/Purchase)
 └── Tests/
-    ├── CoraShellSmokeTests.cs   # preferred
-    └── CriticalUserJourneyTests.cs  # legacy (skipped when Cora Shell is primary)
+    ├── CoraShellSmokeTests.cs
+    ├── AccountStories.cs
+    └── HarnessFilterContractTests.cs / … (host-only harness Facts)
 ```
 
 ## Dependencies

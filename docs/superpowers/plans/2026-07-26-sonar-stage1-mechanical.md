@@ -1,7 +1,5 @@
 # Sonar Stage 1 (mechanical + CRITICAL) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Clear Stage 1 Sonar clusters on the MAUI stack—CRITICAL/HIGH csharp (S1a), explicit types (S1b), ChallengePass file headers (S1c), and member ordering (S1d)—landing fixes on the earliest owning branch and merging upward.
 
 **Architecture:** Fix Core on `prototype/maui-m1`, ChallengePass on `prototype/maui-m2`, then merge m1→m2→m3→m4. Mechanical batches use Sonar `issues.json` line maps and `dotnet format` / targeted edits. Do not split files (SA1402/SA1649). Cross-PR duplication comments only when a later PR re-touches or supersedes an M1 finding.

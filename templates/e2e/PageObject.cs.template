@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 
 namespace CipherBank_app.E2ETests.PageObjects;
@@ -9,7 +10,8 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// <summary>Owns stable selectors and screen actions for __PAGE__.</summary>
 public sealed class __PAGE__Page : BasePage
 {
-    private const string RootId = "__ROOT_AUTOMATION_ID__";
+    private static readonly By Root = By.Id("__ROOT_AUTOMATION_ID__");
+    private static readonly By ActionControl = By.Id("__ACTION_AUTOMATION_ID__");
 
     public __PAGE__Page(AppiumDriver driver)
         : base(driver)
@@ -17,12 +19,12 @@ public sealed class __PAGE__Page : BasePage
     }
 
     /// <summary>Confirms the __PAGE__ root is visible. Use: High. Scope: one Appium screen.</summary>
-    public bool IsLoaded() => IsDisplayed(RootId);
+    public bool IsLoaded() => IsElementDisplayed(Root);
 
     /// <summary>Performs __ACTION__ and returns the next page. Use: High. Scope: __STORY_ID__ transition.</summary>
-    public __NEXT_PAGE__ PerformAction()
+    public __NEXT_PAGE__Page PerformAction()
     {
-        Tap("__ACTION_AUTOMATION_ID__");
-        return new __NEXT_PAGE__(Driver);
+        ClickElement(ActionControl);
+        return new __NEXT_PAGE__Page(Driver);
     }
 }
