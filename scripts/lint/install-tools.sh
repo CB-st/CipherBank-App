@@ -118,53 +118,42 @@ install_ruff() {
     darwin-aarch64) target="ruff-aarch64-apple-darwin" ;;
   esac
 
-  if [[ -n "$target" ]]; then
-    local url="https://github.com/astral-sh/ruff/releases/download/${ver}/${target}.tar.gz"
-    local expected
-    expected="$(digest_for RUFF_SHA256)"
-    local tmp
-    tmp="$(mktemp -d)"
-    echo "==> ruff ${ver} (standalone)"
-    if curl -fsSL "$url" -o "$tmp/ruff.tgz"; then
-      cb_lint_verify_sha256 "$tmp/ruff.tgz" "$expected"
-      tar -xzf "$tmp/ruff.tgz" -C "$tmp"
-      # tarball may nest the binary
-      local binpath
-      binpath="$(find "$tmp" -type f -name ruff | head -1)"
-      if [[ -n "$binpath" ]]; then
-        install -m 0755 "$binpath" "$BIN/ruff"
-        rm -rf "$tmp"
-        echo "installed: $BIN/ruff"
-        return 0
-      fi
-    fi
+  [[ -n "$target" ]] || {
+    echo "error: unsupported OS/arch for hashed ruff install: ${os}-${arch_norm}" >&2
+    return 1
+  }
+
+  local url="https://github.com/astral-sh/ruff/releases/download/${ver}/${target}.tar.gz"
+  local expected
+  expected="$(digest_for RUFF_SHA256)"
+  [[ -n "$expected" ]] || {
+    echo "error: missing RUFF_SHA256 digest for ${os}-${arch_norm} in tool-versions.env" >&2
+    return 1
+  }
+  local tmp
+  tmp="$(mktemp -d)"
+  echo "==> ruff ${ver} (standalone, hash-verified)"
+  if ! curl -fsSL "$url" -o "$tmp/ruff.tgz"; then
     rm -rf "$tmp"
-    echo "warn: ruff standalone download failed; trying pipx/venv fallback" >&2
+    echo "error: ruff download failed for ${url}" >&2
+    return 1
   fi
-
-  if command -v pipx >/dev/null 2>&1; then
-    echo "==> ruff ${ver} via pipx"
-    pipx install "ruff==${ver}" --force >/dev/null
-    if command -v ruff >/dev/null 2>&1; then
-      ln -sfn "$(command -v ruff)" "$BIN/ruff" 2>/dev/null || true
-    fi
-    echo "ok: ruff"
-    return 0
+  if ! cb_lint_verify_sha256 "$tmp/ruff.tgz" "$expected"; then
+    rm -rf "$tmp"
+    echo "error: ruff tarball digest mismatch (refusing unverified fallbacks)" >&2
+    return 1
   fi
-
-  # Isolated venv under cb-lint (avoids PEP 668 system pip).
-  local venv
-  venv="$(cb_lint_install_root)/venv"
-  if command -v python3 >/dev/null 2>&1; then
-    echo "==> ruff ${ver} via cb-lint venv"
-    python3 -m venv "$venv"
-    "$venv/bin/pip" install --quiet "ruff==${ver}"
-    ln -sfn "$venv/bin/ruff" "$BIN/ruff"
-    echo "installed: $BIN/ruff"
-    return 0
+  tar -xzf "$tmp/ruff.tgz" -C "$tmp"
+  local binpath
+  binpath="$(find "$tmp" -type f -name ruff | head -1)"
+  if [[ -z "$binpath" ]]; then
+    rm -rf "$tmp"
+    echo "error: ruff binary missing from verified tarball" >&2
+    return 1
   fi
-
-  echo "warn: cannot install ruff" >&2
+  install -m 0755 "$binpath" "$BIN/ruff"
+  rm -rf "$tmp"
+  echo "installed: $BIN/ruff"
 }
 
 # Downloads checkmake release asset (or go install) when missing.

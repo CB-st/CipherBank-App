@@ -25,8 +25,10 @@ Clear **new-code** gate noise in three stages — mechanical + CRITICAL → plan
 source scripts/lib/android-env.sh
 dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false
 dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android
-# E2E account wave (device + Appium):
-./scripts/e2e-android.sh --wave account
+# E2E scaffold on M1b+ (device + Appium):
+./scripts/e2e-android.sh --all
+# Story/wave filters need [Trait("Story", …)] Facts — M4 only (prototype/maui-m4 / PR #23):
+# ./scripts/e2e-android.sh --wave account
 ```
 
 ## Stacked prototype PRs

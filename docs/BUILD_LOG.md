@@ -112,9 +112,10 @@ See `prototype/maui-m4` / PR #23 for the live E2E map and wave status.
 ## Local verify (quick)
 
 ```bash
-source scripts/lib/android-env.sh   # after M4
+source scripts/lib/android-env.sh
 dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj
 dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android \
   -p:AndroidSdkDirectory="$ANDROID_HOME" -p:JavaSdkDirectory="$JAVA_HOME"
-./scripts/e2e-android.sh --wave account   # device + Appium required
+./scripts/e2e-android.sh --all              # M1b+ scaffold (device + Appium)
+./scripts/e2e-android.sh --wave account     # M4-only: Story-trait Facts on prototype/maui-m4
 ```

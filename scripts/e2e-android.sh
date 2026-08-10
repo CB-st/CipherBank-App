@@ -88,16 +88,20 @@ parse_args() {
       MODE="story"
       MODE_VALUE="${2:-}"
       [[ -n "$MODE_VALUE" ]] || die "--story requires a CB-* id, e.g. --story CB-ACCOUNT-001"
+      [[ -z "${3:-}" ]] || die "--story does not accept trailing arguments: ${3}"
       ;;
     --wave)
       MODE="wave"
       MODE_VALUE="${2:-}"
       [[ -n "$MODE_VALUE" ]] || die "--wave requires a wave name, e.g. --wave account"
+      [[ -z "${3:-}" ]] || die "--wave does not accept trailing arguments: ${3}"
       ;;
     --all)
       MODE="all"
+      [[ -z "${2:-}" ]] || die "--all does not accept trailing arguments: ${2}"
       ;;
     --help|-h)
+      [[ -z "${2:-}" ]] || die "--help does not accept trailing arguments: ${2}"
       print_usage
       exit 0
       ;;
