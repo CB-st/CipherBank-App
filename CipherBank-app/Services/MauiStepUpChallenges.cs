@@ -36,5 +36,5 @@ public sealed class MauiStepUpChallenges : IStepUpChallenges
     }
 
     public Task<string?> PromptForPinAsync(string prompt, CancellationToken ct = default)
-        => _dialogs.PromptAsync("Confirm", prompt + "\nEnter PIN:", "Continue", "Cancel");
+        => _dialogs.PromptPasswordAsync("Confirm", prompt + "\nEnter PIN:", "Continue", "Cancel");
 }
