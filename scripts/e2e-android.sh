@@ -332,6 +332,15 @@ apply_e2e_env_file_if_unset() {
     value="${line#*=}"
     key="${key%"${key##*[![:space:]]}"}"
     key="${key#"${key%%[![:space:]]*}"}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    # Strip matching surrounding quotes so shell matches E2EHarnessCredentials.ParseEnvFile.
+    if [[ ${#value} -ge 2 ]]; then
+      if { [[ "${value:0:1}" == '"' && "${value: -1}" == '"' ]]; } \
+        || { [[ "${value:0:1}" == "'" && "${value: -1}" == "'" ]]; }; then
+        value="${value:1:${#value}-2}"
+      fi
+    fi
     [[ -z "$key" ]] && continue
     if [[ ! -v "$key" ]]; then
       export "$key=$value"
