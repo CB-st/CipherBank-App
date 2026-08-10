@@ -7,6 +7,7 @@ using CipherBank_app.ChallengePass.Configuration;
 using CipherBank_app.ChallengePass.Hybrid;
 using CipherBank_app.ChallengePass.Structures;
 using CipherBank_app.ChallengePass.Templates;
+using CipherBank_app.Custody;
 using CipherBank_app.V1;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -95,7 +96,14 @@ public static class ChallengePassServiceCollectionExtensions
                 sp.GetRequiredService<ChallengeIdNonceSha256Template>(),
                 new TwoStepChallengePassStructure(sp.GetRequiredService<ISessionChallengeClient>())));
 
-        services.AddSingleton<PqChannelChallengePassStructure>();
+        services.AddSingleton(sp =>
+        {
+            PqChannelChallengePassStructure structure =
+                ActivatorUtilities.CreateInstance<PqChannelChallengePassStructure>(sp);
+            // Wipe A2 hybrid identity on every custody lock / expiry / unlock-rollback path.
+            sp.GetRequiredService<ICustodyService>().Locked += (_, _) => structure.ClearDeviceIdentity();
+            return structure;
+        });
         services.AddSingleton(sp =>
             new ChallengePassSuite(
                 SuiteA2Id,
