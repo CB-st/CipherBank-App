@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Style
+        x:Key="__FEATURE__SectionTitle"
+        TargetType="Label"
+        BasedOn="{StaticResource SectionHeader}">
+        <Setter
+            Property="TextColor"
+            Value="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+    </Style>
+
+    <Style
+        x:Key="__FEATURE__StatusCard"
+        TargetType="Border"
+        BasedOn="{StaticResource CardBorder}">
+        <Setter
+            Property="BackgroundColor"
+            Value="{AppThemeBinding Light={StaticResource Surface}, Dark={StaticResource SurfaceDark}}" />
+    </Style>
+</ResourceDictionary>

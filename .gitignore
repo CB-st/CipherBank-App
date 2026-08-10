@@ -93,3 +93,6 @@ artifacts/
 # Expo handoff — out of MAUI merge path
 design_handoff_cipherbank/
 .worktrees/
+
+__pycache__/
+*.pyc

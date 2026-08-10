@@ -58,6 +58,17 @@ The UI contract is in `docs/style/README.md` and `CipherBank-app/Resources/Style
 
 Copy from `templates/ui/` for new pages, `templates/e2e/` for executable stories, and `templates/service/` or `templates/config/` for new capabilities. Update the template in the same change when a repository convention changes.
 
+## Agentic dispatch and feature modules
+
+`config/agentic/dispatch.json` is the machine-readable routing map for repository work. Start a non-trivial feature with `cipherbank-dispatch`, select the smallest focused workflow, and keep its dispatch packet with the implementation evidence rather than production source.
+
+- Cross-layer feature registration uses one `Add__FEATURE__Feature` extension at the MAUI composition root. Registration is explicit; do not discover modules with reflection or resolve services through a locator.
+- Runtime services still use focused interfaces and constructor injection. A composition module is an assembly-time registration boundary, not a dependency bag or runtime service.
+- Shared resources remain owned by their canonical subsystem. Features reference shared styles, options, ports, and adapters; they do not copy them into feature-local folders.
+- Feature-local resources live below the owning feature and are promoted to the shared resource dictionary only when the role repeats across features.
+- Reusable work orders and module/resource scaffolds live under `templates/dispatch/`, `templates/feature/`, and `templates/resource/`.
+- `docs/agentic/README.md` defines the dispatch lifecycle; `docs/agentic/RESOURCE_OWNERSHIP.md` defines placement and access rules.
+
 ## Quality and Sonar
 
 - `TreatWarningsAsErrors` remains enabled. Allow lists are narrow, documented, and shrinking; NuGet resolution, nullable, cancellation, and security warnings are not parked.

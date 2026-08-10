@@ -9,6 +9,8 @@
 | [AGENTS.md](AGENTS.md) | Coding standards, E2E harness rules, **Sonar typology / stages / missteps / checklists** |
 | [docs/README.md](docs/README.md) | Documentation index |
 | [docs/BUILD_LOG.md](docs/BUILD_LOG.md) | What shipped and how layers connect |
+| [docs/agentic/README.md](docs/agentic/README.md) | Agent dispatch, module composition, and shared-resource routing |
+| [docs/review/m4-agentic-foundation.md](docs/review/m4-agentic-foundation.md) | Agent dispatch, modular feature, resource, and skill foundation |
 | [docs/SONAR_GATE.md](docs/SONAR_GATE.md) | Fix vs soften policy for the Sonar gate |
 | [docs/SONAR_STRUCTURAL_PLAN.md](docs/SONAR_STRUCTURAL_PLAN.md) | Stage 2 one-type-per-file plan + callers |
 
@@ -33,4 +35,4 @@ dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android
 
 ## Stacked prototype PRs
 
-Formal GitHub stack: `maui-m1a` (#25) → `m1b` (#26) → `m2` (#21) → `m3` (#22) → `m4` (#23). Fix smells on the earliest owning layer, then merge up.
+Formal GitHub stack: `maui-m1a` (#25) → `m1b` (#26) → `m2` (#21) → `m3` (#22) → `m4` (#23) → `m4-agentic` (#32). Fix smells on the earliest owning layer, then merge up.
