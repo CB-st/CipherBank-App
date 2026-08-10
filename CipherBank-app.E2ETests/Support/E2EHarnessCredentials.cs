@@ -18,9 +18,6 @@ public static class E2EHarnessCredentials
     /// <summary>Gitignored lab file under artifacts/ (preferred local source).</summary>
     public const string LocalEnvRelativePath = "artifacts/e2e-local.env";
 
-    /// <summary>Alternate gitignored path at repo root.</summary>
-    public const string DotEnvRelativePath = ".env.e2e.local";
-
     /// <summary>Committed template operators copy into the gitignored local file.</summary>
     public const string ExampleEnvRelativePath = "docs/tests/e2e-local.env.example";
 
@@ -87,7 +84,7 @@ public static class E2EHarnessCredentials
     }
 
     /// <summary>
-    /// Finds the first present local env file (artifacts/ then root .env.e2e.local).
+    /// Finds artifacts/e2e-local.env when present.
     /// Use: Medium (ApplyLocalEnvFileIfPresent). Scope: path lookup.
     /// </summary>
     private static string? FindFirstExistingLocalEnvPath()
@@ -95,7 +92,6 @@ public static class E2EHarnessCredentials
         string[] candidates =
         [
             RepoPaths.ResolveFromRoot(LocalEnvRelativePath),
-            RepoPaths.ResolveFromRoot(DotEnvRelativePath),
         ];
         return Array.Find(candidates, File.Exists);
     }
