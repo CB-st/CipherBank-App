@@ -231,9 +231,15 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
         }
 
         byte[] channelKey = HybridMlKemX25519Agreement.CompleteAsDevice(identity, share);
-        _channel.SetChannelKey(channelKey, share.KeyShareId);
-        CryptographicOperations.ZeroMemory(channelKey);
-        _channelIdentityPublicKey = identity.X25519PublicKey.ToArray();
+        try
+        {
+            _channel.SetChannelKey(channelKey, share.KeyShareId);
+            _channelIdentityPublicKey = identity.X25519PublicKey.ToArray();
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(channelKey);
+        }
     }
 
     private void ApplyIdentityUnlocked(HybridPrivateIdentity identity)
