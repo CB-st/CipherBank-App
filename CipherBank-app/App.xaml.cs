@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
@@ -16,14 +17,21 @@ public partial class App : Application
     private readonly IServiceProvider _services;
     private readonly IAppSession _session;
     private readonly ILocalDb _db;
+    private readonly ICustodyService _custody;
     private readonly AppIdleLockService _idleLock;
 
-    public App(IServiceProvider services, IAppSession session, ILocalDb db, AppIdleLockService idleLock)
+    public App(
+        IServiceProvider services,
+        IAppSession session,
+        ILocalDb db,
+        ICustodyService custody,
+        AppIdleLockService idleLock)
     {
         InitializeComponent();
         _services = services;
         _session = session;
         _db = db;
+        _custody = custody;
         _idleLock = idleLock;
         UserAppTheme = AppTheme.Dark;
     }
@@ -34,6 +42,6 @@ public partial class App : Application
     /// </summary>
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        return new Window(new AppShell(_services, _session, _db, _idleLock));
+        return new Window(new AppShell(_services, _session, _db, _custody, _idleLock));
     }
 }

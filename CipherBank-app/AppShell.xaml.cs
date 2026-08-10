@@ -3,6 +3,7 @@
 // </copyright>
 
 using CipherBank_app.Constants;
+using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
@@ -30,6 +31,7 @@ public partial class AppShell : Shell
         IServiceProvider services,
         IAppSession session,
         ILocalDb db,
+        ICustodyService custody,
         AppIdleLockService idleLock)
         : this()
     {
@@ -48,7 +50,7 @@ public partial class AppShell : Shell
                 return;
             }
 
-            _ = BootstrapAsync(session, db, idleLock);
+            _ = BootstrapAsync(session, db, custody, idleLock);
         }
 
         void OnLoaded(object? sender, EventArgs e)
@@ -91,9 +93,15 @@ public partial class AppShell : Shell
 
     /// <summary>
     /// Boots local DB / session, then routes to Unlock or Welcome after splash.
+    /// Boot failures with an existing seal route to Unlock (never Welcome/create), so a mid-boot
+    /// exception cannot open an overwrite path through SetPin.
     /// Use: High (once per cold start). Scope: AppShell bootstrap.
     /// </summary>
-    private static async Task BootstrapAsync(IAppSession session, ILocalDb db, AppIdleLockService idleLock)
+    private static async Task BootstrapAsync(
+        IAppSession session,
+        ILocalDb db,
+        ICustodyService custody,
+        AppIdleLockService idleLock)
     {
         try
         {
@@ -115,10 +123,30 @@ public partial class AppShell : Shell
         }
         catch
         {
+            string route = await ResolveBootFailureRouteAsync(custody).ConfigureAwait(false);
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Current.GoToAsync(Routes.Welcome);
+                await Current.GoToAsync(route);
             });
+        }
+    }
+
+    /// <summary>
+    /// Prefers Unlock when a custody blob exists; only Welcome when the seal probe confirms none.
+    /// If the probe itself fails, Unlock is still preferred over Welcome so create-wallet is not offered.
+    /// Use: Low (bootstrap catch). Scope: AppShell bootstrap.
+    /// </summary>
+    private static async Task<string> ResolveBootFailureRouteAsync(ICustodyService custody)
+    {
+        try
+        {
+            return await custody.HasSealedWalletAsync().ConfigureAwait(false)
+                ? Routes.Unlock
+                : Routes.Welcome;
+        }
+        catch
+        {
+            return Routes.Unlock;
         }
     }
 

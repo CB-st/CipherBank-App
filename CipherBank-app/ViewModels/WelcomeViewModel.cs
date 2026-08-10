@@ -30,9 +30,22 @@ public partial class WelcomeViewModel : ObservableObject
     [ObservableProperty]
     private string coraLine = string.Empty;
 
+    /// <summary>
+    /// Starts create-wallet only when no seal exists; otherwise routes to Unlock so a failed boot
+    /// landing on Welcome cannot overwrite custody via Keys → SetPin.
+    /// Use: High (Welcome CTA). Scope: Welcome page.
+    /// </summary>
     [RelayCommand]
     private async Task CreateWalletAsync()
-        => await _nav.GoToAsync(Routes.Keys);
+    {
+        if (await _custody.HasSealedWalletAsync())
+        {
+            await _nav.GoToAsync(Routes.Unlock);
+            return;
+        }
+
+        await _nav.GoToAsync(Routes.Keys);
+    }
 
     [RelayCommand]
     private async Task ReturningAsync()

@@ -16,16 +16,25 @@ public partial class SetPinViewModel : ObservableObject
 {
     private readonly INavigationService _nav;
     private readonly IAppSession _session;
+    private readonly ICustodyService _custody;
+    private readonly IDialogService _dialogs;
     private readonly OnboardingMnemonicHold _mnemonicHold;
 
     /// <summary>
     /// Loads the onboarding mnemonic from scoped hold (never Shell query strings).
     /// Use: High (create/restore pin step). Scope: SetPin page.
     /// </summary>
-    public SetPinViewModel(INavigationService nav, IAppSession session, OnboardingMnemonicHold mnemonicHold)
+    public SetPinViewModel(
+        INavigationService nav,
+        IAppSession session,
+        ICustodyService custody,
+        IDialogService dialogs,
+        OnboardingMnemonicHold mnemonicHold)
     {
         _nav = nav;
         _session = session;
+        _custody = custody;
+        _dialogs = dialogs;
         _mnemonicHold = mnemonicHold;
         Mnemonic = _mnemonicHold.Peek() ?? string.Empty;
     }
@@ -71,6 +80,12 @@ public partial class SetPinViewModel : ObservableObject
             return;
         }
 
+        if (await _custody.HasSealedWalletAsync()
+            && !await ConfirmReplaceExistingSealAsync())
+        {
+            return;
+        }
+
         IsBusy = true;
         try
         {
@@ -88,4 +103,15 @@ public partial class SetPinViewModel : ObservableObject
             IsBusy = false;
         }
     }
+
+    /// <summary>
+    /// Asks the user before overwriting an on-device seal (create/boot mistake or restore).
+    /// Use: Medium (only when a seal already exists). Scope: SetPin page.
+    /// </summary>
+    private Task<bool> ConfirmReplaceExistingSealAsync()
+        => _dialogs.ShowConfirmAsync(
+            "Replace wallet seal",
+            "A wallet seal already exists on this device. Continue only if you intend to replace it.",
+            "Replace",
+            "Cancel");
 }
