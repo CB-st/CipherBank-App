@@ -109,7 +109,7 @@ public partial class ReceiveViewModel : ObservableObject
     private async Task LoadAsync()
     {
         _session.Touch();
-        DerivationPath = null;
+        ClearReceivePresentation();
         string? mnemonic = _custody.ExportMnemonic();
         if (mnemonic is not null && AddressDerive.IsDerivable(Asset))
         {
@@ -136,9 +136,7 @@ public partial class ReceiveViewModel : ObservableObject
             DerivationPath = local.Path;
         }
 
-        UriText = PaymentUri.Build(Asset, Address, string.IsNullOrWhiteSpace(Amount) ? null : Amount);
-        byte[] png = QrCodeGenerator.ToPngBytes(UriText);
-        QrImage = ImageSource.FromStream(() => new MemoryStream(png));
+        ApplyReceivePresentation();
     }
 
     /// <summary>
@@ -204,6 +202,36 @@ public partial class ReceiveViewModel : ObservableObject
             _timeProvider.GetUtcNow()));
         Address = derived.Address;
         DerivationPath = derived.Path;
-        await LoadAsync();
+        ApplyReceivePresentation();
+    }
+
+    /// <summary>
+    /// Drops prior asset address/QR so a failed lookup cannot reuse the last asset.
+    /// Use: High (every LoadAsync). Scope: ReceiveViewModel bindable state.
+    /// </summary>
+    private void ClearReceivePresentation()
+    {
+        Address = string.Empty;
+        DerivationPath = null;
+        UriText = string.Empty;
+        QrImage = null;
+    }
+
+    /// <summary>
+    /// Builds payment URI + QR only when an address resolved for the selected asset.
+    /// Use: High (LoadAsync / DeriveNewAsync). Scope: ReceiveViewModel bindable state.
+    /// </summary>
+    private void ApplyReceivePresentation()
+    {
+        if (string.IsNullOrEmpty(Address))
+        {
+            UriText = string.Empty;
+            QrImage = null;
+            return;
+        }
+
+        UriText = PaymentUri.Build(Asset, Address, string.IsNullOrWhiteSpace(Amount) ? null : Amount);
+        byte[] png = QrCodeGenerator.ToPngBytes(UriText);
+        QrImage = ImageSource.FromStream(() => new MemoryStream(png));
     }
 }

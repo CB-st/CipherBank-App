@@ -137,7 +137,7 @@ public partial class PayViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            Dictionary mix = new Dictionary<string, string>
+            Dictionary<string, string> mix = new Dictionary<string, string>
             {
                 ["USD"] = UsdShare,
                 [CryptoSymbol.ToUpperInvariant()] = CryptoShare,

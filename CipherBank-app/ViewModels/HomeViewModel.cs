@@ -357,7 +357,7 @@ public partial class HomeViewModel : ObservableObject
         ShowLocalWallets = !combined && IsVis("localWallets");
         ShowCombinedAssets = combined && (IsVis("holdings") || IsVis("localWallets"));
 
-        List slots = new List<(string Key, bool Visible, Action<int> SetRow)>();
+        List<(string Key, bool Visible, Action<int> SetRow)> slots = new List<(string Key, bool Visible, Action<int> SetRow)>();
         bool combinedPlaced = false;
         foreach (string key in prefs.HomeOrder)
         {

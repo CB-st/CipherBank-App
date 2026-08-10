@@ -52,7 +52,7 @@ public sealed class BiometricService : IBiometricService
 #if ANDROID
     private static Task<bool> AuthenticateAndroidAsync(string reason)
     {
-        TaskCompletionSource tcs = new TaskCompletionSource<bool>();
+        TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
         MainThread.BeginInvokeOnMainThread(() =>
         {
             try

@@ -53,7 +53,7 @@ public sealed partial class PublicApiClient : IPublicQuoteService
             return [];
         }
 
-        List result = new List<string>();
+        List<string> result = new List<string>();
         if (currenciesElement.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in currenciesElement.EnumerateArray())
@@ -86,7 +86,7 @@ public sealed partial class PublicApiClient : IPublicQuoteService
         string outputSymbol,
         CancellationToken cancellationToken = default)
     {
-        Dictionary body = new Dictionary<string, object>
+        Dictionary<string, object> body = new Dictionary<string, object>
         {
             ["INPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(inputSymbol),
             ["INPUT_AMOUNT"] = decimal.ToDouble(inputAmount),
@@ -104,7 +104,7 @@ public sealed partial class PublicApiClient : IPublicQuoteService
         string outputSymbol,
         CancellationToken cancellationToken = default)
     {
-        Dictionary body = new Dictionary<string, object>
+        Dictionary<string, object> body = new Dictionary<string, object>
         {
             ["INPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(inputSymbol),
             ["OUTPUT_AMOUNT"] = decimal.ToDouble(outputAmount),

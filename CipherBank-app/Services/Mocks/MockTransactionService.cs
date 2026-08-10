@@ -204,7 +204,7 @@ public sealed partial class MockTransactionService : ITransactionService
     /// </summary>
     private List<Transaction> GenerateMockTransactionHistory()
     {
-        List transactions = new List<Transaction>();
+        List<Transaction> transactions = new List<Transaction>();
         var now = _timeProvider.GetUtcNow();
 
         // Bitcoin transactions

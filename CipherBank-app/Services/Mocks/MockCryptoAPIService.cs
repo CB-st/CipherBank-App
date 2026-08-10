@@ -142,7 +142,7 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
     private (List<PricePoint> Points, DateTimeOffset StartDate) GeneratePriceHistory(decimal basePrice, string period)
     {
         var now = _timeProvider.GetUtcNow();
-        List points = new List<PricePoint>();
+        List<PricePoint> points = new List<PricePoint>();
 
         var (intervalMinutes, totalPoints) = period.ToLowerInvariant() switch
         {
