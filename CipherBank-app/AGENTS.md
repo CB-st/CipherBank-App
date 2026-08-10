@@ -10,3 +10,7 @@
   builds must resolve production services.
 - Configuration defaults come from `config/`; per-user mutable settings may use
   Preferences or SecureStorage through an injected abstraction.
+- Visual tokens and reusable styles live only under `Resources/Styles`. Read that
+  subtree's `AGENTS.md` and `docs/style/README.md` before adding or changing UI.
+- Views use semantic color and typography resources. Literal colors and one-off
+  font families do not belong in page XAML.

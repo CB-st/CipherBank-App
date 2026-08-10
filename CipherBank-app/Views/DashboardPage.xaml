@@ -24,9 +24,7 @@
                 <Label x:Name="TotalBalanceLabel"
                        AutomationId="TotalBalanceLabel"
                        Text="{Binding TotalPortfolioValue, StringFormat='Portfolio: ${0:N2}'}"
-                       FontFamily="InterMedium"
-                       FontSize="15"
-                       Style="{StaticResource SecondaryText}"
+                       Style="{StaticResource PortfolioSummary}"
                        Margin="0,-8,0,4" />
 
                 <!-- Loading Indicator -->
@@ -85,9 +83,7 @@
                                             VerticalOptions="Start"
                                             BackgroundColor="{Binding Symbol, Converter={StaticResource CoinColorConverter}}">
                                         <Label Text="{Binding Symbol, Converter={StaticResource CoinGlyphConverter}}"
-                                               TextColor="White"
-                                               FontFamily="SpaceGroteskBold"
-                                               FontSize="18"
+                                               Style="{StaticResource CoinGlyph}"
                                                HorizontalOptions="Center"
                                                VerticalOptions="Center" />
                                     </Border>
@@ -98,15 +94,13 @@
                                         <Label Text="{Binding Symbol}" Style="{StaticResource PillLabel}" />
                                         <Label Text="Current Price" Style="{StaticResource Eyebrow}" Margin="0,6,0,0" />
                                         <Label Text="{Binding FormattedPrice}"
-                                               FontFamily="SpaceGroteskBold"
-                                               FontSize="24" />
+                                               Style="{StaticResource AssetPriceProminent}" />
                                     </VerticalStackLayout>
 
                                     <!-- 24h change -->
                                     <Label Grid.Column="2"
                                            Text="{Binding FormattedPercentChange}"
-                                           FontFamily="InterSemiBold"
-                                           FontSize="13"
+                                           Style="{StaticResource PriceChange}"
                                            VerticalOptions="Center"
                                            Margin="0,0,8,0"
                                            TextColor="{Binding IsPriceUp, Converter={StaticResource PriceChangeColorConverter}}" />

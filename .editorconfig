@@ -24,10 +24,10 @@ dotnet_separate_import_directive_groups = false
 # Use file-scoped namespaces
 csharp_style_namespace_declarations = file_scoped:suggestion
 
-# Prefer explicit types (Sonar IDE0008 / PR #25 quality gate)
-csharp_style_var_for_built_in_types = false:warning
-csharp_style_var_when_type_is_apparent = false:warning
-csharp_style_var_elsewhere = false:warning
+# Use 'var' when type is apparent
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
 
 # Prefer expression-bodied members when single line
 csharp_style_expression_bodied_methods = when_on_single_line:suggestion

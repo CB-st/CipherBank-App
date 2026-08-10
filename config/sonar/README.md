@@ -14,9 +14,11 @@ globally suppressing rules:
 - duplicated lines: at most 3%;
 - no blocker or critical issues.
 
-Scanner exclusions are limited to generated/build output, platform-owned source
-that is not compiled on Linux, resources, tests for coverage, and design handoff
-assets. Interfaces and production services are not CPD-excluded.
+Scanner source exclusions are limited to generated/build output, scanner reports,
+editor metadata, and the out-of-stack design handoff. Platform sources and MAUI
+resources remain visible to analysis. Platform adapters and tests are excluded
+from coverage calculation only; interfaces and production services are not
+CPD-excluded.
 
 Do not store `SONAR_TOKEN` here. Configure it as a repository secret; configure
 `SONAR_HOST_URL` and `SONAR_PROJECT_KEY` as repository variables.

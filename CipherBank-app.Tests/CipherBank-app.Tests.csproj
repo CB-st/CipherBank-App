@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608;SA1201;SA1202;SA1107;SA1402;SA1649;xUnit1030;IDE0005;CA1707</WarningsNotAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);SA1201;SA1202;SA1107;SA1402;SA1649;xUnit1030;IDE0005;CA1707</WarningsNotAsErrors>
     <NoWarn>$(NoWarn);IDE0005</NoWarn>
   </PropertyGroup>
 
@@ -40,6 +40,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <!-- Desktop e_sqlite3 pin (NU1903); Android uses sqlitepclraw.lib.e_sqlite3.android from Core -->
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
@@ -47,6 +48,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
+    <ProjectReference Include="..\CipherBank-app.ChallengePass\CipherBank-app.ChallengePass.csproj" />
   </ItemGroup>
 
   <ItemGroup>
