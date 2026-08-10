@@ -86,6 +86,7 @@ public sealed class RepositoryStructureTests
         string root = FindRepositoryRoot();
         string styles = Path.Combine(root, "CipherBank-app", "Resources", "Styles");
         string typographyPath = Path.Combine(styles, "Typography.xaml");
+
         // Typography ships with the Shell tip (M3+). Keep the contract ready on M2 without failing the tip.
         if (!Directory.Exists(styles) || !File.Exists(typographyPath))
         {
