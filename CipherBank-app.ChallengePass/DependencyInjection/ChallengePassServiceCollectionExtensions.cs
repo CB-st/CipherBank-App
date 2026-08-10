@@ -100,6 +100,7 @@ public static class ChallengePassServiceCollectionExtensions
         {
             PqChannelChallengePassStructure structure =
                 ActivatorUtilities.CreateInstance<PqChannelChallengePassStructure>(sp);
+
             // Wipe A2 hybrid identity on every custody lock / expiry / unlock-rollback path.
             sp.GetRequiredService<ICustodyService>().Locked += (_, _) => structure.ClearDeviceIdentity();
             return structure;
