@@ -48,7 +48,7 @@ CipherBank MAUI Android Appium E2E harness
 Usage:
   scripts/e2e-android.sh --story <CB-ID>   Run one story (e.g. CB-ACCOUNT-001)
   scripts/e2e-android.sh --wave <name>     Run one wave (account|market|wallets|fund|pay|cards)
-  scripts/e2e-android.sh --all             Run the full E2E suite
+  scripts/e2e-android.sh --all             Fresh AccountStories then sealed CoraShellSmoke (two invocations)
   scripts/e2e-android.sh --help            Show this help
 
 Harness credentials (required once Story-trait Facts land on M4):
@@ -133,6 +133,7 @@ resolve_test_filter() {
       join_story_filter "$stories"
       ;;
     all)
+      # Empty marker: main() runs Fresh then Sealed as two separate invocations.
       echo ""
       ;;
   esac
@@ -376,7 +377,15 @@ main() {
   apk="$(locate_apk)"
   install_apk "$apk"
   ensure_appium_running
-  run_e2e_tests "$apk" "$filter"
+  if [[ "$MODE" == "all" ]] && [[ -f "$ROOT/CipherBank-app.E2ETests/Tests/CoraShellSmokeTests.cs" ]]; then
+    # Fresh-reset account Facts and sealed-device smoke share an Appium collection but need
+    # incompatible boot screens — run them as separate processes so order cannot interleave.
+    log "Running --all as Fresh AccountStories, then sealed CoraShellSmoke"
+    run_e2e_tests "$apk" "FullyQualifiedName~AccountStories"
+    run_e2e_tests "$apk" "FullyQualifiedName~CoraShellSmokeTests"
+  else
+    run_e2e_tests "$apk" "$filter"
+  fi
 }
 
 main "$@"
