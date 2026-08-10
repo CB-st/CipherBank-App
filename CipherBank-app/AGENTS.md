@@ -17,6 +17,8 @@ layer. It carries both host and UI rules.
 - Configuration defaults come from `config/`; per-user mutable settings may use
   Preferences or SecureStorage through an injected abstraction.
 - Do not query database contexts directly when an application port exists.
+- Visual tokens and reusable styles live only under `Resources/Styles`. Read that
+  subtree's `AGENTS.md` and `docs/style/README.md` before adding or changing UI.
 
 ## UI
 
@@ -29,3 +31,5 @@ layer. It carries both host and UI rules.
 - Use `async void` only at the outermost event-handler boundary.
 - Meet baseline accessibility: every interactive control has a programmatic name,
   the whole surface is keyboard-operable, and color is never the only signal.
+- Views use semantic color and typography resources. Literal colors and one-off
+  font families do not belong in page XAML.

@@ -15,14 +15,27 @@ required=(
   AGENTS.md
   Directory.Packages.props
   scripts/sonar/provision_quality_gate.py
+  CipherBank-app.ChallengePass/AGENTS.md
+  CipherBank-app.ChallengePass/Configuration/ChallengePassOptions.cs
   CipherBank-app.Core/AGENTS.md
   CipherBank-app.Core/Persist/AGENTS.md
   CipherBank-app/AGENTS.md
+  CipherBank-app/Resources/Styles/AGENTS.md
+  CipherBank-app/Resources/Styles/Typography.xaml
   CipherBank-app.Tests/AGENTS.md
   config/README.md
   config/sonar/AGENTS.md
+  config/challenge-pass/README.md
+  config/challenge-pass/challenge-pass.json
+  docs/style/README.md
+  templates/AGENTS.md
   templates/README.md
-  docs/review/m1a-comment-resolution.md
+  templates/repository/AGENTS.md.template
+  templates/repository/README.md.template
+  templates/repository/TEMPLATE.md
+  templates/ui/Page.xaml.template
+  templates/ui/TEMPLATE.md
+  templates/ui/ViewModel.cs.template
 )
 for path in "${required[@]}"; do
   [[ -f "${path}" ]] || fail "missing required ${path}"
@@ -34,6 +47,15 @@ while IFS= read -r project; do
   fi
 done < <(find . -type f \( -name '*.csproj' -o -name '*.props' -o -name '*.targets' \) \
   ! -path './Directory.Packages.props' ! -path '*/obj/*' | sort)
+
+while IFS= read -r package; do
+  if ! grep -qF "<PackageVersion Include=\"${package}\"" Directory.Packages.props; then
+    fail "PackageReference has no central PackageVersion: ${package}"
+  fi
+done < <(grep -RhoE '<PackageReference Include="[^"]+"' . \
+  --include='*.csproj' --include='*.props' --include='*.targets' \
+  --exclude='Directory.Packages.props' --exclude-dir=bin --exclude-dir=obj \
+  | sed -E 's/.*Include="([^"]+)"/\1/' | sort -u)
 
 while IFS= read -r assembly_info; do
   fail "legacy assembly metadata file found: ${assembly_info}"
@@ -47,8 +69,94 @@ while IFS= read -r source; do
 done < <(find CipherBank-app.Core -type f -name '*.cs' ! -path '*/obj/*' | sort)
 
 if grep -RInE '\b(IProductApi|MockProductApi|AppSessionDeps)\b' \
-  CipherBank-app.Core CipherBank-app CipherBank-app.Tests --include='*.cs' >/dev/null; then
+  CipherBank-app.Core CipherBank-app.ChallengePass CipherBank-app CipherBank-app.Tests --include='*.cs' >/dev/null; then
   fail "retired API-object, mock, or dependency-bag terminology remains"
+fi
+
+if grep -RInE '(BackgroundColor|TextColor|Color|Stroke|Brush)="#[[:xdigit:]]{6,8}"' \
+  CipherBank-app/Views --include='*.xaml' >/dev/null; then
+  fail "literal color found in a view; use a semantic resource from Colors.xaml"
+fi
+
+if grep -RIn 'FontFamily=' CipherBank-app/Views --include='*.xaml' >/dev/null; then
+  fail "page-local font family found; use a semantic style from Typography.xaml"
+fi
+
+for style_key in DisplayTitle PageHeader TitleMedium SectionHeader MoneyLarge MoneyMedium Body BodyStrong Caption Eyebrow; do
+  if ! grep -qF "x:Key=\"${style_key}\"" CipherBank-app/Resources/Styles/Typography.xaml; then
+    fail "missing typography style ${style_key}"
+  fi
+done
+
+color_line="$(grep -nF 'Resources/Styles/Colors.xaml' CipherBank-app/App.xaml | cut -d: -f1)"
+type_line="$(grep -nF 'Resources/Styles/Typography.xaml' CipherBank-app/App.xaml | cut -d: -f1)"
+style_line="$(grep -nF 'Resources/Styles/Styles.xaml' CipherBank-app/App.xaml | cut -d: -f1)"
+if [[ -z "${color_line}" || -z "${type_line}" || -z "${style_line}" \
+  || "${color_line}" -ge "${type_line}" || "${type_line}" -ge "${style_line}" ]]; then
+  fail "App.xaml must merge colors, typography, then component styles"
+fi
+
+if grep -RInE '"(Password|Mnemonic|PrivateKey|Seed|Token|Pin)"[[:space:]]*:' \
+  config --include='*.json' >/dev/null; then
+  fail "secret-shaped configuration key found under config/"
+fi
+
+if ! python3 - <<'PY'
+import json
+import pathlib
+import re
+import sys
+import xml.etree.ElementTree as ET
+from collections import defaultdict
+
+failures = []
+for path in pathlib.Path("config").rglob("*.json"):
+    try:
+        json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        failures.append(f"invalid JSON {path}: {exc}")
+
+xml_patterns = ("*.csproj", "*.props", "*.targets", "*.xaml")
+for pattern in xml_patterns:
+    for path in pathlib.Path(".").rglob(pattern):
+        if "bin" in path.parts or "obj" in path.parts or path.name.endswith(".template"):
+            continue
+        try:
+            ET.parse(path)
+        except Exception as exc:
+            failures.append(f"invalid XML {path}: {exc}")
+
+xaml_key = "{http://schemas.microsoft.com/winfx/2009/xaml}Key"
+resource_files = [
+    pathlib.Path("CipherBank-app/Resources/Styles/Colors.xaml"),
+    pathlib.Path("CipherBank-app/Resources/Styles/Typography.xaml"),
+    pathlib.Path("CipherBank-app/Resources/Styles/Styles.xaml"),
+    pathlib.Path("CipherBank-app/App.xaml"),
+]
+resource_owners = defaultdict(list)
+for path in resource_files:
+    if not path.is_file():
+        continue
+    for element in ET.parse(path).iter():
+        if xaml_key in element.attrib:
+            resource_owners[element.attrib[xaml_key]].append(str(path))
+for key, owners in resource_owners.items():
+    if len(owners) > 1:
+        failures.append(f"duplicate XAML resource {key}: {', '.join(owners)}")
+
+references = set()
+for path in pathlib.Path("CipherBank-app").rglob("*.xaml"):
+    references.update(re.findall(r"StaticResource\s+([A-Za-z0-9_]+)", path.read_text(encoding="utf-8-sig")))
+missing_resources = sorted(references - set(resource_owners))
+if missing_resources:
+    failures.append(f"missing XAML resources: {', '.join(missing_resources)}")
+
+for failure in failures:
+    print(f"STRUCTURE ERROR: {failure}", file=sys.stderr)
+raise SystemExit(1 if failures else 0)
+PY
+then
+  failures=$((failures + 1))
 fi
 
 if (( failures > 0 )); then

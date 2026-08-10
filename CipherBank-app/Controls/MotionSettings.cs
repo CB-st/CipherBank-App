@@ -9,10 +9,15 @@ namespace CipherBank_app.Controls;
 /// </summary>
 internal static class MotionSettings
 {
-    public static bool ReduceMotion =>
+    public static bool ReduceMotion
+    {
+        get
+        {
 #if IOS || MACCATALYST
-        UIKit.UIAccessibility.IsReduceMotionEnabled;
+            return UIKit.UIAccessibility.IsReduceMotionEnabled;
 #else
-        false;
+            return false;
 #endif
+        }
+    }
 }
