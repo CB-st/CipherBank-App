@@ -3,8 +3,6 @@
 // </copyright>
 
 using CipherBank_app.Animations;
-using CipherBank_app.Cora;
-using CipherBank_app.Custody;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

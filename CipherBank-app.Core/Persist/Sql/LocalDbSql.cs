@@ -4,7 +4,6 @@
 
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace CipherBank_app.Persist.Sql;
@@ -31,24 +30,6 @@ internal static class LocalDbSql
         new("routing", CompatibilityStatement.ScrubRecipientRouting),
         new("account_full", CompatibilityStatement.ScrubRecipientAccountFull),
     ];
-
-    private static readonly Dictionary<CompatibilityStatement, string> CompatibilitySql =
-        new()
-        {
-            [CompatibilityStatement.AddRecipientHolder] = "ALTER TABLE recipients ADD COLUMN holder TEXT",
-            [CompatibilityStatement.AddRecipientBank] = "ALTER TABLE recipients ADD COLUMN bank TEXT",
-            [CompatibilityStatement.AddRecipientAccountType] =
-                "ALTER TABLE recipients ADD COLUMN account_type TEXT NOT NULL DEFAULT 'checking'",
-            [CompatibilityStatement.AddRecipientMemo] = "ALTER TABLE recipients ADD COLUMN memo TEXT",
-            [CompatibilityStatement.AddRecipientAccountMask] = "ALTER TABLE recipients ADD COLUMN account_mask TEXT",
-            [CompatibilityStatement.AddRecipientRoutingMask] = "ALTER TABLE recipients ADD COLUMN routing_mask TEXT",
-            [CompatibilityStatement.ScrubRecipientAccount] =
-                "UPDATE recipients SET account = NULL WHERE account IS NOT NULL",
-            [CompatibilityStatement.ScrubRecipientRouting] =
-                "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL",
-            [CompatibilityStatement.ScrubRecipientAccountFull] =
-                "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL",
-        };
 
     private enum CompatibilityStatement
     {
@@ -135,26 +116,52 @@ internal static class LocalDbSql
     }
 
     /// <summary>
-    /// Executes a compatibility DDL/DML statement selected from a closed enum allowlist of literals.
+    /// Executes a compatibility DDL/DML statement. Each arm assigns a compile-time SQL literal to
+    /// CommandText so CA2100 does not require a suppression (and S1309 stays clear).
+    /// Use: Low (schema upgrade). Scope: LocalDbSql compatibility repair.
     /// </summary>
-    [SuppressMessage(
-        "Security",
-        "CA2100:Review SQL queries for security vulnerabilities",
-        Justification = "CommandText is assigned only from CompatibilitySql dictionary of compile-time SQL literals; no user input reaches the query.")]
     private static async Task ExecuteConstantAsync(
         DbConnection connection,
         CompatibilityStatement statement,
         CancellationToken ct)
     {
         await using DbCommand command = connection.CreateCommand();
-        command.CommandText = ResolveCompatibilitySql(statement);
+        switch (statement)
+        {
+            case CompatibilityStatement.AddRecipientHolder:
+                command.CommandText = "ALTER TABLE recipients ADD COLUMN holder TEXT";
+                break;
+            case CompatibilityStatement.AddRecipientBank:
+                command.CommandText = "ALTER TABLE recipients ADD COLUMN bank TEXT";
+                break;
+            case CompatibilityStatement.AddRecipientAccountType:
+                command.CommandText =
+                    "ALTER TABLE recipients ADD COLUMN account_type TEXT NOT NULL DEFAULT 'checking'";
+                break;
+            case CompatibilityStatement.AddRecipientMemo:
+                command.CommandText = "ALTER TABLE recipients ADD COLUMN memo TEXT";
+                break;
+            case CompatibilityStatement.AddRecipientAccountMask:
+                command.CommandText = "ALTER TABLE recipients ADD COLUMN account_mask TEXT";
+                break;
+            case CompatibilityStatement.AddRecipientRoutingMask:
+                command.CommandText = "ALTER TABLE recipients ADD COLUMN routing_mask TEXT";
+                break;
+            case CompatibilityStatement.ScrubRecipientAccount:
+                command.CommandText = "UPDATE recipients SET account = NULL WHERE account IS NOT NULL";
+                break;
+            case CompatibilityStatement.ScrubRecipientRouting:
+                command.CommandText = "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL";
+                break;
+            case CompatibilityStatement.ScrubRecipientAccountFull:
+                command.CommandText = "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL";
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(statement));
+        }
+
         await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
     }
-
-    private static string ResolveCompatibilitySql(CompatibilityStatement statement)
-        => CompatibilitySql.TryGetValue(statement, out string? sql)
-            ? sql
-            : throw new ArgumentOutOfRangeException(nameof(statement));
 
     private static void AddParameter(DbCommand command, string name, object value)
     {
