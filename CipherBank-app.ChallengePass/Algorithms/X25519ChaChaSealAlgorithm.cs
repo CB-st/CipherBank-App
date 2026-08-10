@@ -31,7 +31,7 @@ public sealed class X25519ChaChaSealAlgorithm : ISealAlgorithm
 
     public AccountKeyPair DeriveKeyPair(ReadOnlySpan<byte> seed32)
     {
-        (var publicKey, var privateKey) = PortableX25519.DeriveKeyPair(seed32);
+        (byte[]? publicKey, byte[]? privateKey) = PortableX25519.DeriveKeyPair(seed32);
         return new AccountKeyPair(publicKey, privateKey);
     }
 
@@ -42,18 +42,18 @@ public sealed class X25519ChaChaSealAlgorithm : ISealAlgorithm
             throw new ArgumentException("Recipient public key must be 32 bytes.", nameof(recipientPublicKey));
         }
 
-        (var ephemeralPk, var ephemeralSk) = PortableX25519.GenerateKeyPair();
+        (byte[]? ephemeralPk, byte[]? ephemeralSk) = PortableX25519.GenerateKeyPair();
         try
         {
-            var shared = PortableX25519.Agree(ephemeralSk, recipientPublicKey);
+            byte[] shared = PortableX25519.Agree(ephemeralSk, recipientPublicKey);
             try
             {
-                var aeadKey = DeriveAeadKey(shared);
+                byte[] aeadKey = DeriveAeadKey(shared);
                 try
                 {
-                    var nonce = RandomNumberGenerator.GetBytes(NonceSize);
-                    var cipher = PortableChaCha20Poly1305.Encrypt(aeadKey, nonce, plaintext);
-                    var result = new byte[EphemeralPublicKeySize + NonceSize + cipher.Length];
+                    byte[] nonce = RandomNumberGenerator.GetBytes(NonceSize);
+                    byte[] cipher = PortableChaCha20Poly1305.Encrypt(aeadKey, nonce, plaintext);
+                    byte[] result = new byte[EphemeralPublicKeySize + NonceSize + cipher.Length];
                     ephemeralPk.CopyTo(result.AsSpan(0, EphemeralPublicKeySize));
                     nonce.CopyTo(result.AsSpan(EphemeralPublicKeySize, NonceSize));
                     cipher.CopyTo(result.AsSpan(EphemeralPublicKeySize + NonceSize));
@@ -91,10 +91,10 @@ public sealed class X25519ChaChaSealAlgorithm : ISealAlgorithm
         ReadOnlySpan<byte> nonce = ciphertext.Slice(EphemeralPublicKeySize, NonceSize);
         ReadOnlySpan<byte> cipher = ciphertext[(EphemeralPublicKeySize + NonceSize)..];
 
-        var shared = PortableX25519.Agree(recipientPrivateKey, ephemeralPk);
+        byte[] shared = PortableX25519.Agree(recipientPrivateKey, ephemeralPk);
         try
         {
-            var aeadKey = DeriveAeadKey(shared);
+            byte[] aeadKey = DeriveAeadKey(shared);
             try
             {
                 return PortableChaCha20Poly1305.Decrypt(aeadKey, nonce, cipher);
@@ -116,7 +116,7 @@ public sealed class X25519ChaChaSealAlgorithm : ISealAlgorithm
     /// </summary>
     private static byte[] DeriveAeadKey(ReadOnlySpan<byte> sharedSecret)
     {
-        var aeadKey = new byte[PortableChaCha20Poly1305.KeySize];
+        byte[] aeadKey = new byte[PortableChaCha20Poly1305.KeySize];
         HKDF.DeriveKey(HashAlgorithmName.SHA256, sharedSecret, aeadKey, HkdfSalt, HkdfInfo);
         return aeadKey;
     }

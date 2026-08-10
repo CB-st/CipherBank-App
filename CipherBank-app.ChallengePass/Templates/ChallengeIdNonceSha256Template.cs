@@ -33,8 +33,8 @@ public sealed class ChallengeIdNonceSha256Template : IChallengeTemplate
             throw new ArgumentException($"Nonce must be at least {MinNonceLength} bytes.", nameof(context));
         }
 
-        var id = Encoding.UTF8.GetBytes(context.ChallengeId);
-        var plaintext = new byte[id.Length + 1 + context.Nonce.Length];
+        byte[] id = Encoding.UTF8.GetBytes(context.ChallengeId);
+        byte[] plaintext = new byte[id.Length + 1 + context.Nonce.Length];
         id.CopyTo(plaintext, 0);
         plaintext[id.Length] = 0x00;
         context.Nonce.CopyTo(plaintext.AsSpan(id.Length + 1));
@@ -43,14 +43,14 @@ public sealed class ChallengeIdNonceSha256Template : IChallengeTemplate
 
     public ParsedChallenge ParseChallengePlaintext(ReadOnlySpan<byte> plaintext)
     {
-        var sep = plaintext.IndexOf((byte)0x00);
+        int sep = plaintext.IndexOf((byte)0x00);
         if (sep <= 0 || sep >= plaintext.Length - 1)
         {
             throw new CryptographicException($"Invalid challenge {nameof(plaintext)} framing.");
         }
 
-        var challengeId = Encoding.UTF8.GetString(plaintext[..sep]);
-        var nonce = plaintext[(sep + 1)..].ToArray();
+        string challengeId = Encoding.UTF8.GetString(plaintext[..sep]);
+        byte[] nonce = plaintext[(sep + 1)..].ToArray();
         if (nonce.Length < MinNonceLength)
         {
             throw new CryptographicException($"Nonce too short in challenge {nameof(plaintext)}.");

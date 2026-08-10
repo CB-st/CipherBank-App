@@ -19,7 +19,7 @@ public static class WireEncoding
 
     public static byte[] FromWire(string wire)
     {
-        var padded = wire.Replace('-', '+').Replace('_', '/');
+        string padded = wire.Replace('-', '+').Replace('_', '/');
         switch (padded.Length % Base64BlockSize)
         {
             case Base64RemainderNeedsTwoPadChars:

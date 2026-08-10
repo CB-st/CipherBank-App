@@ -31,11 +31,11 @@ public static class MlKem768Provider
             throw new ArgumentException("ML-KEM-768 seed must be 64 bytes.", nameof(seed64));
         }
 
-        var seedCopy = seed64.ToArray();
+        byte[] seedCopy = seed64.ToArray();
         try
         {
-            var priv = MLKemPrivateKeyParameters.FromSeed(Parameters, seedCopy);
-            var pub = priv.GetPublicKey();
+            MLKemPrivateKeyParameters priv = MLKemPrivateKeyParameters.FromSeed(Parameters, seedCopy);
+            MLKemPublicKeyParameters pub = priv.GetPublicKey();
             return (pub.GetEncoded(), priv.GetEncoded());
         }
         finally
@@ -50,7 +50,7 @@ public static class MlKem768Provider
     /// </summary>
     public static (byte[] PublicKey, byte[] PrivateKey) GenerateKeyPair()
     {
-        var seed = RandomNumberGenerator.GetBytes(SeedSizeBytes);
+        byte[] seed = RandomNumberGenerator.GetBytes(SeedSizeBytes);
         try
         {
             return GenerateKeyPairFromSeed(seed);
@@ -63,14 +63,14 @@ public static class MlKem768Provider
 
     public static (byte[] Ciphertext, byte[] SharedSecret) Encapsulate(ReadOnlySpan<byte> recipientPublicKey)
     {
-        var pubCopy = recipientPublicKey.ToArray();
+        byte[] pubCopy = recipientPublicKey.ToArray();
         try
         {
-            var pub = MLKemPublicKeyParameters.FromEncoding(Parameters, pubCopy);
+            MLKemPublicKeyParameters pub = MLKemPublicKeyParameters.FromEncoding(Parameters, pubCopy);
             MLKemEncapsulator enc = new(Parameters);
             enc.Init(pub);
-            var secret = new byte[enc.SecretLength];
-            var cipher = new byte[enc.EncapsulationLength];
+            byte[] secret = new byte[enc.SecretLength];
+            byte[] cipher = new byte[enc.EncapsulationLength];
             enc.Encapsulate(cipher, 0, cipher.Length, secret, 0, secret.Length);
             return (cipher, secret);
         }
@@ -86,14 +86,14 @@ public static class MlKem768Provider
     /// </summary>
     public static byte[] Decapsulate(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> recipientPrivateKey)
     {
-        var privCopy = recipientPrivateKey.ToArray();
-        var ctCopy = ciphertext.ToArray();
+        byte[] privCopy = recipientPrivateKey.ToArray();
+        byte[] ctCopy = ciphertext.ToArray();
         try
         {
-            var priv = MLKemPrivateKeyParameters.FromEncoding(Parameters, privCopy);
+            MLKemPrivateKeyParameters priv = MLKemPrivateKeyParameters.FromEncoding(Parameters, privCopy);
             MLKemDecapsulator dec = new(Parameters);
             dec.Init(priv);
-            var secret = new byte[dec.SecretLength];
+            byte[] secret = new byte[dec.SecretLength];
             dec.Decapsulate(ctCopy, 0, ctCopy.Length, secret, 0, secret.Length);
             return secret;
         }

@@ -16,15 +16,15 @@ public sealed class CustodyAccountKeySourceTests
     [Fact]
     public async Task Unlocked_custody_derives_stable_a1_and_hybrid_keys()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var mnemonic = MnemonicHelper.Generate();
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        string mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         (await custody.UnlockAsync("123456")).Should().BeTrue();
 
-        var source = new CustodyAccountKeySource(custody);
-        var algo = new X25519ChaChaSealAlgorithm();
+        CustodyAccountKeySource source = new CustodyAccountKeySource(custody);
+        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
         AccountKeyPair a = source.RequireUnlockedKeyPair(algo);
         AccountKeyPair b = source.RequireUnlockedKeyPair(algo);
         a.PublicKey.Should().Equal(b.PublicKey);
@@ -38,10 +38,10 @@ public sealed class CustodyAccountKeySourceTests
     [Fact]
     public void Locked_custody_throws()
     {
-        var store = new MemStore();
-        var pin = new PinService(store);
-        var custody = new CustodyService(store, pin);
-        var source = new CustodyAccountKeySource(custody);
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        CustodyAccountKeySource source = new CustodyAccountKeySource(custody);
         Assert.Throws<InvalidOperationException>(() => source.RequireHybridIdentity());
     }
 
@@ -56,7 +56,7 @@ public sealed class CustodyAccountKeySourceTests
         }
 
         public Task<string?> GetAsync(string key)
-            => Task.FromResult(_data.TryGetValue(key, out var v) ? v : null);
+            => Task.FromResult(_data.TryGetValue(key, out string? v) ? v : null);
 
         public Task RemoveAsync(string key)
         {

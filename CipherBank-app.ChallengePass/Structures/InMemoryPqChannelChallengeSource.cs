@@ -43,14 +43,14 @@ public sealed class InMemoryPqChannelChallengeSource : IPqChannelChallengeSource
 
         _serverChannel.SetChannelKey(_keyShare.LastChannelKey, _keyShare.LastKeyShareId);
 
-        var challengeId = "ch_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..ChallengeIdHexLength];
-        var nonce = RandomNumberGenerator.GetBytes(_template.MinNonceLength);
-        var plaintext = _template.BuildChallengePlaintext(new ChallengeBindContext
+        string challengeId = "ch_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..ChallengeIdHexLength];
+        byte[] nonce = RandomNumberGenerator.GetBytes(_template.MinNonceLength);
+        byte[] plaintext = _template.BuildChallengePlaintext(new ChallengeBindContext
         {
             ChallengeId = challengeId,
             Nonce = nonce,
         });
-        var cipher = _serverChannel.Seal(plaintext);
+        byte[] cipher = _serverChannel.Seal(plaintext);
 
         return Task.FromResult(new SessionChallengeDto
         {

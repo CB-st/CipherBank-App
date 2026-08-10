@@ -151,8 +151,8 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
         try
         {
             ApplyIdentityUnlocked(identity);
-            var pair = new AccountKeyPair(identity.X25519PublicKey, identity.X25519PrivateKey);
-            var wire = WireEncoding.ToWire(identity.X25519PublicKey);
+            AccountKeyPair pair = new AccountKeyPair(identity.X25519PublicKey, identity.X25519PrivateKey);
+            string wire = WireEncoding.ToWire(identity.X25519PublicKey);
             return await BuildBodyCoreAsync(algorithm, challengeTemplate, pair, wire, identity, ct)
                 .ConfigureAwait(false);
         }
@@ -183,8 +183,8 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
                 $"Channel challenge ALGORITHM '{challenge.Algorithm}' does not match '{HybridMlKemX25519Agreement.ChannelAlgorithmId}'.");
         }
 
-        var ciphertext = WireEncoding.FromWire(challenge.Ciphertext);
-        var plaintext = _channel.Open(ciphertext);
+        byte[] ciphertext = WireEncoding.FromWire(challenge.Ciphertext);
+        byte[] plaintext = _channel.Open(ciphertext);
         ParsedChallenge parsed = challengeTemplate.ParseChallengePlaintext(plaintext);
 
         if (!parsed.ChallengeId.Equals(challenge.ChallengeId, StringComparison.Ordinal))
@@ -192,8 +192,8 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
             throw new InvalidOperationException("Opened challenge id mismatch.");
         }
 
-        var passPayload = challengeTemplate.BuildPassPayload(parsed);
-        var passCipher = _channel.Seal(passPayload);
+        byte[] passPayload = challengeTemplate.BuildPassPayload(parsed);
+        byte[] passCipher = _channel.Seal(passPayload);
 
         return new SessionPassDto
         {
@@ -211,7 +211,7 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
     /// </summary>
     private async Task EnsureChannelEstablishedAsync(HybridPrivateIdentity identity, CancellationToken ct)
     {
-        var needsEstablish = !_channel.IsEstablished
+        bool needsEstablish = !_channel.IsEstablished
             || _channelIdentityPublicKey is null
             || _channelIdentityPublicKey.Length != identity.X25519PublicKey.Length
             || !CryptographicOperations.FixedTimeEquals(_channelIdentityPublicKey, identity.X25519PublicKey);
@@ -230,7 +230,7 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
                 $"Key-share ALGORITHM '{share.Algorithm}' does not match '{HybridMlKemX25519Agreement.KeyShareAlgorithmId}'.");
         }
 
-        var channelKey = HybridMlKemX25519Agreement.CompleteAsDevice(identity, share);
+        byte[] channelKey = HybridMlKemX25519Agreement.CompleteAsDevice(identity, share);
         _channel.SetChannelKey(channelKey, share.KeyShareId);
         CryptographicOperations.ZeroMemory(channelKey);
         _channelIdentityPublicKey = identity.X25519PublicKey.ToArray();
@@ -242,7 +242,7 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
         {
             if (_identity is not null && !ReferenceEquals(_identity, identity))
             {
-                var pubkeyChanged =
+                bool pubkeyChanged =
                     _identity.X25519PublicKey.Length != identity.X25519PublicKey.Length
                     || !CryptographicOperations.FixedTimeEquals(_identity.X25519PublicKey, identity.X25519PublicKey);
 

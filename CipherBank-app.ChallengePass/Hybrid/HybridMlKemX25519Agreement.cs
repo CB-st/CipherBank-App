@@ -39,19 +39,19 @@ public sealed class HybridMlKemX25519Agreement
     /// </summary>
     public static (PqKeyShareResponse Response, byte[] ChannelKey) CreateShareAsServer(HybridPublicIdentity device)
     {
-        var deviceMlKemPk = WireEncoding.FromWire(device.MlKemPublicKeyWire);
-        var deviceX25519Pk = WireEncoding.FromWire(device.X25519PublicKeyWire);
+        byte[] deviceMlKemPk = WireEncoding.FromWire(device.MlKemPublicKeyWire);
+        byte[] deviceX25519Pk = WireEncoding.FromWire(device.X25519PublicKeyWire);
 
-        (var kemCt, var ssKem) = MlKem768Provider.Encapsulate(deviceMlKemPk);
+        (byte[]? kemCt, byte[]? ssKem) = MlKem768Provider.Encapsulate(deviceMlKemPk);
         byte[]? ephSk = null;
         byte[]? ssX = null;
         try
         {
-            (var ephPk, ephSk) = PortableX25519.GenerateKeyPair();
+            (byte[]? ephPk, ephSk) = PortableX25519.GenerateKeyPair();
             ssX = PortableX25519.Agree(ephSk, deviceX25519Pk);
-            var channelKey = Combine(ssKem, ssX);
+            byte[] channelKey = Combine(ssKem, ssX);
 
-            var response = new PqKeyShareResponse
+            PqKeyShareResponse response = new PqKeyShareResponse
             {
                 KeyShareId = "ks_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..KeyShareIdHexLength],
                 MlKemCiphertextWire = WireEncoding.ToWire(kemCt),
@@ -82,12 +82,12 @@ public sealed class HybridMlKemX25519Agreement
     /// </summary>
     public static byte[] CompleteAsDevice(HybridPrivateIdentity identity, PqKeyShareResponse server)
     {
-        var kemCt = WireEncoding.FromWire(server.MlKemCiphertextWire);
-        var ssKem = MlKem768Provider.Decapsulate(kemCt, identity.MlKemPrivateKey);
+        byte[] kemCt = WireEncoding.FromWire(server.MlKemCiphertextWire);
+        byte[] ssKem = MlKem768Provider.Decapsulate(kemCt, identity.MlKemPrivateKey);
         byte[]? ssX = null;
         try
         {
-            var serverPkBytes = WireEncoding.FromWire(server.ServerX25519PublicKeyWire);
+            byte[] serverPkBytes = WireEncoding.FromWire(server.ServerX25519PublicKeyWire);
             ssX = PortableX25519.Agree(identity.X25519PrivateKey, serverPkBytes);
             return Combine(ssKem, ssX);
         }
@@ -104,12 +104,12 @@ public sealed class HybridMlKemX25519Agreement
     /// <summary>Derive hybrid device identity from BIP39 entropy (or any IKM).</summary>
     public HybridPrivateIdentity DeriveIdentity(ReadOnlySpan<byte> bip39Entropy)
     {
-        var seed96 = new byte[IdentitySeedBytes];
+        byte[] seed96 = new byte[IdentitySeedBytes];
         try
         {
             HKDF.DeriveKey(HashAlgorithmName.SHA256, bip39Entropy, seed96, IdentitySalt, IdentityInfo);
             AccountKeyPair x = _x25519.DeriveKeyPair(seed96.AsSpan(0, X25519SeedBytes));
-            (var mlPub, var mlPriv) = MlKem768Provider.GenerateKeyPairFromSeed(
+            (byte[]? mlPub, byte[]? mlPriv) = MlKem768Provider.GenerateKeyPairFromSeed(
                 seed96.AsSpan(X25519SeedBytes, MlKemSeedBytes));
             return new HybridPrivateIdentity
             {
@@ -131,7 +131,7 @@ public sealed class HybridMlKemX25519Agreement
     /// </summary>
     private static byte[] Combine(ReadOnlySpan<byte> ssKem, ReadOnlySpan<byte> ssX)
     {
-        var ikm = new byte[ssKem.Length + ssX.Length];
+        byte[] ikm = new byte[ssKem.Length + ssX.Length];
         ssKem.CopyTo(ikm);
         ssX.CopyTo(ikm.AsSpan(ssKem.Length));
         try
