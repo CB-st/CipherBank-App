@@ -33,7 +33,7 @@ public sealed class RepositoryStructureTests
     public void CentralPackageManagement_CoversEveryPackageReference()
     {
         string root = FindRepositoryRoot();
-        XDocument central = XDocument.Load(Path.Combine(root, "Directory.Packages.props"))
+        HashSet<string> central = XDocument.Load(Path.Combine(root, "Directory.Packages.props"))
             .Descendants("PackageVersion")
             .Select(version => version.Attribute("Include")?.Value)
             .OfType<string>()
@@ -107,6 +107,8 @@ public sealed class RepositoryStructureTests
             "BodyStrong",
             "Caption",
             "Eyebrow",
+            "PinEntry",
+            "MonoCaption",
         ];
         keys.Should().Contain(required);
 
@@ -120,6 +122,45 @@ public sealed class RepositoryStructureTests
             .Where(path => File.ReadAllText(path).Contains("FontFamily=", StringComparison.Ordinal))
             .Select(path => Path.GetRelativePath(root, path));
         pageLocalFonts.Should().BeEmpty("views consume named typography styles rather than font families");
+
+        string controls = Path.Combine(root, "CipherBank-app", "Controls");
+        IEnumerable<string> codeTokenOffenders = Directory.EnumerateFiles(controls, "*.cs", SearchOption.AllDirectories)
+            .Where(path =>
+            {
+                string source = File.ReadAllText(path);
+                return source.Contains("Color.FromArgb(\"#", StringComparison.Ordinal)
+                    || source.Contains("FontFamily =", StringComparison.Ordinal);
+            })
+            .Select(path => Path.GetRelativePath(root, path));
+        codeTokenOffenders.Should().BeEmpty("code-created controls also consume semantic resources");
+    }
+
+    [Fact]
+    public void RuntimeConfigurationThemes_AreDocumentedAndRetiredCompositionNamesStayRemoved()
+    {
+        string root = FindRepositoryRoot();
+        string[] themes = ["security", "challenge-pass", "dispatch", "network", "persistence", "ui"];
+        foreach (string theme in themes)
+        {
+            string directory = Path.Combine(root, "config", theme);
+            File.Exists(Path.Combine(directory, "README.md")).Should().BeTrue($"{theme} configuration needs ownership documentation");
+            Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
+                .Should().NotBeEmpty($"{theme} configuration needs a defaults file");
+        }
+
+        string[] retiredNames = ["IProductApi", "MockProductApi", "MockPublicQuoteService", "AppSessionDeps"];
+        string[] sourceRoots = ["CipherBank-app.Core", "CipherBank-app.ChallengePass", "CipherBank-app"];
+        string[] offenders = sourceRoots
+            .SelectMany(directory => Directory.EnumerateFiles(
+                Path.Combine(root, directory),
+                "*.cs",
+                SearchOption.AllDirectories))
+            .Where(path => !IsGenerated(path))
+            .SelectMany(path => retiredNames
+                .Where(name => File.ReadAllText(path).Contains(name, StringComparison.Ordinal))
+                .Select(name => $"{Path.GetRelativePath(root, path)}: {name}"));
+
+        offenders.Should().BeEmpty("M3 must consume the reviewed client and focused-coordinator contracts");
     }
 
     private static string FindRepositoryRoot()
