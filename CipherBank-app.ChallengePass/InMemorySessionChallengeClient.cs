@@ -52,6 +52,7 @@ public sealed class InMemorySessionChallengeClient : ISessionChallengeClient, ID
     public Task<SessionChallengeDto> RequestChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
+        ct.ThrowIfCancellationRequested();
         string challengeId = "ch_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..ChallengeIdHexLength];
         byte[] nonce = RandomNumberGenerator.GetBytes(_template.MinNonceLength);
         byte[] plaintext = _template.BuildChallengePlaintext(new ChallengeBindContext
