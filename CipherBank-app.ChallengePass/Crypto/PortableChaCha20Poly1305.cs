@@ -25,11 +25,11 @@ internal static class PortableChaCha20Poly1305
             throw new ArgumentException("Nonce must be 12 bytes.", nameof(nonce));
         }
 
-        var ciphertext = new byte[plaintext.Length];
-        var tag = new byte[TagSize];
-        using var aead = new ChaCha20Poly1305(key);
+        byte[] ciphertext = new byte[plaintext.Length];
+        byte[] tag = new byte[TagSize];
+        using ChaCha20Poly1305 aead = new ChaCha20Poly1305(key);
         aead.Encrypt(nonce, plaintext, ciphertext, tag);
-        var result = new byte[ciphertext.Length + TagSize];
+        byte[] result = new byte[ciphertext.Length + TagSize];
         ciphertext.CopyTo(result.AsSpan(0, ciphertext.Length));
         tag.CopyTo(result.AsSpan(ciphertext.Length));
         return result;
@@ -52,11 +52,11 @@ internal static class PortableChaCha20Poly1305
             throw new CryptographicException("Ciphertext too short.");
         }
 
-        var ctLen = ciphertextAndTag.Length - TagSize;
+        int ctLen = ciphertextAndTag.Length - TagSize;
         ReadOnlySpan<byte> ciphertext = ciphertextAndTag[..ctLen];
         ReadOnlySpan<byte> tag = ciphertextAndTag[ctLen..];
-        var plaintext = new byte[ctLen];
-        using var aead = new ChaCha20Poly1305(key);
+        byte[] plaintext = new byte[ctLen];
+        using ChaCha20Poly1305 aead = new ChaCha20Poly1305(key);
         aead.Decrypt(nonce, ciphertext, tag, plaintext);
         return plaintext;
     }

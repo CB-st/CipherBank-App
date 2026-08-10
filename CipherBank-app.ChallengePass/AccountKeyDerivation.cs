@@ -29,9 +29,9 @@ public static class AccountKeyDerivation
             throw new ArgumentException("Entropy required.", nameof(bip39Entropy));
         }
 
-        var seed = new byte[32];
-        var saltBytes = Encoding.UTF8.GetBytes(HkdfSalt);
-        var infoBytes = Encoding.UTF8.GetBytes(HkdfInfo);
+        byte[] seed = new byte[32];
+        byte[] saltBytes = Encoding.UTF8.GetBytes(HkdfSalt);
+        byte[] infoBytes = Encoding.UTF8.GetBytes(HkdfInfo);
         try
         {
             HKDF.DeriveKey(HashAlgorithmName.SHA256, bip39Entropy, seed, saltBytes, infoBytes);

@@ -30,13 +30,13 @@ public sealed class ChallengePassDiCoverageTests
     [Fact]
     public void AddChallengePassModule_RegistersA1AndA2Suites()
     {
-        var services = new ServiceCollection();
-        var algo = new X25519ChaChaSealAlgorithm();
-        var template = new ChallengeIdNonceSha256Template();
-        var client = new InMemorySessionChallengeClient(algo, template);
-        var keyShare = new InMemoryPqKeyShareClient();
-        var channel = new PqSymmetricChannel();
-        var challenges = new InMemoryPqChannelChallengeSource(keyShare);
+        ServiceCollection services = new ServiceCollection();
+        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
+        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
+        InMemorySessionChallengeClient client = new InMemorySessionChallengeClient(algo, template);
+        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
+        PqSymmetricChannel channel = new PqSymmetricChannel();
+        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
 
         services.AddSingleton<ISessionChallengeClient>(client);
         services.AddSingleton<IPqKeyShareClient>(keyShare);
@@ -62,7 +62,7 @@ public sealed class ChallengePassDiCoverageTests
     [Fact]
     public void AddChallengePassModule_BindsEmbeddedDefaults()
     {
-        var services = new ServiceCollection();
+        ServiceCollection services = new ServiceCollection();
         RegisterRequiredPorts(services);
         services.AddChallengePassModule(ChallengePassDefaultsConfiguration.Build());
 
@@ -78,7 +78,7 @@ public sealed class ChallengePassDiCoverageTests
     [Fact]
     public void AddChallengePassModule_RejectsUnknownDirectSuite()
     {
-        var services = new ServiceCollection();
+        ServiceCollection services = new ServiceCollection();
         Action register = () => services.AddChallengePassModule("retired-suite");
         register.Should().Throw<ArgumentException>().WithMessage("*not installed*");
     }
@@ -96,7 +96,7 @@ public sealed class ChallengePassDiCoverageTests
                 [$"{ChallengePassOptions.SectionName}:ActiveSuiteId"] = "retired-suite",
             })
             .Build();
-        var services = new ServiceCollection();
+        ServiceCollection services = new ServiceCollection();
         RegisterRequiredPorts(services);
         services.AddChallengePassModule(configuration);
 
@@ -112,8 +112,8 @@ public sealed class ChallengePassDiCoverageTests
     [Fact]
     public void LockedAccountKeySource_ThrowsUntilUnlocked()
     {
-        var source = new LockedAccountKeySource();
-        var algo = new X25519ChaChaSealAlgorithm();
+        LockedAccountKeySource source = new LockedAccountKeySource();
+        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
         Action a1 = () => source.RequireUnlockedKeyPair(algo);
         Action a2 = () => source.RequireHybridIdentity();
         a1.Should().Throw<InvalidOperationException>().WithMessage("*not unlocked*");
@@ -127,11 +127,11 @@ public sealed class ChallengePassDiCoverageTests
     [Fact]
     public void ChannelSealAlgorithm_DelegatesToChannel()
     {
-        using var channel = new PqSymmetricChannel();
-        var key = new byte[32];
+        using PqSymmetricChannel channel = new PqSymmetricChannel();
+        byte[] key = new byte[32];
         key.AsSpan().Fill(0x42);
         channel.SetChannelKey(key, "ks_test");
-        var seal = new ChannelSealAlgorithm(channel);
+        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(channel);
 
         seal.AlgorithmId.Should().Be(channel.ChannelAlgorithmId);
         seal.PublicKeySize.Should().Be(0);
@@ -139,8 +139,8 @@ public sealed class ChallengePassDiCoverageTests
         Action derive = () => seal.DeriveKeyPair(key);
         derive.Should().Throw<NotSupportedException>();
 
-        var cipher = seal.Seal("hello-channel"u8.ToArray(), ReadOnlySpan<byte>.Empty);
-        var plain = seal.Open(cipher, ReadOnlySpan<byte>.Empty);
+        byte[] cipher = seal.Seal("hello-channel"u8.ToArray(), ReadOnlySpan<byte>.Empty);
+        byte[] plain = seal.Open(cipher, ReadOnlySpan<byte>.Empty);
         plain.Should().Equal("hello-channel"u8.ToArray());
     }
 
@@ -151,16 +151,16 @@ public sealed class ChallengePassDiCoverageTests
     [Fact]
     public async Task Pq_clear_device_identity_forces_new_key_share()
     {
-        var agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
         HybridPrivateIdentity device = agreement.DeriveIdentity(
             System.Security.Cryptography.RandomNumberGenerator.GetBytes(16));
 
-        var keyShare = new InMemoryPqKeyShareClient();
-        var deviceChannel = new PqSymmetricChannel();
-        var challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        var template = new ChallengeIdNonceSha256Template();
-        using var structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
-        var seal = new ChannelSealAlgorithm(deviceChannel);
+        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
+        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
+        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
+        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
+        using PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
+        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
 
         structure.StructureId.Should().Be(PqChannelChallengePassStructure.StructureIdValue);
         await structure.BuildSessionOpenBodyWithIdentityAsync(seal, template, device, CancellationToken.None);
@@ -181,9 +181,9 @@ public sealed class ChallengePassDiCoverageTests
     /// </summary>
     private static void RegisterRequiredPorts(IServiceCollection services)
     {
-        var algorithm = new X25519ChaChaSealAlgorithm();
-        var template = new ChallengeIdNonceSha256Template();
-        var keyShare = new InMemoryPqKeyShareClient();
+        X25519ChaChaSealAlgorithm algorithm = new X25519ChaChaSealAlgorithm();
+        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
+        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
         services.AddSingleton<ISessionChallengeClient>(new InMemorySessionChallengeClient(algorithm, template));
         services.AddSingleton<IPqKeyShareClient>(keyShare);
         services.AddSingleton<IPqChannelChallengeSource>(new InMemoryPqChannelChallengeSource(keyShare));

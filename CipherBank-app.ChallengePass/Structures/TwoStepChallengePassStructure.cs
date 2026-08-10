@@ -46,8 +46,8 @@ public sealed class TwoStepChallengePassStructure : IChallengePassStructure
                 $"Challenge ALGORITHM '{challenge.Algorithm}' does not match active seal '{algorithm.AlgorithmId}'.");
         }
 
-        var ciphertext = WireEncoding.FromWire(challenge.Ciphertext);
-        var plaintext = algorithm.Open(ciphertext, accountKey.PrivateKey);
+        byte[] ciphertext = WireEncoding.FromWire(challenge.Ciphertext);
+        byte[] plaintext = algorithm.Open(ciphertext, accountKey.PrivateKey);
         ParsedChallenge parsed = challengeTemplate.ParseChallengePlaintext(plaintext);
 
         if (!parsed.ChallengeId.Equals(challenge.ChallengeId, StringComparison.Ordinal))
@@ -55,9 +55,9 @@ public sealed class TwoStepChallengePassStructure : IChallengePassStructure
             throw new InvalidOperationException("Opened challenge id does not match CHALLENGE_ID.");
         }
 
-        var passPayload = challengeTemplate.BuildPassPayload(parsed);
-        var apiPk = WireEncoding.FromWire(challenge.ApiPublicKey);
-        var passCipher = algorithm.Seal(passPayload, apiPk);
+        byte[] passPayload = challengeTemplate.BuildPassPayload(parsed);
+        byte[] apiPk = WireEncoding.FromWire(challenge.ApiPublicKey);
+        byte[] passCipher = algorithm.Seal(passPayload, apiPk);
 
         return new SessionPassDto
         {
