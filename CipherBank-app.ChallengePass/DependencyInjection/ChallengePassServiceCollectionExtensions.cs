@@ -53,7 +53,7 @@ public static class ChallengePassServiceCollectionExtensions
 
         services.AddOptions<ChallengePassOptions>()
             .Bind(configuration.GetSection(ChallengePassOptions.SectionName))
-            .Validate(options => options.IsValid(), "The active ChallengePass suite is not installed.")
+            .Validate(static options => options.IsValid(), ChallengePassValidationMessages.ActiveSuiteNotInstalled)
             .ValidateOnStart();
 
         return AddChallengePassServices(
@@ -69,10 +69,10 @@ public static class ChallengePassServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(options);
         if (!options.IsValid())
         {
-            throw new ArgumentException("The active ChallengePass suite is not installed.", nameof(options));
+            throw new ArgumentException(ChallengePassValidationMessages.ActiveSuiteNotInstalled, nameof(options));
         }
 
-        var snapshot = new ChallengePassOptions { ActiveSuiteId = options.ActiveSuiteId };
+        ChallengePassOptions snapshot = new ChallengePassOptions { ActiveSuiteId = options.ActiveSuiteId };
         services.AddSingleton<IOptions<ChallengePassOptions>>(Options.Create(snapshot));
         return AddChallengePassServices(services, _ => snapshot.ActiveSuiteId);
     }
@@ -105,7 +105,7 @@ public static class ChallengePassServiceCollectionExtensions
 
         services.AddSingleton<IChallengePassCatalog>(sp =>
         {
-            var suites = sp.GetServices<ChallengePassSuite>().ToList();
+            List<ChallengePassSuite> suites = sp.GetServices<ChallengePassSuite>().ToList();
             return new ChallengePassCatalog(suites, activeSuiteId(sp));
         });
 

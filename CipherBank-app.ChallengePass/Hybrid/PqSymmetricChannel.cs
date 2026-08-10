@@ -48,10 +48,10 @@ public sealed class PqSymmetricChannel : IPqChannel, IDisposable
 
     public byte[] Seal(ReadOnlySpan<byte> plaintext)
     {
-        var key = RequireKey();
-        var nonce = RandomNumberGenerator.GetBytes(NonceSize);
-        var cipher = PortableChaCha20Poly1305.Encrypt(key, nonce, plaintext);
-        var result = new byte[NonceSize + cipher.Length];
+        byte[] key = RequireKey();
+        byte[] nonce = RandomNumberGenerator.GetBytes(NonceSize);
+        byte[] cipher = PortableChaCha20Poly1305.Encrypt(key, nonce, plaintext);
+        byte[] result = new byte[NonceSize + cipher.Length];
         nonce.CopyTo(result.AsSpan(0, NonceSize));
         cipher.CopyTo(result.AsSpan(NonceSize));
         return result;
@@ -59,7 +59,7 @@ public sealed class PqSymmetricChannel : IPqChannel, IDisposable
 
     public byte[] Open(ReadOnlySpan<byte> ciphertext)
     {
-        var key = RequireKey();
+        byte[] key = RequireKey();
         if (ciphertext.Length < NonceSize + TagSize)
         {
             throw new CryptographicException("Ciphertext too short.");

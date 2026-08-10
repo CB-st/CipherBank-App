@@ -25,7 +25,7 @@ public sealed class CustodyAccountKeySource : IAccountKeySource
     /// </summary>
     public AccountKeyPair RequireUnlockedKeyPair(ISealAlgorithm algorithm)
     {
-        var entropy = RequireEntropy();
+        byte[] entropy = RequireEntropy();
         try
         {
             return AccountKeyDerivation.DeriveAccountKey(algorithm, entropy);
@@ -42,7 +42,7 @@ public sealed class CustodyAccountKeySource : IAccountKeySource
     /// </summary>
     public HybridPrivateIdentity RequireHybridIdentity()
     {
-        var entropy = RequireEntropy();
+        byte[] entropy = RequireEntropy();
         try
         {
             return _hybrid.DeriveIdentity(entropy);
@@ -59,7 +59,7 @@ public sealed class CustodyAccountKeySource : IAccountKeySource
     /// </summary>
     private byte[] RequireEntropy()
     {
-        var mnemonic = _custody.ExportMnemonic();
+        string? mnemonic = _custody.ExportMnemonic();
         if (mnemonic is null)
         {
             throw new InvalidOperationException("Custody locked — unlock before challenge/pass.");

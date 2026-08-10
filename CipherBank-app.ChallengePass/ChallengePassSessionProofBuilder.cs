@@ -42,7 +42,7 @@ public sealed class ChallengePassSessionProofBuilder : ISessionProofBuilder
         AccountKeyPair a1 = _keys.RequireUnlockedKeyPair(suite.Algorithm);
         try
         {
-            var a1Wire = WireEncoding.ToWire(a1.PublicKey);
+            string a1Wire = WireEncoding.ToWire(a1.PublicKey);
             return await suite.Structure
                 .BuildSessionOpenBodyAsync(suite.Algorithm, suite.Template, a1, a1Wire, ct)
                 .ConfigureAwait(false);

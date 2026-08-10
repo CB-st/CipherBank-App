@@ -24,7 +24,7 @@ public sealed class InMemoryPqKeyShareClient : IPqKeyShareClient, IDisposable
     /// </summary>
     public Task<PqKeyShareResponse> EstablishAsync(HybridPublicIdentity device, CancellationToken ct)
     {
-        (PqKeyShareResponse response, var channelKey) = HybridMlKemX25519Agreement.CreateShareAsServer(device);
+        (PqKeyShareResponse response, byte[]? channelKey) = HybridMlKemX25519Agreement.CreateShareAsServer(device);
         ClearLastChannelKey();
         LastChannelKey = channelKey;
         LastKeyShareId = response.KeyShareId;

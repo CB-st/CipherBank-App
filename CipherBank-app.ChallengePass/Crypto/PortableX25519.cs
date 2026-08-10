@@ -22,13 +22,13 @@ internal static class PortableX25519
             throw new ArgumentException("Seed must be 32 bytes.", nameof(seed32));
         }
 
-        var priv = new X25519PrivateKeyParameters(seed32);
+        X25519PrivateKeyParameters priv = new X25519PrivateKeyParameters(seed32);
         return (priv.GeneratePublicKey().GetEncoded(), priv.GetEncoded());
     }
 
     internal static (byte[] PublicKey, byte[] PrivateKey) GenerateKeyPair()
     {
-        var seed = RandomNumberGenerator.GetBytes(KeySize);
+        byte[] seed = RandomNumberGenerator.GetBytes(KeySize);
         try
         {
             return DeriveKeyPair(seed);
@@ -46,9 +46,9 @@ internal static class PortableX25519
             throw new ArgumentException("X25519 keys must be 32 bytes.");
         }
 
-        var priv = new X25519PrivateKeyParameters(privateKey);
-        var pub = new X25519PublicKeyParameters(peerPublicKey);
-        var shared = new byte[KeySize];
+        X25519PrivateKeyParameters priv = new X25519PrivateKeyParameters(privateKey);
+        X25519PublicKeyParameters pub = new X25519PublicKeyParameters(peerPublicKey);
+        byte[] shared = new byte[KeySize];
         priv.GenerateSecret(pub, shared);
         return shared;
     }

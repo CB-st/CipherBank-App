@@ -7,7 +7,7 @@ namespace CipherBank_app.ChallengePass.Configuration;
 /// <summary>Non-secret selection settings for the installed challenge/pass suites.</summary>
 public sealed class ChallengePassOptions
 {
-    public const string SectionName = "ChallengePass";
+    public static string SectionName { get; } = "ChallengePass";
 
     public string ActiveSuiteId { get; set; } = ChallengePassServiceCollectionExtensions.SuiteA1Id;
 

@@ -36,7 +36,7 @@ public sealed class InMemorySessionChallengeClient : ISessionChallengeClient
     {
         _algorithm = algorithm ?? new X25519ChaChaSealAlgorithm();
         _template = template ?? new ChallengeIdNonceSha256Template();
-        var seed = RandomNumberGenerator.GetBytes(_algorithm.PrivateKeySize);
+        byte[] seed = RandomNumberGenerator.GetBytes(_algorithm.PrivateKeySize);
         _apiKey = _algorithm.DeriveKeyPair(seed);
         CryptographicOperations.ZeroMemory(seed);
     }
@@ -50,15 +50,15 @@ public sealed class InMemorySessionChallengeClient : ISessionChallengeClient
 
     public Task<SessionChallengeDto> RequestChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
-        var challengeId = "ch_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..ChallengeIdHexLength];
-        var nonce = RandomNumberGenerator.GetBytes(_template.MinNonceLength);
-        var plaintext = _template.BuildChallengePlaintext(new ChallengeBindContext
+        string challengeId = "ch_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..ChallengeIdHexLength];
+        byte[] nonce = RandomNumberGenerator.GetBytes(_template.MinNonceLength);
+        byte[] plaintext = _template.BuildChallengePlaintext(new ChallengeBindContext
         {
             ChallengeId = challengeId,
             Nonce = nonce,
         });
-        var accountPk = WireEncoding.FromWire(accountPublicKeyWire);
-        var ciphertext = _algorithm.Seal(plaintext, accountPk);
+        byte[] accountPk = WireEncoding.FromWire(accountPublicKeyWire);
+        byte[] ciphertext = _algorithm.Seal(plaintext, accountPk);
 
         return Task.FromResult(new SessionChallengeDto
         {
@@ -76,7 +76,7 @@ public sealed class InMemorySessionChallengeClient : ISessionChallengeClient
         passPayload = null;
         try
         {
-            var cipher = WireEncoding.FromWire(pass.PassCiphertext);
+            byte[] cipher = WireEncoding.FromWire(pass.PassCiphertext);
             passPayload = _algorithm.Open(cipher, _apiKey.PrivateKey);
             return passPayload.Length > 0;
         }
