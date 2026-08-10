@@ -57,6 +57,9 @@ public sealed class CustodyService : ICustodyService
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
+    /// <inheritdoc />
+    public event EventHandler? Locked;
+
     public bool IsUnlocked
     {
         get
@@ -214,6 +217,7 @@ public sealed class CustodyService : ICustodyService
     {
         _mnemonic = null;
         _expires = null;
+        Locked?.Invoke(this, EventArgs.Empty);
     }
 
     public string? ExportMnemonic()
@@ -261,8 +265,7 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private bool FailUnlock()
     {
-        _mnemonic = null;
-        _expires = null;
+        Lock();
         return false;
     }
 

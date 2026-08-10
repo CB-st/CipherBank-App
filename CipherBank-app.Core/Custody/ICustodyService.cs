@@ -7,6 +7,9 @@ namespace CipherBank_app.Custody;
 /// <summary>On-device custody seal/unlock (Cora custody.ts parity).</summary>
 public interface ICustodyService
 {
+    /// <summary>Raised when in-memory mnemonic session state is cleared (manual lock, idle expiry, unlock rollback).</summary>
+    event EventHandler? Locked;
+
     bool IsUnlocked { get; }
 
     DateTimeOffset? SessionExpiresAt { get; }
