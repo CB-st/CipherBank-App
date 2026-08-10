@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.E2ETests.PageObjects;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Android;
 using OpenQA.Selenium.Appium.iOS;
@@ -40,6 +41,8 @@ public sealed class AppiumFixture : IDisposable
     /// <summary>
     /// Builds the Appium session for this run. Returns null when E2E_RUN is unset (callers Skip);
     /// throws when E2E_RUN=1 but Appium/APK/platform prerequisites are missing — no silent soft-pass.
+    /// When <c>E2E_DEVICE_PROFILE=sealed</c>, Android uses noReset and this method proves Unlock (or seals
+    /// via <see cref="DeviceState.SealedAsync"/> then locks) so smoke does not depend on AccountStories order.
     /// Use: High (test collection fixture setup). Scope: process-wide E2E session.
     /// </summary>
     public static AppiumFixture? CreateOrThrow()
@@ -51,14 +54,90 @@ public sealed class AppiumFixture : IDisposable
 
         AppiumDriver driver = DriverBootstrap.CreateDriver();
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(ImplicitWaitSeconds);
-        return new AppiumFixture(driver, new StoryJournal());
+        AppiumFixture fixture = new AppiumFixture(driver, new StoryJournal());
+        if (IsSealedDeviceProfile())
+        {
+            fixture.EnsureSealedUnlockOrThrow();
+        }
+
+        return fixture;
     }
+
+    /// <summary>
+    /// True when the harness requested a sealed-wallet Android session (smoke / --all second half).
+    /// Use: High (fixture bootstrap). Scope: process-wide E2E session.
+    /// </summary>
+    public static bool IsSealedDeviceProfile() =>
+        string.Equals(
+            Environment.GetEnvironmentVariable("E2E_DEVICE_PROFILE"),
+            "sealed",
+            StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Quits and disposes the owned Appium session. Use: High (end of collection). Scope: this fixture.</summary>
     public void Dispose()
     {
         Driver.Quit();
         Driver.Dispose();
+    }
+
+    /// <summary>
+    /// Leaves the sealed session on Unlock: already Unlock, Profile→Lock from Shell, or Fresh+seal+Lock when
+    /// Welcome appeared (wallet missing despite the sealed profile request).
+    /// Use: High (sealed profile CreateOrThrow). Scope: this fixture session.
+    /// </summary>
+    private void EnsureSealedUnlockOrThrow()
+    {
+        UnlockPage unlock = new UnlockPage(Driver);
+        if (unlock.IsLoaded())
+        {
+            return;
+        }
+
+        WelcomePage welcome = new WelcomePage(Driver);
+        if (welcome.IsLoaded())
+        {
+            DeviceState device = new DeviceState(Driver, Journal);
+            HomePage home = device.SealedAsync().GetAwaiter().GetResult();
+            UnlockPage locked = home.GoToProfileTab().LockApp();
+            locked.WaitForPageLoad();
+            if (!locked.IsLoaded())
+            {
+                throw new InvalidOperationException(
+                    "E2E_DEVICE_PROFILE=sealed: sealed after Welcome but Profile→Lock did not land on Unlock.");
+            }
+
+            return;
+        }
+
+        if (TryLockFromShell(out unlock) && unlock.IsLoaded())
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "E2E_DEVICE_PROFILE=sealed requires Unlock (or Welcome→seal); neither Unlock nor a lockable Shell was visible.");
+    }
+
+    /// <summary>
+    /// Attempts Home → Profile → Lock from an unlocked Shell tab. Use: Medium. Scope: sealed fixture bootstrap.
+    /// </summary>
+    private bool TryLockFromShell(out UnlockPage unlock)
+    {
+        unlock = new UnlockPage(Driver);
+        try
+        {
+            HomePage home = new HomePage(Driver);
+            home.GoToHomeTab();
+            ProfilePage profile = home.GoToProfileTab();
+            profile.WaitForPageLoad();
+            unlock = profile.LockApp();
+            unlock.WaitForPageLoad();
+            return unlock.IsLoaded();
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -143,14 +222,20 @@ public sealed class AppiumFixture : IDisposable
             {
                 PlatformName = "Android",
                 AutomationName = "UiAutomator2",
-                App = apkPath,
                 DeviceName = Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator",
             };
 
-            // Sealed smoke (and --all smoke half) must keep wallet data from the prior install.
-            // Default Appium reset would wipe custody and land CoraShellSmoke on Welcome.
+            // Fresh installs need App=apk. Sealed smoke must not wipe custody: omit fullReset, force
+            // noReset, still pass App so UiAutomator2 can attach, and rely on ensure-sealed bootstrap.
+            options.App = apkPath;
             options.AddAdditionalAppiumOption("noReset", sealedProfile);
             options.AddAdditionalAppiumOption("fullReset", false);
+            if (sealedProfile)
+            {
+                options.AddAdditionalAppiumOption("appPackage", EmulatorReset.ResolvePackageId());
+                options.AddAdditionalAppiumOption("dontStopAppOnReset", true);
+            }
+
             return new AndroidDriver(serverUri, options);
         }
 

@@ -7,6 +7,8 @@ using CipherBank_app.E2ETests.Stories;
 using CipherBank_app.E2ETests.Support;
 using FluentAssertions;
 using OpenQA.Selenium;
+using OpenQA.Selenium.Appium;
+using OpenQA.Selenium.Appium.Interfaces;
 using Xunit;
 
 namespace CipherBank_app.E2ETests.Tests;
@@ -146,26 +148,94 @@ public class CoraShellSmokeTests
     }
 
     /// <summary>
-    /// Unlocks the sealed device with the journaled PIN and returns Home; fails with a gap note (instead of
-    /// a bare Appium timeout) when Welcome shows up instead of Unlock, i.e. the device isn't sealed as this
-    /// smoke suite requires.
+    /// From any Shell tab, taps Home → Profile → Lock and returns the Unlock page object when that path works.
+    /// Use: High (smoke Fact re-entry). Scope: this test class session.
+    /// </summary>
+    private static bool TryLockFromProfile(AppiumDriver driver, out UnlockPage unlock)
+    {
+        unlock = new UnlockPage(driver);
+        try
+        {
+            HomePage home = new HomePage(driver);
+            home.GoToHomeTab();
+            ProfilePage profile = home.GoToProfileTab();
+            profile.WaitForPageLoad();
+            unlock = profile.LockApp();
+            unlock.WaitForPageLoad();
+            return unlock.IsLoaded();
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Terminates and reactivates the MAUI package without pm clear so a sealed wallet should boot to Unlock.
+    /// Use: Medium (fallback when Profile→Lock is unavailable). Scope: this test class session.
+    /// </summary>
+    private static void RelaunchSealedApp(AppiumDriver driver)
+    {
+        if (driver is not IInteractsWithApps appLifecycle)
+        {
+            throw new InvalidOperationException(
+                $"Driver {driver.GetType().Name} does not support app lifecycle; cannot relaunch sealed smoke without wipe.");
+        }
+
+        string package = EmulatorReset.ResolvePackageId();
+        appLifecycle.TerminateApp(package);
+        appLifecycle.ActivateApp(package);
+    }
+
+    /// <summary>
+    /// Re-establishes Unlock (prior Facts may leave Convert/Receive/Send), unlocks with the journaled PIN,
+    /// and returns Home. Fails with a gap note when Welcome shows (device not sealed) or Unlock cannot be
+    /// recovered without wiping the wallet.
     /// Use: High (every sealed-device smoke Fact). Scope: this test class session.
     /// </summary>
     private HomePage UnlockToHome(string storyId)
     {
-        var driver = _fixture!.Driver;
-        var unlock = new UnlockPage(driver);
-        var welcome = new WelcomePage(driver);
-        StoryGuard.RequireScreen(
-            unlock.IsLoaded(),
-            storyId,
-            expected: "Unlock screen (sealed-wallet precondition for this smoke suite)",
-            actual: welcome.IsLoaded() ? "Welcome screen (device is not sealed)" : "neither Unlock nor Welcome visible",
-            proposedFix: "Seal the E2E device first (e.g. run AccountStories.CB_ACCOUNT_001 or DeviceState.SealedAsync) before running CoraShellSmokeTests.");
-
-        var home = unlock.UnlockWithPin(_fixture.Journal.Pin);
+        UnlockPage unlock = EnsureUnlockScreen(storyId);
+        HomePage home = unlock.UnlockWithPin(_fixture!.Journal.Pin);
         home.WaitForPageLoad();
         home.IsLoaded().Should().BeTrue();
         return home;
+    }
+
+    /// <summary>
+    /// Ensures Unlock is showing before a smoke Fact: already on Unlock, or Profile→Lock from Shell, or a
+    /// sealed relaunch (terminate + activate, no pm clear). Welcome is a hard gap for this suite.
+    /// Use: High (every sealed-device smoke Fact). Scope: this test class session.
+    /// </summary>
+    private UnlockPage EnsureUnlockScreen(string storyId)
+    {
+        AppiumDriver driver = _fixture!.Driver;
+        UnlockPage unlock = new UnlockPage(driver);
+        if (unlock.IsLoaded())
+        {
+            return unlock;
+        }
+
+        WelcomePage welcome = new WelcomePage(driver);
+        StoryGuard.RequireScreen(
+            !welcome.IsLoaded(),
+            storyId,
+            expected: "Unlock screen (sealed-wallet precondition for this smoke suite)",
+            actual: "Welcome screen (device is not sealed)",
+            proposedFix: "Seal the E2E device first (e.g. run AccountStories.CB_ACCOUNT_001 or --all Fresh→sealed) before CoraShellSmokeTests.");
+
+        if (!TryLockFromProfile(driver, out unlock) || !unlock.IsLoaded())
+        {
+            RelaunchSealedApp(driver);
+            unlock = new UnlockPage(driver);
+        }
+
+        StoryGuard.RequireScreen(
+            unlock.IsLoaded(),
+            storyId,
+            expected: "Unlock screen after Profile→Lock or sealed relaunch",
+            actual: welcome.IsLoaded() ? "Welcome screen (device is not sealed)" : "neither Unlock nor Welcome visible",
+            proposedFix: "Confirm E2E_DEVICE_PROFILE=sealed + noReset, journal PIN exists, and Profile Lock reaches Unlock without wiping custody.");
+        return unlock;
     }
 }

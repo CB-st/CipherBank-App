@@ -349,15 +349,19 @@ apply_e2e_env_file_if_unset() {
 }
 
 
-# Confirms AccountStories left a journal under E2E_JOURNAL_DIR so the sealed smoke half
-# has evidence a wallet was created before Appium noReset reuses the install.
+# Confirms AccountStories left a journal under E2E_JOURNAL_DIR, then force-stops the MAUI
+# package so the sealed smoke half cold-starts on Unlock under Appium noReset.
 # Use: High (--all handoff). Scope: scripts/e2e-android.sh.
 ensure_sealed_wallet_or_die() {
   local journal_dir="${E2E_JOURNAL_DIR:-artifacts/e2e-journal}"
+  local package="${CB_MAUI_PACKAGE:-com.companyname.cipherbankapp}"
   if ! find "$journal_dir" -type f 2>/dev/null | grep -q .; then
     die "--all smoke half needs a sealed wallet from AccountStories; no journal files under $journal_dir"
   fi
-  log "Sealed handoff OK (journal present); next Appium session uses E2E_DEVICE_PROFILE=sealed / noReset"
+  if command -v adb >/dev/null 2>&1; then
+    adb shell am force-stop "$package" >/dev/null 2>&1 || true
+  fi
+  log "Sealed handoff OK (journal present; force-stopped $package); smoke uses E2E_DEVICE_PROFILE=sealed / noReset"
 }
 
 # Runs the E2E suite against the installed APK, scoped by the resolved Story-trait filter.

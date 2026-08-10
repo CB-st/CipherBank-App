@@ -104,6 +104,16 @@ public class HomePage : BasePage
     }
 
     /// <summary>
+    /// Selects the Home Shell tab (e.g. when a prior Fact left Convert/Receive/Send in foreground).
+    /// Use: High (smoke Facts that re-lock via Profile). Scope: this page object.
+    /// </summary>
+    public HomePage GoToHomeTab()
+    {
+        TapByText("Home");
+        return this;
+    }
+
+    /// <summary>
     /// Switches to the Profile tab (Profile has no Home shortcut button). AppShell declares six tabs but
     /// Android's BottomNavigationView only renders five, so Profile sits behind the "More" overflow; the
     /// overflow is opened only when Profile is not already on the bar, keeping this correct on layouts

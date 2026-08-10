@@ -1,152 +1,78 @@
-# Sonar Stage 1–3 remediation design
+# Sonar Stage 1–3 remediation design — historical record
 
-**Date:** 2026-07-26  
-**Stack:** `prototype/maui-m1` → `m2` → `m3` → `m4` (PRs [#20](https://github.com/CB-st/CipherBank-App/pull/20)–[#23](https://github.com/CB-st/CipherBank-App/pull/23))  
-**Source inventory:** CI `sonar-context` artifacts (M1 `@8a04b58`, M2 `@d5c3cd4`, M3 `@f063be0`, M4 `@068886b`)  
-**Triage canvas:** workspace `canvases/sonar-m1-m4-triage.canvas.tsx`
+**Status:** Spent design record for audit. Operational truth lives in [`docs/BUILD_LOG.md`](../../BUILD_LOG.md), root [`AGENTS.md`](../../../AGENTS.md), and [`docs/SONAR_GATE.md`](../../SONAR_GATE.md). This file retains only descriptive context; it is not an execution checklist and does not prescribe agent bash verification steps.
 
-## Goal
+**Date:** 2026-07-26 (authored); updated as the formal stack landed on `prototype/maui-m{1a,1b,2,3,4}`.
+
+**Related plan (historical):** `docs/superpowers/plans/2026-07-26-sonar-stage1-mechanical.md`
+
+## Goal (as designed)
 
 Clear Sonar **new-code** gate noise on the MAUI stack in three stages: mechanical + CRITICAL first, planned structural file splits second, then medium/minor/info. Prefer fixing once on the owning layer and merging upward.
 
 ## Out of scope (this program)
 
-- Softening server gate thresholds (documented separately in `docs/SONAR_GATE.md` when present on the branch).
+- Softening server gate thresholds (documented in `docs/SONAR_GATE.md`).
 - Introducing `IClock` / S6354 across Core+Shell (deferred unless Stage 3 explicitly picks it up).
 - Committing `design_handoff_cipherbank/` or Expo paths.
-- Pushing `.github/workflows/sonar.yml` Coverlet changes until a `workflow`-scoped token is available (coverage remains a separate blocker).
+- TreatWarningsAsErrors wholesale disable; permanent WNAE parking for correctness rules.
 
-## Landing strategy
+## Landing strategy (as applied)
 
 **Fix on the earliest owning branch, then merge up.**
 
 | Concern | Land on | Merge through |
 |---------|---------|---------------|
-| Core / shared Tests | `prototype/maui-m1` (#20) | m2 → m3 → m4 |
-| ChallengePass (+ its tests) | `prototype/maui-m2` (#21) | m3 → m4 |
-| Shell-only / M3-delta Core edits already unique to m3 | `prototype/maui-m3` (#22) | m4 |
-| E2E-only (M4 currently 0 Sonar new issues) | `prototype/maui-m4` (#23) | — |
+| Core / shared Tests | `prototype/maui-m1a` / M1b ([#25](https://github.com/CB-st/CipherBank-App/pull/25)–[#26](https://github.com/CB-st/CipherBank-App/pull/26)) | m2 → m3 → m4 |
+| ChallengePass (+ its tests) | `prototype/maui-m2` ([#21](https://github.com/CB-st/CipherBank-App/pull/21)) | m3 → m4 |
+| Shell-only | `prototype/maui-m3` ([#22](https://github.com/CB-st/CipherBank-App/pull/22)) | m4 |
+| E2E-only | `prototype/maui-m4` ([#23](https://github.com/CB-st/CipherBank-App/pull/23)) | — |
 
-Do **not** dump Stage 1-only fixes solely onto M4 tip; stacked PR new-code would stay red on M1–M3.
+Shared Core smells were not parked only on M4 tip.
 
-## Cross-PR duplication annotation (required)
+## Cross-PR duplication annotation (policy that governed the stack)
 
-When a Sonar finding originates on **M1** (or an earlier stack layer) but the **canonical fix, relocation, or removal** lands on **M2–M4**, leave a comment on any **duplicate or leftover edit site** so reviewers know not to re-fix the same smell on the earlier PR.
-
-**Exact comment form (C#):**
+When a Sonar finding originated on an earlier layer but the **canonical fix** landed later, duplicate or leftover edit sites received:
 
 ```csharp
 // Sonar: issue resolved in M{N} PR (https://github.com/CB-st/CipherBank-App/pull/{N}/…), edit here is duplication
 ```
 
-Rules:
+Routine mechanical edits that only merged upward without re-editing were not annotated.
 
-1. `{N}` is the PR that owns the **canonical** fix: usually **2**, **3**, or **4**. When the canonical fix is on **M1** and a **later** PR only re-touches the same site, `{N}` may be **1** and the comment lives on the later duplicate edit.
-2. Deep-link the resolving change when possible:
-   - Prefer commit on that PR: `https://github.com/CB-st/CipherBank-App/pull/{N}/commits/{sha}`
-   - Or blob+lines on the resolving branch: `https://github.com/CB-st/CipherBank-App/blob/{sha}/path#Lstart-Lend`
-   - PR URL alone is allowed temporarily; update to commit/blob once the resolving commit exists.
-3. **Where to put it:**
-   - On the **later** edit that re-touches or re-implements the same fix (“edit here is duplication”).
-   - And/or on **leftover M1 code** that still shows the old smell because the real resolution only exists further up the stack (so M1 reviewers see the pointer).
-4. Do **not** add this on the canonical first fix when that fix is applied on the owning earliest branch with no later duplicate.
-5. Do **not** spam it on routine mechanical IDE0008/header/order edits that are applied once on M1 and merely merged upward without re-editing.
-6. Stage 2 type splits: annotate both the **old multi-type file** (leftover) and any **follow-up PR** that only adjusts usings after the split PR, pointing at the PR that performed the move.
+## Stage 1 — mechanical style + CRITICAL (completed pattern)
 
-PR bases:
+Hand-fix clusters that Stage 1 targeted (descriptive, not a work queue):
 
-| Layer | PR |
-|-------|----|
-| M1 | https://github.com/CB-st/CipherBank-App/pull/20 |
-| M2 | https://github.com/CB-st/CipherBank-App/pull/21 |
-| M3 | https://github.com/CB-st/CipherBank-App/pull/22 |
-| M4 | https://github.com/CB-st/CipherBank-App/pull/23 |
+| Cluster | Typical rules | Pattern used |
+|---------|---------------|--------------|
+| S1a CRITICAL / HIGH csharp | S2339, S2360, S1541, S1067, S2302, S2365, S131 | Named properties / overloads / helper extracts — no optional params on abstract interface slots |
+| S1b IDE0008 | explicit types on reported lines | Prefer IDE0008 over IDE0007 for that pass |
+| S1c SA1636 | file headers | Align with each project `stylecop.json` |
+| S1d SA1201 / SA1202 / SA1204 | member order | Reorder within files; no type splits in Stage 1 |
 
-## Stage 1 — mechanical style + CRITICAL (execute first)
+Stage 1 explicitly deferred SA1402 / SA1649, bulk MEDIUM/LOW/INFO, and S6354.
 
-### S1a — CRITICAL / HIGH csharp (gate)
+Verification happened through the stack’s usual gates (`dotnet test` on Core tests; Shell Android build when public surface moved). Re-scans used CI `sonar-context` artifacts — this document does not restate shell snippets as runnable checklists.
 
-Hand-fix; no StyleCop file splits.
+## Stage 2 — structural rebuild (plan-gated)
 
-| Rule | Where | Fix |
-|------|-------|-----|
-| S2339 | Core `AchRecipientValidation`; ChallengePass consts | `public const` → `public static` read-only property (or equivalent API-safe shape) |
-| S2360 | ChallengePass optional params | Overloads instead of optional parameters |
-| S1541 | `PaymentUri` | Reduce cyclomatic complexity (extract helpers) |
-| S1067 | `MnemonicBackupService` | Split compound condition |
-| S2302 | ChallengePass templates | `nameof(...)` |
-| S2365 | `ChallengePassCatalog.AvailableSuiteIds` | Method instead of copying property |
-| S131 | `WireEncoding` | Add `default` to switch |
-
-### S1b — IDE0008 (`var` → explicit type)
-
-- Apply explicit types where Sonar reports IDE0008.
-- Convention for this pass: **IDE0008 wins** over IDE0007 (prefer `var`); do not flip-flop.
-- Prefer targeted edits on reported lines; avoid repo-wide blind replace that breaks `var` used for anonymous/tuple cases Sonar did not flag.
-
-### S1c — SA1636 file headers
-
-- Align file header copyright text with each project’s `stylecop.json` (`companyName`: CipherBank).
-- Primary volume: ChallengePass (~23 MAJOR). Apply the same header template used by Core when adding/fixing headers.
-- Headers alone do not clear HIGH; still required for Stage 1 mechanical cleanup.
-
-### S1d — SA1201 / SA1202 / SA1204 member order
-
-- Properties before methods; static before instance; public before private (per StyleCop ordering).
-- Reorder within existing files only—**do not** split types in Stage 1.
-
-### Stage 1 verification
-
-```bash
-export PATH="$HOME/.local/dotnet:$PATH"
-dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release --nologo
-# On M1-only tip, ChallengePass filter may still apply if project absent:
-# --filter "FullyQualifiedName!~ChallengePass"
-```
-
-Push owning branch tips after green tests. Re-fetch `sonar-context` when CI finishes to confirm HIGH drop.
-
-### Stage 1 explicit non-goals
-
-- SA1402 (one type per file), SA1649 (file name = type)
-- Medium/minor/info bulk (S109, S4056, S2221, IDE002*, S4055, …)
-- S6354 clock injection
-
-## Stage 2 — structural rebuild (plan, then execute)
-
-### Deliverable before any split
-
-Create `docs/SONAR_STRUCTURAL_PLAN.md` containing:
-
-1. Every SA1402 / SA1649 finding (file, types in file, rule, layer).
-2. For each type to extract: public API surface, known callers (Core / ChallengePass / Shell / Tests / E2E).
-3. Expected breaks (usings, InternalsVisibleTo, JSON DTO co-location, test helpers).
-4. Proposed file paths and merge layer (usually M1 for Core types).
-5. Annotation checklist: which M1 sites need the cross-PR comment when a later PR completes a move.
-
-**No SA1402/SA1649 code moves until that plan is reviewed and approved.**
-
-### Execute
-
-Split/rename in dependency order; merge up; annotate per policy above; re-run tests and Sonar.
+SA1402 / SA1649 moves required `docs/SONAR_STRUCTURAL_PLAN.md` (callers across Shell, Tests, E2E) before code splits. Prefer split-only, same namespace; filename matches primary type.
 
 ## Stage 3 — medium / minor / info
 
-After Stage 2 (or in parallel only for pure mechanical non-structural items if Stage 2 is blocked on review):
+After Stage 2 (or only for pure mechanical non-structural items if Stage 2 was review-blocked): S109 protocol/crypto literals, culture/ternary signal, specific catches — with soften rows documented in `SONAR_GATE.md` rather than fake-fixed.
 
-- Priority signal: S109 (protocol/crypto/DB), S4056 CultureInfo, nested ternaries, specific catches.
-- Keep soften list: S6354, S4055 i18n, S4004/S3956 DTO collections, residual mock fixture literals—document in `SONAR_GATE.md` rather than fake-fixing.
-
-## Success criteria
+## Success criteria (how “done” was judged)
 
 | Stage | Done when |
 |-------|-----------|
-| 1 | M1–M3 HIGH/CRITICAL csharp clusters from S1a cleared or justified; IDE0008/SA1636/SA120\* volume materially down on re-scan; tests green; duplication comments present where later PRs superseded M1 sites |
-| 2 | Structural plan approved; splits merged; SA1402/SA1649 cleared or explicitly waived with reason |
-| 3 | Remaining MEDIUM/LOW/INFO either fixed or mapped to soften rows; coverage still tracked via Coverlet workflow separately |
+| 1 | M1–M3 HIGH/CRITICAL csharp clusters cleared or justified; mechanical volume materially down on re-scan; tests green; duplication comments only where later PRs superseded earlier sites |
+| 2 | Structural plan approved; splits merged; SA1402/SA1649 cleared or explicitly waived |
+| 3 | Remaining MEDIUM/LOW/INFO fixed or mapped to soften rows; coverage tracked separately |
 
-## Risks
+## Risks that shaped the work
 
-- Member reordering can churn blame and conflict with in-flight PR review comments—keep commits focused per batch (S1a, then S1b, …).
-- S2339 on public const may be a binary/API shape change for ChallengePass suite IDs—prefer read-only properties with same literal values; update tests if they use `const` in attributes.
-- Stack merge conflicts: resolve toward Stage 1 tip; re-apply duplication comments if conflict markers drop them.
+- Member reordering churned blame across stacked review — batches kept focused.
+- S2339 on public const could change attribute/`const` usage — preferred read-only properties with same literals.
+- Stack rebase/merge conflicts: resolve toward earliest owning tip; restore duplication comments if markers drop them.
