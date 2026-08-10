@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.RestoreBackupPage"
+             Title="Restore from backup"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <ScrollView>
+    <VerticalStackLayout Padding="24" Spacing="16">
+      <Label Text="{Binding CoraLine}" Style="{StaticResource CoraMuted}" />
+      <Label Text="Pick your ciphered recovery file, then enter the recovery password you set when you created it."
+             FontSize="13" LineBreakMode="WordWrap" />
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="14">
+            <Button Text="Choose recovery file" Command="{Binding PickFileCommand}"
+                    AutomationId="RestoreBackupPickFileButton" />
+            <Label Text="{Binding FileStatus}" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}"
+                   IsVisible="{Binding FileStatus, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="RestoreBackupFileStatusLabel" />
+            <Entry Text="{Binding RecoveryPassword}" IsPassword="True" Placeholder="Recovery password"
+                   AutomationId="RestoreBackupPasswordEntry" />
+            <Label Text="{Binding Error}"
+                   TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
+                   IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="RestoreBackupErrorLabel" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <Button Text="Restore wallet" Command="{Binding OpenCommand}"
+              IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
+              AutomationId="RestoreBackupOpenButton" />
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

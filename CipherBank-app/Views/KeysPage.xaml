@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.KeysPage"
+             Title="Recovery phrase"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}"
+             AutomationId="KeysPage">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+
+      <controls:CoraBar ScreenKey="keys" Line="{Binding CoraLine}" />
+      <Label Text="Write these words down. They never leave this device." />
+      <Border StrokeThickness="1" Padding="16" Stroke="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}">
+        <Label Text="{Binding Mnemonic}"
+               Style="{StaticResource MnemonicText}"
+               LineBreakMode="WordWrap"
+               AutomationId="KeysMnemonicLabel" />
+      </Border>
+      <Button Text="Copy" Command="{Binding CopyCommand}" AutomationId="KeysCopyButton" />
+      <Button Text="I wrote them down" Command="{Binding ContinueCommand}" AutomationId="KeysContinueButton" />
+
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

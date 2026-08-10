@@ -31,8 +31,11 @@ public sealed partial class MockTransactionService : ITransactionService
     private readonly MockWalletService _walletService;
     private readonly List<Transaction> _transactions;
 
-    public MockTransactionService(ILogger<MockTransactionService> logger, MockWalletService walletService)
+    private readonly TimeProvider _timeProvider;
+
+    public MockTransactionService(ILogger<MockTransactionService> logger, MockWalletService walletService, TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _logger = logger;
         _walletService = walletService;
 
@@ -91,14 +94,14 @@ public sealed partial class MockTransactionService : ITransactionService
         var newBalance = wallet.Balance + amount;
         _walletService.UpdateWalletBalance(wallet.Id, newBalance);
 
-        var transaction = new Transaction(
+        Transaction transaction = new Transaction(
             GenerateTransactionId(),
             TransactionType.Purchase,
             amount,
             normalizedSymbol,
             null, // No from address for purchases
             toAddress,
-            DateTimeOffset.UtcNow,
+            _timeProvider.GetUtcNow(),
             TransactionStatus.Confirmed,
             fee);
 
@@ -145,14 +148,14 @@ public sealed partial class MockTransactionService : ITransactionService
         _walletService.UpdateWalletBalance(wallet.Id, newBalance);
 
         // Simulate transaction being initially pending, then confirmed
-        var transaction = new Transaction(
+        Transaction transaction = new Transaction(
             GenerateTransactionId(),
             TransactionType.Send,
             amount,
             wallet.CryptoSymbol,
             wallet.Address,
             toAddress,
-            DateTimeOffset.UtcNow,
+            _timeProvider.GetUtcNow(),
             TransactionStatus.Pending, // Start as pending
             fee);
 
@@ -195,10 +198,14 @@ public sealed partial class MockTransactionService : ITransactionService
         return transaction.Status;
     }
 
-    private static List<Transaction> GenerateMockTransactionHistory()
+    /// <summary>
+    /// Seeds the in-memory mock ledger relative to this service's clock.
+    /// Use: Low (ctor once). Scope: MockTransactionService instance clock.
+    /// </summary>
+    private List<Transaction> GenerateMockTransactionHistory()
     {
-        var transactions = new List<Transaction>();
-        var now = DateTimeOffset.UtcNow;
+        List transactions = new List<Transaction>();
+        var now = _timeProvider.GetUtcNow();
 
         // Bitcoin transactions
         transactions.Add(new Transaction(

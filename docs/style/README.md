@@ -13,7 +13,7 @@ This is the source-of-truth guide for typography, color, component styling, and 
 
 ## Typography
 
-Inter is the functional UI family: controls, labels, instructions, metadata, and long-form copy. Space Grotesk is the hierarchy family: display titles, page/section headers, and financial values. Open Sans remains packaged only for legacy compatibility; do not use it in new screens.
+Manrope is the functional UI family: controls, labels, instructions, metadata, and long-form copy. Space Grotesk is the hierarchy family: display titles, page/section headers, and financial values. Space Mono is restricted to PIN entry, derivation paths, compact system status, and short technical labels. Open Sans and the `Inter*` aliases remain packaged only for legacy compatibility; do not use them in new screens.
 
 | Token | Family / weight | Size | Use |
 | --- | --- | ---: | --- |
@@ -23,12 +23,14 @@ Inter is the functional UI family: controls, labels, instructions, metadata, and
 | `MoneyMedium` | Space Grotesk Bold | 22 | Secondary amount or quoted price |
 | `TitleMedium` | Space Grotesk Medium | 18 | Card or modal title |
 | `SectionHeader` | Space Grotesk Medium | 18 | Section boundary |
-| `BodyStrong` | Inter SemiBold | 14 | Emphasized interface copy |
-| `Body` | Inter Regular | 14 | Default interface copy |
-| `Caption` | Inter Regular | 12 | Supporting metadata |
-| `Eyebrow` | Inter SemiBold | 11 | Short uppercase category label |
+| `BodyStrong` | Manrope SemiBold | 14 | Emphasized interface copy |
+| `Body` | Manrope Regular | 14 | Default interface copy |
+| `Caption` | Manrope Regular | 12 | Supporting metadata |
+| `Eyebrow` | Space Mono Bold | 11 | Short uppercase category label |
+| `PinEntry` | Space Mono Bold | 20 | Centered custody PIN entry only |
+| `MonoCaption` | Space Mono Regular | 12 | Derivation path or compact status |
 
-Component-bound text roles (`CoinGlyph`, `PriceChange`, `MetadataStrong`, `PortfolioSummary`, `SummaryValue`, `TransactionAmount`, `TotalValue`, `AmountEntry`, and the formatted-string span styles) preserve repeated financial-card treatments without reopening font choices in individual pages.
+Component-bound text roles (`CoinGlyph`, `PriceChange`, `MetadataStrong`, `PortfolioSummary`, `SummaryValue`, `TransactionAmount`, `TotalValue`, `AmountEntry`, `BrandWordmark`, `HeroBalanceOnDark`, `CoraLineText`, and the formatted-string span styles) preserve repeated financial/onboarding treatments without reopening font choices in individual pages or code-created controls.
 
 Use one display role per visual region. Financial amounts use tabular-friendly alignment where the platform supports it and must include a currency/unit label in the same region. Do not encode importance with size alone; preserve reading order and semantic descriptions.
 

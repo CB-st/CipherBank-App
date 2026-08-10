@@ -80,7 +80,7 @@ public sealed partial class TransactionService : ITransactionService
 
         try
         {
-            var request = new PurchaseRequest(symbol.ToUpperInvariant(), amount);
+            PurchaseRequest request = new PurchaseRequest(symbol.ToUpperInvariant(), amount);
             var response = await _http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -133,7 +133,7 @@ public sealed partial class TransactionService : ITransactionService
 
         try
         {
-            var request = new SendRequest(fromWalletId, toAddress, amount);
+            SendRequest request = new SendRequest(fromWalletId, toAddress, amount);
             var response = await _http.PostAsJsonAsync(SendEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 

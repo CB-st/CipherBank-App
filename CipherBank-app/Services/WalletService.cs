@@ -136,7 +136,7 @@ public sealed partial class WalletService : IWalletService
 
         try
         {
-            var request = new CreateWalletRequest(cryptoSymbol.ToUpperInvariant());
+            CreateWalletRequest request = new CreateWalletRequest(cryptoSymbol.ToUpperInvariant());
             var response = await _http.PostAsJsonAsync(WalletsEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 

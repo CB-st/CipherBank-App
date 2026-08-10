@@ -15,6 +15,11 @@ public interface ISettingsService
     string CipherBankEndpointBase { get; set; }
 
     /// <summary>
+    /// Gets or sets the product websocket endpoint (wss://…/v1/stream).
+    /// </summary>
+    string StreamEndpoint { get; set; }
+
+    /// <summary>
     /// Gets or sets the application theme mode (Light, Dark, System).
     /// </summary>
     string ThemeMode { get; set; }
@@ -38,6 +43,11 @@ public interface ISettingsService
     /// Gets or sets the default currency for displaying prices.
     /// </summary>
     string DefaultCurrency { get; set; }
+
+    /// <summary>
+    /// Gets or sets how product session open proves device possession (Lab / A1 / A2).
+    /// </summary>
+    SessionProofMode SessionProofMode { get; set; }
 
     /// <summary>
     /// Gets or sets the current environment (Production, Sandbox, Development, Local).

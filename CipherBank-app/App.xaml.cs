@@ -2,6 +2,10 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.Persist;
+using CipherBank_app.Services;
+using CipherBank_app.Session;
+
 namespace CipherBank_app;
 
 /// <summary>
@@ -9,13 +13,27 @@ namespace CipherBank_app;
 /// </summary>
 public partial class App : Application
 {
-    public App()
+    private readonly IServiceProvider _services;
+    private readonly IAppSession _session;
+    private readonly ILocalDb _db;
+    private readonly AppIdleLockService _idleLock;
+
+    public App(IServiceProvider services, IAppSession session, ILocalDb db, AppIdleLockService idleLock)
     {
         InitializeComponent();
+        _services = services;
+        _session = session;
+        _db = db;
+        _idleLock = idleLock;
+        UserAppTheme = AppTheme.Dark;
     }
 
+    /// <summary>
+    /// Creates the root window with a DI-aware AppShell.
+    /// Use: High (once per process). Scope: application lifetime.
+    /// </summary>
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        return new Window(new AppShell());
+        return new Window(new AppShell(_services, _session, _db, _idleLock));
     }
 }

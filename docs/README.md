@@ -1,12 +1,17 @@
 # CipherBank documentation
 
-Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass stack.
+Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass M3 stack.
 
-## Build prerequisites
+## Overview
 
-- .NET 10 SDK and the workload for the target MAUI platform
-- Android SDK/JDK for the primary Android build
-- Appium only for device-level E2E execution
+CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. M3 adds the
+onboarding/custody, portfolio, money-movement, vault, POS/NFC, product HTTP, and
+public quote surfaces over the M2 ChallengePass foundation.
+
+## Prerequisites
+
+- **.NET 10 SDK** (10.0.101 or later)
+- **MAUI workload** for your target platform(s)
 
 ## Build and test
 
@@ -17,35 +22,40 @@ dotnet build CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
 dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android
 ```
 
+## Coding standards & Sonar
+
+Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar typology / stages / missteps**) live in the repo-root [AGENTS.md](../AGENTS.md). Gate soften-vs-fix policy: [SONAR_GATE.md](SONAR_GATE.md). Stage 2 file splits: [SONAR_STRUCTURAL_PLAN.md](SONAR_STRUCTURAL_PLAN.md).
+
 ## Documentation index
 
 | Document | Description |
-| --- | --- |
-| [../AGENTS.md](../AGENTS.md) | Repository architecture, coding, security, UI, and verification contract |
-| [architecture.md](architecture.md) | Architecture, data flow, security, and HTTP pipeline |
+|----------|-------------|
+| [../AGENTS.md](../AGENTS.md) | **Day-to-day agent rules**, including Sonar typology, Stage 1–3 order, Shell compile gate, common missteps |
+| [BUILD_LOG.md](BUILD_LOG.md) | Condensed prototype map: what shipped, where it lives, connections |
+| [SONAR_GATE.md](SONAR_GATE.md) | Sonar quality-gate policy: what we fix vs soften (with reasons) |
+| [LOCAL_LINT.md](LOCAL_LINT.md) | Pre-push multi-language lint (`./scripts/lint.sh`: C#/shell/Python/C++/Make) |
+| [LOCAL_SONAR_LINT.md](LOCAL_SONAR_LINT.md) | C# SonarAnalyzer deep dive + SonarQube for IDE Connected Mode |
+| [SONAR_STRUCTURAL_PLAN.md](SONAR_STRUCTURAL_PLAN.md) | Stage 2 SA1402/SA1649 inventory, callers, split targets, execution status |
+| [MAUI_FUNCTION_REF.md](MAUI_FUNCTION_REF.md) | Monolithic INVOKE-style map of MAUI/Core/ChallengePass functions (API.md format) |
+| [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
 | [style/README.md](style/README.md) | Typography, semantic color, components, layout, and accessibility |
-| [BUILD_LOG.md](BUILD_LOG.md) | Prototype layer map and implementation history |
-| [MAUI_FUNCTION_REF.md](MAUI_FUNCTION_REF.md) | MAUI/Core/ChallengePass function map |
-| [SONAR_GATE.md](SONAR_GATE.md) | Sonar quality-gate policy |
-| [SONAR_STRUCTURAL_PLAN.md](SONAR_STRUCTURAL_PLAN.md) | One-type-per-file and caller-map work |
-| [LOCAL_LINT.md](LOCAL_LINT.md) | Multi-language local lint workflow |
-| [LOCAL_SONAR_LINT.md](LOCAL_SONAR_LINT.md) | Local SonarAnalyzer and IDE connected-mode guidance |
 | [core/README.md](core/README.md) | Core library overview |
-| [core/models.md](core/models.md) | Domain models |
-| [core/services.md](core/services.md) | Core ports and services |
-| [app/README.md](app/README.md) | MAUI app and composition root |
-| [app/services.md](app/services.md) | MAUI service adapters and HTTP clients |
+| [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |
+| [core/services.md](core/services.md) | Core service interfaces and utilities |
+| [app/README.md](app/README.md) | MAUI app overview, DI, MauiProgram |
+| [app/services.md](app/services.md) | Service implementations, HTTP handlers, mocks |
 | [app/viewmodels.md](app/viewmodels.md) | ViewModels and commands |
-| [app/views.md](app/views.md) | Pages and XAML bindings |
+| [app/views.md](app/views.md) | Views/Pages and XAML bindings |
 | [app/converters.md](app/converters.md) | Value converters |
-| [app/platforms.md](app/platforms.md) | Platform-specific adapters |
-| [tests/README.md](tests/README.md) | Test strategy |
+| [app/platforms.md](app/platforms.md) | Platform-specific code (certificate pinning) |
+| [tests/README.md](tests/README.md) | Test strategy overview |
 | [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
-| [tests/e2e-tests.md](tests/e2e-tests.md) | Appium E2E tests |
-| [tests/e2e-local.env.example](tests/e2e-local.env.example) | Gitignored local E2E credential template |
-| [config/README.md](config/README.md) | Build, analyzer, and tooling configuration |
+| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end Appium overview (full story map lands on M4) |
+| [tests/e2e-local.env.example](tests/e2e-local.env.example) | Template for gitignored harness credentials |
+| [config/README.md](config/README.md) | Build config, analyzers, tooling |
 | [review/m1a-comment-resolution.md](review/m1a-comment-resolution.md) | M1a PR #25 feedback map |
 | [review/m2-alignment-resolution.md](review/m2-alignment-resolution.md) | M2 PR #21 and M1a forward-port map |
+| [review/m3-alignment-resolution.md](review/m3-alignment-resolution.md) | M3 feature preservation and architecture alignment map |
 
 Reusable scaffolds are indexed in [../templates/README.md](../templates/README.md).

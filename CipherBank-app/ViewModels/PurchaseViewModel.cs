@@ -27,6 +27,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
     private readonly ILogger<PurchaseViewModel> _logger;
     private readonly ICryptoApiService _cryptoService;
+    private readonly IPublicQuoteService _publicQuotes;
     private readonly ITransactionService _transactionService;
     private readonly IErrorHandler _errorHandler;
     private readonly INavigationService _navigation;
@@ -70,6 +71,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     public PurchaseViewModel(
         ILogger<PurchaseViewModel> logger,
         ICryptoApiService cryptoService,
+        IPublicQuoteService publicQuotes,
         ITransactionService transactionService,
         IErrorHandler errorHandler,
         INavigationService navigation,
@@ -77,6 +79,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     {
         _logger = logger;
         _cryptoService = cryptoService;
+        _publicQuotes = publicQuotes;
         _transactionService = transactionService;
         _errorHandler = errorHandler;
         _navigation = navigation;
@@ -181,12 +184,35 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             var success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                    var supported = await _publicQuotes.GetCurrenciesAsync(_cts.Token);
+                    var purchaseSymbols = supported
+                        .Where(s => !s.Equals("USD", StringComparison.OrdinalIgnoreCase))
+                        .Where(CurrencySymbolMap.IsSupported)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
 
                     AvailableCryptos.Clear();
-                    foreach (var crypto in cryptos)
+                    foreach (var symbol in purchaseSymbols)
                     {
-                        AvailableCryptos.Add(crypto);
+                        var quote = await _publicQuotes.GetInverseQuoteAsync(symbol, 1m, "USD", _cts.Token);
+                        AvailableCryptos.Add(new CryptoCurrency(
+                            symbol.ToUpperInvariant(),
+                            symbol.ToUpperInvariant(),
+                            quote.OutputAmount,
+                            0m,
+                            0m,
+                            0m,
+                            0m, null));
+                    }
+
+                    // Fall back to market list if public currencies were empty.
+                    if (AvailableCryptos.Count == 0)
+                    {
+                        var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                        foreach (var crypto in cryptos.Where(c => CurrencySymbolMap.IsSupported(c.Symbol)))
+                        {
+                            AvailableCryptos.Add(crypto);
+                        }
                     }
 
                     if (AvailableCryptos.Count > 0)
@@ -199,7 +225,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                         SelectedCrypto = restored ?? AvailableCryptos.First();
                     }
 
-                    LogLoadedCryptos(_logger, cryptos.Count);
+                    LogLoadedCryptos(_logger, AvailableCryptos.Count);
                 },
                 msg => ErrorMessage = msg);
 

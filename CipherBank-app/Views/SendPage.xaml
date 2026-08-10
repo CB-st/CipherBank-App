@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.SendPage"
+             Title="Send"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
+  <ScrollView>
+    <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Recipient" FontAttributes="Bold" />
+            <Picker Title="Saved payees" ItemsSource="{Binding Recipients}"
+                    ItemDisplayBinding="{Binding Name}"
+                    SelectedItem="{Binding SelectedRecipient}"
+                    AutomationId="SendSavedPayeesPicker" />
+            <Button Text="Remove saved payee" Style="{StaticResource SecondaryButton}"
+                    Command="{Binding RemoveRecipientCommand}"
+                    CommandParameter="{Binding SelectedRecipient}"
+                    AutomationId="SendRemovePayeeButton" />
+            <Entry Text="{Binding Recipient}" Placeholder="Or type recipient" AutomationId="SendRecipientEntry" />
+
+            <Label Text="Add ACH payee" FontAttributes="Bold" Margin="0,8,0,0" />
+            <Entry Text="{Binding NewRecipientName}" Placeholder="Payee name" AutomationId="SendAchPayeeNameEntry" />
+            <Entry Text="{Binding NewHolder}" Placeholder="Account holder" AutomationId="SendAchHolderEntry" />
+            <Entry Text="{Binding NewBank}" Placeholder="Bank name" AutomationId="SendAchBankEntry" />
+            <Entry Text="{Binding NewRouting}" Placeholder="Routing (9 digits)" Keyboard="Numeric" MaxLength="9"
+                   AutomationId="SendAchRoutingEntry" />
+            <Entry Text="{Binding NewAccount}" Placeholder="Account number" Keyboard="Numeric"
+                   AutomationId="SendAchAccountEntry" />
+            <Picker Title="Account type" ItemsSource="{Binding AccountTypes}" SelectedItem="{Binding NewAccountType}"
+                    AutomationId="SendAchAccountTypePicker" />
+            <Entry Text="{Binding NewMemo}" Placeholder="Memo (optional)" AutomationId="SendAchMemoEntry" />
+            <Button Text="Save payee" Command="{Binding AddRecipientCommand}" AutomationId="SendAchSavePayeeButton" />
+
+            <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" AutomationId="SendAmountEntry" />
+            <Picker Title="Speed" SelectedItem="{Binding Speed}" AutomationId="SendSpeedPicker">
+              <Picker.Items>
+                <x:String>instant</x:String>
+                <x:String>ach</x:String>
+              </Picker.Items>
+            </Picker>
+            <Button Text="Send" Command="{Binding SendCommand}" AutomationId="SendSubmitButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+  <controls:CoraFab ScreenKey="send" Line="{Binding CoraLine}" AutomationId="CoraFab" />
+  </Grid>
+</ContentPage>
