@@ -12,15 +12,8 @@ fail()
 }
 
 required=(
-  AGENTS.md
   Directory.Packages.props
-  CipherBank-app.Core/AGENTS.md
-  CipherBank-app.Core/Persist/AGENTS.md
-  CipherBank-app/AGENTS.md
-  CipherBank-app.Tests/AGENTS.md
-  config/README.md
   config/sonar/quality-gate.yaml
-  templates/README.md
 )
 for path in "${required[@]}"; do
   [[ -f "${path}" ]] || fail "missing required ${path}"

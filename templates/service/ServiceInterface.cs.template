@@ -1,9 +1,0 @@
-namespace CipherBank_app.__FEATURE__;
-
-/// <summary>Describes the __CAPABILITY__ capability.</summary>
-public interface I__SERVICE__
-{
-    /// <summary>Performs __ACTION__.</summary>
-    /// <param name="ct">Cancellation request for the operation.</param>
-    Task ExecuteAsync(CancellationToken ct);
-}

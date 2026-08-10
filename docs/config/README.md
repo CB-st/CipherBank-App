@@ -8,22 +8,21 @@ Configuration files that affect build, analysis, and editor behavior.
 
 **Location**: Repository root
 
-Shared MSBuild properties and analyzer package references for all projects.
+Shared MSBuild properties and package references for all projects.
 
 | Property | Value |
 |----------|-------|
 | LangVersion | latest |
 | Nullable | enable |
 | ImplicitUsings | enable |
-| TreatWarningsAsErrors | true |
+| TreatWarningsAsErrors | false |
 | EnforceCodeStyleInBuild | true |
 | AnalysisLevel | latest |
 | AnalysisMode | Recommended |
 | EnableNETAnalyzers | true |
 | AnalysisLevel | latest-recommended |
 
-Analyzer references are versionless here; versions are centrally owned by
-`Directory.Packages.props`.
+**Package references** (PrivateAssets=all, analyzers only):
 
 - StyleCop.Analyzers 1.2.0-beta.556
 - Microsoft.CodeAnalysis.NetAnalyzers 10.0.100
@@ -79,7 +78,7 @@ Editor and analyzer conventions.
 **C#**:
 
 - file-scoped namespaces (suggestion)
-- var when type apparent (warning)
+- var when type apparent (suggestion)
 - pattern matching preferences
 - naming: interfaces I*, private fields _camelCase, constants PascalCase, async *Async
 - IDE0005 (remove usings), IDE0051/0052 (unused members) as warnings
@@ -125,23 +124,4 @@ Optional: `bootstrap`, `plugins`, `include`/`exclude` for inspections.
 
 **Test**: TestResult.xml, coverage*.json, coverage*.xml
 
-Top-level Markdown is tracked. Generated reports belong under ignored output or
-artifact directories rather than being hidden through a broad Markdown rule.
-
----
-
-## Directory.Packages.props
-
-**Location**: Repository root
-
-Owns every NuGet version through central package management. Project files state
-only which packages they consume. `CentralPackageTransitivePinningEnabled` keeps
-transitive resolution deterministic.
-
----
-
-## Runtime config/
-
-Runtime defaults are grouped by security, dispatch, persistence, and UI theme.
-Each theme has a README, JSON defaults, a typed options class, startup validation,
-and DI binding. See [`../../config/README.md`](../../config/README.md).
+**Docs**: /*.md, /*.mmd (top-level markdown and Mermaid files)

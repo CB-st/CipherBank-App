@@ -46,4 +46,3 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
 | [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end tests |
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |
-| [review/m1a-comment-resolution.md](review/m1a-comment-resolution.md) | PR #25 feedback-to-change traceability |

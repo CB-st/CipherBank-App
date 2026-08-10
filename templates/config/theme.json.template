@@ -1,6 +1,0 @@
-{
-  "_comment": "Describe which subsystem reads this theme and whether values are security-sensitive.",
-  "__THEME__": {
-    "ExampleValue": 1
-  }
-}
