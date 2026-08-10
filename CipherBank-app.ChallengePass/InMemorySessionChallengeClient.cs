@@ -14,13 +14,14 @@ namespace CipherBank_app.ChallengePass;
 /// Local challenge issuer for tests / mock mode: seals with A1 algo + template to the account pubkey.
 /// Holds an ephemeral API keypair so passes can be verified in-process.
 /// </summary>
-public sealed class InMemorySessionChallengeClient : ISessionChallengeClient
+public sealed class InMemorySessionChallengeClient : ISessionChallengeClient, IDisposable
 {
     private const int ChallengeIdHexLength = 16;
 
     private readonly ISealAlgorithm _algorithm;
     private readonly IChallengeTemplate _template;
     private readonly AccountKeyPair _apiKey;
+    private bool _disposed;
 
     public InMemorySessionChallengeClient()
         : this(null, null)
@@ -50,6 +51,7 @@ public sealed class InMemorySessionChallengeClient : ISessionChallengeClient
 
     public Task<SessionChallengeDto> RequestChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         string challengeId = "ch_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..ChallengeIdHexLength];
         byte[] nonce = RandomNumberGenerator.GetBytes(_template.MinNonceLength);
         byte[] plaintext = _template.BuildChallengePlaintext(new ChallengeBindContext
@@ -73,6 +75,7 @@ public sealed class InMemorySessionChallengeClient : ISessionChallengeClient
     /// <summary>Verify a device pass against this issuer's API private key (test helper).</summary>
     public bool TryVerifyPass(SessionPassDto pass, out byte[]? passPayload)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         passPayload = null;
         try
         {
@@ -92,5 +95,20 @@ public sealed class InMemorySessionChallengeClient : ISessionChallengeClient
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Zeroes the ephemeral API private key when the issuer leaves DI / test scope.
+    /// Use: Low (dispose). Scope: InMemorySessionChallengeClient instance.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        CryptographicOperations.ZeroMemory(_apiKey.PrivateKey);
+        _disposed = true;
     }
 }
