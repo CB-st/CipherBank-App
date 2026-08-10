@@ -4,7 +4,7 @@
 
 namespace CipherBank_app.Persist.Entities;
 
-public sealed class SyncMetadataEntity
+public sealed record SyncMetadataEntity
 {
     public string Key { get; set; } = string.Empty;
 

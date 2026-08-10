@@ -28,8 +28,8 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
     {
         _taskScheduler = taskScheduler ?? throw new ArgumentNullException(nameof(taskScheduler));
         ArgumentNullException.ThrowIfNull(options);
-        if (options.MaxConcurrency is < SyncSchedulerOptions.MinConcurrency
-            or > SyncSchedulerOptions.MaxAllowedConcurrency)
+        if (options.MaxConcurrency < SyncSchedulerOptions.MinConcurrency
+            || options.MaxConcurrency > SyncSchedulerOptions.MaxAllowedConcurrency)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(options),

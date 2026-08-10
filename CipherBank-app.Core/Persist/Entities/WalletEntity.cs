@@ -4,7 +4,7 @@
 
 namespace CipherBank_app.Persist.Entities;
 
-public sealed class WalletEntity
+public sealed record WalletEntity
 {
     public string Id { get; set; } = string.Empty;
 

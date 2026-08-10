@@ -24,8 +24,8 @@ public static class HoldingVisibility
             enabled.UnionWith(UserPrefs.DefaultEnabledCurrencies);
         }
 
-        List<HoldingDto> visible = new List<HoldingDto>();
-        List<HoldingDto> other = new List<HoldingDto>();
+        List<HoldingDto> visible = [];
+        List<HoldingDto> other = [];
         foreach (HoldingDto holding in holdings)
         {
             if (enabled.Contains(holding.Symbol))

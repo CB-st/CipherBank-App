@@ -32,6 +32,24 @@ internal static class LocalDbSql
         new("account_full", CompatibilityStatement.ScrubRecipientAccountFull),
     ];
 
+    private static readonly Dictionary<CompatibilityStatement, string> CompatibilitySql =
+        new()
+        {
+            [CompatibilityStatement.AddRecipientHolder] = "ALTER TABLE recipients ADD COLUMN holder TEXT",
+            [CompatibilityStatement.AddRecipientBank] = "ALTER TABLE recipients ADD COLUMN bank TEXT",
+            [CompatibilityStatement.AddRecipientAccountType] =
+                "ALTER TABLE recipients ADD COLUMN account_type TEXT NOT NULL DEFAULT 'checking'",
+            [CompatibilityStatement.AddRecipientMemo] = "ALTER TABLE recipients ADD COLUMN memo TEXT",
+            [CompatibilityStatement.AddRecipientAccountMask] = "ALTER TABLE recipients ADD COLUMN account_mask TEXT",
+            [CompatibilityStatement.AddRecipientRoutingMask] = "ALTER TABLE recipients ADD COLUMN routing_mask TEXT",
+            [CompatibilityStatement.ScrubRecipientAccount] =
+                "UPDATE recipients SET account = NULL WHERE account IS NOT NULL",
+            [CompatibilityStatement.ScrubRecipientRouting] =
+                "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL",
+            [CompatibilityStatement.ScrubRecipientAccountFull] =
+                "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL",
+        };
+
     private enum CompatibilityStatement
     {
         AddRecipientHolder,
@@ -96,7 +114,7 @@ internal static class LocalDbSql
         CancellationToken ct)
     {
         await using DbCommand command = connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $name";
+        command.CommandText = SqliteCatalogSql.TableExistsByName;
         AddParameter(command, "$name", tableName);
         return Convert.ToInt64(
             await command.ExecuteScalarAsync(ct).ConfigureAwait(false),
@@ -109,7 +127,7 @@ internal static class LocalDbSql
         CancellationToken ct)
     {
         await using DbCommand command = connection.CreateCommand();
-        command.CommandText = "SELECT COUNT(*) FROM pragma_table_info('recipients') WHERE name = $column";
+        command.CommandText = SqliteCatalogSql.RecipientColumnExistsByName;
         AddParameter(command, "$column", columnName);
         return Convert.ToInt64(
             await command.ExecuteScalarAsync(ct).ConfigureAwait(false),
@@ -122,7 +140,7 @@ internal static class LocalDbSql
     [SuppressMessage(
         "Security",
         "CA2100:Review SQL queries for security vulnerabilities",
-        Justification = "CommandText is assigned only from CompatibilityStatement switch arms that return compile-time SQL literals; no user input reaches the query.")] // NOSONAR
+        Justification = "CommandText is assigned only from CompatibilitySql dictionary of compile-time SQL literals; no user input reaches the query.")]
     private static async Task ExecuteConstantAsync(
         DbConnection connection,
         CompatibilityStatement statement,
@@ -134,19 +152,9 @@ internal static class LocalDbSql
     }
 
     private static string ResolveCompatibilitySql(CompatibilityStatement statement)
-        => statement switch
-        {
-            CompatibilityStatement.AddRecipientHolder => "ALTER TABLE recipients ADD COLUMN holder TEXT",
-            CompatibilityStatement.AddRecipientBank => "ALTER TABLE recipients ADD COLUMN bank TEXT",
-            CompatibilityStatement.AddRecipientAccountType => "ALTER TABLE recipients ADD COLUMN account_type TEXT NOT NULL DEFAULT 'checking'",
-            CompatibilityStatement.AddRecipientMemo => "ALTER TABLE recipients ADD COLUMN memo TEXT",
-            CompatibilityStatement.AddRecipientAccountMask => "ALTER TABLE recipients ADD COLUMN account_mask TEXT",
-            CompatibilityStatement.AddRecipientRoutingMask => "ALTER TABLE recipients ADD COLUMN routing_mask TEXT",
-            CompatibilityStatement.ScrubRecipientAccount => "UPDATE recipients SET account = NULL WHERE account IS NOT NULL",
-            CompatibilityStatement.ScrubRecipientRouting => "UPDATE recipients SET routing = NULL WHERE routing IS NOT NULL",
-            CompatibilityStatement.ScrubRecipientAccountFull => "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL",
-            _ => throw new ArgumentOutOfRangeException(nameof(statement)),
-        };
+        => CompatibilitySql.TryGetValue(statement, out string? sql)
+            ? sql
+            : throw new ArgumentOutOfRangeException(nameof(statement));
 
     private static void AddParameter(DbCommand command, string name, object value)
     {
@@ -159,4 +167,14 @@ internal static class LocalDbSql
     private sealed record ColumnUpgrade(string ColumnName, CompatibilityStatement Statement);
 
     private sealed record SensitiveColumnScrub(string ColumnName, CompatibilityStatement Statement);
+
+    /// <summary>Catalog / pragma probes for compatibility repair (not user-facing copy).</summary>
+    private static class SqliteCatalogSql
+    {
+        internal const string TableExistsByName =
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $name";
+
+        internal const string RecipientColumnExistsByName =
+            "SELECT COUNT(*) FROM pragma_table_info('recipients') WHERE name = $column";
+    }
 }

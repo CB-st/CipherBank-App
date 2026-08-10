@@ -4,7 +4,7 @@
 
 namespace CipherBank_app.Persist.Entities;
 
-public sealed class PreferenceEntity
+public sealed record PreferenceEntity
 {
     public string Key { get; set; } = string.Empty;
 

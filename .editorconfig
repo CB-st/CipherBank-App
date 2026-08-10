@@ -112,7 +112,12 @@ dotnet_diagnostic.SA1200.severity = none   # Allow usings outside namespace — 
 dotnet_diagnostic.SA0001.severity = none   # Don't require XML comment analysis on all files
 dotnet_diagnostic.IDE0007.severity = none       # Conflicts with IDE0008 / Sonar gate
 dotnet_diagnostic.IDE0008.severity = warning    # Use explicit type instead of var
+dotnet_diagnostic.IDE0028.severity = none       # Collection expression burn-down deferred for tests
 dotnet_diagnostic.SA1515.severity = suggestion
+
+# Persist catalog/DDL SQL is schema text, not UI copy (SONAR_GATE deferred S4055 family).
+[CipherBank-app.Core/Persist/Sql/**.cs]
+dotnet_diagnostic.S4055.severity = none
 
 # XML files
 [*.{xml,xaml,csproj,props,targets}]

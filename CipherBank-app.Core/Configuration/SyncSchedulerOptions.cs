@@ -8,10 +8,10 @@ namespace CipherBank_app.Configuration;
 public sealed class SyncSchedulerOptions
 {
     /// <summary>Lower inclusive concurrency bound for validation.</summary>
-    public const int MinConcurrency = 1;
+    public static int MinConcurrency { get; } = 1;
 
     /// <summary>Upper inclusive concurrency bound for validation.</summary>
-    public const int MaxAllowedConcurrency = 8;
+    public static int MaxAllowedConcurrency { get; } = 8;
 
     public static string SectionName { get; } = "SyncScheduler";
 

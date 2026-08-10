@@ -65,7 +65,7 @@ public static class PaymentUri
             return string.Empty;
         }
 
-        List<string> parts = new List<string>();
+        List<string> parts = [];
         if (!string.IsNullOrEmpty(amount))
         {
             parts.Add("amount=" + Uri.EscapeDataString(amount));

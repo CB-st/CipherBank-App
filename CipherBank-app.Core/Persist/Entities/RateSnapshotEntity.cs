@@ -4,7 +4,7 @@
 
 namespace CipherBank_app.Persist.Entities;
 
-public sealed class RateSnapshotEntity
+public sealed record RateSnapshotEntity
 {
     public string Symbol { get; set; } = string.Empty;
 

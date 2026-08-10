@@ -12,42 +12,14 @@ concurrency:
   group: sonar-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-# Author gate: CSV PIPELINE_ALLOWED_AUTHOR (default RED-FLAG-DEVELOPMENT); PR needs
-# author+actor; push needs actor or commit author. Membership via comma-padded contains().
 # Coverlet→OpenCover for Sonar. Artifacts: sonar-context-<sha>. Gate via Sonar GH check.
+# Coverage/Sonar run for every non-draft PR and every push (no author allowlist).
 
 jobs:
   coverage:
     if: >-
-      (
-        github.event_name == 'pull_request'
-        && !github.event.pull_request.draft
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.pull_request.user.login)
-           )
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.actor)
-           )
-      )
-      ||
-      (
-        github.event_name == 'push'
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.actor)
-          )
-          || (
-            github.event.head_commit.author.username != ''
-            && contains(
-                 format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-                 format(',{0},', github.event.head_commit.author.username)
-               )
-          )
-        )
-      )
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft)
+      || github.event_name == 'push'
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     permissions:
@@ -112,17 +84,7 @@ jobs:
   # never spends context-build cost either. Waits on `coverage`.
   context:
     needs: [coverage]
-    if: >-
-      github.event_name == 'pull_request'
-      && !github.event.pull_request.draft
-      && contains(
-           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-           format(',{0},', github.event.pull_request.user.login)
-         )
-      && contains(
-           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-           format(',{0},', github.actor)
-         )
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     permissions:
       contents: read
       pull-requests: read
@@ -139,39 +101,12 @@ jobs:
       pr_author:   ${{ github.event.pull_request.user.login }}
 
   # Sonar after coverage: GH quality-gate check + sonar-context-/report-task-<sha>
-  # artifacts for AI Review. Same author gate as coverage; imports Coverlet first.
+  # artifacts for AI Review. Runs for every non-draft PR and push; imports Coverlet first.
   sonar:
     needs: [coverage]
     if: >-
-      (
-        github.event_name == 'pull_request'
-        && !github.event.pull_request.draft
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.pull_request.user.login)
-           )
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.actor)
-           )
-      )
-      ||
-      (
-        github.event_name == 'push'
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.actor)
-          )
-          || (
-            github.event.head_commit.author.username != ''
-            && contains(
-                 format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-                 format(',{0},', github.event.head_commit.author.username)
-               )
-          )
-        )
-      )
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft)
+      || github.event_name == 'push'
     runs-on: ubuntu-22.04
     # Restore + library build + scan + poll. 30 leaves headroom for cold NuGet.
     timeout-minutes: 30
@@ -529,7 +464,7 @@ jobs:
   review:
     needs: [context, sonar]
     # Require both context and a successful Sonar scan so AI review does not
-    # run when analysis failed or was skipped (e.g. draft / author gate).
+    # run when analysis failed or was skipped (e.g. draft PR).
     if: ${{ always() && needs.context.result == 'success' && needs.sonar.result == 'success' }}
     runs-on: ubuntu-22.04
     steps:
