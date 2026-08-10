@@ -150,7 +150,7 @@ public sealed class RepositoryStructureTests
 
         string[] retiredNames = ["IProductApi", "MockProductApi", "MockPublicQuoteService", "AppSessionDeps"];
         string[] sourceRoots = ["CipherBank-app.Core", "CipherBank-app.ChallengePass", "CipherBank-app"];
-        string[] offenders = sourceRoots
+        IEnumerable<string> offenders = sourceRoots
             .SelectMany(directory => Directory.EnumerateFiles(
                 Path.Combine(root, directory),
                 "*.cs",
