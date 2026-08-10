@@ -349,6 +349,17 @@ apply_e2e_env_file_if_unset() {
 }
 
 
+# Confirms AccountStories left a journal under E2E_JOURNAL_DIR so the sealed smoke half
+# has evidence a wallet was created before Appium noReset reuses the install.
+# Use: High (--all handoff). Scope: scripts/e2e-android.sh.
+ensure_sealed_wallet_or_die() {
+  local journal_dir="${E2E_JOURNAL_DIR:-artifacts/e2e-journal}"
+  if ! find "$journal_dir" -type f 2>/dev/null | grep -q .; then
+    die "--all smoke half needs a sealed wallet from AccountStories; no journal files under $journal_dir"
+  fi
+  log "Sealed handoff OK (journal present); next Appium session uses E2E_DEVICE_PROFILE=sealed / noReset"
+}
+
 # Runs the E2E suite against the installed APK, scoped by the resolved Story-trait filter.
 # Use: High (every harness run). Scope: CipherBank-app.E2ETests process.
 run_e2e_tests() {
@@ -358,11 +369,12 @@ run_e2e_tests() {
   local appium_server_url="${APPIUM_SERVER_URL:-http://127.0.0.1:${APPIUM_PORT}}"
   local -a test_args=("$E2E_PROJECT" --nologo)
   [[ -n "$filter" ]] && test_args+=(--filter "$filter")
-  log "Running: dotnet test ${test_args[*]} (Appium $appium_server_url)"
+  log "Running: dotnet test ${test_args[*]} (Appium $appium_server_url profile=${E2E_DEVICE_PROFILE:-fresh})"
   APPIUM_SERVER_URL="$appium_server_url" \
   APPIUM_PORT="$APPIUM_PORT" \
   E2E_RUN=1 TEST_PLATFORM=android \
     ANDROID_APK_PATH="$apk" \
+    E2E_DEVICE_PROFILE="${E2E_DEVICE_PROFILE:-}" \
     E2E_TEST_PIN="${E2E_TEST_PIN:-}" \
     E2E_TEST_PIN_ALT="${E2E_TEST_PIN_ALT:-}" \
     E2E_RECOVERY_PASSWORD="${E2E_RECOVERY_PASSWORD:-}" \
@@ -389,9 +401,12 @@ main() {
   if [[ "$MODE" == "all" ]] && [[ -f "$ROOT/CipherBank-app.E2ETests/Tests/CoraShellSmokeTests.cs" ]]; then
     # Fresh-reset account Facts and sealed-device smoke share an Appium collection but need
     # incompatible boot screens — run them as separate processes so order cannot interleave.
-    log "Running --all as Fresh AccountStories, then sealed CoraShellSmoke"
+    # Smoke half sets E2E_DEVICE_PROFILE=sealed so AppiumFixture uses noReset and keeps the
+    # wallet produced by AccountStories (Appium default reset would wipe custody).
+    log "Running --all as Fresh AccountStories, then sealed CoraShellSmoke (noReset)"
     run_e2e_tests "$apk" "FullyQualifiedName~AccountStories"
-    run_e2e_tests "$apk" "FullyQualifiedName~CoraShellSmokeTests"
+    ensure_sealed_wallet_or_die
+    E2E_DEVICE_PROFILE=sealed run_e2e_tests "$apk" "FullyQualifiedName~CoraShellSmokeTests"
   else
     run_e2e_tests "$apk" "$filter"
   fi

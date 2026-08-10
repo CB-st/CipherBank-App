@@ -134,6 +134,11 @@ public sealed class AppiumFixture : IDisposable
                 throw new FileNotFoundException($"ANDROID_APK_PATH does not exist: {apkPath}", apkPath);
             }
 
+            bool sealedProfile = string.Equals(
+                Environment.GetEnvironmentVariable("E2E_DEVICE_PROFILE"),
+                "sealed",
+                StringComparison.OrdinalIgnoreCase);
+
             var options = new AppiumOptions
             {
                 PlatformName = "Android",
@@ -141,6 +146,11 @@ public sealed class AppiumFixture : IDisposable
                 App = apkPath,
                 DeviceName = Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator",
             };
+
+            // Sealed smoke (and --all smoke half) must keep wallet data from the prior install.
+            // Default Appium reset would wipe custody and land CoraShellSmoke on Welcome.
+            options.AddAdditionalAppiumOption("noReset", sealedProfile);
+            options.AddAdditionalAppiumOption("fullReset", false);
             return new AndroidDriver(serverUri, options);
         }
 
