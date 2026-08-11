@@ -82,23 +82,32 @@ public static class MlKem768Provider
 
     /// <summary>
     /// Decapsulates a ciphertext; temporary private-key / ciphertext arrays for BouncyCastle are zeroed.
+    /// If Decapsulate fills then throws, the secret buffer is zeroed before rethrow.
     /// Use: High (A2 channel establish). Scope: MlKem768Provider.
     /// </summary>
     public static byte[] Decapsulate(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> recipientPrivateKey)
     {
         byte[] privCopy = recipientPrivateKey.ToArray();
         byte[] ctCopy = ciphertext.ToArray();
+        byte[]? secret = null;
         try
         {
             MLKemPrivateKeyParameters priv = MLKemPrivateKeyParameters.FromEncoding(Parameters, privCopy);
             MLKemDecapsulator dec = new(Parameters);
             dec.Init(priv);
-            byte[] secret = new byte[dec.SecretLength];
+            secret = new byte[dec.SecretLength];
             dec.Decapsulate(ctCopy, 0, ctCopy.Length, secret, 0, secret.Length);
-            return secret;
+            byte[] owned = secret;
+            secret = null;
+            return owned;
         }
         finally
         {
+            if (secret is not null)
+            {
+                CryptographicOperations.ZeroMemory(secret);
+            }
+
             CryptographicOperations.ZeroMemory(privCopy);
             CryptographicOperations.ZeroMemory(ctCopy);
         }

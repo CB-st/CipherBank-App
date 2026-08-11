@@ -2,15 +2,17 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Security.Cryptography;
 using CipherBank_app.ChallengePass.Hybrid;
 
 namespace CipherBank_app.ChallengePass;
 
 /// <summary>Test/lab account key source with a fixed in-memory keypair / hybrid identity.</summary>
-public sealed class StaticAccountKeySource : IAccountKeySource
+public sealed class StaticAccountKeySource : IAccountKeySource, IDisposable
 {
     private readonly AccountKeyPair _pair;
     private readonly HybridPrivateIdentity? _hybrid;
+    private bool _disposed;
 
     public StaticAccountKeySource(AccountKeyPair pair)
         : this(pair, null)
@@ -29,6 +31,7 @@ public sealed class StaticAccountKeySource : IAccountKeySource
     /// </summary>
     public AccountKeyPair RequireUnlockedKeyPair(ISealAlgorithm algorithm)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         _ = algorithm;
 
         // Hand out copies so callers (e.g. ChallengePassSessionProofBuilder) can ZeroMemory
@@ -42,6 +45,7 @@ public sealed class StaticAccountKeySource : IAccountKeySource
     /// </summary>
     public HybridPrivateIdentity RequireHybridIdentity()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_hybrid is null)
         {
             throw new InvalidOperationException("No hybrid identity configured on StaticAccountKeySource.");
@@ -56,5 +60,26 @@ public sealed class StaticAccountKeySource : IAccountKeySource
             MlKemPublicKey = _hybrid.MlKemPublicKey.ToArray(),
             MlKemPrivateKey = _hybrid.MlKemPrivateKey.ToArray(),
         };
+    }
+
+    /// <summary>
+    /// Zeroes retained private key and hybrid private buffers when the fixture leaves scope.
+    /// Use: Low (dispose). Scope: StaticAccountKeySource retained material.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        CryptographicOperations.ZeroMemory(_pair.PrivateKey);
+        if (_hybrid is not null)
+        {
+            CryptographicOperations.ZeroMemory(_hybrid.X25519PrivateKey);
+            CryptographicOperations.ZeroMemory(_hybrid.MlKemPrivateKey);
+        }
+
+        _disposed = true;
     }
 }
