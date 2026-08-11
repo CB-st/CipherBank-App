@@ -1,0 +1,10 @@
+{
+  "_comment": "Non-secret custody cryptography parameters. Size changes require a sealed-blob format migration.",
+  "Cryptography": {
+    "NonceSizeBytes": 12,
+    "TagSizeBytes": 16,
+    "KeySizeBytes": 32,
+    "SaltSizeBytes": 16,
+    "Pbkdf2Iterations": 210000
+  }
+}

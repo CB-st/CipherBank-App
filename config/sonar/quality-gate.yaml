@@ -1,0 +1,27 @@
+name: CipherBank New Code Gate
+scope: new_code
+conditions:
+  reliability_rating:
+    operator: greater_than
+    error_threshold: 1
+  security_rating:
+    operator: greater_than
+    error_threshold: 1
+  maintainability_rating:
+    operator: greater_than
+    error_threshold: 1
+  security_hotspots_reviewed:
+    operator: less_than
+    error_threshold: 100
+  coverage:
+    operator: less_than
+    error_threshold: 80
+  duplicated_lines_density:
+    operator: greater_than
+    error_threshold: 3
+  blocker_issues:
+    operator: greater_than
+    error_threshold: 0
+  critical_issues:
+    operator: greater_than
+    error_threshold: 0
