@@ -43,6 +43,15 @@ public sealed class NfcPresentmentPayload
         {
             return null;
         }
+        catch (InvalidOperationException)
+        {
+            // Wrong JSON value kinds (e.g. string where int expected).
+            return null;
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
     }
 
     public string ToJson()

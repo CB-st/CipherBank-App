@@ -31,4 +31,11 @@ public class NfcPresentmentPayloadTests
         parsed.TokenRef.Should().Be("tok_xyz");
         parsed.MerchantId.Should().Be("m1");
     }
+
+    [Fact]
+    public void TryParse_TypeInvalidJson_ReturnsNull()
+    {
+        NfcPresentmentPayload.TryParse("""{"v":"1"}""").Should().BeNull();
+        NfcPresentmentPayload.TryParse("""{"tokenRef":42}""").Should().BeNull();
+    }
 }

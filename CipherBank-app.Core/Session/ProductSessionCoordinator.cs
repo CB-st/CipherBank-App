@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Net.Http;
 using System.Text.Json;
 using CipherBank_app.Persist;
 using CipherBank_app.V1;
@@ -80,6 +81,14 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator
             // Preference/bootstrap refresh is best-effort after session establishment.
         }
         catch (JsonException)
+        {
+            // Preference/bootstrap refresh is best-effort after session establishment.
+        }
+        catch (HttpRequestException)
+        {
+            // Preference/bootstrap refresh is best-effort after session establishment.
+        }
+        catch (OperationCanceledException)
         {
             // Preference/bootstrap refresh is best-effort after session establishment.
         }

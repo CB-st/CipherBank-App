@@ -41,6 +41,7 @@ public sealed class AppSession : IAppSession
         _timeProvider = timeProvider ?? TimeProvider.System;
         _lastTouch = _timeProvider.GetUtcNow();
         IdleMs = DefaultIdleMs;
+        _custody.Locked += OnCustodyLocked;
     }
 
     public event EventHandler? Locked;
@@ -97,10 +98,8 @@ public sealed class AppSession : IAppSession
 
     public void Lock()
     {
-        _productSession.StopSession();
+        TearDownProductSession();
         _custody.Lock();
-        AccessToken = null;
-        QueueDisconnect();
         Locked?.Invoke(this, EventArgs.Empty);
     }
 
@@ -203,15 +202,39 @@ public sealed class AppSession : IAppSession
     }
 
     /// <summary>
+    /// Tears down product/stream state when custody self-locks (TTL) without going through <see cref="Lock"/>.
+    /// Use: High (custody Locked). Scope: AppSession product teardown.
+    /// </summary>
+    private void OnCustodyLocked(object? sender, EventArgs e)
+    {
+        if (AccessToken is null)
+        {
+            return;
+        }
+
+        TearDownProductSession();
+        Locked?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Clears access token, product session store, and queues stream disconnect.
+    /// Use: High (lock paths). Scope: AppSession.
+    /// </summary>
+    private void TearDownProductSession()
+    {
+        _productSession.StopSession();
+        AccessToken = null;
+        QueueDisconnect();
+    }
+
+    /// <summary>
     /// Rolls custody and product tokens back when post-unlock session setup fails.
     /// Use: Low (failure path). Scope: AppSession unlock teardown.
     /// </summary>
     private void RollbackFailedUnlock()
     {
-        _productSession.StopSession();
+        TearDownProductSession();
         _custody.Lock();
-        AccessToken = null;
-        QueueDisconnect();
     }
 
     /// <summary>
