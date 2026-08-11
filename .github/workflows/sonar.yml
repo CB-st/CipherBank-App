@@ -62,6 +62,7 @@ jobs:
            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
            format(',{0},', github.actor)
          )
+      && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'sandbox')
     permissions:
       contents: read
       pull-requests: read
