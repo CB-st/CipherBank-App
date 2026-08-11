@@ -72,4 +72,49 @@ public class LocalDbMigrationTests
         reader.IsDBNull(1).Should().BeTrue();
         reader.GetString(2).Should().Be("checking");
     }
+
+    /// <summary>
+    /// Pre-EF DBs with only recipients still get the rest of the EF model tables.
+    /// Use: Medium (upgrade gate). Scope: LocalDbMigrationTests.
+    /// </summary>
+    [Fact]
+    public async Task InitializeAsync_LegacyRecipientsOnly_CreatesMissingModelTables()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-legacy-partial-" + Guid.NewGuid().ToString("N") + ".db");
+        await using (SqliteConnection legacy = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path }.ToString()))
+        {
+            await legacy.OpenAsync();
+            await using SqliteCommand create = legacy.CreateCommand();
+            create.CommandText = """
+                CREATE TABLE recipients (
+                  id TEXT PRIMARY KEY,
+                  name TEXT NOT NULL,
+                  created_at TEXT NOT NULL
+                );
+                """;
+            await create.ExecuteNonQueryAsync();
+        }
+
+        LocalDb db = new LocalDb(path);
+        await db.InitializeAsync();
+
+        await using CipherBankDbContext context = await db.CreateContextAsync();
+        SqliteConnection connection = (SqliteConnection)context.Database.GetDbConnection();
+        await connection.OpenAsync();
+        await using SqliteCommand inspect = connection.CreateCommand();
+        inspect.CommandText = "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name";
+        List<string> tables = new List<string>();
+        await using SqliteDataReader reader = await inspect.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            tables.Add(reader.GetString(0));
+        }
+
+        tables.Should().Contain("wallets");
+        tables.Should().Contain("prefs");
+        tables.Should().Contain("rates_snapshot");
+        tables.Should().Contain("sync_meta");
+        tables.Should().Contain("ohlc");
+        tables.Should().Contain("recipients");
+    }
 }

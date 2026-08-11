@@ -5,6 +5,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Persist.Sql;
 
@@ -49,6 +50,145 @@ internal static class LocalDbSql
     {
         ArgumentNullException.ThrowIfNull(connection);
         return ApplyCompatibilityCoreAsync(connection, ct);
+    }
+
+    /// <summary>
+    /// Creates EF model tables that <c>EnsureCreated</c> skipped because a legacy nonempty DB already existed.
+    /// Use: Low (first open after upgrade). Scope: LocalDb initialization.
+    /// </summary>
+    internal static Task EnsureMissingModelTablesAsync(CipherBankDbContext context, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        return EnsureMissingModelTablesCoreAsync(context, ct);
+    }
+
+    private static async Task EnsureMissingModelTablesCoreAsync(
+        CipherBankDbContext context,
+        CancellationToken ct)
+    {
+        DbConnection connection = context.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync(ct).ConfigureAwait(false);
+        }
+
+        HashSet<string> existing = await ListUserTablesAsync(connection, ct).ConfigureAwait(false);
+        // Script is generated from the compiled EF model (not user input).
+#pragma warning disable CA2100
+        string script = context.Database.GenerateCreateScript();
+        foreach (string statement in SplitSqliteScript(script))
+        {
+            if (!ShouldExecuteCreateStatement(statement, existing))
+            {
+                continue;
+            }
+
+            await using DbCommand command = connection.CreateCommand();
+            command.CommandText = statement;
+            try
+            {
+                await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            }
+            catch (DbException) when (statement.StartsWith("CREATE INDEX", StringComparison.OrdinalIgnoreCase)
+                || statement.StartsWith("CREATE UNIQUE INDEX", StringComparison.OrdinalIgnoreCase))
+            {
+                // Index may already exist on a partially upgraded database.
+            }
+
+            string? createdTable = TryExtractCreateTableName(statement);
+            if (createdTable is not null)
+            {
+                existing.Add(createdTable);
+            }
+        }
+#pragma warning restore CA2100
+    }
+
+    /// <summary>
+    /// Lists user tables already present in the SQLite catalog.
+    /// Use: Low (schema upgrade). Scope: LocalDbSql.
+    /// </summary>
+    private static async Task<HashSet<string>> ListUserTablesAsync(
+        DbConnection connection,
+        CancellationToken ct)
+    {
+        HashSet<string> tables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await using DbCommand command = connection.CreateCommand();
+        command.CommandText = SqliteCatalogSql.ListUserTables;
+        await using DbDataReader reader = await command.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            tables.Add(reader.GetString(0));
+        }
+
+        return tables;
+    }
+
+    /// <summary>
+    /// Splits an EF-generated SQLite create script into executable statements.
+    /// Use: Low. Scope: LocalDbSql script helper.
+    /// </summary>
+    private static IEnumerable<string> SplitSqliteScript(string script)
+    {
+        string[] parts = script.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (string part in parts)
+        {
+            if (part.Length > 0)
+            {
+                yield return part;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Skips CREATE TABLE / INDEX statements whose target already exists.
+    /// Use: Low. Scope: LocalDbSql script helper.
+    /// </summary>
+    private static bool ShouldExecuteCreateStatement(string statement, HashSet<string> existingTables)
+    {
+        string? table = TryExtractCreateTableName(statement);
+        if (table is not null)
+        {
+            return !existingTables.Contains(table);
+        }
+
+        // Indexes / other DDL from GenerateCreateScript — run only when the base table is present
+        // and the statement is not a duplicate CREATE TABLE we already skipped.
+        return statement.StartsWith("CREATE ", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Parses the table name from a CREATE TABLE statement, if present.
+    /// Use: Low. Scope: LocalDbSql script helper.
+    /// </summary>
+    private static string? TryExtractCreateTableName(string statement)
+    {
+        const string marker = "CREATE TABLE";
+        if (!statement.StartsWith(marker, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        string rest = statement[marker.Length..].TrimStart();
+        if (rest.StartsWith("IF NOT EXISTS", StringComparison.OrdinalIgnoreCase))
+        {
+            rest = rest["IF NOT EXISTS".Length..].TrimStart();
+        }
+
+        if (rest.Length == 0)
+        {
+            return null;
+        }
+
+        if (rest[0] is '"' or '\'')
+        {
+            char quote = rest[0];
+            int end = rest.IndexOf(quote, 1);
+            return end > 1 ? rest[1..end] : null;
+        }
+
+        int stop = rest.IndexOfAny([' ', '(', '\r', '\n']);
+        return stop < 0 ? rest : rest[..stop];
     }
 
     private static async Task ApplyCompatibilityCoreAsync(DbConnection connection, CancellationToken ct)
@@ -194,6 +334,9 @@ internal static class LocalDbSql
     {
         internal const string TableExistsByName =
             "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $name";
+
+        internal const string ListUserTables =
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
 
         internal const string RecipientColumnExistsByName =
             "SELECT COUNT(*) FROM pragma_table_info('recipients') WHERE name = $column";
