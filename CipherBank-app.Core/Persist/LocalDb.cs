@@ -50,7 +50,9 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
             await using CipherBankDbContext context = new CipherBankDbContext(_options);
+            // EnsureCreated no-ops when any table already exists (legacy pre-EF DBs).
             await context.Database.EnsureCreatedAsync(ct).ConfigureAwait(false);
+            await LocalDbSql.EnsureMissingModelTablesAsync(context, ct).ConfigureAwait(false);
             await LocalDbSql.ApplyCompatibilityAsync(context.Database.GetDbConnection(), ct).ConfigureAwait(false);
             _initialized = true;
         }
