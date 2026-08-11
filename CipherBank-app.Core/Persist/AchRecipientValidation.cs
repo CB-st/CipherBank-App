@@ -101,9 +101,14 @@ public static class AchRecipientValidation
     /// Use: High (Validate). Scope: this helper.
     /// </summary>
     private static string? ValidateRouting(string routing)
-        => DigitsOnly(routing).Length == RoutingNumberDigitCount
+    {
+        string trimmed = routing.Trim();
+        bool exactDigits = trimmed.Length == RoutingNumberDigitCount
+            && trimmed.All(char.IsDigit);
+        return exactDigits
             ? null
             : Strings.AchRoutingNumberMustBeDigits(RoutingNumberDigitCount);
+    }
 
     /// <summary>
     /// Ensures account has at least <see cref="AccountNumberMinDigits"/> characters after trim.

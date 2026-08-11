@@ -106,4 +106,40 @@ public class RecipientRepositoryTests
         columns.Should().NotContain("routing");
         columns.Should().NotContain("account_full");
     }
+
+    /// <summary>
+    /// Replacing cleartext on an already-masked row must refresh stored masks.
+    /// Use: Medium (review regression). Scope: RecipientRepositoryTests.
+    /// </summary>
+    [Fact]
+    public async Task UpsertAsync_RecomputesMasksWhenCleartextReplaced()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(path);
+        await db.InitializeAsync();
+        RecipientRepository repo = new RecipientRepository(db);
+        await repo.UpsertAsync(new AchRecipientRow(
+            "payee-1",
+            "Payee",
+            "Holder",
+            "Bank",
+            "021000021",
+            "88210001",
+            "checking",
+            null,
+            null,
+            null,
+            DateTimeOffset.UtcNow));
+
+        AchRecipientRow listed = (await repo.ListAsync()).Should().ContainSingle().Subject;
+        await repo.UpsertAsync(listed with
+        {
+            Account = "99998888",
+            Routing = "021000021",
+        });
+
+        AchRecipientRow updated = (await repo.ListAsync()).Should().ContainSingle().Subject;
+        updated.AccountMask.Should().Be(AchRecipientValidation.MaskAccount("99998888"));
+        updated.RoutingMask.Should().Be(AchRecipientValidation.MaskRouting("021000021"));
+    }
 }
