@@ -12,56 +12,79 @@ concurrency:
   group: sonar-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-# Author gate: PR runs require allowlisted PR author AND github.actor (who
-# opened/synced/marked ready). Push runs require allowlisted actor or commit
-# author. PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob".
-# Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
-# split()/replace(), so membership uses comma-padded contains().
-
-# No build job yet. When a pipeline build lands, wire `sonar` (and optionally
-# `context`) to `needs: build` and upload a coverage artifact the Sonar job
-# already knows how to consume softly.
-#
-# SonarScanner for .NET runs against library/test projects (MAUI host deferred
-# until a full build stage exists), polls the server until analysis finishes,
-# fetches the quality gate + PR- or branch-scoped issues, and uploads them as
-# `sonar-context-<full_git_sha>` (and `sonar-report-task-<full_git_sha>`) so
-# consumers resolve artifacts by the scanned commit only.
-#
-# Two Sonar deliverables, both consumed downstream:
-#   1. `sonar-report-task-<sha>` -- raw report-task.txt from the scanner.
-#   2. `sonar-context-<sha>` -- normalised JSON (quality-gate.json +
-#      issues.json + sonar-env.json) that central AI review merges into
-#      REVIEW_DIR/sonar/.
-#
-# Quality gate pass/fail is surfaced by SonarQube's own GitHub check; the
-# sonar job does not exit non-zero on a red gate so PRs are not double-marked.
-# `sonar-env.json` still records `gate_status` for central AI review policy.
-#
-# NB: SONAR_HOST_URL is read from `vars.SONAR_HOST_URL`, not from a secret.
-# The URL itself isn't sensitive, so burning a secret slot on it isn't worth
-# it. `vars` also renders the URL cleanly in logs for reachability triage.
+# Coverlet→OpenCover for Sonar. Artifacts: sonar-context-<sha>. Gate via Sonar GH check.
+# Coverage/Sonar run for every non-draft PR and every push (no author allowlist).
 
 jobs:
+  coverage:
+    if: >-
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft)
+      || github.event_name == 'push'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      SCAN_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ env.SCAN_COMMIT_SHA }}
+          fetch-depth: 1
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Run unit tests with Coverlet
+        run: |
+          set -euo pipefail
+          test_proj="CipherBank-app.Tests/CipherBank-app.Tests.csproj"
+          if [ ! -f "${test_proj}" ]; then
+            echo "Missing ${test_proj}; cannot publish coverage for Sonar." >&2
+            exit 1
+          fi
+          mkdir -p reports
+          # OpenCover for sonar.cs.opencover.reportsPaths; cobertura for tooling.
+          dotnet test "${test_proj}" -c Release --nologo \
+            -p:CollectCoverage=true \
+            -p:CoverletOutputFormat=\"cobertura,opencover\" \
+            -p:CoverletOutput="${GITHUB_WORKSPACE}/reports/coverage" \
+            -p:Threshold=0
+          test -f reports/coverage.cobertura.xml
+          test -f reports/coverage.opencover.xml
+
+      - name: Stage coverage artifact
+        run: |
+          set -euo pipefail
+          mkdir -p artifact-coverage
+          cp -f reports/coverage.cobertura.xml artifact-coverage/
+          cp -f reports/coverage.opencover.xml artifact-coverage/
+
+      - name: Upload coverage-report artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-report
+          path: artifact-coverage/
+          if-no-files-found: error
+          retention-days: 14
+          overwrite: true
+
   # PR context snapshot -- runs once per push and produces the
   # ai-context-bundle artifact consumed by central review/reply workflows.
   # Model providers and trusted persona/task assets live in CipherBank.AI;
   # this repo only packages PR facts and Sonar for this app (no siblings).
   #
   # The draft / non-PR skip gate lives here (not on `review`) so a draft PR
-  # never spends context-build cost either.
+  # never spends context-build cost either. Waits on `coverage`.
   context:
-    if: >-
-      github.event_name == 'pull_request'
-      && !github.event.pull_request.draft
-      && contains(
-           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-           format(',{0},', github.event.pull_request.user.login)
-         )
-      && contains(
-           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-           format(',{0},', github.actor)
-         )
+    needs: [coverage]
+    if: github.event_name == 'pull_request' && !github.event.pull_request.draft
     permissions:
       contents: read
       pull-requests: read
@@ -77,45 +100,13 @@ jobs:
       pr_title:    ${{ github.event.pull_request.title }}
       pr_author:   ${{ github.event.pull_request.user.login }}
 
-  # SonarQube static analysis -- runs in parallel with `context`. Produces:
-  #   * SonarQube's own GitHub check for quality gate + issue annotations
-  #   * `sonar-context-<full_sha>` + `sonar-report-task-<full_sha>` artifacts
-  #     (gate + issues JSON) that central AI Review merges into REVIEW_DIR/sonar/
-  #
-  # Runs on non-draft PRs and on pushes to the same branches as above.
-  # Artifact names are keyed only by the scanned commit SHA so consumers
-  # resolve Sonar the same way they resolve commits.
+  # Sonar after coverage: GH quality-gate check + sonar-context-/report-task-<sha>
+  # artifacts for AI Review. Runs for every non-draft PR and push; imports Coverlet first.
   sonar:
+    needs: [coverage]
     if: >-
-      (
-        github.event_name == 'pull_request'
-        && !github.event.pull_request.draft
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.pull_request.user.login)
-           )
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.actor)
-           )
-      )
-      ||
-      (
-        github.event_name == 'push'
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.actor)
-          )
-          || (
-            github.event.head_commit.author.username != ''
-            && contains(
-                 format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-                 format(',{0},', github.event.head_commit.author.username)
-               )
-          )
-        )
-      )
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft)
+      || github.event_name == 'push'
     runs-on: ubuntu-22.04
     # Restore + library build + scan + poll. 30 leaves headroom for cold NuGet.
     timeout-minutes: 30
@@ -165,26 +156,31 @@ jobs:
             exit 1
           fi
 
-      ### 3. Optional coverage (future build job) ###############################
-      # When a pipeline build job uploads `coverage-report`, download it here
-      # (continue-on-error) and verify the paths below. Until that job exists,
-      # skip download so the run is not filled with "Artifact not found" noise.
-      - name: Verify optional coverage report
+      ### 3. Coverlet from coverage job #########################################
+      # coverage-report is flat (opencover + cobertura). Fail closed:
+      # a scan without OpenCover leaves new_coverage at 0% and reds the gate.
+      - name: Download coverage-report
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+        with:
+          name: coverage-report
+          path: reports
+
+      - name: Verify coverage report
         run: |
-          found=0
-          for target in \
-            reports/coverage.opencover.xml \
-            reports/coverage.cobertura.xml \
-            CipherBank-app.Tests/coverage/coverage.cobertura.xml
-          do
-            if [ -f "$target" ]; then
-              echo "Coverage report ($(wc -c < "$target") bytes) at $target."
-              found=1
-            fi
-          done
-          if [ "$found" -eq 0 ]; then
-            echo "No coverage report on this run; SonarQube will report 0% coverage until a build job uploads one."
+          set -euo pipefail
+          opencover=reports/coverage.opencover.xml
+          cobertura=reports/coverage.cobertura.xml
+          if [ ! -f "${opencover}" ]; then
+            echo "Missing ${opencover} after coverage-report download." >&2
+            exit 1
           fi
+          if [ ! -f "${cobertura}" ]; then
+            echo "Missing ${cobertura} after coverage-report download." >&2
+            exit 1
+          fi
+          mkdir -p CipherBank-app.Tests/coverage
+          cp -f "${cobertura}" CipherBank-app.Tests/coverage/coverage.cobertura.xml
+          cp -f "${opencover}" CipherBank-app.Tests/coverage/coverage.opencover.xml
 
       ### 4. Toolchain ##########################################################
       - name: Set up .NET
@@ -203,11 +199,7 @@ jobs:
         run: dotnet tool install --global dotnet-sonarscanner
 
       ### 5. Begin / build / end ################################################
-      # C# analysis requires SonarScanner for .NET wrapping a real compile.
-      # Until MAUI/Android CI exists, scan portable library + unit-test
-      # projects that exist on this branch. Skip missing .csproj paths so a
-      # feature project (e.g. ChallengePass) absent from main does not fail
-      # the scan. MAUI host is excluded so Linux runners need no Android workloads.
+      # Scan Core + Tests when present; skip missing .csproj paths; no MAUI host.
       - name: Begin SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -236,6 +228,9 @@ jobs:
           # shellcheck disable=SC2086
           # Sources/tests come from MSBuild project graphs; pass exclusions and
           # optional coverage paths as begin properties (not a properties file).
+          # CPD exclusions: intentional zero-token DIM overload pairs on Core/ChallengePass
+          # interfaces (S4136-adjacent duplicates that are not real copy-paste debt).
+          # Do NOT exclude PrefsWireDto / RateLimiter / MockProductApi.
           dotnet sonarscanner begin \
             /k:"${SONAR_PROJECT_KEY}" \
             /n:"CipherBank App" \
@@ -245,8 +240,8 @@ jobs:
             /d:sonar.sourceEncoding=UTF-8 \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
             /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,design_handoff_cipherbank/**" \
-            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml" \
-            /d:sonar.cs.cobertura.reportsPaths="reports/coverage.cobertura.xml,CipherBank-app.Tests/coverage/coverage.cobertura.xml" \
+            /d:sonar.cpd.exclusions="**/IProductApi.cs,**/IWalletService.cs,**/IPublicQuoteService.cs,**/IMnemonicBackupService.cs,**/IPrefsSyncService.cs,**/IStepUpChallenges.cs,**/IChallengePass*.cs,**/IAccountKeySource.cs,**/ISessionChallengeClient.cs,**/IPq*.cs" \
+            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
       - name: Build analyzable projects
@@ -469,7 +464,7 @@ jobs:
   review:
     needs: [context, sonar]
     # Require both context and a successful Sonar scan so AI review does not
-    # run when analysis failed or was skipped (e.g. draft / author gate).
+    # run when analysis failed or was skipped (e.g. draft PR).
     if: ${{ always() && needs.context.result == 'success' && needs.sonar.result == 'success' }}
     runs-on: ubuntu-22.04
     steps:
