@@ -38,8 +38,14 @@ public sealed class InMemorySessionChallengeClient : ISessionChallengeClient, ID
         _algorithm = algorithm ?? new X25519ChaChaSealAlgorithm();
         _template = template ?? new ChallengeIdNonceSha256Template();
         byte[] seed = RandomNumberGenerator.GetBytes(_algorithm.PrivateKeySize);
-        _apiKey = _algorithm.DeriveKeyPair(seed);
-        CryptographicOperations.ZeroMemory(seed);
+        try
+        {
+            _apiKey = _algorithm.DeriveKeyPair(seed);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(seed);
+        }
     }
 
     public string ApiPublicKeyWire => WireEncoding.ToWire(_apiKey.PublicKey);
