@@ -112,10 +112,13 @@ public sealed class RecipientRepository : IRecipientRepository
 
     private async Task UpsertCoreAsync(AchRecipientRow row)
     {
-        string? accountMask = row.AccountMask
-            ?? (string.IsNullOrWhiteSpace(row.Account) ? null : AchRecipientValidation.MaskAccount(row.Account));
-        string? routingMask = row.RoutingMask
-            ?? (string.IsNullOrWhiteSpace(row.Routing) ? null : AchRecipientValidation.MaskRouting(row.Routing));
+        // Prefer fresh cleartext: editing a listed row still carries prior masks.
+        string? accountMask = string.IsNullOrWhiteSpace(row.Account)
+            ? row.AccountMask
+            : AchRecipientValidation.MaskAccount(row.Account);
+        string? routingMask = string.IsNullOrWhiteSpace(row.Routing)
+            ? row.RoutingMask
+            : AchRecipientValidation.MaskRouting(row.Routing);
 
         await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
         RecipientEntity? entity = await context.Recipients.FindAsync(row.Id).ConfigureAwait(false);
