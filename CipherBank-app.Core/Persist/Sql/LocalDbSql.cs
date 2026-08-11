@@ -120,7 +120,21 @@ internal static class LocalDbSql
     /// CommandText so CA2100 does not require a suppression (and S1309 stays clear).
     /// Use: Low (schema upgrade). Scope: LocalDbSql compatibility repair.
     /// </summary>
-    private static async Task ExecuteConstantAsync(
+    private static Task ExecuteConstantAsync(
+        DbConnection connection,
+        CompatibilityStatement statement,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(connection);
+        if (!Enum.IsDefined(statement))
+        {
+            throw new ArgumentOutOfRangeException(nameof(statement));
+        }
+
+        return ExecuteConstantCoreAsync(connection, statement, ct);
+    }
+
+    private static async Task ExecuteConstantCoreAsync(
         DbConnection connection,
         CompatibilityStatement statement,
         CancellationToken ct)
@@ -157,7 +171,7 @@ internal static class LocalDbSql
                 command.CommandText = "UPDATE recipients SET account_full = NULL WHERE account_full IS NOT NULL";
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(statement));
+                throw new InvalidOperationException($"Unhandled {nameof(CompatibilityStatement)} value.");
         }
 
         await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
