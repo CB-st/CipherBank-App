@@ -30,7 +30,7 @@
 | **M5** | ChallengePass | former `maui-m2` / #21 | `prototype/maui-m5` | |
 | **M6** | Cora Shell | former `maui-m3` / #22 | `prototype/maui-m6` | |
 | **M7** | E2E | former `maui-m4` / #23 | `prototype/maui-m7` | |
-| **Draft (M8 parking)** | Next features / cleanup prep | former M4+ + userdata + review docs | `prototype/maui-m8-draft` (from former m4-agentic) | draft only |
+| **Draft (M8 parking)** | Agentic + comparison/triage docs only | former M4+ agentic + review docs | `prototype/maui-m8-draft` | draft; **no Core product** |
 
 ```mermaid
 flowchart TB
@@ -74,7 +74,7 @@ CPM (`Directory.Packages.props`), Build props, editorconfig (IDE0008 suggestion 
 
 ### M3 — Core remainder
 
-Custody, Session, V1, Wallets, Services, Charts/Cora/…, IDE0008 → warning after `var` burn-down. Bases on M2. If still over review budget, peel V1 as an optional Mid-stack PR (still before M4).
+Custody, Session, V1, Wallets, Services, Charts/Cora/…, **UserData pack crypto** (and wire/53809 when restacked), IDE0008 → warning after `var` burn-down. Bases on M2. If still over review budget, peel V1 as an optional Mid-stack PR (still before M4).
 
 ### M4 — Harness / docs
 
@@ -84,15 +84,26 @@ Former M1b: e2e scripts, lint harness, docs moved off Core tips.
 
 ChallengePass → Shell → E2E. Rebase onto M4 tip after Core stack is stable. **PR titles and bases update when branches are renamed**; until then titles may say “M5 (was M2)” etc.
 
-### Draft parking (M8) — do not merge with the review stack
+### Placement rule (stack vs M8) — mandatory
 
-Single **draft** PR for cleanup and next-feature prep, stacked on **M7** (former M4 E2E tip). Collects:
+| Kind | Lands on | Examples |
+|------|----------|----------|
+| **Core product / library behavior** | **M1–M7** (earliest owning layer) | Custody, Persist/EF, V1 clients, **UserData pack + wire/53809**, ChallengePass, Shell UX, Appium stories |
+| **Extra / prep / agent tooling / historical review docs** | **Draft M8 only** | Agentic dispatch templates, comparison JSON/notes, parking triage |
+
+Do **not** merge legacy draft mega-PRs (#28/#29/#32/…) as blobs into the stack. **Carve** the Core surfaces onto the owning Mn tip, then rebase upward. Parallel `feat/*` branches are staging only until folded into the Mn tip under review.
+
+### Draft parking (M8) — not for Core product
+
+Single **draft** PR stacked on **M7**. Holds only:
 
 1. Former **M4+ agentic** foundation (#32 templates / agentic scaffolding).
-2. **feat(core): userdata client + TCP loopback (53809)** (#29), including its pack-crypto prerequisite (#28) when restacked.
-3. **docs(reviews): PR_M1a–M4 vs stack comparison + adoption plan** (#31).
+2. **docs(reviews):** PR_M1a–M4 comparison / adoption notes (#31) and stack triage docs.
+3. Temporary staging notes — **not** a substitute for Core features.
 
-Purpose: one place to reconcile comparison notes, userdata wire work, and agentic templates **after** M1–M7 review — not an active review gate.
+**UserData** (pack crypto + TCP 53809 client) is **Core** → fold onto **M3** (then rebase M4–M7), not park forever in M8. Shell prefs dual-write follows on **M6** after Core wire exists.
+
+Purpose of M8: agentic + historical docs after M1–M7 review — **not** an active product review gate and **not** a dumping ground for Core.
 
 ---
 
@@ -125,4 +136,4 @@ Force-with-lease required; coordinate so open review comments keep a pointer tab
 - [ ] M2 Persist + M3 Core cut and independently reviewable
 - [ ] Former ChallengePass/Shell/E2E retitled M5–M7 and rebased onto M4
 - [ ] #25 closed or reduced to rollup once M1–M3 supersede it
-- [ ] Single draft parking PR holds agentic + userdata (53809) + comparison docs
+- [ ] Single draft parking PR holds agentic + comparison/triage docs (**Core UserData on M3**, not M8)
