@@ -12,8 +12,17 @@ fail()
 }
 
 required=(
+  AGENTS.md
   Directory.Packages.props
   scripts/sonar/provision_quality_gate.py
+  CipherBank-app.Core/AGENTS.md
+  CipherBank-app.Core/Persist/AGENTS.md
+  CipherBank-app/AGENTS.md
+  CipherBank-app.Tests/AGENTS.md
+  config/README.md
+  config/sonar/AGENTS.md
+  templates/README.md
+  docs/review/m1a-comment-resolution.md
 )
 for path in "${required[@]}"; do
   [[ -f "${path}" ]] || fail "missing required ${path}"

@@ -46,6 +46,13 @@ diff against, so CI just reports what Sonar says. Actual merge blocking is
 Sonar's own PR check (decoration), which should be a required status check
 on the branch protection rule.
 
+Scanner exclusions are limited to generated/build output, platform-owned source
+that is not compiled on Linux, resources, tests for coverage, scripts, and
+design handoff assets. Interfaces and production services are not CPD-excluded.
+
+Do not store `SONAR_TOKEN` here. Configure it as a repository secret; configure
+`SONAR_HOST_URL` and `SONAR_PROJECT_KEY` as repository variables.
+
 ## Local feedback: SonarQube for IDE, Connected Mode
 
 For fast local feedback that uses the *same* rules and gate as CI, bind
