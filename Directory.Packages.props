@@ -31,6 +31,7 @@
     <PackageVersion Include="NBitcoin.Altcoins" Version="3.0.33" />
     <PackageVersion Include="Nethereum.HdWallet" Version="6.1.0" />
     <PackageVersion Include="QRCoder" Version="1.6.0" />
+    <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.12" />
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.12" />
   </ItemGroup>

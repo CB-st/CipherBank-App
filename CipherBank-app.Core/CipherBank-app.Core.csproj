@@ -21,10 +21,13 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
-    <!-- Pin past NU1903 (2.1.11) but exclude ALL assets — desktop Linux natives
-         (libc.so.6) must never land in the Android APK or SqliteConnection type-init fails.
-         Android natives come only from sqlitepclraw.lib.e_sqlite3.android below.
+    <!-- Microsoft.Data.Sqlite transitively pulls SQLitePCLRaw.bundle_e_sqlite3; exclude it
+         (and the desktop lib) so Android APKs only get sqlitepclraw.lib.e_sqlite3.android.
          CipherBank-app.Tests references the desktop package without ExcludeAssets. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>all</ExcludeAssets>
+    </PackageReference>
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>all</ExcludeAssets>
