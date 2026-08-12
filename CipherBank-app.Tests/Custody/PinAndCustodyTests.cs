@@ -3,6 +3,8 @@
 // </copyright>
 
 using System.Security.Cryptography;
+using System.Text;
+using CipherBank_app.Configuration;
 using CipherBank_app.Custody;
 using FluentAssertions;
 using Xunit;
@@ -73,6 +75,37 @@ public class PinAndCustodyTests
         CustodyService custody = new CustodyService(store, pin);
         Func<Task> act = () => custody.SealAsync(MnemonicHelper.Generate(), "12");
         await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public void AesGcmCryptoBox_Open_LegacyBlobWithVersionLikeSaltPrefix()
+    {
+        CryptographyOptions options = CryptographyOptions.Default;
+        AesGcmCryptoBox box = new AesGcmCryptoBox(options);
+        const string pin = "123456";
+        const string mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+        // Build a legacy-layout blob whose first salt byte is 0x01 (version marker collision).
+        byte[] salt = RandomNumberGenerator.GetBytes(options.SaltSizeBytes);
+        salt[0] = 0x01;
+        byte[] key = box.DeriveKey(pin, salt);
+        byte[] nonce = RandomNumberGenerator.GetBytes(options.NonceSizeBytes);
+        byte[] plain = Encoding.UTF8.GetBytes(mnemonic);
+        byte[] cipher = new byte[plain.Length];
+        byte[] tag = new byte[options.TagSizeBytes];
+        using (AesGcm aes = new AesGcm(key, options.TagSizeBytes))
+        {
+            aes.Encrypt(nonce, plain, cipher, tag);
+        }
+
+        byte[] packed = new byte[salt.Length + nonce.Length + tag.Length + cipher.Length];
+        Buffer.BlockCopy(salt, 0, packed, 0, salt.Length);
+        Buffer.BlockCopy(nonce, 0, packed, salt.Length, nonce.Length);
+        Buffer.BlockCopy(tag, 0, packed, salt.Length + nonce.Length, tag.Length);
+        Buffer.BlockCopy(cipher, 0, packed, salt.Length + nonce.Length + tag.Length, cipher.Length);
+
+        box.Open(Convert.ToBase64String(packed), pin).Should().Be(mnemonic);
+        box.Open(box.Seal(mnemonic, pin), pin).Should().Be(mnemonic);
     }
 
     [Fact]
