@@ -28,7 +28,8 @@ APPIUM_LOG="${APPIUM_LOG:-/tmp/cb-e2e-appium.log}"
 EMULATOR_LOG="${EMULATOR_LOG:-/tmp/cb-e2e-emulator.log}"
 BOOT_WAIT_ATTEMPTS="${BOOT_WAIT_ATTEMPTS:-90}"
 
-# Maps a --wave name to space-separated Story trait IDs (must match [Trait("Story", ...)] on Facts).
+# Planned wave → Story trait map for when CipherBank-app.E2ETests ships Facts (M7).
+# On this harness branch there are no Story traits; --story/--wave defer (see e2e_story_facts_ready).
 # Use: Medium (once per --wave invocation). Scope: arg -> filter resolution.
 declare -A WAVE_STORIES=(
   [account]="CB-ACCOUNT-001 CB-ACCOUNT-002 CB-ACCOUNT-PIN-CHANGE US-ONB-03 US-ONB-04"
@@ -51,13 +52,13 @@ Usage:
   scripts/e2e-android.sh --all             Run the full E2E suite
   scripts/e2e-android.sh --help            Show this help
 
-Harness credentials (required once Story-trait Facts land on M4):
+Harness credentials (required once Story-trait Facts land on M7):
   E2E_TEST_PIN / E2E_TEST_PIN_ALT / E2E_RECOVERY_PASSWORD
   Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
 
 Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave
-exit with a clear deferral (those Facts ship on M4). --all may run the scaffold
-suite without credentials.
+exit with a clear deferral (those Facts ship on M7 / prototype/maui-m7).
+--all may run the scaffold suite without credentials.
 
 Requires: CB_AVD emulator image, ANDROID_HOME, DOTNET_ROOT (see scripts/lib/android-env.sh).
 EOF
@@ -116,7 +117,7 @@ parse_args() {
   esac
 
   if [[ "$MODE" == "story" || "$MODE" == "wave" ]] && ! e2e_story_facts_ready; then
-    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M4). Use --all for the scaffold suite, or check out prototype/maui-m4."
+    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M7). Use --all for the scaffold suite, or check out prototype/maui-m7."
   fi
 }
 
@@ -303,7 +304,7 @@ ensure_appium_running() {
 
 # Loads gitignored lab credentials from artifacts/e2e-local.env into the
 # process environment when present, then requires PIN / alt / recovery password to be set.
-# Skipped until Story-trait Facts exist (M4) so the scaffold suite is not blocked.
+# Skipped until Story-trait Facts exist (M7) so the scaffold suite is not blocked.
 # Use: High (every harness run before device tests that need credentials). Scope: scripts/e2e-android.sh.
 ensure_e2e_credentials() {
   if ! e2e_story_facts_ready; then
