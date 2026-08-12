@@ -219,12 +219,82 @@ internal static class LocalDbSql
 
     private static async Task ApplyRecipientScrubsAsync(DbConnection connection, CancellationToken ct)
     {
+        // Masks are the only surviving display clue after cleartext scrub — derive them first.
+        await PopulateRecipientMasksFromLegacyCleartextAsync(connection, ct).ConfigureAwait(false);
+
         foreach (SensitiveColumnScrub scrub in RecipientScrubs)
         {
             if (await RecipientColumnExistsAsync(connection, scrub.ColumnName, ct).ConfigureAwait(false))
             {
                 await ExecuteConstantAsync(connection, scrub.Statement, ct).ConfigureAwait(false);
             }
+        }
+    }
+
+    /// <summary>
+    /// Fills empty account_mask / routing_mask from legacy cleartext before those columns are nulled.
+    /// Use: Low (legacy upgrade). Scope: LocalDbSql compatibility repair.
+    /// </summary>
+    private static async Task PopulateRecipientMasksFromLegacyCleartextAsync(
+        DbConnection connection,
+        CancellationToken ct)
+    {
+        bool hasAccount = await RecipientColumnExistsAsync(connection, "account", ct).ConfigureAwait(false);
+        bool hasRouting = await RecipientColumnExistsAsync(connection, "routing", ct).ConfigureAwait(false);
+        bool hasAccountMask = await RecipientColumnExistsAsync(connection, "account_mask", ct).ConfigureAwait(false);
+        bool hasRoutingMask = await RecipientColumnExistsAsync(connection, "routing_mask", ct).ConfigureAwait(false);
+        if ((!hasAccount && !hasRouting) || (!hasAccountMask && !hasRoutingMask))
+        {
+            return;
+        }
+
+        await using DbCommand select = connection.CreateCommand();
+        select.CommandText =
+            "SELECT id, account, routing, account_mask, routing_mask FROM recipients";
+        List<(string Id, string? Account, string? Routing, string? AccountMask, string? RoutingMask)> rows = [];
+        await using (DbDataReader reader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false))
+        {
+            while (await reader.ReadAsync(ct).ConfigureAwait(false))
+            {
+                rows.Add((
+                    reader.GetString(0),
+                    reader.IsDBNull(1) ? null : reader.GetString(1),
+                    reader.IsDBNull(2) ? null : reader.GetString(2),
+                    reader.IsDBNull(3) ? null : reader.GetString(3),
+                    reader.IsDBNull(4) ? null : reader.GetString(4)));
+            }
+        }
+
+        foreach ((string id, string? account, string? routing, string? accountMask, string? routingMask) in rows)
+        {
+            string? nextAccountMask = accountMask;
+            string? nextRoutingMask = routingMask;
+            if (hasAccountMask
+                && string.IsNullOrWhiteSpace(accountMask)
+                && !string.IsNullOrWhiteSpace(account))
+            {
+                nextAccountMask = AchRecipientValidation.MaskAccount(account);
+            }
+
+            if (hasRoutingMask
+                && string.IsNullOrWhiteSpace(routingMask)
+                && !string.IsNullOrWhiteSpace(routing))
+            {
+                nextRoutingMask = AchRecipientValidation.MaskRouting(routing);
+            }
+
+            if (nextAccountMask == accountMask && nextRoutingMask == routingMask)
+            {
+                continue;
+            }
+
+            await using DbCommand update = connection.CreateCommand();
+            update.CommandText =
+                "UPDATE recipients SET account_mask = $account_mask, routing_mask = $routing_mask WHERE id = $id";
+            AddParameter(update, "$account_mask", (object?)nextAccountMask ?? DBNull.Value);
+            AddParameter(update, "$routing_mask", (object?)nextRoutingMask ?? DBNull.Value);
+            AddParameter(update, "$id", id);
+            await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }
     }
 

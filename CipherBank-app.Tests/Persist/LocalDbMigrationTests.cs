@@ -65,12 +65,15 @@ public class LocalDbMigrationTests
         SqliteConnection connection = (SqliteConnection)context.Database.GetDbConnection();
         await connection.OpenAsync();
         await using SqliteCommand inspect = connection.CreateCommand();
-        inspect.CommandText = "SELECT account, routing, account_type FROM recipients WHERE id = 'legacy'";
+        inspect.CommandText =
+            "SELECT account, routing, account_type, account_mask, routing_mask FROM recipients WHERE id = 'legacy'";
         await using SqliteDataReader reader = await inspect.ExecuteReaderAsync();
         (await reader.ReadAsync()).Should().BeTrue();
         reader.IsDBNull(0).Should().BeTrue();
         reader.IsDBNull(1).Should().BeTrue();
         reader.GetString(2).Should().Be("checking");
+        reader.GetString(3).Should().Be(AchRecipientValidation.MaskAccount("88210001"));
+        reader.GetString(4).Should().Be(AchRecipientValidation.MaskRouting("021000021"));
     }
 
     /// <summary>
