@@ -7,40 +7,41 @@ namespace CipherBank_app.UserData;
 /// <summary>Format and algorithm constants for cipherbank-userdata-pack-v1.</summary>
 public static class UserDataConstants
 {
-    public const string PackFormat = "cipherbank-userdata-pack-v1";
+    public static string PackFormat { get; } = "cipherbank-userdata-pack-v1";
 
-    public const string KdfFamily = "cipherbank-userdata-v1";
+    public static string KdfFamily { get; } = "cipherbank-userdata-v1";
 
-    public const string KekInfoLabel = "cipherbank-userdata-v1/kek";
+    public static string KekInfoLabel { get; } = "cipherbank-userdata-v1/kek";
 
-    public const string EnrollSeedInfoLabel = "cipherbank-userdata-v1/enroll-seed";
+    public static string EnrollSeedInfoLabel { get; } = "cipherbank-userdata-v1/enroll-seed";
 
-    public const string AadPrefix = "cipherbank-userdata-v1";
+    public static string AadPrefix { get; } = "cipherbank-userdata-v1";
 
-    public const string BlockAlgorithm = "AES-256-GCM";
+    public static string BlockAlgorithm { get; } = "AES-256-GCM";
 
-    public const string EnrollAlgorithmRsaOaepSha256V1 = "rsa-oaep-sha256-v1";
+    public static string EnrollAlgorithmRsaOaepSha256V1 { get; } = "rsa-oaep-sha256-v1";
 
-    public const string SymmetricAlgorithmAesGcmV1 = "AES-256-GCM";
+    public static string SymmetricAlgorithmAesGcmV1 { get; } = "AES-256-GCM";
 
-    public const string SuiteRsaAesGcmV1 = "userdata-rsa-aesgcm-v1";
+    public static string SuiteRsaAesGcmV1 { get; } = "userdata-rsa-aesgcm-v1";
 
     /// <summary>Reserved suite id for a future PQ enroll algorithm (not implemented).</summary>
-    public const string SuitePqAesGcmV1 = "userdata-pq-aesgcm-v1";
+    public static string SuitePqAesGcmV1 { get; } = "userdata-pq-aesgcm-v1";
 
-    public const int KekLength = 32;
+    public static int KekLength { get; } = 32;
 
-    public const int EnrollSeedLength = 64;
+    public static int EnrollSeedLength { get; } = 64;
 
-    public const int RsaKeySizeBits = 2048;
+    public static int RsaKeySizeBits { get; } = 2048;
 
-    public const int Bip39SeedLength = 64;
+    public static int Bip39SeedLength { get; } = 64;
 
-    public const int Bip39SeedIterations = 2048;
+    /// <summary>BIP39 seed PBKDF2 iteration count (spec-mandated; not a tunable hardening knob).</summary>
+    public static int Bip39SeedIterations { get; } = 2048;
 
-    public const int NonceSize = 12;
+    public static int NonceSize { get; } = 12;
 
-    public const int TagSize = 16;
+    public static int TagSize { get; } = 16;
 
-    public const int UsernameHashPrefixLength = 8;
+    public static int UsernameHashPrefixLength { get; } = 8;
 }

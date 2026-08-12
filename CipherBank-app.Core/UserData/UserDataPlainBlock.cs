@@ -7,7 +7,12 @@ namespace CipherBank_app.UserData;
 /// <summary>Unsealed block input for pack construction.</summary>
 public sealed class UserDataPlainBlock
 {
-    public UserDataPlainBlock(string id, string type, string plaintextUtf8, uint seq = 0)
+    public UserDataPlainBlock(string id, string type, string plaintextUtf8)
+        : this(id, type, plaintextUtf8, seq: 0)
+    {
+    }
+
+    public UserDataPlainBlock(string id, string type, string plaintextUtf8, uint seq)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentException.ThrowIfNullOrWhiteSpace(type);

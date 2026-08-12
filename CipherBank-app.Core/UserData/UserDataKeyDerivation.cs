@@ -71,10 +71,11 @@ public static class UserDataKeyDerivation
         byte[] salt = Encoding.UTF8.GetBytes("mnemonic" + bip39Passphrase);
         try
         {
+            // BIP39 requires exactly 2048 iterations; raising this would diverge from wallets/spec.
             return Rfc2898DeriveBytes.Pbkdf2(
                 password,
                 salt,
-                UserDataConstants.Bip39SeedIterations,
+                UserDataConstants.Bip39SeedIterations, // NOSONAR S5344
                 HashAlgorithmName.SHA512,
                 UserDataConstants.Bip39SeedLength);
         }

@@ -10,7 +10,6 @@ using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Encodings;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Prng;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
@@ -25,6 +24,8 @@ namespace CipherBank_app.UserData;
 /// </summary>
 public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgorithm
 {
+    private const int PemBase64LineLength = 64;
+
     public string AlgorithmId => UserDataConstants.EnrollAlgorithmRsaOaepSha256V1;
 
     /// <inheritdoc />
@@ -47,7 +48,7 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
 
             SubjectPublicKeyInfo spki = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(pair.Public);
             byte[] spkiDer = spki.GetDerEncoded();
-            string fingerprint = Convert.ToHexString(SHA256.HashData(spkiDer)).ToLowerInvariant();
+            string fingerprint = Convert.ToHexStringLower(SHA256.HashData(spkiDer));
             string publicPem = EncodeSpkiPem(spkiDer);
             byte[] pkcs8 = PrivateKeyInfoFactory.CreatePrivateKeyInfo(pair.Private).GetDerEncoded();
 
@@ -122,9 +123,9 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
         string b64 = Convert.ToBase64String(spkiDer);
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("-----BEGIN PUBLIC KEY-----");
-        for (int i = 0; i < b64.Length; i += 64)
+        for (int i = 0; i < b64.Length; i += PemBase64LineLength)
         {
-            int len = Math.Min(64, b64.Length - i);
+            int len = Math.Min(PemBase64LineLength, b64.Length - i);
             sb.AppendLine(b64.Substring(i, len));
         }
 

@@ -85,7 +85,6 @@ public sealed class UserDataKeyMaterial : IDisposable
         }
 
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
 
     private void ThrowIfDisposed()

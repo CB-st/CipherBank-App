@@ -18,7 +18,18 @@ public static class UserDataUsernameHash
     public static string NormalizeUsername(string username)
     {
         ArgumentNullException.ThrowIfNull(username);
-        return username.Trim().ToLowerInvariant();
+        ReadOnlySpan<char> trimmed = username.AsSpan().Trim();
+        return string.Create(
+            trimmed.Length,
+            trimmed,
+            static (destination, source) =>
+            {
+                for (int i = 0; i < source.Length; i++)
+                {
+                    char c = source[i];
+                    destination[i] = c is >= 'A' and <= 'Z' ? (char)(c + 32) : c;
+                }
+            });
     }
 
     /// <summary>
@@ -29,7 +40,7 @@ public static class UserDataUsernameHash
     {
         string normalized = NormalizeUsername(username);
         byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));
-        return Convert.ToHexString(hash).ToLowerInvariant();
+        return Convert.ToHexStringLower(hash);
     }
 
     /// <summary>

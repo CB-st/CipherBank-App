@@ -74,7 +74,6 @@ public sealed class UserDataEnrollKeyPair : IDisposable
         }
 
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
 
     private void ThrowIfDisposed()

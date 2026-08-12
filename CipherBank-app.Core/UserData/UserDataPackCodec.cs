@@ -86,6 +86,16 @@ public static class UserDataPackCodec
         => DefaultBlocks.Open(block, kek, usernameHashHex, contentVersion);
 
     /// <summary>
+    /// Opens every block, skipping unknown types.
+    /// Use: High (GRAB apply). Scope: userdata restore.
+    /// </summary>
+    public static Dictionary<string, string> OpenPack(
+        UserDataPackWire pack,
+        string username,
+        ReadOnlySpan<byte> kek)
+        => OpenPack(pack, username, kek, DefaultBlocks, skipUnknownTypes: true);
+
+    /// <summary>
     /// Opens every block; skips unknown types when <paramref name="skipUnknownTypes"/> is true.
     /// Use: High (GRAB apply). Scope: userdata restore.
     /// </summary>
@@ -93,8 +103,19 @@ public static class UserDataPackCodec
         UserDataPackWire pack,
         string username,
         ReadOnlySpan<byte> kek,
-        bool skipUnknownTypes = true)
+        bool skipUnknownTypes)
         => OpenPack(pack, username, kek, DefaultBlocks, skipUnknownTypes);
+
+    /// <summary>
+    /// Opens a pack with an injected block cipher, skipping unknown types.
+    /// Use: Medium (suite). Scope: userdata restore.
+    /// </summary>
+    public static Dictionary<string, string> OpenPack(
+        UserDataPackWire pack,
+        string username,
+        ReadOnlySpan<byte> kek,
+        IUserDataBlockCipher blockCipher)
+        => OpenPack(pack, username, kek, blockCipher, skipUnknownTypes: true);
 
     /// <summary>
     /// Opens a pack with an injected block cipher. Use: Medium (suite). Scope: userdata restore.
@@ -104,7 +125,7 @@ public static class UserDataPackCodec
         string username,
         ReadOnlySpan<byte> kek,
         IUserDataBlockCipher blockCipher,
-        bool skipUnknownTypes = true)
+        bool skipUnknownTypes)
     {
         ArgumentNullException.ThrowIfNull(pack);
         ArgumentNullException.ThrowIfNull(blockCipher);
@@ -213,7 +234,7 @@ public static class UserDataPackCodec
         string expectedPrefix = UserDataUsernameHash.HashPrefix(username);
         if (!string.Equals(pack.UsernameHashPrefix, expectedPrefix, StringComparison.Ordinal))
         {
-            throw new CryptographicException("Userdata pack username hash prefix mismatch.");
+            throw new CryptographicException($"Userdata pack {nameof(username)} hash prefix mismatch.");
         }
     }
 }
