@@ -21,6 +21,61 @@ public class PinAndCustodyTests
     }
 
     [Fact]
+    public async Task Pin_SetPinAsync_RejectsShortPin()
+    {
+        PinService pin = new PinService(new MemStore());
+        Func<Task> act = () => pin.SetPinAsync("12345");
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task Pin_Verify_RecoversStagedSaltHashPair()
+    {
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        await pin.SetPinAsync("654321");
+        string? oldHash = await store.GetAsync("cb_pin_hash");
+
+        await pin.SetPinAsync("111111");
+        string? newSalt = await store.GetAsync("cb_pin_salt");
+        string? newHash = await store.GetAsync("cb_pin_hash");
+
+        // Torn promote: staged pair complete, promoted hash still previous PIN's hash.
+        await store.SetAsync("cb_pin_salt_staging", newSalt!);
+        await store.SetAsync("cb_pin_hash_staging", newHash!);
+        await store.SetAsync("cb_pin_salt", newSalt!);
+        await store.SetAsync("cb_pin_hash", oldHash!);
+
+        (await pin.VerifyPinAsync("111111")).Should().BeTrue();
+        (await store.GetAsync("cb_pin_hash")).Should().Be(newHash);
+        (await store.GetAsync("cb_pin_salt_staging")).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Custody_Unlock_ClearsSessionOnFailedPin()
+    {
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        string mnemonic = MnemonicHelper.Generate();
+        await custody.SealAsync(mnemonic, "123456");
+        (await custody.UnlockAsync("123456")).Should().BeTrue();
+        (await custody.UnlockAsync("000000")).Should().BeFalse();
+        custody.IsUnlocked.Should().BeFalse();
+        custody.ExportMnemonic().Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Custody_SealAsync_RejectsShortPin()
+    {
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        Func<Task> act = () => custody.SealAsync(MnemonicHelper.Generate(), "12");
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
     public async Task Custody_SealUnlockRoundTrip()
     {
         MemStore store = new MemStore();

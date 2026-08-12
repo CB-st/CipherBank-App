@@ -142,7 +142,14 @@ public static class UserDataPackCodec
                 continue;
             }
 
-            opened[block.Id] = blockCipher.Open(block, kek, usernameHashHex, pack.ContentVersion);
+            try
+            {
+                opened[block.Id] = blockCipher.Open(block, kek, usernameHashHex, pack.ContentVersion);
+            }
+            catch (CryptographicException)
+            {
+                // Keep successfully authenticated blocks; a torn/auth-failed block must not abort restore.
+            }
         }
 
         return opened;

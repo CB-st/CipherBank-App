@@ -14,6 +14,10 @@ public static partial class AddressValidate
     private const int XmrAddressMaxLength = 106;
     private const int GenericAddressMinLength = 8;
 
+    // Monero Base58 alphabet (Bitcoin-style; no 0/O/I/l).
+    private const string XmrBase58Alphabet =
+        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
     /// <summary>
     /// Validates a watch-only deposit address for a known asset symbol.
     /// Use: High (add-watch / send paths). Scope: AddressValidate helpers.
@@ -35,7 +39,7 @@ public static partial class AddressValidate
                 "LTC" => BitcoinAddress.Create(addr, NBitcoin.Altcoins.Litecoin.Instance.Mainnet) is not null,
                 "DOGE" => BitcoinAddress.Create(addr, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet) is not null,
                 "ETH" => EthAddressRegex().IsMatch(addr),
-                "XMR" => addr.Length is >= XmrAddressMinLength and <= XmrAddressMaxLength,
+                "XMR" => IsValidXmrAddress(addr),
                 _ => addr.Length >= GenericAddressMinLength,
             };
         }
@@ -55,6 +59,28 @@ public static partial class AddressValidate
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Length + Monero Base58 alphabet check (checksum validation deferred).
+    /// Use: High (XMR watch/send). Scope: AddressValidate helpers.
+    /// </summary>
+    private static bool IsValidXmrAddress(string addr)
+    {
+        if (addr.Length is < XmrAddressMinLength or > XmrAddressMaxLength)
+        {
+            return false;
+        }
+
+        foreach (char c in addr)
+        {
+            if (!XmrBase58Alphabet.Contains(c, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     [GeneratedRegex("^0x[0-9a-fA-F]{40}$", RegexOptions.Compiled)]

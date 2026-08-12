@@ -37,7 +37,9 @@ public static class UserDataKeyDerivation
             throw new ArgumentException("Mnemonic is invalid.", nameof(mnemonic));
         }
 
-        byte[] seed = DeriveBip39Seed(MnemonicHelper.Normalize(mnemonic), bip39Passphrase);
+        // BIP39: passphrase is UTF-8 NFKD before PBKDF2 salt ("mnemonic" || passphrase).
+        string normalizedPassphrase = bip39Passphrase.Normalize(NormalizationForm.FormKD);
+        byte[] seed = DeriveBip39Seed(MnemonicHelper.Normalize(mnemonic), normalizedPassphrase);
         try
         {
             byte[] kek = HkdfExpand(seed, UserDataConstants.KekInfoLabel, UserDataConstants.KekLength);

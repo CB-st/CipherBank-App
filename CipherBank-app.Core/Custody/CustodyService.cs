@@ -124,6 +124,9 @@ public sealed class CustodyService : ICustodyService
     {
         if (!await _pin.VerifyPinAsync(pin).ConfigureAwait(false))
         {
+            // Failed auth must not leave a prior unlocked session's mnemonic live.
+            _mnemonic = null;
+            _expires = null;
             return false;
         }
 

@@ -12,6 +12,12 @@ namespace CipherBank_app.Custody;
 /// <summary>AES-GCM custody box with configuration-backed PBKDF2 parameters.</summary>
 public sealed class AesGcmCryptoBox : ICryptoBox
 {
+    /// <summary>
+    /// Current packed-blob version. Follow-up: encode salt/tag/key/iteration sizes in-band when
+    /// CryptographyOptions may diverge across releases.
+    /// </summary>
+    private const byte BlobFormatVersion = 0x01;
+
     private readonly CryptographyOptions _options;
 
     public AesGcmCryptoBox(IOptions<CryptographyOptions> options)
@@ -51,8 +57,10 @@ public sealed class AesGcmCryptoBox : ICryptoBox
             using AesGcm aes = new AesGcm(key, _options.TagSizeBytes);
             aes.Encrypt(nonce, plain, cipher, tag);
 
-            byte[] packed = new byte[salt.Length + nonce.Length + tag.Length + cipher.Length];
+            // v1: [version][salt][nonce][tag][cipher] — version documents the packing layout.
+            byte[] packed = new byte[1 + salt.Length + nonce.Length + tag.Length + cipher.Length];
             int offset = 0;
+            packed[offset++] = BlobFormatVersion;
             Buffer.BlockCopy(salt, 0, packed, offset, salt.Length);
             offset += salt.Length;
             Buffer.BlockCopy(nonce, 0, packed, offset, nonce.Length);
@@ -72,13 +80,19 @@ public sealed class AesGcmCryptoBox : ICryptoBox
     public string Open(string sealedB64, string pin)
     {
         byte[] packed = Convert.FromBase64String(sealedB64);
+        int offset = 0;
+        if (packed.Length > 0 && packed[0] == BlobFormatVersion)
+        {
+            offset = 1;
+        }
+
+        // Legacy blobs omit the version byte; both layouts use current CryptographyOptions sizes.
         int headerSize = _options.SaltSizeBytes + _options.NonceSizeBytes + _options.TagSizeBytes;
-        if (packed.Length <= headerSize)
+        if (packed.Length <= offset + headerSize)
         {
             throw new CryptographicException("Invalid sealed blob.");
         }
 
-        int offset = 0;
         byte[] salt = packed.AsSpan(offset, _options.SaltSizeBytes).ToArray();
         offset += salt.Length;
         byte[] nonce = packed.AsSpan(offset, _options.NonceSizeBytes).ToArray();
