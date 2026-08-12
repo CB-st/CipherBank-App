@@ -45,10 +45,12 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
         services.AddSingleton<IWalletRepository, WalletRepository>();
 
-        // Production product wire: HTTP client (host sets BaseAddress / handlers). Lab uses InMemory in tests only.
+        // Production product wire: HTTP client (host sets BaseAddress). Lab uses InMemory in tests only.
         services.AddSingleton<ISessionProofBuilder, LabSessionProofBuilder>();
         services.AddSingleton<IProductSessionStore, InMemoryProductSessionStore>();
-        services.AddHttpClient<HttpProductClient>();
+        services.AddTransient<ProductAuthHeaderHandler>();
+        services.AddHttpClient<HttpProductClient>()
+            .AddHttpMessageHandler<ProductAuthHeaderHandler>();
         services.AddTransient<IProductClient>(static sp => sp.GetRequiredService<HttpProductClient>());
     }
 }
