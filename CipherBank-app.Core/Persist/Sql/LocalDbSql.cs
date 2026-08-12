@@ -309,7 +309,7 @@ internal static class LocalDbSql
     }
 
     private static RecipientMaskRow ReadRecipientMaskRow(
-        DbDataReader reader,
+        IDataRecord reader,
         bool hasAccount,
         bool hasRouting)
     {
@@ -335,12 +335,36 @@ internal static class LocalDbSql
         return new RecipientMaskRow(id, account, routing, accountMask, routingMask);
     }
 
-    private static async Task WriteDerivedRecipientMasksAsync(
+    private static Task WriteDerivedRecipientMasksAsync(
         DbConnection connection,
         RecipientMaskRow row,
         bool hasAccountMask,
         bool hasRoutingMask,
         CancellationToken ct)
+    {
+        (string? NextAccountMask, string? NextRoutingMask) derived =
+            DeriveRecipientMasks(row, hasAccountMask, hasRoutingMask);
+        bool updateAccount = hasAccountMask && derived.NextAccountMask != row.AccountMask;
+        bool updateRouting = hasRoutingMask && derived.NextRoutingMask != row.RoutingMask;
+        if (!updateAccount && !updateRouting)
+        {
+            return Task.CompletedTask;
+        }
+
+        return PersistRecipientMasksAsync(
+            connection,
+            row.Id,
+            updateAccount ? derived.NextAccountMask : null,
+            updateRouting ? derived.NextRoutingMask : null,
+            updateAccount,
+            updateRouting,
+            ct);
+    }
+
+    private static (string? NextAccountMask, string? NextRoutingMask) DeriveRecipientMasks(
+        RecipientMaskRow row,
+        bool hasAccountMask,
+        bool hasRoutingMask)
     {
         string? nextAccountMask = row.AccountMask;
         string? nextRoutingMask = row.RoutingMask;
@@ -358,32 +382,37 @@ internal static class LocalDbSql
             nextRoutingMask = AchRecipientValidation.MaskRouting(row.Routing);
         }
 
-        bool updateAccount = hasAccountMask && nextAccountMask != row.AccountMask;
-        bool updateRouting = hasRoutingMask && nextRoutingMask != row.RoutingMask;
-        if (!updateAccount && !updateRouting)
-        {
-            return;
-        }
+        return (nextAccountMask, nextRoutingMask);
+    }
 
+    private static async Task PersistRecipientMasksAsync(
+        DbConnection connection,
+        string id,
+        string? accountMask,
+        string? routingMask,
+        bool updateAccount,
+        bool updateRouting,
+        CancellationToken ct)
+    {
         await using DbCommand update = connection.CreateCommand();
         if (updateAccount && updateRouting)
         {
             update.CommandText = UpdateRecipientBothMasksSql;
-            AddParameter(update, "$account_mask", (object?)nextAccountMask ?? DBNull.Value);
-            AddParameter(update, "$routing_mask", (object?)nextRoutingMask ?? DBNull.Value);
+            AddParameter(update, "$account_mask", (object?)accountMask ?? DBNull.Value);
+            AddParameter(update, "$routing_mask", (object?)routingMask ?? DBNull.Value);
         }
         else if (updateAccount)
         {
             update.CommandText = UpdateRecipientAccountMaskSql;
-            AddParameter(update, "$account_mask", (object?)nextAccountMask ?? DBNull.Value);
+            AddParameter(update, "$account_mask", (object?)accountMask ?? DBNull.Value);
         }
         else
         {
             update.CommandText = UpdateRecipientRoutingMaskSql;
-            AddParameter(update, "$routing_mask", (object?)nextRoutingMask ?? DBNull.Value);
+            AddParameter(update, "$routing_mask", (object?)routingMask ?? DBNull.Value);
         }
 
-        AddParameter(update, "$id", row.Id);
+        AddParameter(update, "$id", id);
         await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
     }
 
