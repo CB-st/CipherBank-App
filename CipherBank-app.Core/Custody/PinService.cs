@@ -63,26 +63,6 @@ public sealed class PinService : IPinService
         return SetPinValidatedAsync(pin);
     }
 
-    private async Task SetPinValidatedAsync(string pin)
-    {
-        byte[] salt = RandomNumberGenerator.GetBytes(16);
-        string hash = HashPin(pin, salt);
-        string saltB64 = Convert.ToBase64String(salt);
-
-        // Stage the full pair first so a torn promote can still recover a matching salt+hash.
-        await _store.SetAsync(StagingSaltKey, saltB64).ConfigureAwait(false);
-        await _store.SetAsync(StagingHashKey, hash).ConfigureAwait(false);
-        await _store.SetAsync(SaltKey, saltB64).ConfigureAwait(false);
-        await _store.SetAsync(HashKey, hash).ConfigureAwait(false);
-        await _store.RemoveAsync(StagingSaltKey).ConfigureAwait(false);
-        await _store.RemoveAsync(StagingHashKey).ConfigureAwait(false);
-
-        await _store.SetAsync(FailKey, "0").ConfigureAwait(false);
-        await _store.RemoveAsync(LockKey).ConfigureAwait(false);
-        FailedAttempts = 0;
-        _lockUntilUtc = null;
-    }
-
     public async Task<bool> HasPinAsync()
     {
         await RecoverInterruptedPinWriteAsync().ConfigureAwait(false);
@@ -147,6 +127,26 @@ public sealed class PinService : IPinService
     }
 
     public Task RefreshAsync() => RefreshLockAsync();
+
+    private async Task SetPinValidatedAsync(string pin)
+    {
+        byte[] salt = RandomNumberGenerator.GetBytes(16);
+        string hash = HashPin(pin, salt);
+        string saltB64 = Convert.ToBase64String(salt);
+
+        // Stage the full pair first so a torn promote can still recover a matching salt+hash.
+        await _store.SetAsync(StagingSaltKey, saltB64).ConfigureAwait(false);
+        await _store.SetAsync(StagingHashKey, hash).ConfigureAwait(false);
+        await _store.SetAsync(SaltKey, saltB64).ConfigureAwait(false);
+        await _store.SetAsync(HashKey, hash).ConfigureAwait(false);
+        await _store.RemoveAsync(StagingSaltKey).ConfigureAwait(false);
+        await _store.RemoveAsync(StagingHashKey).ConfigureAwait(false);
+
+        await _store.SetAsync(FailKey, "0").ConfigureAwait(false);
+        await _store.RemoveAsync(LockKey).ConfigureAwait(false);
+        FailedAttempts = 0;
+        _lockUntilUtc = null;
+    }
 
     private static string HashPin(string pin, byte[] salt)
     {
