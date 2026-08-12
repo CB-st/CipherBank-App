@@ -19,11 +19,18 @@ public sealed class ProductAuthHeaderHandler : DelegatingHandler
     }
 
     /// <inheritdoc />
-    protected override async Task<HttpResponseMessage> SendAsync(
+    protected override Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        return SendWithAuthAsync(request, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> SendWithAuthAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
         (string Access, string Refresh, DateTimeOffset Expires)? stored =
             await _sessions.GetAsync().ConfigureAwait(false);
         if (stored is { } session && !string.IsNullOrWhiteSpace(session.Access))
