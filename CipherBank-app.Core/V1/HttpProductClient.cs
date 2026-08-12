@@ -2,16 +2,16 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using CipherBank_app.V1;
 
 namespace CipherBank_app.V1;
 
 /// <summary>HTTP IProductClient for session, prefs, bootstrap, and product /v1 routes.</summary>
-public sealed class HttpProductClient : IProductClient
+public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — single IProductClient surface by design
 {
     // --- Route constants (relative to CipherBankEndpointBase) ---
     private const string PortfolioPath = "v1/portfolio";
@@ -53,20 +53,20 @@ public sealed class HttpProductClient : IProductClient
         _sessionProof = sessionProof;
     }
 
-    public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct = default)
+    public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct)
         => GetAsync<PortfolioDto>(PortfolioPath, ct);
 
-    public async Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct = default)
+    public async Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
     {
         string path = $"{HistoryPath}?symbols={Uri.EscapeDataString(symbol)}&range={Uri.EscapeDataString(range)}";
         return await GetAsync<List<HistoryPointDto>>(path, ct).ConfigureAwait(false);
     }
 
-    public async Task<SessionDto> CreateSessionAsync(CancellationToken ct = default)
+    public async Task<SessionDto> CreateSessionAsync(CancellationToken ct)
     {
         // Lab stub today; ISessionProofBuilder will swap to challenge/pass without changing this call site.
         object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, SessionPath)
+        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionPath, UriKind.Relative))
         {
             Content = JsonContent.Create(body),
         };
@@ -78,9 +78,9 @@ public sealed class HttpProductClient : IProductClient
         return session;
     }
 
-    public async Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct = default)
+    public async Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, SessionChallengePath)
+        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionChallengePath, UriKind.Relative))
         {
             Content = JsonContent.Create(new { ACCOUNT_PUBLIC_KEY = accountPublicKeyWire }),
         };
@@ -90,9 +90,9 @@ public sealed class HttpProductClient : IProductClient
             ?? throw new InvalidOperationException("Empty challenge response.");
     }
 
-    public async Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct = default)
+    public async Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct)
     {
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, SessionKeySharePath)
+        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionKeySharePath, UriKind.Relative))
         {
             Content = JsonContent.Create(request),
         };
@@ -102,46 +102,62 @@ public sealed class HttpProductClient : IProductClient
             ?? throw new InvalidOperationException("Empty key-share response.");
     }
 
-    public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct = default)
-        => PostMutationAsync<CreateWalletResultDto>(WalletsPath, request, Guid.NewGuid().ToString("N"), ct);
+    public Task<CreateWalletResultDto> CreateWalletAsync(CreateWalletRequestDto request, CancellationToken ct)
+        => PostMutationAsync<CreateWalletResultDto>(
+            WalletsPath,
+            request,
+            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
+            ct);
 
-    public Task<QuoteDto> GetQuoteAsync(string from, string toAsset, CancellationToken ct = default)
+    public Task<QuoteDto> GetQuoteAsync(string from, string toAsset, CancellationToken ct)
         => GetAsync<QuoteDto>($"{QuotePath}?from={Uri.EscapeDataString(from)}&to={Uri.EscapeDataString(toAsset)}", ct);
 
-    public Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct = default)
+    public Task<MoneyMoveDto> ConvertAsync(string from, string toAsset, string amount, string idempotencyKey, CancellationToken ct)
         => PostMutationAsync<MoneyMoveDto>(ConvertPath, new { FROM = from, TO = toAsset, AMOUNT = amount }, idempotencyKey, ct);
 
-    public Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct = default)
+    public Task<MoneyMoveDto> TransferAsync(string destination, string amount, string speed, string idempotencyKey, CancellationToken ct)
         => PostMutationAsync<MoneyMoveDto>(TransfersPath, new { TO = destination, AMOUNT = amount, SPEED = speed }, idempotencyKey, ct);
 
-    public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct = default)
+    public Task<MoneyMoveDto> PayAsync(string amount, IReadOnlyDictionary<string, string> mix, string idempotencyKey, CancellationToken ct)
         => PostMutationAsync<MoneyMoveDto>(PaymentsPath, new { AMOUNT = amount, MIX = mix }, idempotencyKey, ct);
 
-    public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct = default)
+    public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct)
         => GetAsync<ReceiveDto>(ReceivePathPrefix + Uri.EscapeDataString(asset), ct);
 
-    public async Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct)
         => await GetAsync<List<VaultCardDto>>(VaultCardsPath, ct).ConfigureAwait(false);
 
-    public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct = default)
+    public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct)
         => PostMutationAsync<VaultCardDto>(VaultCardsPath, card, idempotencyKey, ct);
 
-    public Task DeleteVaultCardAsync(string cardId, CancellationToken ct = default)
+    public Task DeleteVaultCardAsync(string cardId, CancellationToken ct)
         => PostAsync($"{VaultCardsPath}/{Uri.EscapeDataString(cardId)}/delete", new { }, ct);
 
-    public async Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct)
         => await GetAsync<List<VaultBinaryDto>>(VaultBinariesPath, ct).ConfigureAwait(false);
 
-    public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct = default)
-        => PostMutationAsync<PosSessionDto>(PosSessionsPath, new { }, Guid.NewGuid().ToString("N"), ct);
+    public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct)
+        => PostMutationAsync<PosSessionDto>(
+            PosSessionsPath,
+            new { },
+            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
+            ct);
 
-    public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct = default)
-        => PostMutationAsync<PosSessionDto>(PosAuthorizePath, new { SESSION_ID = sessionId }, Guid.NewGuid().ToString("N"), ct);
+    public Task<PosSessionDto> AuthorizePosAsync(string sessionId, CancellationToken ct)
+        => PostMutationAsync<PosSessionDto>(
+            PosAuthorizePath,
+            new { SESSION_ID = sessionId },
+            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
+            ct);
 
-    public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct = default)
-        => PostMutationAsync<PosSessionDto>(PosConfirmPath, new { SESSION_ID = sessionId }, Guid.NewGuid().ToString("N"), ct);
+    public Task<PosSessionDto> ConfirmPosAsync(string sessionId, CancellationToken ct)
+        => PostMutationAsync<PosSessionDto>(
+            PosConfirmPath,
+            new { SESSION_ID = sessionId },
+            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
+            ct);
 
-    public async Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct = default)
+    public async Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct)
     {
         try
         {
@@ -157,10 +173,10 @@ public sealed class HttpProductClient : IProductClient
         }
     }
 
-    public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct = default)
+    public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct)
         => PutAsync(PrefsPath, prefs, ct);
 
-    public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct = default)
+    public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
         => GetAsync<AccountBootstrapDto>(AccountBootstrapPath, ct);
 
     private async Task PutAsync(string path, object body, CancellationToken ct)
@@ -170,7 +186,7 @@ public sealed class HttpProductClient : IProductClient
         resp.EnsureSuccessStatusCode();
     }
 
-    private async Task<T> GetAsync<T>(string path, CancellationToken ct)
+    private async Task<T> GetAsync<T>(string path, CancellationToken ct) // NOSONAR S4018 — response-only type param
     {
         using HttpResponseMessage resp = await SendWithOptionalRefreshAsync(HttpMethod.Get, path, bodyUtf8: null, idempotencyKey: null, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
@@ -178,7 +194,7 @@ public sealed class HttpProductClient : IProductClient
             ?? throw new InvalidOperationException($"Empty response for {path}");
     }
 
-    private async Task<T> PostMutationAsync<T>(string path, object body, string idempotencyKey, CancellationToken ct)
+    private async Task<T> PostMutationAsync<T>(string path, object body, string idempotencyKey, CancellationToken ct) // NOSONAR S4018 — response-only type param
     {
         byte[] bodyUtf8 = JsonSerializer.SerializeToUtf8Bytes(body, JsonOptions);
         using HttpResponseMessage resp = await SendWithOptionalRefreshAsync(HttpMethod.Post, path, bodyUtf8, idempotencyKey, ct).ConfigureAwait(false);
@@ -221,7 +237,7 @@ public sealed class HttpProductClient : IProductClient
             throw new UnauthorizedAccessException("Product session missing.");
         }
 
-        using HttpRequestMessage refreshReq = new HttpRequestMessage(HttpMethod.Post, SessionRefreshPath)
+        using HttpRequestMessage refreshReq = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionRefreshPath, UriKind.Relative))
         {
             Content = JsonContent.Create(new { REFRESH_TOKEN = stored.Value.Refresh }),
         };
@@ -239,7 +255,7 @@ public sealed class HttpProductClient : IProductClient
         string? idempotencyKey,
         CancellationToken ct)
     {
-        using HttpRequestMessage req = new HttpRequestMessage(method, path);
+        using HttpRequestMessage req = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
         if (bodyUtf8 is not null)
         {
             req.Content = new ByteArrayContent(bodyUtf8);
