@@ -41,4 +41,38 @@ public class WireJsonFoldTests
         contact.ResolvedAccountType.Should().Be("savings");
         dto.SyncedAt.Should().Be(123);
     }
+
+    [Fact]
+    public void AccountBootstrapDto_PopulatesUppercaseRecipients()
+    {
+        const string json = """
+            {"PREFS":{"DEFAULT_SEND_SPEED":"wire"},"RECIPIENTS":[{"ID":"r2","DISPLAY_NAME":"Bob","ACCOUNT_TYPE":"checking","ROUTING_NUMBER":"021000021","ACCOUNT_LAST4":"1234"}],"SYNCED_AT":99}
+            """;
+        AccountBootstrapDto? dto = JsonSerializer.Deserialize<AccountBootstrapDto>(json);
+        dto.Should().NotBeNull();
+        dto!.ResolvedRecipients.Should().ContainSingle();
+        dto.ResolvedRecipients[0].ResolvedId.Should().Be("r2");
+        dto.ResolvedRecipients[0].ResolvedName.Should().Be("Bob");
+        dto.SyncedAt.Should().Be(99);
+    }
+
+    [Fact]
+    public void BootstrapRecipientDto_SyntheticIdIncludesAccountIdentity()
+    {
+        BootstrapRecipientDto a = new BootstrapRecipientDto
+        {
+            DisplayName = "Same Name",
+            RoutingNumber = "021000021",
+            AccountLast4 = "1111",
+        };
+        BootstrapRecipientDto b = new BootstrapRecipientDto
+        {
+            DisplayName = "Same Name",
+            RoutingNumber = "021000021",
+            AccountLast4 = "2222",
+        };
+
+        a.ResolvedId.Should().NotBe(b.ResolvedId);
+        a.ResolvedId.Should().StartWith("bootstrap_");
+    }
 }

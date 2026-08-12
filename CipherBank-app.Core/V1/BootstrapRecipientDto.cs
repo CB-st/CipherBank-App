@@ -53,15 +53,15 @@ public sealed class BootstrapRecipientDto
                 return Id;
             }
 
-            // Stable synthetic key so re-bootstrap does not duplicate the same payee.
-            // Lowercase kept for id stability across app versions (S4040 Upper would rewrite keys).
-            string seed = ResolvedName.Trim().ToLowerInvariant(); // NOSONAR (S4040)
-            if (string.IsNullOrEmpty(seed))
-            {
-                seed = (ResolvedLast4 ?? string.Empty) + "|" + (ResolvedRouting ?? string.Empty);
-            }
+            // Stable synthetic key: name alone collides when two payees share a display name.
+            // Include routing + last4 so UpsertAsync keys stay distinct. Lowercase for id stability.
+            string seed = string.Join(
+                '|',
+                ResolvedName.Trim().ToLowerInvariant(), // NOSONAR (S4040)
+                (ResolvedRouting ?? string.Empty).Trim(),
+                (ResolvedLast4 ?? string.Empty).Trim());
 
-            if (string.IsNullOrWhiteSpace(seed))
+            if (string.IsNullOrWhiteSpace(seed.Replace("|", string.Empty, StringComparison.Ordinal)))
             {
                 return "recipient_unknown";
             }
