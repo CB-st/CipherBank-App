@@ -128,6 +128,17 @@ public sealed class PinService : IPinService
 
     public Task RefreshAsync() => RefreshLockAsync();
 
+    private static string HashPin(string pin, byte[] salt)
+    {
+        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
+            Encoding.UTF8.GetBytes(pin),
+            salt,
+            120_000,
+            HashAlgorithmName.SHA256,
+            32);
+        return Convert.ToBase64String(hash);
+    }
+
     private async Task SetPinValidatedAsync(string pin)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(16);
@@ -146,17 +157,6 @@ public sealed class PinService : IPinService
         await _store.RemoveAsync(LockKey).ConfigureAwait(false);
         FailedAttempts = 0;
         _lockUntilUtc = null;
-    }
-
-    private static string HashPin(string pin, byte[] salt)
-    {
-        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(pin),
-            salt,
-            120_000,
-            HashAlgorithmName.SHA256,
-            32);
-        return Convert.ToBase64String(hash);
     }
 
     /// <summary>
