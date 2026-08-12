@@ -72,15 +72,7 @@ public static partial class AddressValidate
             return false;
         }
 
-        foreach (char c in addr)
-        {
-            if (!XmrBase58Alphabet.Contains(c, StringComparison.Ordinal))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return addr.Where(c => !XmrBase58Alphabet.Contains(c, StringComparison.Ordinal)).Any() == false;
     }
 
     [GeneratedRegex("^0x[0-9a-fA-F]{40}$", RegexOptions.Compiled)]

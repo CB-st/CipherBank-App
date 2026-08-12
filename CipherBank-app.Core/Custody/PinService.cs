@@ -50,7 +50,7 @@ public sealed class PinService : IPinService
         }
     }
 
-    public async Task SetPinAsync(string pin)
+    public Task SetPinAsync(string pin)
     {
         ArgumentNullException.ThrowIfNull(pin);
         if (pin.Length < MinimumPinLength)
@@ -60,6 +60,11 @@ public sealed class PinService : IPinService
                 nameof(pin));
         }
 
+        return SetPinValidatedAsync(pin);
+    }
+
+    private async Task SetPinValidatedAsync(string pin)
+    {
         byte[] salt = RandomNumberGenerator.GetBytes(16);
         string hash = HashPin(pin, salt);
         string saltB64 = Convert.ToBase64String(salt);
