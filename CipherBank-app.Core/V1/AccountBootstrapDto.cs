@@ -18,6 +18,7 @@ public sealed class AccountBootstrapDto
     public PrefsWireDto? Prefs { get; set; }
 
     [JsonPropertyName("RECIPIENTS")]
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
     public Collection<BootstrapRecipientDto> Recipients { get; } = [];
 
     [JsonPropertyName("SYNCED_AT")]

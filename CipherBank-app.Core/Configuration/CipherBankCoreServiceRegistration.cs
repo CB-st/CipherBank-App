@@ -7,6 +7,7 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Persist.Sql;
 using CipherBank_app.Pos;
+using CipherBank_app.V1;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -43,5 +44,11 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton<IRatesCache, RatesCache>();
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
         services.AddSingleton<IWalletRepository, WalletRepository>();
+
+        // Production product wire: HTTP client (host sets BaseAddress / handlers). Lab uses InMemory in tests only.
+        services.AddSingleton<ISessionProofBuilder, LabSessionProofBuilder>();
+        services.AddSingleton<IProductSessionStore, InMemoryProductSessionStore>();
+        services.AddHttpClient<HttpProductClient>();
+        services.AddTransient<IProductClient>(static sp => sp.GetRequiredService<HttpProductClient>());
     }
 }

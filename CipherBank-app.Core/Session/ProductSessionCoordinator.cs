@@ -43,12 +43,25 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator
     /// <inheritdoc />
     public async Task<ProductSessionStartResult> StartAsync(bool applyBootstrap, CancellationToken ct)
     {
+        // Preserve any already-loaded local idle timeout if refresh fails below.
+        UserPrefs localPrefs = await _prefs.LoadAsync().ConfigureAwait(false);
+        int lockIdleSeconds = localPrefs.LockIdleSeconds;
+
         SessionDto session = await _client.CreateSessionAsync(ct).ConfigureAwait(false);
         await _productSessions.SaveAsync(session).ConfigureAwait(false);
-        await _stream.ConnectAsync(ct).ConfigureAwait(false);
-        _streamHub.Start();
 
-        int lockIdleSeconds = 0;
+        // Subscribe before the socket is live so early frames are not dropped.
+        _streamHub.Start();
+        try
+        {
+            await _stream.ConnectAsync(ct).ConfigureAwait(false);
+        }
+        catch
+        {
+            _streamHub.StopStreaming();
+            throw;
+        }
+
         try
         {
             await _prefsSync.PullMergeAsync(ct).ConfigureAwait(false);

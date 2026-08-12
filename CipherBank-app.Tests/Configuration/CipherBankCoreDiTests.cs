@@ -8,6 +8,7 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Persist.Sql;
 using CipherBank_app.Pos;
+using CipherBank_app.V1;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -41,6 +42,9 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<IPrefsStore>().Should().BeOfType<PrefsStore>();
         provider.GetRequiredService<IRatesCache>().Should().BeOfType<RatesCache>();
         provider.GetRequiredService<ISyncJobScheduler>().Should().BeOfType<SyncJobScheduler>();
+        provider.GetRequiredService<IProductClient>().Should().BeOfType<HttpProductClient>();
+        provider.GetRequiredService<ISessionProofBuilder>().Should().BeOfType<LabSessionProofBuilder>();
+        provider.GetRequiredService<IProductSessionStore>().Should().BeOfType<InMemoryProductSessionStore>();
     }
 
     /// <summary>

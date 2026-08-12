@@ -14,6 +14,9 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     // --- Receive buffer ---
     private const int ReceiveBufferBytes = 8 * 1024;
 
+    /// <summary>Hard ceiling for one fragmented text message (DoS / memory bound).</summary>
+    private const int MaxAccumulatedMessageBytes = 1024 * 1024;
+
     private readonly Uri _uri;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private ClientWebSocket? _ws;
@@ -40,10 +43,12 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         try
         {
             await DisconnectCoreAsync().ConfigureAwait(false);
-            _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+            // Stream lifetime is independent of the connect token (timeouts must not kill the loop).
+            _cts = new CancellationTokenSource();
             _ws = new ClientWebSocket();
-            await _ws.ConnectAsync(_uri, _cts.Token).ConfigureAwait(false);
-            _ = Task.Run(() => ReceiveLoopAsync(_cts.Token), _cts.Token);
+            await _ws.ConnectAsync(_uri, ct).ConfigureAwait(false);
+            _ = Task.Run(() => ReceiveLoopAsync(_cts.Token), CancellationToken.None);
         }
         finally
         {
@@ -171,6 +176,13 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
             {
                 message.SetLength(0);
                 continue;
+            }
+
+            if (message.Length + result.Count > MaxAccumulatedMessageBytes)
+            {
+                message.SetLength(0);
+                await DisconnectAsync().ConfigureAwait(false);
+                return;
             }
 
             await message.WriteAsync(buffer.AsMemory(0, result.Count), ct).ConfigureAwait(false);
