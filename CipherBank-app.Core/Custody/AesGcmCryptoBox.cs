@@ -80,19 +80,35 @@ public sealed class AesGcmCryptoBox : ICryptoBox
     public string Open(string sealedB64, string pin)
     {
         byte[] packed = Convert.FromBase64String(sealedB64);
-        int offset = 0;
-        if (packed.Length > 0 && packed[0] == BlobFormatVersion)
+
+        // Prefer legacy layout first: a random salt may begin with 0x01 (~1/256), so treating that
+        // as a version marker would mis-slice fields. Versioned blobs still decrypt on fallback.
+        if (TryOpenAt(packed, dataOffset: 0, pin, out string? legacy) && legacy is not null)
         {
-            offset = 1;
+            return legacy;
         }
 
-        // Legacy blobs omit the version byte; both layouts use current CryptographyOptions sizes.
+        if (packed.Length > 0
+            && packed[0] == BlobFormatVersion
+            && TryOpenAt(packed, dataOffset: 1, pin, out string? versioned)
+            && versioned is not null)
+        {
+            return versioned;
+        }
+
+        throw new CryptographicException("Invalid sealed blob.");
+    }
+
+    private bool TryOpenAt(byte[] packed, int dataOffset, string pin, out string? plaintext)
+    {
+        plaintext = null;
         int headerSize = _options.SaltSizeBytes + _options.NonceSizeBytes + _options.TagSizeBytes;
-        if (packed.Length <= offset + headerSize)
+        if (packed.Length <= dataOffset + headerSize)
         {
-            throw new CryptographicException("Invalid sealed blob.");
+            return false;
         }
 
+        int offset = dataOffset;
         byte[] salt = packed.AsSpan(offset, _options.SaltSizeBytes).ToArray();
         offset += salt.Length;
         byte[] nonce = packed.AsSpan(offset, _options.NonceSizeBytes).ToArray();
@@ -106,7 +122,12 @@ public sealed class AesGcmCryptoBox : ICryptoBox
         {
             using AesGcm aes = new AesGcm(key, _options.TagSizeBytes);
             aes.Decrypt(nonce, cipher, tag, plain);
-            return Encoding.UTF8.GetString(plain);
+            plaintext = Encoding.UTF8.GetString(plain);
+            return true;
+        }
+        catch (CryptographicException)
+        {
+            return false;
         }
         finally
         {
