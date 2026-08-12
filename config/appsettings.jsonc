@@ -1,7 +1,7 @@
 // Default non-secret options. Overlay with appsettings.Development.jsonc / appsettings.Windows.jsonc
 // (or appsettings.{Environment}.jsonc) — later layers bind these sections from the embedded stream.
 {
-  "Cryptography": {
+  "CryptographyOptions": {
     "NonceSizeBytes": 12,
     "TagSizeBytes": 16,
     "KeySizeBytes": 32,
@@ -44,7 +44,7 @@
     "MinimumLogLevel": "Information",
     "EnableFileLogging": true
   },
-  "Cora": {
+  "CoraOptions": {
     "Fallback": "CipherBank.",
     "Lines": {
       "home": "Rates move all day. Your privacy doesn't.",
@@ -58,7 +58,7 @@
       "pos": "Token ref only. The PAN never left the vault."
     }
   },
-  "Carousel": {
+  "CarouselLayoutConfig": {
     "Stride": 220,
     "MaxTilt": 45,
     "ScaleFalloff": 0.18,
