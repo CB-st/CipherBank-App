@@ -248,20 +248,64 @@ internal static class LocalDbSql
             return;
         }
 
+        List<string> selectCols = ["id"];
+        if (hasAccount)
+        {
+            selectCols.Add("account");
+        }
+
+        if (hasRouting)
+        {
+            selectCols.Add("routing");
+        }
+
+        if (hasAccountMask)
+        {
+            selectCols.Add("account_mask");
+        }
+
+        if (hasRoutingMask)
+        {
+            selectCols.Add("routing_mask");
+        }
+
         await using DbCommand select = connection.CreateCommand();
-        select.CommandText =
-            "SELECT id, account, routing, account_mask, routing_mask FROM recipients";
+        select.CommandText = "SELECT " + string.Join(", ", selectCols) + " FROM recipients";
         List<(string Id, string? Account, string? Routing, string? AccountMask, string? RoutingMask)> rows = [];
         await using (DbDataReader reader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false))
         {
             while (await reader.ReadAsync(ct).ConfigureAwait(false))
             {
-                rows.Add((
-                    reader.GetString(0),
-                    reader.IsDBNull(1) ? null : reader.GetString(1),
-                    reader.IsDBNull(2) ? null : reader.GetString(2),
-                    reader.IsDBNull(3) ? null : reader.GetString(3),
-                    reader.IsDBNull(4) ? null : reader.GetString(4)));
+                int ordinal = 0;
+                string id = reader.GetString(ordinal++);
+                string? account = null;
+                string? routing = null;
+                string? accountMask = null;
+                string? routingMask = null;
+                if (hasAccount)
+                {
+                    account = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+                    ordinal++;
+                }
+
+                if (hasRouting)
+                {
+                    routing = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+                    ordinal++;
+                }
+
+                if (hasAccountMask)
+                {
+                    accountMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+                    ordinal++;
+                }
+
+                if (hasRoutingMask)
+                {
+                    routingMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+                }
+
+                rows.Add((id, account, routing, accountMask, routingMask));
             }
         }
 
@@ -288,11 +332,27 @@ internal static class LocalDbSql
                 continue;
             }
 
+            List<string> setClauses = [];
             await using DbCommand update = connection.CreateCommand();
+            if (hasAccountMask && nextAccountMask != accountMask)
+            {
+                setClauses.Add("account_mask = $account_mask");
+                AddParameter(update, "$account_mask", (object?)nextAccountMask ?? DBNull.Value);
+            }
+
+            if (hasRoutingMask && nextRoutingMask != routingMask)
+            {
+                setClauses.Add("routing_mask = $routing_mask");
+                AddParameter(update, "$routing_mask", (object?)nextRoutingMask ?? DBNull.Value);
+            }
+
+            if (setClauses.Count == 0)
+            {
+                continue;
+            }
+
             update.CommandText =
-                "UPDATE recipients SET account_mask = $account_mask, routing_mask = $routing_mask WHERE id = $id";
-            AddParameter(update, "$account_mask", (object?)nextAccountMask ?? DBNull.Value);
-            AddParameter(update, "$routing_mask", (object?)nextRoutingMask ?? DBNull.Value);
+                "UPDATE recipients SET " + string.Join(", ", setClauses) + " WHERE id = $id";
             AddParameter(update, "$id", id);
             await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
         }
