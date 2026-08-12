@@ -43,7 +43,14 @@ for f in "${files[@]}"; do
   case "$f" in
     *.h|*.hpp|*.hxx) continue ;; # headers via TU includes; skip lone headers
   esac
-  if ! clang-tidy -quiet -config-file="$tidy_config" "$f" -- -std=c++17; then
+  std_flag="-std=c++17"
+  case "$f" in
+    *.c) std_flag="-std=c17" ;;
+  esac
+  # Capture diagnostics: clang-tidy can exit 0 even when WarningsAsErrors is unset.
+  tidy_out="$(clang-tidy -quiet -config-file="$tidy_config" "$f" -- "$std_flag" 2>&1)" || fail=1
+  if [[ -n "$tidy_out" ]]; then
+    printf '%s\n' "$tidy_out"
     fail=1
   fi
 done

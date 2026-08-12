@@ -15,6 +15,7 @@ Checks: >
   modernize-*,
   -modernize-use-trailing-return-type
 
-WarningsAsErrors: ''
+# Fail the lint gate on configured diagnostics (not advisory-only).
+WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
 FormatStyle: file
