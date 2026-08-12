@@ -56,14 +56,14 @@ internal static class LocalDbSql
     /// Creates EF model tables that <c>EnsureCreated</c> skipped because a legacy nonempty DB already existed.
     /// Use: Low (first open after upgrade). Scope: LocalDb initialization.
     /// </summary>
-    internal static Task EnsureMissingModelTablesAsync(CipherBankDbContext context, CancellationToken ct)
+    internal static Task EnsureMissingModelTablesAsync(DbContext context, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(context);
         return EnsureMissingModelTablesCoreAsync(context, ct);
     }
 
     private static async Task EnsureMissingModelTablesCoreAsync(
-        CipherBankDbContext context,
+        DbContext context,
         CancellationToken ct)
     {
         DbConnection connection = context.Database.GetDbConnection();
@@ -73,8 +73,8 @@ internal static class LocalDbSql
         }
 
         HashSet<string> existing = await ListUserTablesAsync(connection, ct).ConfigureAwait(false);
+
         // Script is generated from the compiled EF model (not user input).
-#pragma warning disable CA2100
         string script = context.Database.GenerateCreateScript();
         foreach (string statement in SplitSqliteScript(script))
         {
@@ -101,7 +101,6 @@ internal static class LocalDbSql
                 existing.Add(createdTable);
             }
         }
-#pragma warning restore CA2100
     }
 
     /// <summary>
@@ -144,7 +143,7 @@ internal static class LocalDbSql
     /// Skips CREATE TABLE / INDEX statements whose target already exists.
     /// Use: Low. Scope: LocalDbSql script helper.
     /// </summary>
-    private static bool ShouldExecuteCreateStatement(string statement, HashSet<string> existingTables)
+    private static bool ShouldExecuteCreateStatement(string statement, ICollection<string> existingTables)
     {
         string? table = TryExtractCreateTableName(statement);
         if (table is not null)
