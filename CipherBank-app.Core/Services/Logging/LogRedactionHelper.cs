@@ -14,6 +14,23 @@ public static class LogRedactionHelper
 {
     private const string RedactionMarker = "***";
     private const string Ellipsis = "...";
+    private const int DefaultShowChars = 4;
+    private const int BothEndsMultiplier = 2;
+    private const int UsernameMinLengthForPartial = 2;
+    private const int WalletIdShortMaxLength = 8;
+    private const int WalletIdShortPrefixLength = 2;
+    private const int WalletIdPrefixLength = 4;
+    private const int WalletIdSuffixLength = 4;
+    private const int AddressShortMaxLength = 10;
+    private const int AddressShortPrefixLength = 3;
+    private const int AddressPrefixLength = 6;
+    private const int AddressSuffixLength = 4;
+    private const int TokenPrefixLength = 8;
+    private const int EmailLocalPrefixLength = 2;
+    private const int TransactionIdShortMaxLength = 12;
+    private const int TransactionIdShortPrefixLength = 4;
+    private const int TransactionIdPrefixLength = 8;
+    private const int TransactionIdSuffixLength = 4;
 
     /// <summary>
     /// Redacts a username, showing only the first and last characters.
@@ -28,12 +45,12 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        if (username.Length <= 2)
+        if (username.Length <= UsernameMinLengthForPartial)
         {
             return RedactionMarker;
         }
 
-        return $"{username[0]}{new string('*', username.Length - 2)}{username[^1]}";
+        return $"{username[0]}{new string('*', username.Length - UsernameMinLengthForPartial)}{username[^1]}";
     }
 
     /// <summary>
@@ -49,12 +66,12 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        if (walletId.Length <= 8)
+        if (walletId.Length <= WalletIdShortMaxLength)
         {
-            return $"{walletId[..2]}{Ellipsis}";
+            return $"{walletId[..WalletIdShortPrefixLength]}{Ellipsis}";
         }
 
-        return $"{walletId[..4]}{Ellipsis}{walletId[^4..]}";
+        return $"{walletId[..WalletIdPrefixLength]}{Ellipsis}{walletId[^WalletIdSuffixLength..]}";
     }
 
     /// <summary>
@@ -70,12 +87,12 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        if (address.Length <= 10)
+        if (address.Length <= AddressShortMaxLength)
         {
-            return $"{address[..3]}{Ellipsis}";
+            return $"{address[..AddressShortPrefixLength]}{Ellipsis}";
         }
 
-        return $"{address[..6]}{Ellipsis}{address[^4..]}";
+        return $"{address[..AddressPrefixLength]}{Ellipsis}{address[^AddressSuffixLength..]}";
     }
 
     /// <summary>
@@ -91,12 +108,12 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        if (token.Length <= 8)
+        if (token.Length <= TokenPrefixLength)
         {
             return RedactionMarker;
         }
 
-        return $"{token[..8]}{Ellipsis}";
+        return $"{token[..TokenPrefixLength]}{Ellipsis}";
     }
 
     /// <summary>
@@ -112,21 +129,21 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        var atIndex = email.IndexOf('@', StringComparison.Ordinal);
+        int atIndex = email.IndexOf('@', StringComparison.Ordinal);
         if (atIndex <= 0)
         {
             return RedactionMarker;
         }
 
-        var localPart = email[..atIndex];
-        var domain = email[atIndex..];
+        string localPart = email[..atIndex];
+        string domain = email[atIndex..];
 
-        if (localPart.Length <= 2)
+        if (localPart.Length <= EmailLocalPrefixLength)
         {
             return $"{localPart[0]}{RedactionMarker}{domain}";
         }
 
-        return $"{localPart[..2]}{RedactionMarker}{domain}";
+        return $"{localPart[..EmailLocalPrefixLength]}{RedactionMarker}{domain}";
     }
 
     /// <summary>
@@ -142,28 +159,32 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        if (transactionId.Length <= 12)
+        if (transactionId.Length <= TransactionIdShortMaxLength)
         {
-            return $"{transactionId[..4]}{Ellipsis}";
+            return $"{transactionId[..TransactionIdShortPrefixLength]}{Ellipsis}";
         }
 
-        return $"{transactionId[..8]}{Ellipsis}{transactionId[^4..]}";
+        return $"{transactionId[..TransactionIdPrefixLength]}{Ellipsis}{transactionId[^TransactionIdSuffixLength..]}";
     }
 
-    /// <summary>
-    /// Redacts sensitive data from a generic string based on its apparent type.
-    /// </summary>
+    /// <summary>Redacts sensitive data from a generic string based on its apparent type.</summary>
     /// <param name="value">The value to redact</param>
-    /// <param name="showChars">Number of characters to show at start and end (default: 4)</param>
     /// <returns>Redacted value</returns>
-    public static string Redact(string? value, int showChars = 4)
+    public static string Redact(string? value)
+        => Redact(value, DefaultShowChars);
+
+    /// <summary>Redacts sensitive data from a generic string based on its apparent type.</summary>
+    /// <param name="value">The value to redact</param>
+    /// <param name="showChars">Number of characters to show at start and end</param>
+    /// <returns>Redacted value</returns>
+    public static string Redact(string? value, int showChars)
     {
         if (string.IsNullOrEmpty(value))
         {
             return "[empty]";
         }
 
-        if (value.Length <= showChars * 2)
+        if (value.Length <= showChars * BothEndsMultiplier)
         {
             return RedactionMarker;
         }

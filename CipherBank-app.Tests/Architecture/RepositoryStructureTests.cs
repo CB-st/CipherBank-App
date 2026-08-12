@@ -2,13 +2,13 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using FluentAssertions;
 using Xunit;
 
 namespace CipherBank_app.Tests.Architecture;
 
-public sealed partial class RepositoryStructureTests
+public sealed class RepositoryStructureTests
 {
     [Fact]
     public void RequiredPlatformFiles_Exist()
@@ -23,25 +23,23 @@ public sealed partial class RepositoryStructureTests
     public void PackageVersions_AreDeclaredOnlyInCentralPackageManagement()
     {
         string root = FindRepositoryRoot();
-        string[] offenders = Directory
-            .EnumerateFiles(root, "*.*", SearchOption.AllDirectories)
-            .Where(path => path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
-                || path.EndsWith(".props", StringComparison.OrdinalIgnoreCase)
-                || path.EndsWith(".targets", StringComparison.OrdinalIgnoreCase))
+        IEnumerable<string> projectFiles = Directory
+            .EnumerateFiles(root, "*.*proj", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(root, "Directory.Build.props", SearchOption.TopDirectoryOnly));
+
+        string[] offenders = projectFiles
             .Where(path => !IsGenerated(path))
-            .Where(path => !string.Equals(
-                Path.GetFileName(path),
-                "Directory.Packages.props",
-                StringComparison.OrdinalIgnoreCase))
-            .Where(path => PackageVersionAttribute().IsMatch(File.ReadAllText(path)))
-            .Select(path => Path.GetRelativePath(root, path))
+            .SelectMany(path => XDocument.Load(path)
+                .Descendants("PackageReference")
+                .Where(reference => reference.Attribute("Version") is not null)
+                .Select(_ => Path.GetRelativePath(root, path)))
             .ToArray();
 
         offenders.Should().BeEmpty("all NuGet versions belong in Directory.Packages.props");
     }
 
     [Fact]
-    public void Core_HasNoLegacyAssemblyInfoOrScatteredSql()
+    public void ProductionCode_HasNoLegacyAssemblyInfoOrScatteredSql()
     {
         string root = FindRepositoryRoot();
         Directory.EnumerateFiles(root, "AssemblyInfo.cs", SearchOption.AllDirectories)
@@ -51,7 +49,7 @@ public sealed partial class RepositoryStructureTests
 
         string core = Path.Combine(root, "CipherBank-app.Core");
         string sqlOwner = Path.Combine(core, "Persist", "Sql", "LocalDbSql.cs");
-        string[] sqlOffenders = Directory.EnumerateFiles(core, "*.cs", SearchOption.AllDirectories)
+        IEnumerable<string> sqlOffenders = Directory.EnumerateFiles(core, "*.cs", SearchOption.AllDirectories)
             .Where(path => !IsGenerated(path) && !string.Equals(path, sqlOwner, StringComparison.Ordinal))
             .Where(path =>
             {
@@ -59,9 +57,7 @@ public sealed partial class RepositoryStructureTests
                 return source.Contains("CommandText =", StringComparison.Ordinal)
                     || source.Contains("FromSqlRaw", StringComparison.Ordinal)
                     || source.Contains("ExecuteSqlRaw", StringComparison.Ordinal);
-            })
-            .Select(path => Path.GetRelativePath(root, path))
-            .ToArray();
+            });
 
         sqlOffenders.Should().BeEmpty("raw SQL is owned only by LocalDbSql compatibility repair");
     }
@@ -71,7 +67,7 @@ public sealed partial class RepositoryStructureTests
         DirectoryInfo? current = new(AppContext.BaseDirectory);
         while (current is not null)
         {
-            if (File.Exists(Path.Combine(current.FullName, "Directory.Packages.props")))
+            if (File.Exists(Path.Combine(current.FullName, "CipherBank-app.sln")))
             {
                 return current.FullName;
             }
@@ -79,11 +75,8 @@ public sealed partial class RepositoryStructureTests
             current = current.Parent;
         }
 
-        throw new DirectoryNotFoundException("Could not locate Directory.Packages.props from test output.");
+        throw new DirectoryNotFoundException("Could not locate CipherBank-app.sln from test output.");
     }
-
-    [GeneratedRegex(@"<PackageReference[^>]*\sVersion=", RegexOptions.Compiled)]
-    private static partial Regex PackageVersionAttribute();
 
     private static bool IsGenerated(string path)
         => path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)

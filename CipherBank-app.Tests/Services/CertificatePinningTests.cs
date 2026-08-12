@@ -20,7 +20,7 @@ public class CertificatePinningTests
     public void HttpClientHandler_CanBeCreated()
     {
         // Arrange & Act - Basic handler creation test
-        var handler = new HttpClientHandler();
+        HttpClientHandler handler = new HttpClientHandler();
 
         // Assert
         handler.Should().NotBeNull();
