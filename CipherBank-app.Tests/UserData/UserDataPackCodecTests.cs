@@ -74,6 +74,29 @@ public class UserDataPackCodecTests
     }
 
     [Fact]
+    public void OpenPack_SkipsAuthFailedBlock_KeepsGoodBlocks()
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        UserDataPackWire pack = UserDataPackCodec.SealPack(
+            Username,
+            contentVersion: 1,
+            keys.Kek,
+            [
+                new UserDataPlainBlock(UserDataBlockTypes.Prefs, UserDataBlockTypes.Prefs, """{"ok":true}"""),
+                new UserDataPlainBlock(UserDataBlockTypes.AppConfig, UserDataBlockTypes.AppConfig, """{"cfg":1}"""),
+            ]);
+
+        byte[] cipher = Convert.FromBase64String(pack.Blocks[1].CiphertextBase64);
+        cipher[0] ^= 0xFF;
+        pack.Blocks[1].CiphertextBase64 = Convert.ToBase64String(cipher);
+
+        Dictionary<string, string> opened = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
+        opened.Should().ContainKey(UserDataBlockTypes.Prefs);
+        opened[UserDataBlockTypes.Prefs].Should().Be("""{"ok":true}""");
+        opened.Should().NotContainKey(UserDataBlockTypes.AppConfig);
+    }
+
+    [Fact]
     public void OpenBlock_WrongContentVersion_Throws()
     {
         using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
