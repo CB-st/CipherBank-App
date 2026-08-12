@@ -117,8 +117,12 @@ dotnet_diagnostic.IDE0028.severity = none       # Collection expression burn-dow
 dotnet_diagnostic.SA1515.severity = suggestion
 
 # Persist catalog/DDL SQL is schema text, not UI copy (SONAR_GATE deferred S4055 family).
+# CA2100: EF GenerateCreateScript DDL execution is model-derived, not user input.
+# CA1859: prefer Sonar S3242 general ICollection parameter over concrete HashSet.
 [CipherBank-app.Core/Persist/Sql/**.cs]
 dotnet_diagnostic.S4055.severity = none
+dotnet_diagnostic.CA2100.severity = none
+dotnet_diagnostic.CA1859.severity = none
 
 # XML files
 [*.{xml,xaml,csproj,props,targets}]
