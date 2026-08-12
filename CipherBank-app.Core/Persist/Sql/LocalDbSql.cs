@@ -15,6 +15,25 @@ namespace CipherBank_app.Persist.Sql;
 /// </summary>
 internal static class LocalDbSql
 {
+    // Compile-time SQL shapes — column names are schema identifiers, never user input.
+    private const string SelectRecipientMasksAccountAndRouting =
+        "SELECT id, account, routing, account_mask, routing_mask FROM recipients";
+
+    private const string SelectRecipientMasksAccountOnly =
+        "SELECT id, account, account_mask, routing_mask FROM recipients";
+
+    private const string SelectRecipientMasksRoutingOnly =
+        "SELECT id, routing, account_mask, routing_mask FROM recipients";
+
+    private const string UpdateRecipientBothMasksSql =
+        "UPDATE recipients SET account_mask = $account_mask, routing_mask = $routing_mask WHERE id = $id";
+
+    private const string UpdateRecipientAccountMaskSql =
+        "UPDATE recipients SET account_mask = $account_mask WHERE id = $id";
+
+    private const string UpdateRecipientRoutingMaskSql =
+        "UPDATE recipients SET routing_mask = $routing_mask WHERE id = $id";
+
     private static readonly IReadOnlyList<ColumnUpgrade> RecipientColumns =
     [
         new("holder", CompatibilityStatement.AddRecipientHolder),
@@ -248,114 +267,124 @@ internal static class LocalDbSql
             return;
         }
 
-        List<string> selectCols = ["id"];
+        List<RecipientMaskRow> rows = await ReadRecipientMaskRowsAsync(
+            connection,
+            hasAccount,
+            hasRouting,
+            ct).ConfigureAwait(false);
+        foreach (RecipientMaskRow row in rows)
+        {
+            await WriteDerivedRecipientMasksAsync(
+                connection,
+                row,
+                hasAccountMask,
+                hasRoutingMask,
+                ct).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<List<RecipientMaskRow>> ReadRecipientMaskRowsAsync(
+        DbConnection connection,
+        bool hasAccount,
+        bool hasRouting,
+        CancellationToken ct)
+    {
+        await using DbCommand select = connection.CreateCommand();
+        select.CommandText = (hasAccount, hasRouting) switch
+        {
+            (true, true) => SelectRecipientMasksAccountAndRouting,
+            (true, false) => SelectRecipientMasksAccountOnly,
+            (false, true) => SelectRecipientMasksRoutingOnly,
+            _ => throw new InvalidOperationException("Recipient cleartext columns missing."),
+        };
+
+        List<RecipientMaskRow> rows = [];
+        await using DbDataReader reader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        while (await reader.ReadAsync(ct).ConfigureAwait(false))
+        {
+            rows.Add(ReadRecipientMaskRow(reader, hasAccount, hasRouting));
+        }
+
+        return rows;
+    }
+
+    private static RecipientMaskRow ReadRecipientMaskRow(
+        DbDataReader reader,
+        bool hasAccount,
+        bool hasRouting)
+    {
+        int ordinal = 0;
+        string id = reader.GetString(ordinal++);
+        string? account = null;
+        string? routing = null;
         if (hasAccount)
         {
-            selectCols.Add("account");
+            account = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+            ordinal++;
         }
 
         if (hasRouting)
         {
-            selectCols.Add("routing");
+            routing = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+            ordinal++;
         }
 
-        if (hasAccountMask)
+        string? accountMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+        ordinal++;
+        string? routingMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+        return new RecipientMaskRow(id, account, routing, accountMask, routingMask);
+    }
+
+    private static async Task WriteDerivedRecipientMasksAsync(
+        DbConnection connection,
+        RecipientMaskRow row,
+        bool hasAccountMask,
+        bool hasRoutingMask,
+        CancellationToken ct)
+    {
+        string? nextAccountMask = row.AccountMask;
+        string? nextRoutingMask = row.RoutingMask;
+        if (hasAccountMask
+            && string.IsNullOrWhiteSpace(row.AccountMask)
+            && !string.IsNullOrWhiteSpace(row.Account))
         {
-            selectCols.Add("account_mask");
+            nextAccountMask = AchRecipientValidation.MaskAccount(row.Account);
         }
 
-        if (hasRoutingMask)
+        if (hasRoutingMask
+            && string.IsNullOrWhiteSpace(row.RoutingMask)
+            && !string.IsNullOrWhiteSpace(row.Routing))
         {
-            selectCols.Add("routing_mask");
+            nextRoutingMask = AchRecipientValidation.MaskRouting(row.Routing);
         }
 
-        await using DbCommand select = connection.CreateCommand();
-        select.CommandText = "SELECT " + string.Join(", ", selectCols) + " FROM recipients";
-        List<(string Id, string? Account, string? Routing, string? AccountMask, string? RoutingMask)> rows = [];
-        await using (DbDataReader reader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false))
+        bool updateAccount = hasAccountMask && nextAccountMask != row.AccountMask;
+        bool updateRouting = hasRoutingMask && nextRoutingMask != row.RoutingMask;
+        if (!updateAccount && !updateRouting)
         {
-            while (await reader.ReadAsync(ct).ConfigureAwait(false))
-            {
-                int ordinal = 0;
-                string id = reader.GetString(ordinal++);
-                string? account = null;
-                string? routing = null;
-                string? accountMask = null;
-                string? routingMask = null;
-                if (hasAccount)
-                {
-                    account = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-                    ordinal++;
-                }
-
-                if (hasRouting)
-                {
-                    routing = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-                    ordinal++;
-                }
-
-                if (hasAccountMask)
-                {
-                    accountMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-                    ordinal++;
-                }
-
-                if (hasRoutingMask)
-                {
-                    routingMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-                }
-
-                rows.Add((id, account, routing, accountMask, routingMask));
-            }
+            return;
         }
 
-        foreach ((string id, string? account, string? routing, string? accountMask, string? routingMask) in rows)
+        await using DbCommand update = connection.CreateCommand();
+        if (updateAccount && updateRouting)
         {
-            string? nextAccountMask = accountMask;
-            string? nextRoutingMask = routingMask;
-            if (hasAccountMask
-                && string.IsNullOrWhiteSpace(accountMask)
-                && !string.IsNullOrWhiteSpace(account))
-            {
-                nextAccountMask = AchRecipientValidation.MaskAccount(account);
-            }
-
-            if (hasRoutingMask
-                && string.IsNullOrWhiteSpace(routingMask)
-                && !string.IsNullOrWhiteSpace(routing))
-            {
-                nextRoutingMask = AchRecipientValidation.MaskRouting(routing);
-            }
-
-            if (nextAccountMask == accountMask && nextRoutingMask == routingMask)
-            {
-                continue;
-            }
-
-            List<string> setClauses = [];
-            await using DbCommand update = connection.CreateCommand();
-            if (hasAccountMask && nextAccountMask != accountMask)
-            {
-                setClauses.Add("account_mask = $account_mask");
-                AddParameter(update, "$account_mask", (object?)nextAccountMask ?? DBNull.Value);
-            }
-
-            if (hasRoutingMask && nextRoutingMask != routingMask)
-            {
-                setClauses.Add("routing_mask = $routing_mask");
-                AddParameter(update, "$routing_mask", (object?)nextRoutingMask ?? DBNull.Value);
-            }
-
-            if (setClauses.Count == 0)
-            {
-                continue;
-            }
-
-            update.CommandText =
-                "UPDATE recipients SET " + string.Join(", ", setClauses) + " WHERE id = $id";
-            AddParameter(update, "$id", id);
-            await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+            update.CommandText = UpdateRecipientBothMasksSql;
+            AddParameter(update, "$account_mask", (object?)nextAccountMask ?? DBNull.Value);
+            AddParameter(update, "$routing_mask", (object?)nextRoutingMask ?? DBNull.Value);
         }
+        else if (updateAccount)
+        {
+            update.CommandText = UpdateRecipientAccountMaskSql;
+            AddParameter(update, "$account_mask", (object?)nextAccountMask ?? DBNull.Value);
+        }
+        else
+        {
+            update.CommandText = UpdateRecipientRoutingMaskSql;
+            AddParameter(update, "$routing_mask", (object?)nextRoutingMask ?? DBNull.Value);
+        }
+
+        AddParameter(update, "$id", row.Id);
+        await update.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
     }
 
     private static async Task<bool> TableExistsAsync(
@@ -453,6 +482,13 @@ internal static class LocalDbSql
         parameter.Value = value;
         command.Parameters.Add(parameter);
     }
+
+    private readonly record struct RecipientMaskRow(
+        string Id,
+        string? Account,
+        string? Routing,
+        string? AccountMask,
+        string? RoutingMask);
 
     private sealed record ColumnUpgrade(string ColumnName, CompatibilityStatement Statement);
 
