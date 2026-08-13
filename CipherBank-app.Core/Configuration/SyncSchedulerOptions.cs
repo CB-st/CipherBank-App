@@ -1,5 +1,5 @@
 // <copyright file="SyncSchedulerOptions.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 namespace CipherBank_app.Configuration;
@@ -15,5 +15,21 @@ public sealed class SyncSchedulerOptions
 
     public static string SectionName { get; } = "SyncScheduler";
 
-    public int MaxConcurrency { get; set; } = 2;
+    /// <summary>
+    /// Default dispatch width from the host CPU, capped for mobile.
+    /// Overlay <c>SyncScheduler:MaxConcurrency</c> to override.
+    /// </summary>
+    public int MaxConcurrency { get; set; } = DeriveDefaultMaxConcurrency();
+
+    /// <summary>Clamps <see cref="Environment.ProcessorCount"/> into [1, 2] for on-device sync.</summary>
+    public static int DeriveDefaultMaxConcurrency()
+    {
+        int processors = Environment.ProcessorCount;
+        if (processors < MinConcurrency)
+        {
+            return MinConcurrency;
+        }
+
+        return Math.Min(2, processors);
+    }
 }
