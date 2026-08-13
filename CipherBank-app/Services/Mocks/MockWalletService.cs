@@ -26,8 +26,11 @@ public sealed partial class MockWalletService : IWalletService
     private readonly ILogger<MockWalletService> _logger;
     private readonly List<Wallet> _wallets;
 
-    public MockWalletService(ILogger<MockWalletService> logger)
+    private readonly TimeProvider _timeProvider;
+
+    public MockWalletService(ILogger<MockWalletService> logger, TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _logger = logger;
 
         // Initialize with some mock wallets
@@ -39,7 +42,7 @@ public sealed partial class MockWalletService : IWalletService
                 "Bitcoin",
                 0.52483921m,
                 GenerateBitcoinAddress(),
-                DateTimeOffset.UtcNow.AddDays(-45)),
+                _timeProvider.GetUtcNow().AddDays(-45)),
 
             new Wallet(
                 GenerateWalletId(),
@@ -47,7 +50,7 @@ public sealed partial class MockWalletService : IWalletService
                 "Ethereum",
                 3.84729184m,
                 GenerateEthereumAddress(),
-                DateTimeOffset.UtcNow.AddDays(-30)),
+                _timeProvider.GetUtcNow().AddDays(-30)),
 
             new Wallet(
                 GenerateWalletId(),
@@ -55,7 +58,7 @@ public sealed partial class MockWalletService : IWalletService
                 "Solana",
                 125.50000000m,
                 GenerateSolanaAddress(),
-                DateTimeOffset.UtcNow.AddDays(-15)),
+                _timeProvider.GetUtcNow().AddDays(-15)),
 
             new Wallet(
                 GenerateWalletId(),
@@ -63,7 +66,7 @@ public sealed partial class MockWalletService : IWalletService
                 "Dogecoin",
                 10500.00000000m,
                 GenerateDogecoinAddress(),
-                DateTimeOffset.UtcNow.AddDays(-7)),
+                _timeProvider.GetUtcNow().AddDays(-7)),
         ];
 
         LogInitialized(_logger, _wallets.Count);
@@ -126,13 +129,13 @@ public sealed partial class MockWalletService : IWalletService
         var cryptoName = GetCryptoName(normalizedSymbol);
         var address = GenerateAddress(normalizedSymbol);
 
-        var wallet = new Wallet(
+        Wallet wallet = new Wallet(
             GenerateWalletId(),
             normalizedSymbol,
             cryptoName,
             0m,
             address,
-            DateTimeOffset.UtcNow);
+            _timeProvider.GetUtcNow());
 
         _wallets.Add(wallet);
 

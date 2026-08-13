@@ -1,6 +1,6 @@
 # CipherBank repository contract
 
-This file governs the M1a → M2 stack. More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
+This file governs the M1a → M3 stack. More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
 
 Start with this file, then read the nearest subtree contract and the
 documentation index in `docs/README.md`.
@@ -53,7 +53,7 @@ The UI contract is in `docs/style/README.md` and `CipherBank-app/Resources/Style
 - `Typography.xaml` owns the type scale and approved font roles.
 - `Styles.xaml` owns control defaults and component styles.
 - Views consume tokens and named styles. Do not add literal hex colors or ad hoc font families to pages.
-- Inter is the interface-copy family; Space Grotesk is reserved for display, section, and financial-value hierarchy.
+- Manrope is the interface-copy family, Space Grotesk owns display and financial hierarchy, and Space Mono is reserved for PIN/code/status roles.
 - Interactive targets remain at least 44×44 device-independent units. Meaning is never conveyed by color alone.
 
 Copy from `templates/ui/` for new pages and from `templates/service/` or `templates/config/` for new capabilities. Update the template in the same change when a repository convention changes.

@@ -3,7 +3,6 @@
     x:Class="CipherBank_app.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:views="clr-namespace:CipherBank_app.Views"
     Title="CipherBank"
     FlyoutBehavior="{OnIdiom Desktop=Locked, Default=Disabled}"
     Shell.NavBarIsVisible="True">
@@ -19,47 +18,46 @@
         </Grid>
     </Shell.FlyoutHeader>
 
-    <!-- Login Page (standalone: no nav bar, no tab bar, no sidebar) -->
-    <ShellContent
-        Title="Login"
-        ContentTemplate="{DataTemplate views:LoginPage}"
-        Route="LoginPage"
-        FlyoutItemIsVisible="False"
-        Shell.NavBarIsVisible="False"
-        Shell.TabBarIsVisible="False"
-        Shell.FlyoutBehavior="Disabled" />
+    <!-- Cold-start splash (Expo SplashScreen parity). ContentTemplate bound via DI in code-behind. -->
+    <ShellContent x:Name="SplashContent" Title="Splash" Route="SplashPage"
+                  FlyoutItemIsVisible="False" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" Shell.FlyoutBehavior="Disabled" />
 
-    <!-- Main destinations: the Tabs render as the bottom tab bar on phone and as
-         sidebar entries on desktop, where the locked flyout replaces the tab bar
-         because Shell's TabBar does not render reliably on Mac Catalyst
-         (dotnet/maui#32329). -->
+    <!-- Onboarding / lock (hidden from flyout) -->
+    <ShellContent x:Name="WelcomeContent" Title="Welcome" Route="WelcomePage"
+                  FlyoutItemIsVisible="False" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" Shell.FlyoutBehavior="Disabled" />
+    <ShellContent x:Name="KeysContent" Title="Keys" Route="KeysPage"
+                  FlyoutItemIsVisible="False" Shell.TabBarIsVisible="False" Shell.FlyoutBehavior="Disabled" />
+    <ShellContent x:Name="BackupContent" Title="Backup" Route="BackupQuizPage"
+                  FlyoutItemIsVisible="False" Shell.TabBarIsVisible="False" Shell.FlyoutBehavior="Disabled" />
+    <ShellContent x:Name="SetPinContent" Title="Set PIN" Route="SetPinPage"
+                  FlyoutItemIsVisible="False" Shell.TabBarIsVisible="False" Shell.FlyoutBehavior="Disabled" />
+    <ShellContent x:Name="UnlockContent" Title="Unlock" Route="UnlockPage"
+                  FlyoutItemIsVisible="False" Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" Shell.FlyoutBehavior="Disabled" />
+
     <FlyoutItem Route="MainTabs" FlyoutDisplayOptions="AsMultipleItems">
-        <Tab Title="Dashboard" Icon="tab_dashboard.png">
-            <ShellContent
-                ContentTemplate="{DataTemplate views:DashboardPage}"
-                Route="DashboardPage"
-                Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
+        <Tab Title="Home" Icon="tab_dashboard.png">
+            <ShellContent x:Name="HomeContent" Route="HomePage"
+                          Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
         </Tab>
-
-        <Tab Title="Wallets" Icon="tab_wallets.png">
-            <ShellContent
-                ContentTemplate="{DataTemplate views:WalletPage}"
-                Route="WalletPage"
-                Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
+        <Tab Title="Convert" Icon="tab_buy.png">
+            <ShellContent x:Name="ConvertContent" Route="ConvertPage"
+                          Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
         </Tab>
-
-        <Tab Title="Buy" Icon="tab_buy.png">
-            <ShellContent
-                ContentTemplate="{DataTemplate views:PurchasePage}"
-                Route="PurchasePage"
-                Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
+        <Tab Title="Pay" Icon="tab_wallets.png">
+            <ShellContent x:Name="PayContent" Route="PayPage"
+                          Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
         </Tab>
-
-        <Tab Title="Settings" Icon="tab_settings.png">
-            <ShellContent
-                ContentTemplate="{DataTemplate views:SettingsPage}"
-                Route="SettingsPage"
-                Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
+        <Tab Title="Send" Icon="tab_wallets.png">
+            <ShellContent x:Name="SendContent" Route="SendPage"
+                          Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
+        </Tab>
+        <Tab Title="Receive" Icon="tab_wallets.png">
+            <ShellContent x:Name="ReceiveContent" Route="ReceivePage"
+                          Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
+        </Tab>
+        <Tab Title="Profile" Icon="tab_settings.png">
+            <ShellContent x:Name="ProfileContent" Route="ProfilePage"
+                          Shell.TabBarIsVisible="{OnIdiom Desktop=False, Default=True}" />
         </Tab>
     </FlyoutItem>
 

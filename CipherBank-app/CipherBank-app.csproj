@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+        <!-- Linux hosts only need Android; iOS/MacCatalyst require macOS workloads. -->
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('linux'))">net10.0-android</TargetFrameworks>
+        <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
         <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
         <!-- <TargetFrameworks>$(TargetFrameworks);net10.0-tizen</TargetFrameworks> -->
@@ -37,6 +39,12 @@
         <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
         <WindowsPackageType>None</WindowsPackageType>
 
+        <!-- Re-enable WAE; narrow NoWarn to documented Shell StyleCop/IDE debt (security CAs stay errors). -->
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608</WarningsNotAsErrors>
+        <!-- IDE*: multi-TFM / generated noise. SA*: Shell StyleCop docs/ordering debt (not security). -->
+        <NoWarn>$(NoWarn);IDE0005;IDE0052;SA1201;SA1202;SA1204;SA1210;SA1516;SA1600;SA1601;SA1602;SA1623;SA1649</NoWarn>
+
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -68,6 +76,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
+        <ProjectReference Include="..\CipherBank-app.ChallengePass\CipherBank-app.ChallengePass.csproj" />
     </ItemGroup>
 
     <!-- Compile only the source files that belong to the active platform. -->
@@ -89,6 +98,7 @@
 
     <ItemGroup>
         <PackageReference Include="CommunityToolkit.Mvvm" />
+        <PackageReference Include="Xamarin.AndroidX.Biometric" />
         <PackageReference Include="Microsoft.Extensions.Http" />
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
         <PackageReference Include="Microsoft.Extensions.Logging" />

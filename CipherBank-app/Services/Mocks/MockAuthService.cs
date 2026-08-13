@@ -31,8 +31,11 @@ public sealed partial class MockAuthService : IAuthService
 
     private AuthToken? _currentToken;
 
-    public MockAuthService(ILogger<MockAuthService> logger)
+    private readonly TimeProvider _timeProvider;
+
+    public MockAuthService(ILogger<MockAuthService> logger, TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _logger = logger;
         LogMockAuthServiceInitialized(_logger);
     }
@@ -66,7 +69,7 @@ public sealed partial class MockAuthService : IAuthService
         _currentToken = new AuthToken(
             GenerateJwtToken(user),
             GenerateRefreshToken(),
-            DateTimeOffset.UtcNow.AddHours(1));
+            _timeProvider.GetUtcNow().AddHours(1));
 
         LogLoginSucceeded(_logger, user, _currentToken.ExpiresUtc);
 
@@ -91,7 +94,7 @@ public sealed partial class MockAuthService : IAuthService
         _currentToken = new AuthToken(
             GenerateJwtToken("refreshed_user"),
             GenerateRefreshToken(),
-            DateTimeOffset.UtcNow.AddHours(1));
+            _timeProvider.GetUtcNow().AddHours(1));
 
         LogTokenRefreshedSuccessfully(_logger, _currentToken.ExpiresUtc);
 
@@ -112,7 +115,7 @@ public sealed partial class MockAuthService : IAuthService
             return Task.FromResult(true);
         }
 
-        var isExpired = _currentToken.ExpiresUtc <= DateTimeOffset.UtcNow.AddMinutes(5);
+        var isExpired = _currentToken.ExpiresUtc <= _timeProvider.GetUtcNow().AddMinutes(5);
         LogTokenExpirationCheck(_logger, isExpired, _currentToken.ExpiresUtc);
         return Task.FromResult(isExpired);
     }
@@ -138,13 +141,17 @@ public sealed partial class MockAuthService : IAuthService
         return true;
     }
 
-    private static string GenerateJwtToken(string username)
+    /// <summary>
+    /// Builds a mock JWT-shaped string stamped with this service's clock.
+    /// Use: Medium (mock login/refresh). Scope: MockAuthService instance clock.
+    /// </summary>
+    private string GenerateJwtToken(string username)
     {
         // Generate a mock JWT-like token (not a real JWT, just for testing)
         string header = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
             "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"));
         string payload = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
-            $"{{\"sub\":\"{username}\",\"iat\":{DateTimeOffset.UtcNow.ToUnixTimeSeconds()},\"exp\":{DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds()}}}"));
+            $"{{\"sub\":\"{username}\",\"iat\":{_timeProvider.GetUtcNow().ToUnixTimeSeconds()},\"exp\":{_timeProvider.GetUtcNow().AddHours(1).ToUnixTimeSeconds()}}}"));
         string signature = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
 
         return $"{header}.{payload}.{signature}";

@@ -5,9 +5,11 @@
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using CipherBank_app.Configuration;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Handlers;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Options;
 using Polly;
 
 namespace CipherBank_app.Extensions;
@@ -42,10 +44,35 @@ public static class HttpClientExtensions
         })
         .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler())
         .AddHttpMessageHandler(sp => new RateLimitingHandler(sp))
-        .AddHttpMessageHandler(sp => new AuthHeaderHandler(sp));
+        .AddHttpMessageHandler(sp => new AuthHeaderHandler(sp, sp.GetRequiredService<TimeProvider>()));
 
         builder.AddStandardResilienceHandler(ConfigureResilienceOptions);
 
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers an unauthenticated HttpClient for the public quote surface
+    /// (<c>/currencies</c>, <c>/quote</c>, <c>/iquote</c>, <c>/test</c>).
+    /// </summary>
+    public static IHttpClientBuilder AddPublicApiHttpClient<TClient>(
+        this IServiceCollection services,
+        Action<IServiceProvider, HttpClient>? configure = null)
+        where TClient : class
+    {
+        var builder = services.AddHttpClient<TClient>((sp, http) =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            var network = sp.GetRequiredService<IOptions<NetworkOptions>>().Value;
+            http.BaseAddress = new Uri(network.Resolve(settings.Environment).PublicApiBase);
+            http.Timeout = TimeSpan.FromSeconds(30);
+            http.DefaultRequestHeaders.Add("Accept", "application/json");
+            configure?.Invoke(sp, http);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler())
+        .AddHttpMessageHandler(sp => new RateLimitingHandler(sp));
+
+        builder.AddStandardResilienceHandler(ConfigureResilienceOptions);
         return builder;
     }
 

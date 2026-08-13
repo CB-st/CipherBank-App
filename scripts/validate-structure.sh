@@ -25,14 +25,24 @@ required=(
   CipherBank-app.Tests/AGENTS.md
   config/README.md
   config/sonar/AGENTS.md
+  config/appsettings.json
+  config/appsettings.Development.json
+  config/appsettings.Windows.json
   config/challenge-pass/README.md
   config/challenge-pass/challenge-pass.json
+  config/network/README.md
+  config/network/endpoints.json
   docs/style/README.md
+  docs/review/m3-alignment-resolution.md
   templates/AGENTS.md
   templates/README.md
+  templates/config/README.md
+  templates/config/TEMPLATE.md
   templates/repository/AGENTS.md.template
   templates/repository/README.md.template
   templates/repository/TEMPLATE.md
+  templates/service/README.md
+  templates/service/TEMPLATE.md
   templates/ui/Page.xaml.template
   templates/ui/TEMPLATE.md
   templates/ui/ViewModel.cs.template
@@ -68,8 +78,8 @@ while IFS= read -r source; do
   fi
 done < <(find CipherBank-app.Core -type f -name '*.cs' ! -path '*/obj/*' | sort)
 
-if grep -RInE '\b(IProductApi|MockProductApi|AppSessionDeps)\b' \
-  CipherBank-app.Core CipherBank-app.ChallengePass CipherBank-app CipherBank-app.Tests --include='*.cs' >/dev/null; then
+if grep -RInE '\b(IProductApi|MockProductApi|MockPublicQuoteService|AppSessionDeps)\b' \
+  CipherBank-app.Core CipherBank-app.ChallengePass CipherBank-app --include='*.cs' >/dev/null; then
   fail "retired API-object, mock, or dependency-bag terminology remains"
 fi
 
@@ -82,7 +92,12 @@ if grep -RIn 'FontFamily=' CipherBank-app/Views --include='*.xaml' >/dev/null; t
   fail "page-local font family found; use a semantic style from Typography.xaml"
 fi
 
-for style_key in DisplayTitle PageHeader TitleMedium SectionHeader MoneyLarge MoneyMedium Body BodyStrong Caption Eyebrow; do
+if grep -RInE '(Color\.FromArgb\("#|FontFamily[[:space:]]*=)' \
+  CipherBank-app/Controls --include='*.cs' >/dev/null; then
+  fail "code-created control token literal found; use Colors.xaml or Typography.xaml resources"
+fi
+
+for style_key in DisplayTitle PageHeader TitleMedium SectionHeader MoneyLarge MoneyMedium Body BodyStrong Caption Eyebrow PinEntry MonoCaption; do
   if ! grep -qF "x:Key=\"${style_key}\"" CipherBank-app/Resources/Styles/Typography.xaml; then
     fail "missing typography style ${style_key}"
   fi

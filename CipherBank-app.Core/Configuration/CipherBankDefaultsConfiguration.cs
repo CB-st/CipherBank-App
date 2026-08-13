@@ -10,7 +10,12 @@ namespace CipherBank_app.Configuration;
 /// <summary>Loads repository-owned default configuration embedded in Core.</summary>
 public static class CipherBankDefaultsConfiguration
 {
-    private const string BaseResourceName = "CipherBank_app.Config.appsettings.json";
+    private static readonly string[] RequiredResourceNames =
+    [
+        "CipherBank_app.Config.appsettings.json",
+        "CipherBank_app.Config.network.endpoints.json",
+    ];
+
     private const string WindowsResourceName = "CipherBank_app.Config.appsettings.Windows.json";
 
     /// <summary>
@@ -35,7 +40,10 @@ public static class CipherBankDefaultsConfiguration
     {
         ConfigurationBuilder builder = new ConfigurationBuilder();
         Assembly assembly = typeof(CipherBankDefaultsConfiguration).Assembly;
-        builder.AddJsonStream(OpenRequiredResource(assembly, BaseResourceName));
+        foreach (string resourceName in RequiredResourceNames)
+        {
+            builder.AddJsonStream(OpenRequiredResource(assembly, resourceName));
+        }
 
         if (!string.IsNullOrWhiteSpace(environment))
         {

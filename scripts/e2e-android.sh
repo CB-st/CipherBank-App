@@ -55,6 +55,7 @@ Usage:
 Harness credentials (required once Story-trait Facts land on M7):
   E2E_TEST_PIN / E2E_TEST_PIN_ALT / E2E_RECOVERY_PASSWORD
   Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
+  Optional ANDROID_CERT_PINS=<current>,<backup> stamps a pin-set into the Appium Debug APK.
 
 Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave/--all
 exit with a clear deferral (those Facts ship on M7 / prototype/maui-m7).
@@ -197,9 +198,26 @@ wait_for_boot_completed() {
 # Builds the MAUI Android app with assemblies embedded so the APK is self-contained.
 # Use: Medium (once per harness run). Scope: CipherBank-app project build output.
 build_apk() {
+  local pin_xml="$ROOT/CipherBank-app/Platforms/Android/Resources/xml/network_security_config.xml"
+  local pin_backup=""
+  local build_rc=0
+  if [[ -n "${ANDROID_CERT_PINS:-}" ]]; then
+    pin_backup="$(mktemp)"
+    cp "$pin_xml" "$pin_backup"
+    log "Stamping Android cert pins from ANDROID_CERT_PINS (restore skirt after build)"
+    "$ROOT/scripts/stamp-android-cert-pins.sh" "$pin_xml" \
+      || { mv "$pin_backup" "$pin_xml"; die "failed to stamp ANDROID_CERT_PINS"; }
+  else
+    log "Android cert pins: skirt (system CAs). Set ANDROID_CERT_PINS=current,backup to test a pin-set."
+  fi
   log "Building $APP_PROJECT ($TARGET_FRAMEWORK)"
   dotnet build "$APP_PROJECT" \
-    -f "$TARGET_FRAMEWORK" -c Debug -p:EmbedAssembliesIntoApk=true
+    -f "$TARGET_FRAMEWORK" -c Debug -p:EmbedAssembliesIntoApk=true \
+    || build_rc=$?
+  if [[ -n "$pin_backup" ]]; then
+    mv "$pin_backup" "$pin_xml"
+  fi
+  [[ "$build_rc" -eq 0 ]] || die "dotnet build failed for $APP_PROJECT"
 }
 
 # Finds the freshly built debug APK under the app's Android bin output and prints an absolute path —

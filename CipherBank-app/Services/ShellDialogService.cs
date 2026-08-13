@@ -14,4 +14,20 @@ public sealed class ShellDialogService : IDialogService
 
     public Task<bool> ShowConfirmAsync(string title, string message, string accept = "OK", string cancel = "Cancel") =>
         Shell.Current.DisplayAlertAsync(title, message, accept, cancel);
+
+    public Task<string?> PromptAsync(string title, string message, string accept = "OK", string cancel = "Cancel") =>
+        Shell.Current.DisplayPromptAsync(title, message, accept, cancel);
+
+    /// <inheritdoc />
+    public Task<string?> PromptPasswordAsync(string title, string message, string accept = "OK", string cancel = "Cancel") =>
+        Shell.Current.DisplayPromptAsync(
+            title,
+            message,
+            accept,
+            cancel,
+            placeholder: null,
+            maxLength: -1,
+            keyboard: Keyboard.Numeric,
+            initialValue: string.Empty,
+            isPassword: true);
 }

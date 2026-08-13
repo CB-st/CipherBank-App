@@ -15,12 +15,13 @@ namespace CipherBank_app.Services;
 /// <summary>
 /// Production implementation of IAuthService using HTTP client.
 /// </summary>
-public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient http)
+public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient http, TimeProvider timeProvider)
     : IAuthService
 {
     private const string AccessTokenKey = "auth_access_token";
     private const string RefreshTokenKey = "auth_refresh_token";
     private const string ExpiresUtcKey = "auth_expires_utc";
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<AuthToken> LoginAsync(string user, string password, CancellationToken cancellationToken = default)
     {
@@ -97,7 +98,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
             return true;
         }
 
-        return token.ExpiresUtc <= DateTimeOffset.UtcNow.AddMinutes(5); // 5 minute buffer
+        return token.ExpiresUtc <= _timeProvider.GetUtcNow().AddMinutes(5); // 5 minute buffer
     }
 
     public async Task LogoutAsync()
