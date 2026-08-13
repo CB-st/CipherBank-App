@@ -1,5 +1,5 @@
 // <copyright file="LocalDbSql.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using System.Data;
@@ -24,6 +24,9 @@ internal static class LocalDbSql
 
     private const string SelectRecipientMasksRoutingOnly =
         "SELECT id, routing, account_mask, routing_mask FROM recipients";
+
+    private const string SelectRecipientMasksAccountFullOnly =
+        "SELECT id, account_full, account_mask, routing_mask FROM recipients";
 
     private const string UpdateRecipientBothMasksSql =
         "UPDATE recipients SET account_mask = $account_mask, routing_mask = $routing_mask WHERE id = $id";
@@ -260,9 +263,10 @@ internal static class LocalDbSql
     {
         bool hasAccount = await RecipientColumnExistsAsync(connection, "account", ct).ConfigureAwait(false);
         bool hasRouting = await RecipientColumnExistsAsync(connection, "routing", ct).ConfigureAwait(false);
+        bool hasAccountFull = await RecipientColumnExistsAsync(connection, "account_full", ct).ConfigureAwait(false);
         bool hasAccountMask = await RecipientColumnExistsAsync(connection, "account_mask", ct).ConfigureAwait(false);
         bool hasRoutingMask = await RecipientColumnExistsAsync(connection, "routing_mask", ct).ConfigureAwait(false);
-        if ((!hasAccount && !hasRouting) || (!hasAccountMask && !hasRoutingMask))
+        if ((!hasAccount && !hasRouting && !hasAccountFull) || (!hasAccountMask && !hasRoutingMask))
         {
             return;
         }
@@ -271,6 +275,7 @@ internal static class LocalDbSql
             connection,
             hasAccount,
             hasRouting,
+            hasAccountFull,
             ct).ConfigureAwait(false);
         foreach (RecipientMaskRow row in rows)
         {
@@ -287,14 +292,16 @@ internal static class LocalDbSql
         DbConnection connection,
         bool hasAccount,
         bool hasRouting,
+        bool hasAccountFull,
         CancellationToken ct)
     {
         await using DbCommand select = connection.CreateCommand();
-        select.CommandText = (hasAccount, hasRouting) switch
+        select.CommandText = (hasAccount, hasRouting, hasAccountFull) switch
         {
-            (true, true) => SelectRecipientMasksAccountAndRouting,
-            (true, false) => SelectRecipientMasksAccountOnly,
-            (false, true) => SelectRecipientMasksRoutingOnly,
+            (true, true, _) => SelectRecipientMasksAccountAndRouting,
+            (true, false, _) => SelectRecipientMasksAccountOnly,
+            (false, true, _) => SelectRecipientMasksRoutingOnly,
+            (false, false, true) => SelectRecipientMasksAccountFullOnly,
             _ => throw new InvalidOperationException("Recipient cleartext columns missing."),
         };
 
@@ -302,7 +309,7 @@ internal static class LocalDbSql
         await using DbDataReader reader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false);
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
         {
-            rows.Add(ReadRecipientMaskRow(reader, hasAccount, hasRouting));
+            rows.Add(ReadRecipientMaskRow(reader, hasAccount, hasRouting, hasAccountFull));
         }
 
         return rows;
@@ -311,12 +318,14 @@ internal static class LocalDbSql
     private static RecipientMaskRow ReadRecipientMaskRow(
         IDataRecord reader,
         bool hasAccount,
-        bool hasRouting)
+        bool hasRouting,
+        bool hasAccountFull)
     {
         int ordinal = 0;
         string id = reader.GetString(ordinal++);
         string? account = null;
         string? routing = null;
+        string? accountFull = null;
         if (hasAccount)
         {
             account = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
@@ -329,10 +338,16 @@ internal static class LocalDbSql
             ordinal++;
         }
 
+        if (hasAccountFull && !hasAccount && !hasRouting)
+        {
+            accountFull = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+            ordinal++;
+        }
+
         string? accountMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
         ordinal++;
         string? routingMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-        return new RecipientMaskRow(id, account, routing, accountMask, routingMask);
+        return new RecipientMaskRow(id, account, routing, accountFull, accountMask, routingMask);
     }
 
     private static Task WriteDerivedRecipientMasksAsync(
@@ -368,11 +383,12 @@ internal static class LocalDbSql
     {
         string? nextAccountMask = row.AccountMask;
         string? nextRoutingMask = row.RoutingMask;
+        string? accountSource = !string.IsNullOrWhiteSpace(row.Account) ? row.Account : row.AccountFull;
         if (hasAccountMask
             && string.IsNullOrWhiteSpace(row.AccountMask)
-            && !string.IsNullOrWhiteSpace(row.Account))
+            && !string.IsNullOrWhiteSpace(accountSource))
         {
-            nextAccountMask = AchRecipientValidation.MaskAccount(row.Account);
+            nextAccountMask = AchRecipientValidation.MaskAccount(accountSource);
         }
 
         if (hasRoutingMask
@@ -516,6 +532,7 @@ internal static class LocalDbSql
         string Id,
         string? Account,
         string? Routing,
+        string? AccountFull,
         string? AccountMask,
         string? RoutingMask);
 
