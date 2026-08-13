@@ -1,5 +1,5 @@
 // <copyright file="CryptographyOptions.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 namespace CipherBank_app.Configuration;
@@ -72,19 +72,5 @@ public sealed class CryptographyOptions
         }
 
         return Pbkdf2Iterations >= MinPbkdf2Iterations;
-    }
-
-    /// <summary>
-    /// True when values match the single persisted custody blob profile.
-    /// Overrides that pass <see cref="IsValid"/> still orphan existing vaults.
-    /// </summary>
-    public bool MatchesPersistedProfile()
-    {
-        CryptographyOptions persisted = Default;
-        return NonceSizeBytes == persisted.NonceSizeBytes
-            && TagSizeBytes == persisted.TagSizeBytes
-            && KeySizeBytes == persisted.KeySizeBytes
-            && SaltSizeBytes == persisted.SaltSizeBytes
-            && Pbkdf2Iterations == persisted.Pbkdf2Iterations;
     }
 }

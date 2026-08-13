@@ -3,7 +3,7 @@
   "settings": {
     "documentationRules": {
       "companyName": "CipherBank",
-      "copyrightText": "Copyright (c) {companyName}. Licensed under the BSD 3-Clause License.",
+      "copyrightText": "Copyright (c) {companyName}. All rights reserved.",
       "xmlHeader": true,
       "documentExposedElements": true,
       "documentInternalElements": false,

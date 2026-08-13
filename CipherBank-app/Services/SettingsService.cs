@@ -1,5 +1,5 @@
 // <copyright file="SettingsService.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Globalization;
@@ -33,7 +33,7 @@ public sealed partial class SettingsService : ISettingsService
     private const bool DefaultBiometricAuthEnabled = false;
     private const int DefaultAutoLockTimeout = 5;
     private const string DefaultDefaultCurrency = "USD";
-    private const SessionProofMode DefaultSessionProofMode = SessionProofMode.ChallengePassA1;
+    private const SessionProofMode DefaultSessionProofMode = SessionProofMode.Lab;
     private const bool DefaultDeveloperModeEnabled = false;
     private const bool DefaultUseMockServices = true;
 

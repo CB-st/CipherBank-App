@@ -1,5 +1,5 @@
 // <copyright file="UserDataPackCodec.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Security.Cryptography;
@@ -149,10 +149,6 @@ public static class UserDataPackCodec
             catch (CryptographicException)
             {
                 // Keep successfully authenticated blocks; a torn/auth-failed block must not abort restore.
-            }
-            catch (FormatException)
-            {
-                // Malformed Base64 nonce/tag/ciphertext must not abort partial restore.
             }
         }
 

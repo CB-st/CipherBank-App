@@ -29,7 +29,7 @@ EMULATOR_LOG="${EMULATOR_LOG:-/tmp/cb-e2e-emulator.log}"
 BOOT_WAIT_ATTEMPTS="${BOOT_WAIT_ATTEMPTS:-90}"
 
 # Planned wave → Story trait map for when CipherBank-app.E2ETests ships Facts (M7).
-# On this harness branch there are no Story traits; --story/--wave/--all defer (see e2e_story_facts_ready).
+# On this harness branch there are no Story traits; --story/--wave defer (see e2e_story_facts_ready).
 # Use: Medium (once per --wave invocation). Scope: arg -> filter resolution.
 declare -A WAVE_STORIES=(
   [account]="CB-ACCOUNT-001 CB-ACCOUNT-002 CB-ACCOUNT-PIN-CHANGE US-ONB-03 US-ONB-04"
@@ -57,13 +57,16 @@ CipherBank MAUI Android Appium E2E harness
 Usage:
   scripts/e2e-android.sh --story <CB-ID>   Run one story (e.g. CB-ACCOUNT-001)
   scripts/e2e-android.sh --wave <name>     Run one wave (account|market|wallets|fund|pay|cards)
-  scripts/e2e-android.sh --all             Fresh AccountStories, seal-and-lock handoff, then sealed CoraShellSmoke
+  scripts/e2e-android.sh --all             Fresh AccountStories then sealed CoraShellSmoke (two invocations)
   scripts/e2e-android.sh --help            Show this help
 
-Harness credentials:
+Harness credentials (required once Story-trait Facts land on M7):
   E2E_TEST_PIN / E2E_TEST_PIN_ALT / E2E_RECOVERY_PASSWORD
   Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
-  Optional ANDROID_CERT_PINS=<current>,<backup> stamps a pin-set into the Appium Debug APK.
+
+Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave
+exit with a clear deferral (those Facts ship on M7 / prototype/maui-m7).
+--all may run the scaffold suite without credentials.
 
 Requires: CB_AVD emulator image, ANDROID_HOME, DOTNET_ROOT (see scripts/lib/android-env.sh).
 EOF
@@ -121,8 +124,8 @@ parse_args() {
       ;;
   esac
 
-  if [[ "$MODE" == "story" || "$MODE" == "wave" || "$MODE" == "all" ]] && ! e2e_story_facts_ready; then
-    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M7 / prototype/maui-m7). This APK does not implement CriticalUserJourneyTests purchase controls."
+  if [[ "$MODE" == "story" || "$MODE" == "wave" ]] && ! e2e_story_facts_ready; then
+    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M7). Use --all for the scaffold suite, or check out prototype/maui-m7."
   fi
 }
 
@@ -204,26 +207,9 @@ wait_for_boot_completed() {
 # Builds the MAUI Android app with assemblies embedded so the APK is self-contained.
 # Use: Medium (once per harness run). Scope: CipherBank-app project build output.
 build_apk() {
-  local pin_xml="$ROOT/CipherBank-app/Platforms/Android/Resources/xml/network_security_config.xml"
-  local pin_backup=""
-  local build_rc=0
-  if [[ -n "${ANDROID_CERT_PINS:-}" ]]; then
-    pin_backup="$(mktemp)"
-    cp "$pin_xml" "$pin_backup"
-    log "Stamping Android cert pins from ANDROID_CERT_PINS (restore skirt after build)"
-    "$ROOT/scripts/stamp-android-cert-pins.sh" "$pin_xml" \
-      || { mv "$pin_backup" "$pin_xml"; die "failed to stamp ANDROID_CERT_PINS"; }
-  else
-    log "Android cert pins: skirt (system CAs). Set ANDROID_CERT_PINS=current,backup to test a pin-set."
-  fi
   log "Building $APP_PROJECT ($TARGET_FRAMEWORK)"
   dotnet build "$APP_PROJECT" \
-    -f "$TARGET_FRAMEWORK" -c Debug -p:EmbedAssembliesIntoApk=true \
-    || build_rc=$?
-  if [[ -n "$pin_backup" ]]; then
-    mv "$pin_backup" "$pin_xml"
-  fi
-  [[ "$build_rc" -eq 0 ]] || die "dotnet build failed for $APP_PROJECT"
+    -f "$TARGET_FRAMEWORK" -c Debug -p:EmbedAssembliesIntoApk=true
 }
 
 # Finds the freshly built debug APK under the app's Android bin output and prints an absolute path —
@@ -244,9 +230,6 @@ install_apk() {
   local apk="$1"
   log "Installing $apk"
   adb install -r "$apk"
-  log "Clearing ${CB_MAUI_PACKAGE} application data"
-  adb shell pm clear "$CB_MAUI_PACKAGE" >/dev/null \
-    || die "failed to pm clear $CB_MAUI_PACKAGE after install"
 }
 
 # Ensures the pinned UiAutomator2 driver is installed for APPIUM_VERSION.
@@ -330,7 +313,7 @@ ensure_appium_running() {
 
 # Loads gitignored lab credentials from artifacts/e2e-local.env into the
 # process environment when present, then requires PIN / alt / recovery password to be set.
-# Required once Story-trait Facts exist (M7). --all is fenced until then.
+# Skipped until Story-trait Facts exist (M7) so the scaffold suite is not blocked.
 # Use: High (every harness run before device tests that need credentials). Scope: scripts/e2e-android.sh.
 ensure_e2e_credentials() {
   if ! e2e_story_facts_ready; then
@@ -375,26 +358,15 @@ apply_e2e_env_file_if_unset() {
 }
 
 
-# After AccountStories (Fact order is not a contract), establishes a sealed locked wallet:
-# runs SealedWalletHandoffTests under E2E_DEVICE_PROFILE=sealed (Welcome → Fresh→seal→Lock,
-# Home → Profile→Lock, or already Unlock), then verifies UnlockPinEntry on a cold start.
+# Confirms AccountStories left a journal, force-stops the package, cold-starts it, and
+# verifies UnlockPinEntry is on screen (Welcome means the device is not sealed).
 # Use: High (--all handoff). Scope: scripts/e2e-android.sh.
 ensure_sealed_wallet_or_die() {
-  local apk="$1"
-  log "Establishing sealed locked wallet (explicit handoff; AccountStories order is not a contract)"
-  E2E_DEVICE_PROFILE=sealed run_e2e_tests "$apk" "FullyQualifiedName~SealedWalletHandoffTests"
-  verify_cold_start_unlock_or_die
-}
-
-# Force-stops the package, cold-starts it without pm clear, and requires UnlockPinEntry.
-# Welcome means the handoff did not leave a sealed wallet.
-# Use: High (--all handoff). Scope: scripts/e2e-android.sh.
-verify_cold_start_unlock_or_die() {
   local journal_dir="${E2E_JOURNAL_DIR:-artifacts/e2e-journal}"
   local package="${CB_MAUI_PACKAGE:-com.companyname.cipherbankapp}"
   local activity="${CB_MAUI_ACTIVITY:-crc6452ffdc5b3340e214.MainActivity}"
   if ! find "$journal_dir" -type f 2>/dev/null | grep -q .; then
-    die "--all smoke half needs a sealed wallet journal under $journal_dir"
+    die "--all smoke half needs a sealed wallet from AccountStories; no journal files under $journal_dir"
   fi
   if ! command -v adb >/dev/null 2>&1; then
     die "--all smoke half needs adb to verify sealed cold-start reaches Unlock"
@@ -415,7 +387,7 @@ verify_cold_start_unlock_or_die() {
       return 0
     fi
     if grep -qE 'WelcomeCreateButton|WelcomeRestoreButton|WelcomePrimaryButton' <<<"$dump"; then
-      die "--all smoke half cold-started to Welcome after seal-and-lock handoff; device is not sealed"
+      die "--all smoke half cold-started to Welcome (device not sealed); AccountStories did not leave a wallet"
     fi
     sleep 1
   done
@@ -465,9 +437,9 @@ main() {
     # incompatible boot screens — run them as separate processes so order cannot interleave.
     # Smoke half sets E2E_DEVICE_PROFILE=sealed so AppiumFixture uses noReset and keeps the
     # wallet produced by AccountStories (Appium default reset would wipe custody).
-    log "Running --all as Fresh AccountStories, explicit seal-and-lock handoff, then sealed CoraShellSmoke (noReset)"
+    log "Running --all as Fresh AccountStories, then sealed CoraShellSmoke (noReset)"
     run_e2e_tests "$apk" "FullyQualifiedName~AccountStories"
-    ensure_sealed_wallet_or_die "$apk"
+    ensure_sealed_wallet_or_die
     E2E_DEVICE_PROFILE=sealed run_e2e_tests "$apk" "FullyQualifiedName~CoraShellSmokeTests"
   else
     if [[ "$MODE" == "wave" && -n "${SEALED_SMOKE_WAVES[$MODE_VALUE]:-}" ]]; then

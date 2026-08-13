@@ -1,5 +1,5 @@
 // <copyright file="RepositoryStructureTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Xml.Linq;
@@ -160,20 +160,14 @@ public sealed class RepositoryStructureTests
     public void RuntimeConfigurationThemes_AreDocumentedAndRetiredCompositionNamesStayRemoved()
     {
         string root = FindRepositoryRoot();
-        string[] themeDirs = ["challenge-pass", "network"];
-        foreach (string theme in themeDirs)
+        string[] themes = ["security", "challenge-pass", "dispatch", "network", "persistence", "ui"];
+        foreach (string theme in themes)
         {
             string directory = Path.Combine(root, "config", theme);
             File.Exists(Path.Combine(directory, "README.md")).Should().BeTrue($"{theme} configuration needs ownership documentation");
             Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
                 .Should().NotBeEmpty($"{theme} configuration needs a defaults file");
         }
-
-        File.Exists(Path.Combine(root, "config", "appsettings.json"))
-            .Should().BeTrue("collapsed Cryptography/Persistence/SyncScheduler/Cora/Carousel defaults live in appsettings.json");
-        string readme = File.ReadAllText(Path.Combine(root, "config", "README.md"));
-        readme.Should().Contain("appsettings.json");
-        readme.Should().Contain("network/");
 
         string[] retiredNames = ["IProductApi", "MockProductApi", "MockPublicQuoteService", "AppSessionDeps"];
         string[] sourceRoots = ["CipherBank-app.Core", "CipherBank-app.ChallengePass", "CipherBank-app"];

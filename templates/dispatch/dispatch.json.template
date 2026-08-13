@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "feature": "__FEATURE__",
+  "summary": "__SUMMARY__",
+  "workflow": "__WORKFLOW__",
+  "primarySkill": "__SKILL__",
+  "owners": ["__OWNER__"],
+  "followUps": ["__FOLLOW_UP_SKILL__"],
+  "contracts": ["__CONTRACT_PATH__"],
+  "templates": ["__TEMPLATE_PATH__"],
+  "sharedResources": ["__SHARED_RESOURCE__"],
+  "gates": [
+    "__NARROW_GATE__",
+    "bash scripts/validate-structure.sh",
+    "__PLATFORM_GATE__"
+  ],
+  "notes": "Do not include secrets, credentials, customer data, or recovery material."
+}

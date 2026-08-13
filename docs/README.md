@@ -40,6 +40,9 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 | [MAUI_FUNCTION_REF.md](MAUI_FUNCTION_REF.md) | Monolithic INVOKE-style map of MAUI/Core/ChallengePass functions (API.md format) |
 | [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
 | [style/README.md](style/README.md) | Typography, semantic color, components, layout, and accessibility |
+| [agentic/README.md](agentic/README.md) | Agent workflow dispatch and modular feature construction |
+| [agentic/RESOURCE_OWNERSHIP.md](agentic/RESOURCE_OWNERSHIP.md) | Canonical placement and access map for shared resources |
+| [agentic/MODULE_COMPOSITION.md](agentic/MODULE_COMPOSITION.md) | Explicit DI module composition and boundary rules |
 | [core/README.md](core/README.md) | Core library overview |
 | [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |
 | [core/services.md](core/services.md) | Core service interfaces and utilities |
@@ -61,5 +64,6 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 | [review/m2-alignment-resolution.md](review/m2-alignment-resolution.md) | M2 PR #21 and M1a forward-port map |
 | [review/m3-alignment-resolution.md](review/m3-alignment-resolution.md) | M3 feature preservation and architecture alignment map |
 | [review/m4-alignment-resolution.md](review/m4-alignment-resolution.md) | M4 E2E forward-port and architecture alignment map |
+| [review/m4-agentic-foundation.md](review/m4-agentic-foundation.md) | Agent workflow routing, modular construction, templates, and validation map |
 
-Reusable scaffolds are indexed in [../templates/README.md](../templates/README.md).
+Reusable scaffolds are indexed in [../templates/README.md](../templates/README.md). Machine-readable agent routing is defined in [../config/agentic/dispatch.json](../config/agentic/dispatch.json).

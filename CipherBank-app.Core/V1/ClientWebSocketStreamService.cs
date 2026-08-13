@@ -1,5 +1,5 @@
 // <copyright file="ClientWebSocketStreamService.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Net.WebSockets;
@@ -44,15 +44,11 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
         {
             await DisconnectCoreAsync().ConfigureAwait(false);
 
-            // Capture socket + token before scheduling so a later Disconnect/Connect
-            // cannot make the old loop read replacement fields.
-            CancellationTokenSource cts = new CancellationTokenSource();
-            CancellationToken loopToken = cts.Token;
-            ClientWebSocket ws = new ClientWebSocket();
-            _cts = cts;
-            _ws = ws;
-            await ws.ConnectAsync(_uri, ct).ConfigureAwait(false);
-            _ = Task.Run(() => ReceiveLoopAsync(ws, loopToken), CancellationToken.None);
+            // Stream lifetime is independent of the connect token (timeouts must not kill the loop).
+            _cts = new CancellationTokenSource();
+            _ws = new ClientWebSocket();
+            await _ws.ConnectAsync(_uri, ct).ConfigureAwait(false);
+            _ = Task.Run(() => ReceiveLoopAsync(_cts.Token), CancellationToken.None);
         }
         finally
         {
@@ -164,13 +160,13 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     /// Accumulates WebSocket text fragments until EndOfMessage, then parses one JSON event.
     /// Use: High (while connected). Scope: ClientWebSocketStreamService receive loop.
     /// </summary>
-    private async Task ReceiveLoopAsync(ClientWebSocket ws, CancellationToken ct)
+    private async Task ReceiveLoopAsync(CancellationToken ct)
     {
         byte[] buffer = new byte[ReceiveBufferBytes];
         using MemoryStream message = new MemoryStream();
-        while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
+        while (_ws is { State: WebSocketState.Open } && !ct.IsCancellationRequested)
         {
-            WebSocketReceiveResult result = await ws.ReceiveAsync(buffer, ct).ConfigureAwait(false);
+            WebSocketReceiveResult result = await _ws.ReceiveAsync(buffer, ct).ConfigureAwait(false);
             if (result.MessageType == WebSocketMessageType.Close)
             {
                 return;

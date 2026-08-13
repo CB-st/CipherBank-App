@@ -1,0 +1,123 @@
+{
+  "_comment": "Repository-only routing for CipherBank agent skills. Contains no runtime or secret values.",
+  "schemaVersion": 1,
+  "defaultSkill": "cipherbank-dispatch",
+  "workflows": [
+    {
+      "id": "feature-slice",
+      "skill": "cipherbank-build-feature",
+      "signals": ["new feature", "vertical slice", "new module", "cross-layer capability"],
+      "templates": [
+        "templates/feature/FeatureModule.cs.template",
+        "templates/repository/AGENTS.md.template",
+        "templates/repository/README.md.template"
+      ],
+      "references": [
+        "AGENTS.md",
+        "docs/agentic/MODULE_COMPOSITION.md",
+        "docs/agentic/RESOURCE_OWNERSHIP.md"
+      ],
+      "followUps": ["cipherbank-build-ui", "cipherbank-build-data", "cipherbank-build-e2e", "cipherbank-validate-stack"],
+      "gates": [
+        "dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false",
+        "bash scripts/validate-structure.sh"
+      ]
+    },
+    {
+      "id": "core-service",
+      "skill": "cipherbank-build-feature",
+      "signals": ["service", "adapter", "client", "dependency injection", "object construction"],
+      "templates": [
+        "templates/service/ServiceInterface.cs.template",
+        "templates/service/Service.cs.template",
+        "templates/service/ServiceTests.cs.template"
+      ],
+      "references": [
+        "CipherBank-app.Core/AGENTS.md",
+        "docs/agentic/MODULE_COMPOSITION.md"
+      ],
+      "followUps": ["cipherbank-validate-stack"],
+      "gates": [
+        "dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false",
+        "bash scripts/validate-structure.sh"
+      ]
+    },
+    {
+      "id": "ui-flow",
+      "skill": "cipherbank-build-ui",
+      "signals": ["page", "view model", "typography", "style", "theme", "shared visual resource"],
+      "templates": [
+        "templates/ui/Page.xaml.template",
+        "templates/ui/ViewModel.cs.template",
+        "templates/resource/FeatureResources.xaml.template"
+      ],
+      "references": [
+        "CipherBank-app/AGENTS.md",
+        "CipherBank-app/Resources/Styles/AGENTS.md",
+        "docs/style/README.md",
+        "docs/agentic/RESOURCE_OWNERSHIP.md"
+      ],
+      "followUps": ["cipherbank-build-e2e", "cipherbank-validate-stack"],
+      "gates": [
+        "dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android",
+        "bash scripts/validate-structure.sh"
+      ]
+    },
+    {
+      "id": "persistence",
+      "skill": "cipherbank-build-data",
+      "signals": ["entity framework", "database", "repository", "migration", "SQL", "cache"],
+      "templates": [
+        "templates/repository/AGENTS.md.template",
+        "templates/repository/README.md.template"
+      ],
+      "references": [
+        "CipherBank-app.Core/Persist/AGENTS.md",
+        "docs/agentic/RESOURCE_OWNERSHIP.md"
+      ],
+      "followUps": ["cipherbank-validate-stack"],
+      "gates": [
+        "dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj --filter Persist /p:CollectCoverage=false",
+        "bash scripts/validate-structure.sh"
+      ]
+    },
+    {
+      "id": "device-journey",
+      "skill": "cipherbank-build-e2e",
+      "signals": ["Appium", "story", "page object", "device", "emulator", "user journey"],
+      "templates": [
+        "templates/e2e/PageObject.cs.template",
+        "templates/e2e/StoryTest.cs.template"
+      ],
+      "references": [
+        "CipherBank-app.E2ETests/AGENTS.md",
+        "docs/tests/STORY_ID_MAP.md"
+      ],
+      "followUps": ["cipherbank-validate-stack"],
+      "gates": [
+        "dotnet test CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj",
+        "bash scripts/validate-structure.sh"
+      ]
+    },
+    {
+      "id": "validation",
+      "skill": "cipherbank-validate-stack",
+      "signals": ["validate", "review", "quality gate", "Sonar", "architecture check", "release readiness"],
+      "templates": [
+        "templates/dispatch/DISPATCH.md.template",
+        "templates/dispatch/dispatch.json.template"
+      ],
+      "references": [
+        "AGENTS.md",
+        "docs/SONAR_GATE.md",
+        "docs/LOCAL_LINT.md"
+      ],
+      "followUps": [],
+      "gates": [
+        "bash scripts/validate-structure.sh",
+        "./scripts/lint.sh",
+        "dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false"
+      ]
+    }
+  ]
+}

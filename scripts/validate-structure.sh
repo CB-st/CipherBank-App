@@ -29,16 +29,33 @@ required=(
   config/appsettings.json
   config/appsettings.Development.json
   config/appsettings.Windows.json
+  config/agentic/README.md
+  config/agentic/dispatch.json
   config/challenge-pass/README.md
   config/challenge-pass/challenge-pass.json
   config/network/README.md
   config/network/endpoints.json
   docs/style/README.md
+  docs/agentic/README.md
+  docs/agentic/MODULE_COMPOSITION.md
+  docs/agentic/RESOURCE_OWNERSHIP.md
   docs/review/m3-alignment-resolution.md
   docs/review/m4-alignment-resolution.md
+  docs/review/m4-agentic-foundation.md
   docs/tests/STORY_ID_MAP.md
+  scripts/create-dispatch.py
   templates/AGENTS.md
   templates/README.md
+  templates/dispatch/DISPATCH.md.template
+  templates/dispatch/README.md
+  templates/dispatch/TEMPLATE.md
+  templates/dispatch/dispatch.json.template
+  templates/feature/FeatureModule.cs.template
+  templates/feature/README.md
+  templates/feature/TEMPLATE.md
+  templates/resource/FeatureResources.xaml.template
+  templates/resource/README.md
+  templates/resource/TEMPLATE.md
   templates/config/README.md
   templates/config/TEMPLATE.md
   templates/e2e/PageObject.cs.template
@@ -146,6 +163,34 @@ for path in pathlib.Path("config").rglob("*.json"):
     except Exception as exc:
         failures.append(f"invalid JSON {path}: {exc}")
 
+dispatch_path = pathlib.Path("config/agentic/dispatch.json")
+if dispatch_path.is_file():
+    dispatch = json.loads(dispatch_path.read_text(encoding="utf-8"))
+    required_workflows = {
+        "feature-slice",
+        "core-service",
+        "ui-flow",
+        "persistence",
+        "device-journey",
+        "validation",
+    }
+    workflows = dispatch.get("workflows", [])
+    workflow_ids = {workflow.get("id") for workflow in workflows}
+    missing_workflows = sorted(required_workflows - workflow_ids)
+    if missing_workflows:
+        failures.append(f"missing agentic workflows: {', '.join(missing_workflows)}")
+    for workflow in workflows:
+        workflow_id = workflow.get("id", "<unnamed>")
+        skill = workflow.get("skill")
+        if not isinstance(skill, str) or not skill.startswith("cipherbank-"):
+            failures.append(f"agentic workflow {workflow_id} has an invalid skill")
+        for key in ("templates", "references"):
+            for value in workflow.get(key, []):
+                if not pathlib.Path(value).is_file():
+                    failures.append(f"agentic workflow {workflow_id} references missing {key[:-1]} {value}")
+        if not workflow.get("gates"):
+            failures.append(f"agentic workflow {workflow_id} has no verification gate")
+
 xml_patterns = ("*.csproj", "*.props", "*.targets", "*.xaml")
 for pattern in xml_patterns:
     for path in pathlib.Path(".").rglob(pattern):
@@ -187,6 +232,15 @@ raise SystemExit(1 if failures else 0)
 PY
 then
   failures=$((failures + 1))
+fi
+
+if ! python3 - <<'PY'
+from pathlib import Path
+
+compile(Path("scripts/create-dispatch.py").read_text(encoding="utf-8"), "scripts/create-dispatch.py", "exec")
+PY
+then
+  fail "scripts/create-dispatch.py must compile"
 fi
 
 if (( failures > 0 )); then

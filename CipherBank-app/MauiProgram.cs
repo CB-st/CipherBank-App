@@ -1,5 +1,5 @@
 // <copyright file="MauiProgram.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Globalization;
@@ -184,8 +184,7 @@ public static class MauiProgram
                     catalog.SetActive(ChallengePassServiceCollectionExtensions.SuiteA1Id);
                     return sp.GetRequiredService<ChallengePassSessionProofBuilder>();
                 default:
-                    throw new InvalidOperationException(
-                        "MAUI host requires SessionProofMode ChallengePass A1 or A2. Lab proofs stay on Core test DI; they are not a shipping default.");
+                    return sp.GetRequiredService<LabSessionProofBuilder>();
             }
         });
         mauiAppBuilder.Services.AddSingleton<InMemoryProductClient>();

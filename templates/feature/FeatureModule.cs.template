@@ -1,0 +1,29 @@
+// <copyright file="__FEATURE__FeatureModule.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace __NAMESPACE__;
+
+/// <summary>Registers the __FEATURE__ vertical slice at its composition boundary.</summary>
+public static class __FEATURE__FeatureModule
+{
+    /// <summary>Registers validated options and interface-backed __FEATURE__ services.</summary>
+    public static IServiceCollection Add__FEATURE__Feature(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.AddOptions<__OPTIONS__>()
+            .Bind(configuration.GetSection(__OPTIONS__.SectionName))
+            .Validate(options => options.IsValid(), "__FEATURE__ configuration is invalid.")
+            .ValidateOnStart();
+
+        services.Add__LIFETIME__<I__SERVICE__, __SERVICE__>();
+        return services;
+    }
+}

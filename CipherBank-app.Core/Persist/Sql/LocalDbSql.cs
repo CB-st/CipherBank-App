@@ -1,5 +1,5 @@
 // <copyright file="LocalDbSql.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Data;
@@ -24,9 +24,6 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
 
     private const string SelectRecipientMasksRoutingOnly =
         "SELECT id, routing, account_mask, routing_mask FROM recipients";
-
-    private const string SelectRecipientMasksAccountFullOnly =
-        "SELECT id, account_full, account_mask, routing_mask FROM recipients";
 
     private const string UpdateRecipientBothMasksSql =
         "UPDATE recipients SET account_mask = $account_mask, routing_mask = $routing_mask WHERE id = $id";
@@ -263,10 +260,9 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
     {
         bool hasAccount = await RecipientColumnExistsAsync(connection, "account", ct).ConfigureAwait(false);
         bool hasRouting = await RecipientColumnExistsAsync(connection, "routing", ct).ConfigureAwait(false);
-        bool hasAccountFull = await RecipientColumnExistsAsync(connection, "account_full", ct).ConfigureAwait(false);
         bool hasAccountMask = await RecipientColumnExistsAsync(connection, "account_mask", ct).ConfigureAwait(false);
         bool hasRoutingMask = await RecipientColumnExistsAsync(connection, "routing_mask", ct).ConfigureAwait(false);
-        if ((!hasAccount && !hasRouting && !hasAccountFull) || (!hasAccountMask && !hasRoutingMask))
+        if ((!hasAccount && !hasRouting) || (!hasAccountMask && !hasRoutingMask))
         {
             return;
         }
@@ -275,7 +271,6 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
             connection,
             hasAccount,
             hasRouting,
-            hasAccountFull,
             ct).ConfigureAwait(false);
         foreach (RecipientMaskRow row in rows)
         {
@@ -292,16 +287,14 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
         DbConnection connection,
         bool hasAccount,
         bool hasRouting,
-        bool hasAccountFull,
         CancellationToken ct)
     {
         await using DbCommand select = connection.CreateCommand();
-        select.CommandText = (hasAccount, hasRouting, hasAccountFull) switch
+        select.CommandText = (hasAccount, hasRouting) switch
         {
-            (true, true, _) => SelectRecipientMasksAccountAndRouting,
-            (true, false, _) => SelectRecipientMasksAccountOnly,
-            (false, true, _) => SelectRecipientMasksRoutingOnly,
-            (false, false, true) => SelectRecipientMasksAccountFullOnly,
+            (true, true) => SelectRecipientMasksAccountAndRouting,
+            (true, false) => SelectRecipientMasksAccountOnly,
+            (false, true) => SelectRecipientMasksRoutingOnly,
             _ => throw new InvalidOperationException("Recipient cleartext columns missing."),
         };
 
@@ -309,7 +302,7 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
         await using DbDataReader reader = await select.ExecuteReaderAsync(ct).ConfigureAwait(false);
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
         {
-            rows.Add(ReadRecipientMaskRow(reader, hasAccount, hasRouting, hasAccountFull));
+            rows.Add(ReadRecipientMaskRow(reader, hasAccount, hasRouting));
         }
 
         return rows;
@@ -318,14 +311,12 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
     private static RecipientMaskRow ReadRecipientMaskRow(
         IDataRecord reader,
         bool hasAccount,
-        bool hasRouting,
-        bool hasAccountFull)
+        bool hasRouting)
     {
         int ordinal = 0;
         string id = reader.GetString(ordinal++);
         string? account = null;
         string? routing = null;
-        string? accountFull = null;
         if (hasAccount)
         {
             account = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
@@ -338,16 +329,10 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
             ordinal++;
         }
 
-        if (hasAccountFull && !hasAccount && !hasRouting)
-        {
-            accountFull = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-            ordinal++;
-        }
-
         string? accountMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
         ordinal++;
         string? routingMask = reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
-        return new RecipientMaskRow(id, account, routing, accountFull, accountMask, routingMask);
+        return new RecipientMaskRow(id, account, routing, accountMask, routingMask);
     }
 
     private static Task WriteDerivedRecipientMasksAsync(
@@ -383,12 +368,11 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
     {
         string? nextAccountMask = row.AccountMask;
         string? nextRoutingMask = row.RoutingMask;
-        string? accountSource = !string.IsNullOrWhiteSpace(row.Account) ? row.Account : row.AccountFull;
         if (hasAccountMask
             && string.IsNullOrWhiteSpace(row.AccountMask)
-            && !string.IsNullOrWhiteSpace(accountSource))
+            && !string.IsNullOrWhiteSpace(row.Account))
         {
-            nextAccountMask = AchRecipientValidation.MaskAccount(accountSource);
+            nextAccountMask = AchRecipientValidation.MaskAccount(row.Account);
         }
 
         if (hasRoutingMask
@@ -532,7 +516,6 @@ internal sealed class LocalDbSql : ILegacySchemaRepair
         string Id,
         string? Account,
         string? Routing,
-        string? AccountFull,
         string? AccountMask,
         string? RoutingMask);
 

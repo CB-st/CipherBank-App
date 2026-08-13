@@ -1,5 +1,5 @@
 // <copyright file="ISettingsService.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 namespace CipherBank_app.Services;
@@ -45,7 +45,7 @@ public interface ISettingsService
     string DefaultCurrency { get; set; }
 
     /// <summary>
-    /// Gets or sets how product session open proves device possession (A1 / A2; Lab is not a shipping default).
+    /// Gets or sets how product session open proves device possession (Lab / A1 / A2).
     /// </summary>
     SessionProofMode SessionProofMode { get; set; }
 

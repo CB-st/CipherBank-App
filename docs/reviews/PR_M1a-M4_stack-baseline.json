@@ -1,0 +1,33 @@
+{
+  "bundlePath": "/home/skyrailmaxima/Desktop/CipherBank/App_BuildSpace/PR_M1a-M4",
+  "localBundleFound": true,
+  "comparedAt": "2026-08-09",
+  "adoptionDefault": "rebuild parallel cursor/maui-m*-overhaul-579a stack from review-addressed packs; rebase m1b lint onto new m1a; supersede PRs 25/26/21/22/23",
+  "tips": {
+    "m1a": { "ref": "origin/prototype/maui-m1a", "sha": "a424890", "files": 333, "cpm": false, "pr": 25 },
+    "m1b": { "ref": "origin/prototype/maui-m1b", "sha": "ccdcf7f", "files": 355, "cpm": false, "pr": 26 },
+    "m2": { "ref": "origin/prototype/maui-m2", "sha": "14a4c11", "files": 400, "cpm": false, "pr": 21 },
+    "m3": { "ref": "origin/prototype/maui-m3", "sha": "9aee1a3", "files": 486, "cpm": false, "pr": 22 },
+    "m4": { "ref": "origin/prototype/maui-m4", "sha": "171ffb1", "files": 537, "cpm": false, "pr": 23 }
+  },
+  "packs": {
+    "m1a": { "files": 375, "cpm": true, "onlyTip": 9, "onlyPack": 51, "differ": 44 },
+    "m2": { "files": 460, "cpm": true, "onlyTip": 9, "onlyPack": 69, "differ": 61 },
+    "m3": { "files": 557, "cpm": true, "onlyTip": 10, "onlyPack": 81, "differ": 98 },
+    "m4": { "files": 615, "cpm": true, "onlyTip": 10, "onlyPack": 88, "differ": 140 },
+    "agenticVsM4Pack": { "files": 633, "onlyTip": 0, "onlyPack": 18, "differ": 7 }
+  },
+  "m1bFold": {
+    "m1bOnlyFiles": 23,
+    "presentInM1aPack": ["AGENTS.md"],
+    "missingLintDocs": true
+  },
+  "branches": [
+    "cursor/maui-m1a-overhaul-579a",
+    "cursor/maui-m1b-overhaul-579a",
+    "cursor/maui-m2-overhaul-579a",
+    "cursor/maui-m3-overhaul-579a",
+    "cursor/maui-m4-overhaul-579a",
+    "cursor/maui-m4-agentic-579a"
+  ]
+}
