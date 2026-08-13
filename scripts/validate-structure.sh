@@ -23,6 +23,7 @@ required=(
   CipherBank-app/Resources/Styles/AGENTS.md
   CipherBank-app/Resources/Styles/Typography.xaml
   CipherBank-app.Tests/AGENTS.md
+  CipherBank-app.E2ETests/AGENTS.md
   config/README.md
   config/sonar/AGENTS.md
   config/appsettings.json
@@ -34,10 +35,15 @@ required=(
   config/network/endpoints.json
   docs/style/README.md
   docs/review/m3-alignment-resolution.md
+  docs/review/m4-alignment-resolution.md
+  docs/tests/STORY_ID_MAP.md
   templates/AGENTS.md
   templates/README.md
   templates/config/README.md
   templates/config/TEMPLATE.md
+  templates/e2e/PageObject.cs.template
+  templates/e2e/StoryTest.cs.template
+  templates/e2e/TEMPLATE.md
   templates/repository/AGENTS.md.template
   templates/repository/README.md.template
   templates/repository/TEMPLATE.md
@@ -50,6 +56,15 @@ required=(
 for path in "${required[@]}"; do
   [[ -f "${path}" ]] || fail "missing required ${path}"
 done
+
+if ! grep -qF 'Story=${MODE_VALUE}' scripts/e2e-android.sh \
+  || ! grep -qF 'preflight_filter_or_die' scripts/e2e-android.sh; then
+  fail "E2E harness must use stable Story traits and fail filtered zero-test discovery"
+fi
+
+if ! grep -qF 'artifacts/' .gitignore; then
+  fail "E2E artifacts directory must remain gitignored"
+fi
 
 while IFS= read -r project; do
   if grep -nE '<PackageReference[^>]*[[:space:]]Version=' "${project}" >/dev/null; then

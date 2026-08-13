@@ -112,7 +112,7 @@ public partial class RestoreBackupViewModel : ObservableObject
         {
             bool confirmed = await _dialogs.ShowConfirmAsync(
                 "Replace wallet seal",
-                "This replaces the on-device wallet seal with the recovered wallet. Continue?",
+                "This replaces the on-device wallet seal and regenerates derived receive addresses from the recovered seed. Continue?",
                 "Replace",
                 "Cancel");
             if (!confirmed)

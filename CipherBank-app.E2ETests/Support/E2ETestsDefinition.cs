@@ -1,5 +1,5 @@
 // <copyright file="E2ETestsDefinition.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using Xunit;
@@ -7,11 +7,11 @@ using Xunit;
 namespace CipherBank_app.E2ETests.Support;
 
 /// <summary>
-/// xUnit collection for E2E Facts. Full Appium fixture sharing lands on M4;
-/// this M3 stub only defines the collection name so CriticalUserJourneyTests compiles.
-/// Use: High (E2E collection attribute). Scope: E2ETests project compile gate.
+/// xUnit collection so AccountStories / CoraShellSmokeTests share one Appium session via <see cref="AppiumFixtureHolder"/>.
+/// Host-only harness Facts (e.g. E2EHarnessCredentialsTests) may share the collection to serialize env mutation.
+/// Use: High (every E2E_RUN=1 collection). Scope: process-wide Appium session for the suite.
 /// </summary>
 [CollectionDefinition("E2E Tests")]
-public sealed class E2ETestsDefinition
+public sealed class E2ETestsDefinition : ICollectionFixture<AppiumFixtureHolder>
 {
 }

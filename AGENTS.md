@@ -1,6 +1,6 @@
 # CipherBank repository contract
 
-This file governs the M1a → M3 stack. More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
+This file governs the M1a → M4 stack. More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
 
 Start with this file, then read the nearest subtree contract and the
 documentation index in `docs/README.md`.
@@ -13,7 +13,8 @@ documentation index in `docs/README.md`.
 | `CipherBank-app.ChallengePass` | Challenge/pass suites, account-key sources, A1/A2 crypto composition, key-share ports | UI, database access, long-lived cleartext secrets |
 | `CipherBank-app` | MAUI composition root, views, ViewModels, platform adapters | Domain policy, manual SQL, static service locators |
 | `CipherBank-app.Tests` | Unit, architecture, options, crypto, and persistence regression tests | Shared mutable fixtures or production substitutes |
-| Integration/E2E projects | HTTP boundaries and complete user journeys | Reimplementation of product behavior |
+| Integration tests | HTTP and persistence boundaries | Reimplementation of product behavior |
+| `CipherBank-app.E2ETests` | Appium lifecycle, stable story catalog, page objects, device profiles, diagnostics, and gap evidence | Product policy, hard-coded credentials, or silent E2E passes |
 
 Dependencies point inward: MAUI and ChallengePass may depend on Core; Core never depends on either. Tests may depend on the layer they verify.
 
@@ -56,7 +57,7 @@ The UI contract is in `docs/style/README.md` and `CipherBank-app/Resources/Style
 - Manrope is the interface-copy family, Space Grotesk owns display and financial hierarchy, and Space Mono is reserved for PIN/code/status roles.
 - Interactive targets remain at least 44×44 device-independent units. Meaning is never conveyed by color alone.
 
-Copy from `templates/ui/` for new pages and from `templates/service/` or `templates/config/` for new capabilities. Update the template in the same change when a repository convention changes.
+Copy from `templates/ui/` for new pages, `templates/e2e/` for executable stories, and `templates/service/` or `templates/config/` for new capabilities. Update the template in the same change when a repository convention changes.
 
 ## Quality and Sonar
 
@@ -86,6 +87,7 @@ bash scripts/validate-structure.sh
 dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false
 dotnet build CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
 dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android
+dotnet test CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj
 ```
 
 Changes to XAML resources also require a light/dark visual pass at compact and large text settings. Changes to persistence require clean-database and upgrade-shape tests. Changes to ChallengePass require A1, A2, malformed-input, cancellation, and zeroization coverage.
@@ -93,6 +95,8 @@ Changes to XAML resources also require a light/dark visual pass at compact and l
 ## E2E and sensitive artifacts
 
 - Appium story tests use stable `CB-*`/`US-*` traits and fail if a selected wave resolves zero tests.
+- Device-bound facts run through `StoryRunner`, fail when `E2E_RUN=1`, and write a gap note before rethrowing.
+- Emulator, Appium, APK-install, diagnostics, and recovery-file work belongs to dedicated lifecycle objects behind the harness façade, not inside story bodies.
 - Package reset uses `adb shell pm clear com.companyname.cipherbankapp`.
 - Journals, recovery pulls, and diagnostics belong under gitignored `artifacts/` and must never be committed.
 - PINs, mnemonics, tokens, keys, PANs, and full bank coordinates are never logged in production.

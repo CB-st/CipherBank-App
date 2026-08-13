@@ -49,9 +49,9 @@ public partial class SettingsPage : ContentPage
         SettingsLayout.Children.Insert(insertIndex, BuildDeveloperCard());
     }
 
-    private Border BuildDeveloperCard()
+    private static Border BuildDeveloperCard()
     {
-        Label headerLabel = new Label
+        var headerLabel = new Label
         {
             Text = "Developer Mode Active",
             FontSize = 16,
@@ -61,7 +61,7 @@ public partial class SettingsPage : ContentPage
         ApplyThemeColor(headerLabel, Label.TextColorProperty, "EnvironmentBadge", "EnvironmentBadgeDark");
         Grid.SetColumn(headerLabel, 0);
 
-        Border devBadge = new Border
+        var devBadge = new Border
         {
             StrokeThickness = 0,
             Padding = new Thickness(6, 2),
@@ -78,7 +78,7 @@ public partial class SettingsPage : ContentPage
         ApplyThemeColor(devBadge, BackgroundColorProperty, "EnvironmentBadge", "EnvironmentBadgeDark");
         Grid.SetColumn(devBadge, 1);
 
-        Grid headerGrid = new Grid
+        var headerGrid = new Grid
         {
             ColumnDefinitions =
             {
@@ -88,24 +88,24 @@ public partial class SettingsPage : ContentPage
             Children = { headerLabel, devBadge },
         };
 
-        Label environmentLabel = new Label { Text = "Environment", FontSize = 12, Style = GetStyle("SecondaryText") };
-        Picker environmentPicker = new Picker { Title = "Select environment" };
+        var environmentLabel = new Label { Text = "Environment", FontSize = 12, Style = GetStyle("SecondaryText") };
+        var environmentPicker = new Picker { Title = "Select environment" };
         environmentPicker.SetBinding(Picker.ItemsSourceProperty, new Binding(nameof(SettingsViewModel.Environments)));
         environmentPicker.SetBinding(Picker.SelectedItemProperty, new Binding(nameof(SettingsViewModel.SelectedEnvironment), BindingMode.TwoWay));
 
-        VerticalStackLayout environmentSection = new VerticalStackLayout
+        var environmentSection = new VerticalStackLayout
         {
             Spacing = 4,
             Children = { environmentLabel, environmentPicker },
         };
 
-        Label mockLabel = new Label { Text = "Use Mock Services", VerticalOptions = LayoutOptions.Center };
+        var mockLabel = new Label { Text = "Use Mock Services", VerticalOptions = LayoutOptions.Center };
         Grid.SetColumn(mockLabel, 0);
-        Switch mockSwitch = new Switch();
+        var mockSwitch = new Switch();
         mockSwitch.SetBinding(Switch.IsToggledProperty, new Binding(nameof(SettingsViewModel.UseMockServices), BindingMode.TwoWay));
         Grid.SetColumn(mockSwitch, 1);
 
-        Grid mockGrid = new Grid
+        var mockGrid = new Grid
         {
             ColumnDefinitions =
             {
@@ -115,7 +115,7 @@ public partial class SettingsPage : ContentPage
             Children = { mockLabel, mockSwitch },
         };
 
-        Label noteLabel = new Label
+        var noteLabel = new Label
         {
             Text = "Note: Changing environment will clear your authentication",
             FontSize = 11,
@@ -123,7 +123,7 @@ public partial class SettingsPage : ContentPage
             HorizontalTextAlignment = TextAlignment.Center,
         };
 
-        Border card = new Border
+        var card = new Border
         {
             StrokeShape = new RoundRectangle { CornerRadius = 12 },
             Padding = new Thickness(16),

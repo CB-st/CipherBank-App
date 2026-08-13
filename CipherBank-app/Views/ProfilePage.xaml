@@ -136,7 +136,8 @@
         </controls:GlassCard.Body>
       </controls:GlassCard>
 
-      <Button Text="Tap to pay lab" Command="{Binding OpenPosLabCommand}" />
+      <Button Text="Tap to pay lab" Command="{Binding OpenPosLabCommand}"
+              AutomationId="ProfileOpenPosLabButton" />
 
       <Button Text="{Binding ShowAdvanced, StringFormat='Advanced ({0})'}" Command="{Binding ToggleAdvancedCommand}" />
       <controls:GlassCard IsVisible="{Binding ShowAdvanced}">
