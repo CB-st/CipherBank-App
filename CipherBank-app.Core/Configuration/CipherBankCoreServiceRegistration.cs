@@ -5,6 +5,7 @@
 using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
+using CipherBank_app.Persist.Sql;
 using CipherBank_app.Pos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -29,10 +30,13 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton<ISyncJobScheduler>(static provider => new SyncJobScheduler(
             TaskScheduler.Default,
             provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value));
+        services.AddSingleton<ILegacySchemaRepair, LocalDbSql>();
         services.AddSingleton<ILocalDb>(provider =>
         {
             PersistenceOptions options = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
-            return new LocalDb(Path.Combine(databaseDirectory, options.DatabaseName));
+            return new LocalDb(
+                Path.Combine(databaseDirectory, options.DatabaseName),
+                provider.GetRequiredService<ILegacySchemaRepair>());
         });
         services.AddSingleton<IMarketRepository, MarketRepository>();
         services.AddSingleton<IPrefsStore, PrefsStore>();
