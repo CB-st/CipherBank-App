@@ -20,6 +20,16 @@ public sealed class QualityGateYamlTests
         yaml.Should().Contain("duplicated_lines_density:");
         yaml.Should().Contain("violations:");
         yaml.Should().Contain("error_threshold: 0");
+
+        yaml.Should().Contain("# reliability_rating:");
+        yaml.Should().Contain("# security_rating:");
+        yaml.Should().Contain("# maintainability_rating:");
+        yaml.Should().Contain("# security_hotspots_reviewed:");
+        yaml.Should().Contain("# blocker_issues:");
+        yaml.Should().Contain("# critical_issues:");
+        yaml.Should().NotMatchRegex(@"(?m)^  reliability_rating:");
+        yaml.Should().NotMatchRegex(@"(?m)^  blocker_issues:");
+        yaml.Should().NotMatchRegex(@"(?m)^  critical_issues:");
     }
 
     private static string FindRepositoryRoot()

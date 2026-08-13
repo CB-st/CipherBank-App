@@ -8,12 +8,8 @@ using Xunit;
 
 namespace CipherBank_app.Tests.Architecture;
 
-public sealed class RepositoryStructureTests
+public sealed partial class RepositoryStructureTests
 {
-    private static readonly Regex PackageVersionAttribute = new(
-        @"<PackageReference[^>]*\sVersion=",
-        RegexOptions.Compiled);
-
     [Fact]
     public void RequiredPlatformFiles_Exist()
     {
@@ -37,7 +33,7 @@ public sealed class RepositoryStructureTests
                 Path.GetFileName(path),
                 "Directory.Packages.props",
                 StringComparison.OrdinalIgnoreCase))
-            .Where(path => PackageVersionAttribute.IsMatch(File.ReadAllText(path)))
+            .Where(path => PackageVersionAttribute().IsMatch(File.ReadAllText(path)))
             .Select(path => Path.GetRelativePath(root, path))
             .ToArray();
 
@@ -85,6 +81,9 @@ public sealed class RepositoryStructureTests
 
         throw new DirectoryNotFoundException("Could not locate Directory.Packages.props from test output.");
     }
+
+    [GeneratedRegex(@"<PackageReference[^>]*\sVersion=", RegexOptions.Compiled)]
+    private static partial Regex PackageVersionAttribute();
 
     private static bool IsGenerated(string path)
         => path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)

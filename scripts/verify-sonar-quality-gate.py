@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Fail if fetched Sonar gate conditions disagree with config/sonar/quality-gate.yaml."""
+"""Fail if fetched Sonar gate conditions disagree with config/sonar/quality-gate.yaml.
+
+Comparison is bidirectional: extra live metrics and missing declared metrics both fail.
+"""
 
 from __future__ import annotations
 
@@ -42,6 +45,7 @@ METRIC_ALIASES = {
 
 
 def parse_gate_yaml(path: Path) -> dict[str, dict[str, str]]:
+    """Parse checked-in quality-gate conditions from a two-level YAML file."""
     conditions: dict[str, dict[str, str]] = {}
     current: str | None = None
     for raw in path.read_text(encoding="utf-8").splitlines():
@@ -58,10 +62,12 @@ def parse_gate_yaml(path: Path) -> dict[str, dict[str, str]]:
 
 
 def aliases_for(name: str) -> tuple[str, ...]:
+    """Return Sonar metric keys that satisfy one YAML condition name."""
     return METRIC_ALIASES.get(name, (name, f"new_{name}"))
 
 
 def normalize_threshold(value: object) -> str:
+    """Canonicalize numeric thresholds so `80` and `80.0` compare equal."""
     text = str(value).strip()
     try:
         number = float(text)
@@ -73,6 +79,7 @@ def normalize_threshold(value: object) -> str:
 
 
 def yaml_match_for(metric_key: str, expected: dict[str, dict[str, str]]) -> tuple[str, dict[str, str]] | None:
+    """Find the YAML condition whose aliases include this fetched metric key."""
     for name, spec in expected.items():
         if metric_key in aliases_for(name):
             return name, spec
@@ -80,14 +87,15 @@ def yaml_match_for(metric_key: str, expected: dict[str, dict[str, str]]) -> tupl
 
 
 def verify(fetched_path: Path, yaml_path: Path) -> list[str]:
+    """Compare fetched Sonar conditions with the checked-in YAML in both directions."""
     payload = json.loads(fetched_path.read_text(encoding="utf-8"))
     conditions = payload.get("conditions") or []
     expected = parse_gate_yaml(yaml_path)
     errors: list[str] = []
+    matched_names: set[str] = set()
 
     if not conditions:
         errors.append(f"{fetched_path} has no quality-gate conditions to compare.")
-        return errors
 
     for condition in conditions:
         metric = condition.get("metricKey") or ""
@@ -99,6 +107,7 @@ def verify(fetched_path: Path, yaml_path: Path) -> list[str]:
             )
             continue
         name, spec = match
+        matched_names.add(name)
         expected_op = OPERATORS.get(spec.get("operator", ""), spec.get("operator", ""))
         actual_op = condition.get("comparator") or ""
         if expected_op and actual_op != expected_op:
@@ -112,10 +121,18 @@ def verify(fetched_path: Path, yaml_path: Path) -> list[str]:
                 f"`{metric}` threshold is {actual_threshold}, yaml `{name}` expects {expected_threshold}."
             )
 
+    for name in expected:
+        if name not in matched_names:
+            errors.append(
+                f"declared `{name}` has no matching fetched Sonar metric; "
+                "the live gate is missing a checked-in condition."
+            )
+
     return errors
 
 
 def main(argv: list[str]) -> int:
+    """Run the verifier as a CLI; returns 0 on match, 1 on mismatch, 2 on usage error."""
     if len(argv) != 3:
         print(
             f"usage: {Path(argv[0]).name} <quality-gate.json> <quality-gate.yaml>",

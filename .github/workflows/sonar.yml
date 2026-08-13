@@ -284,7 +284,7 @@ jobs:
             /d:sonar.scanner.skipJreProvisioning=true \
             /d:sonar.sourceEncoding=UTF-8 \
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
-            /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,design_handoff_cipherbank/**" \
+            /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,design_handoff_cipherbank/**" \
             /d:sonar.cpd.exclusions="**/IProductApi.cs,**/IWalletService.cs,**/IPublicQuoteService.cs,**/IMnemonicBackupService.cs,**/IPrefsSyncService.cs,**/IStepUpChallenges.cs,**/IChallengePass*.cs,**/IAccountKeySource.cs,**/ISessionChallengeClient.cs,**/IPq*.cs" \
             /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"

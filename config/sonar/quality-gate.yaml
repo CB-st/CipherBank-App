@@ -1,18 +1,9 @@
 name: CipherBank New Code Gate
 scope: new_code
+# Active set matches the live CAYC gate on sonar.cipherbank.money (PR #33).
+# Restore the deferred block only in the same change that adds those conditions
+# on the server; YAML-only uncommenting fails scripts/verify-sonar-quality-gate.py.
 conditions:
-  reliability_rating:
-    operator: greater_than
-    error_threshold: 1
-  security_rating:
-    operator: greater_than
-    error_threshold: 1
-  maintainability_rating:
-    operator: greater_than
-    error_threshold: 1
-  security_hotspots_reviewed:
-    operator: less_than
-    error_threshold: 100
   coverage:
     operator: less_than
     error_threshold: 80
@@ -22,9 +13,22 @@ conditions:
   violations:
     operator: greater_than
     error_threshold: 0
-  blocker_issues:
-    operator: greater_than
-    error_threshold: 0
-  critical_issues:
-    operator: greater_than
-    error_threshold: 0
+  # Deferred live-gate expansion (uncomment with the server, not YAML-only):
+  # reliability_rating:
+  #   operator: greater_than
+  #   error_threshold: 1
+  # security_rating:
+  #   operator: greater_than
+  #   error_threshold: 1
+  # maintainability_rating:
+  #   operator: greater_than
+  #   error_threshold: 1
+  # security_hotspots_reviewed:
+  #   operator: less_than
+  #   error_threshold: 100
+  # blocker_issues:
+  #   operator: greater_than
+  #   error_threshold: 0
+  # critical_issues:
+  #   operator: greater_than
+  #   error_threshold: 0
