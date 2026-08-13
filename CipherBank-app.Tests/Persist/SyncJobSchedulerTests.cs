@@ -1,5 +1,5 @@
 // <copyright file="SyncJobSchedulerTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using CipherBank_app.Configuration;
@@ -144,6 +144,14 @@ public class SyncJobSchedulerTests
 
         runs.Should().Be(1);
         taskScheduler.QueuedTasks.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void Default_max_concurrency_is_clamped_processor_count()
+    {
+        int derived = SyncSchedulerOptions.DeriveDefaultMaxConcurrency();
+        derived.Should().BeInRange(SyncSchedulerOptions.MinConcurrency, 2);
+        new SyncSchedulerOptions().MaxConcurrency.Should().Be(derived);
     }
 
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)

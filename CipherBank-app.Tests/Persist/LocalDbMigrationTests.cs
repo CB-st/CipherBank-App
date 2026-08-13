@@ -1,5 +1,5 @@
 // <copyright file="LocalDbMigrationTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using CipherBank_app.Persist;
@@ -105,6 +105,41 @@ public class LocalDbMigrationTests
         await connection.OpenAsync();
         await using SqliteCommand inspect = connection.CreateCommand();
         inspect.CommandText = "SELECT account, account_mask FROM recipients WHERE id = 'acct'";
+        await using SqliteDataReader reader = await inspect.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue();
+        reader.IsDBNull(0).Should().BeTrue();
+        reader.GetString(1).Should().Be(AchRecipientValidation.MaskAccount("88210001"));
+    }
+
+    [Fact]
+    public async Task InitializeAsync_LegacyAccountFullOnly_PopulatesAccountMask()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-legacy-acct-full-" + Guid.NewGuid().ToString("N") + ".db");
+        await using (SqliteConnection legacy = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path }.ToString()))
+        {
+            await legacy.OpenAsync();
+            await using SqliteCommand create = legacy.CreateCommand();
+            create.CommandText = """
+                CREATE TABLE recipients (
+                  id TEXT PRIMARY KEY,
+                  name TEXT NOT NULL,
+                  account_full TEXT,
+                  created_at TEXT NOT NULL
+                );
+                INSERT INTO recipients (id, name, account_full, created_at)
+                VALUES ('full', 'Full only', '88210001', '2026-08-09T00:00:00.0000000+00:00');
+                """;
+            await create.ExecuteNonQueryAsync();
+        }
+
+        LocalDb db = new LocalDb(path);
+        await db.InitializeAsync();
+
+        await using CipherBankDbContext context = await db.CreateContextAsync();
+        SqliteConnection connection = (SqliteConnection)context.Database.GetDbConnection();
+        await connection.OpenAsync();
+        await using SqliteCommand inspect = connection.CreateCommand();
+        inspect.CommandText = "SELECT account_full, account_mask FROM recipients WHERE id = 'full'";
         await using SqliteDataReader reader = await inspect.ExecuteReaderAsync();
         (await reader.ReadAsync()).Should().BeTrue();
         reader.IsDBNull(0).Should().BeTrue();
