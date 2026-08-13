@@ -1,6 +1,0 @@
-{
-  "_comment": "Controls TaskScheduler-backed sync dispatch. Keep concurrency bounded on mobile devices.",
-  "SyncScheduler": {
-    "MaxConcurrency": 2
-  }
-}
