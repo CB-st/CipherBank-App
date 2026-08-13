@@ -1,5 +1,5 @@
 // <copyright file="UserDataBlockTypes.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 namespace CipherBank_app.UserData;

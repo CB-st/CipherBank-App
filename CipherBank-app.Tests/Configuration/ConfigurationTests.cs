@@ -1,5 +1,5 @@
 // <copyright file="ConfigurationTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using CipherBank_app.Configuration;
@@ -26,8 +26,18 @@ public sealed class ConfigurationTests
 
         cryptography.Should().NotBeNull();
         cryptography!.IsValid().Should().BeTrue();
+        cryptography.MatchesPersistedProfile().Should().BeTrue();
         scheduler.Should().NotBeNull();
-        scheduler!.MaxConcurrency.Should().Be(2);
+        scheduler!.MaxConcurrency.Should().Be(SyncSchedulerOptions.DeriveDefaultMaxConcurrency());
+    }
+
+    [Fact]
+    public void CryptographyOptions_NonDefaultKeySize_DoesNotMatchPersistedProfile()
+    {
+        CryptographyOptions options = CryptographyOptions.Default;
+        options.KeySizeBytes = CryptographyOptions.Aes128KeySizeBytes;
+        options.IsValid().Should().BeTrue();
+        options.MatchesPersistedProfile().Should().BeFalse();
     }
 
     [Fact]

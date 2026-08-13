@@ -1,5 +1,5 @@
 // <copyright file="PinAndCustodyTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using System.Security.Cryptography;
@@ -65,6 +65,22 @@ public class PinAndCustodyTests
         (await custody.UnlockAsync("000000")).Should().BeFalse();
         custody.IsUnlocked.Should().BeFalse();
         custody.ExportMnemonic().Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Custody_Unlock_FailedPin_RaisesLocked()
+    {
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin);
+        string mnemonic = MnemonicHelper.Generate();
+        await custody.SealAsync(mnemonic, "123456");
+        (await custody.UnlockAsync("123456")).Should().BeTrue();
+        int locked = 0;
+        custody.Locked += (_, _) => locked++;
+        (await custody.UnlockAsync("000000")).Should().BeFalse();
+        locked.Should().Be(1);
+        custody.IsUnlocked.Should().BeFalse();
     }
 
     [Fact]
