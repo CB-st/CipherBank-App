@@ -29,7 +29,7 @@ EMULATOR_LOG="${EMULATOR_LOG:-/tmp/cb-e2e-emulator.log}"
 BOOT_WAIT_ATTEMPTS="${BOOT_WAIT_ATTEMPTS:-90}"
 
 # Planned wave → Story trait map for when CipherBank-app.E2ETests ships Facts (M7).
-# On this harness branch there are no Story traits; --story/--wave defer (see e2e_story_facts_ready).
+# On this harness branch there are no Story traits; --story/--wave/--all defer (see e2e_story_facts_ready).
 # Use: Medium (once per --wave invocation). Scope: arg -> filter resolution.
 declare -A WAVE_STORIES=(
   [account]="CB-ACCOUNT-001 CB-ACCOUNT-002 CB-ACCOUNT-PIN-CHANGE US-ONB-03 US-ONB-04"
@@ -49,16 +49,15 @@ CipherBank MAUI Android Appium E2E harness
 Usage:
   scripts/e2e-android.sh --story <CB-ID>   Run one story (e.g. CB-ACCOUNT-001)
   scripts/e2e-android.sh --wave <name>     Run one wave (account|market|wallets|fund|pay|cards)
-  scripts/e2e-android.sh --all             Run the full E2E suite
+  scripts/e2e-android.sh --all             Fresh AccountStories then sealed smoke (M7 Story Facts required)
   scripts/e2e-android.sh --help            Show this help
 
 Harness credentials (required once Story-trait Facts land on M7):
   E2E_TEST_PIN / E2E_TEST_PIN_ALT / E2E_RECOVERY_PASSWORD
   Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
 
-Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave
+Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave/--all
 exit with a clear deferral (those Facts ship on M7 / prototype/maui-m7).
---all may run the scaffold suite without credentials.
 
 Requires: CB_AVD emulator image, ANDROID_HOME, DOTNET_ROOT (see scripts/lib/android-env.sh).
 EOF
@@ -116,8 +115,8 @@ parse_args() {
       ;;
   esac
 
-  if [[ "$MODE" == "story" || "$MODE" == "wave" ]] && ! e2e_story_facts_ready; then
-    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M7). Use --all for the scaffold suite, or check out prototype/maui-m7."
+  if [[ "$MODE" == "story" || "$MODE" == "wave" || "$MODE" == "all" ]] && ! e2e_story_facts_ready; then
+    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M7 / prototype/maui-m7). This APK does not implement CriticalUserJourneyTests purchase controls."
   fi
 }
 
@@ -221,6 +220,9 @@ install_apk() {
   local apk="$1"
   log "Installing $apk"
   adb install -r "$apk"
+  log "Clearing ${CB_MAUI_PACKAGE} application data"
+  adb shell pm clear "$CB_MAUI_PACKAGE" >/dev/null \
+    || die "failed to pm clear $CB_MAUI_PACKAGE after install"
 }
 
 # Ensures the pinned UiAutomator2 driver is installed for APPIUM_VERSION.
@@ -304,7 +306,7 @@ ensure_appium_running() {
 
 # Loads gitignored lab credentials from artifacts/e2e-local.env into the
 # process environment when present, then requires PIN / alt / recovery password to be set.
-# Skipped until Story-trait Facts exist (M7) so the scaffold suite is not blocked.
+# Required once Story-trait Facts exist (M7). --all is fenced until then.
 # Use: High (every harness run before device tests that need credentials). Scope: scripts/e2e-android.sh.
 ensure_e2e_credentials() {
   if ! e2e_story_facts_ready; then
