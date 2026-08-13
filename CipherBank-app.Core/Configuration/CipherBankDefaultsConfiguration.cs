@@ -1,5 +1,5 @@
 // <copyright file="CipherBankDefaultsConfiguration.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using System.Reflection;
@@ -12,11 +12,7 @@ public static class CipherBankDefaultsConfiguration
 {
     private static readonly string[] ResourceNames =
     [
-        "CipherBank_app.Config.security.cryptography.json",
-        "CipherBank_app.Config.dispatch.sync-scheduler.json",
-        "CipherBank_app.Config.persistence.database.json",
-        "CipherBank_app.Config.ui.cora-lines.json",
-        "CipherBank_app.Config.ui.carousel.json",
+        "CipherBank_app.Config.appsettings.json",
     ];
 
     /// <summary>Builds the default configuration in deterministic theme order.</summary>

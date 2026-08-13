@@ -1,5 +1,5 @@
 // <copyright file="CustodyService.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using System.Security.Cryptography;
@@ -124,10 +124,7 @@ public sealed class CustodyService : ICustodyService
     {
         if (!await _pin.VerifyPinAsync(pin).ConfigureAwait(false))
         {
-            // Failed auth must not leave a prior unlocked session's mnemonic live.
-            _mnemonic = null;
-            _expires = null;
-            return false;
+            return FailUnlock();
         }
 
         string? blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
@@ -142,9 +139,7 @@ public sealed class CustodyService : ICustodyService
             {
                 if (!TryOpen(blob, pin, out string? legacyOpened) || legacyOpened is null)
                 {
-                    _mnemonic = null;
-                    _expires = null;
-                    return false;
+                    return FailUnlock();
                 }
 
                 // Legacy PIN-derived blob, or interrupted migration that left DeviceSecretKey
@@ -190,9 +185,7 @@ public sealed class CustodyService : ICustodyService
         {
             if (!await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false))
             {
-                _mnemonic = null;
-                _expires = null;
-                return false;
+                return FailUnlock();
             }
 
             _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
