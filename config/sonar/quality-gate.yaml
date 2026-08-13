@@ -19,6 +19,9 @@ conditions:
   duplicated_lines_density:
     operator: greater_than
     error_threshold: 3
+  violations:
+    operator: greater_than
+    error_threshold: 0
   blocker_issues:
     operator: greater_than
     error_threshold: 0
