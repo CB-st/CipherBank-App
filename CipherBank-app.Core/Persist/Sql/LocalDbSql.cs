@@ -13,7 +13,7 @@ namespace CipherBank_app.Persist.Sql;
 /// Centralized, idempotent SQL for compatibility repair that EF Core cannot infer
 /// from databases created by pre-EF builds.
 /// </summary>
-internal static class LocalDbSql
+internal sealed class LocalDbSql : ILegacySchemaRepair
 {
     // Compile-time SQL shapes — column names are schema identifiers, never user input.
     private const string SelectRecipientMasksAccountAndRouting =
@@ -68,7 +68,7 @@ internal static class LocalDbSql
     }
 
     /// <summary>Upgrades the known legacy recipient shape and removes cleartext remnants.</summary>
-    internal static Task ApplyCompatibilityAsync(DbConnection connection, CancellationToken ct)
+    public Task ApplyCompatibilityAsync(DbConnection connection, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(connection);
         return ApplyCompatibilityCoreAsync(connection, ct);
@@ -78,7 +78,7 @@ internal static class LocalDbSql
     /// Creates EF model tables that <c>EnsureCreated</c> skipped because a legacy nonempty DB already existed.
     /// Use: Low (first open after upgrade). Scope: LocalDb initialization.
     /// </summary>
-    internal static Task EnsureMissingModelTablesAsync(DbContext context, CancellationToken ct)
+    public Task EnsureMissingModelTablesAsync(DbContext context, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(context);
         return EnsureMissingModelTablesCoreAsync(context, ct);
