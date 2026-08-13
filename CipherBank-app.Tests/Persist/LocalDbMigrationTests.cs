@@ -112,6 +112,42 @@ public class LocalDbMigrationTests
     }
 
     [Fact]
+    public async Task InitializeAsync_LegacyRoutingOnly_PopulatesRoutingMask()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-legacy-routing-" + Guid.NewGuid().ToString("N") + ".db");
+        await using (SqliteConnection legacy = new SqliteConnection(new SqliteConnectionStringBuilder { DataSource = path }.ToString()))
+        {
+            await legacy.OpenAsync();
+            await using SqliteCommand create = legacy.CreateCommand();
+            create.CommandText = """
+                CREATE TABLE recipients (
+                  id TEXT PRIMARY KEY,
+                  name TEXT NOT NULL,
+                  routing TEXT,
+                  created_at TEXT NOT NULL
+                );
+                INSERT INTO recipients (id, name, routing, created_at)
+                VALUES ('routing', 'Routing only', '021000021', '2026-08-09T00:00:00.0000000+00:00');
+                """;
+            await create.ExecuteNonQueryAsync();
+        }
+
+        LocalDb db = new LocalDb(path);
+        await db.InitializeAsync();
+
+        await using CipherBankDbContext context = await db.CreateContextAsync();
+        SqliteConnection connection = (SqliteConnection)context.Database.GetDbConnection();
+        await connection.OpenAsync();
+        await using SqliteCommand inspect = connection.CreateCommand();
+        inspect.CommandText = "SELECT routing, routing_mask, account_mask FROM recipients WHERE id = 'routing'";
+        await using SqliteDataReader reader = await inspect.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue();
+        reader.IsDBNull(0).Should().BeTrue();
+        reader.GetString(1).Should().Be(AchRecipientValidation.MaskRouting("021000021"));
+        reader.IsDBNull(2).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task InitializeAsync_LegacyAccountFullOnly_PopulatesAccountMask()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-legacy-acct-full-" + Guid.NewGuid().ToString("N") + ".db");
