@@ -34,6 +34,10 @@ out/
 # Apply on a developer machine; do not commit.
 .compliance/
 
+# Python
+__pycache__/
+*.py[cod]
+
 # Claude Code
 .claude/
 
