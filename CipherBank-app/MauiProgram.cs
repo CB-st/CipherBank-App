@@ -118,7 +118,10 @@ public static class MauiProgram
     public static MauiAppBuilder RegisterServices(this MauiAppBuilder mauiAppBuilder)
     {
         // Repository-owned defaults load before deployment/user providers override them.
-        mauiAppBuilder.Configuration.AddConfiguration(CipherBankDefaultsConfiguration.Build());
+        mauiAppBuilder.Configuration.AddConfiguration(
+            CipherBankDefaultsConfiguration.Build(
+                ResolveHostEnvironment(),
+                OperatingSystem.IsWindows()));
         mauiAppBuilder.Configuration.AddConfiguration(ChallengePassDefaultsConfiguration.Build());
         mauiAppBuilder.Services.AddCipherBankCore(
             mauiAppBuilder.Configuration,
@@ -427,5 +430,30 @@ public static class MauiProgram
 
         Log.Information("Views registered successfully");
         return mauiAppBuilder;
+    }
+
+    /// <summary>
+    /// Resolves the host environment for embedded overlay selection.
+    /// Use: High. Scope: MAUI composition root only.
+    /// </summary>
+    /// <returns>
+    /// <c>DOTNET_ENVIRONMENT</c> or <c>ASPNETCORE_ENVIRONMENT</c> when set; otherwise
+    /// <c>Development</c> in DEBUG builds and <see langword="null"/> in Release so Production
+    /// does not load a missing overlay.
+    /// </returns>
+    private static string? ResolveHostEnvironment()
+    {
+        string? environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        if (!string.IsNullOrWhiteSpace(environment))
+        {
+            return environment;
+        }
+
+#if DEBUG
+        return "Development";
+#else
+        return null;
+#endif
     }
 }

@@ -10,13 +10,13 @@ namespace CipherBank_app.Configuration;
 /// <summary>Loads repository-owned default configuration embedded in Core.</summary>
 public static class CipherBankDefaultsConfiguration
 {
+    private const string WindowsResourceName = "CipherBank_app.Config.appsettings.Windows.json";
+
     private static readonly string[] RequiredResourceNames =
     [
         "CipherBank_app.Config.appsettings.json",
         "CipherBank_app.Config.network.endpoints.json",
     ];
-
-    private const string WindowsResourceName = "CipherBank_app.Config.appsettings.Windows.json";
 
     /// <summary>
     /// Builds the default configuration, then optionally merges environment and Windows overlays.
