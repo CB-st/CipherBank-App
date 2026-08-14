@@ -1,59 +1,56 @@
-# Repository modernization contract
+# CipherBank repository contract
 
-## Goal
+This file governs the M1a platform slice. More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
 
-Modernize this repository toward .NET 10 and C# 14 while preserving verified user-visible behavior. Refactor one vertical slice at a time; do not perform broad architectural movement before characterization tests exist.
+Start with this file, then read the nearest subtree contract and the relevant documentation index in `docs/README.md`.
 
-## Dependency direction
+## Stack and ownership
 
-- Core/domain code owns policy, immutable types, invariants, and ports.
-- Application code coordinates use cases without knowing transport or persistence details.
-- Infrastructure implements database, HTTP, file, queue, clock, and telemetry adapters.
-- Executable/UI projects own composition, transport mapping, and process lifetime.
-- Tests depend on production code; production code never depends on tests.
+| Layer | Owns | Must not own |
+| --- | --- | --- |
+| `CipherBank-app.Core` | Domain models, application services, persistence ports | MAUI controls, platform APIs |
+| `CipherBank-app` | MAUI composition root, views, ViewModels, platform adapters | Domain policy, manual SQL, static service locators |
+| `CipherBank-app.Tests` | Unit, architecture, and options regression tests | Shared mutable fixtures or production substitutes |
+| Integration tests | HTTP and persistence boundaries | Reimplementation of product behavior |
+| `CipherBank-app.E2ETests` | Appium journeys and page objects | Product policy or hard-coded credentials |
 
-## Required workflow
+Dependencies point inward: MAUI may depend on Core; Core never depends on MAUI. Tests may depend on the layer they verify.
 
-1. Read `.compliance/reports/compliance-report.md`.
-2. Complete `.compliance/docs/INTENT-TRANSLATION.md` for the selected behavior.
-3. Add characterization tests before structural change.
-4. Separate policy from mechanism without changing output.
-5. Add focused unit, integration, contract, and cancellation tests.
-6. Run `./.compliance/scripts/verify-compliance.sh`.
-7. Run the configured SonarQube analysis and require the server quality gate before merge.
+## Structural rules
 
-## C# rules
+1. Package versions live only in `Directory.Packages.props`. Project files declare package identity and asset metadata without `Version=`.
+2. Assembly metadata lives in the owning `.csproj`. Do not add `Properties/AssemblyInfo.cs`.
+3. Constructor injection is the default. Depend on focused interfaces, not dependency bags, static service locators, or broad API objects.
+4. Use production names for production and stateful development implementations. `Mock*` is reserved for test doubles; prefer Moq for a small collaborator contract and `InMemory*` for behavior that intentionally keeps state.
+5. Routine database work uses EF Core. Compatibility SQL is centralized in `CipherBank-app.Core/Persist/Sql/LocalDbSql.cs` when that file exists; no other production file owns SQL command text.
+6. Prefer framework facilities (`ArgumentNullException.ThrowIfNull`, `TimeProvider`, spans, options validation) over local substitutes.
+7. One primary type per C# file. The filename matches the primary type.
 
-- Nullable reference types remain enabled under enforcement; resolve warnings deliberately.
-- Public async I/O accepts and propagates `CancellationToken`.
-- Do not use `.Result`, `.Wait()`, unobserved tasks, or `async void` outside UI events.
-- Use typed options with startup validation, `IHttpClientFactory`, structured logging, `TimeProvider`, bounded concurrency, and explicit resource ownership.
-- Centralize package versions when the repository contains multiple projects.
-- Do not expose database entities or transport DTOs as domain types.
-- Avoid service-location through `IServiceProvider` outside composition infrastructure.
-- Follow `.compliance/docs/SONARQUBE-DEVELOPMENT-STANDARD.md`: one named function outcome, shallow valid flow, cohesive invariant-owning objects, method-level S3776 enforcement, and explicit trust-boundary security.
-- Do not use aggregate Cognitive Complexity as a gate or add broad Sonar suppressions/exclusions.
-- Do not apply branchless style broadly. Follow `.compliance/docs/BRANCHLESS-PROGRAMMING.md` only for profiled hot paths or reviewed constant-time requirements, and retain the scalar reference and evidence record.
+## Quality and Sonar
 
-## Completion
+- `TreatWarningsAsErrors` remains enabled. Allow lists are narrow, documented, and shrinking.
+- `scripts/validate-structure.sh` is the architecture gate.
+- CI Sonar remains the merge authority. Do not put SonarScanner or quality-gate verify into `dotnet build` / `Directory.Build.*`.
+- A local `.compliance/` overlay is optional and untracked. Do not commit it.
 
-Do not claim compliance unless Release build, tests, formatting/analyzers, dependency audits, and the authoritative SonarQube quality gate pass. Record any environment-bound validation that remains.
+## Required verification
+
+```bash
+bash scripts/validate-structure.sh
+dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false
+```
 
 ## Repository map
 
-Scoped contracts, adapted from `.compliance/templates/` per
-`.compliance/docs/AGENT-PLACEMENT.md`:
-
 | Path | Scope |
 |---|---|
-| `CipherBank-app/AGENTS.md` | Host (composition/startup) + UI (Views/ViewModels) — one project plays both roles here |
-| `CipherBank-app.Core/AGENTS.md` | Core/domain, currently also carrying Application/Infrastructure concerns |
+| `CipherBank-app/AGENTS.md` | Host (composition/startup) + UI |
+| `CipherBank-app.Core/AGENTS.md` | Core/domain |
 | `CipherBank-app.Tests/AGENTS.md` | Unit + architecture tests |
 | `CipherBank-app.IntegrationTests/AGENTS.md` | Integration tests |
 | `CipherBank-app.E2ETests/AGENTS.md` | End-to-end tests |
 | `config/sonar/AGENTS.md` | Gate ownership and analyzer/suppression governance |
 
-`AGENTS.branchless.md` (`.compliance/templates/`) isn't placed anywhere yet
-— nothing in this repo is an identified, profiled hot path. Apply it to a
-specific subtree only after profiling justifies it, per that template's own
-rules.
+## Licensing
+
+Do not add or change a repository license, file-header ownership policy, or third-party attribution without the owner's explicit choice. Package additions require license and maintenance review.

@@ -30,6 +30,10 @@ out/
 # Cursor
 .cursor/
 
+# Local .NET 10 compliance overlay (docs, examples, audit/enforce MSBuild).
+# Apply on a developer machine; do not commit.
+.compliance/
+
 # Claude Code
 .claude/
 

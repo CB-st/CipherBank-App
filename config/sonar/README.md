@@ -44,8 +44,7 @@ discussion, and it's unchanged. What's gone is the extra step that used to
 diff the fetched result against `quality-gate.yaml`: there's nothing left to
 diff against, so CI just reports what Sonar says. Actual merge blocking is
 Sonar's own PR check (decoration), which should be a required status check
-on the branch protection rule — see
-[`.compliance/docs/SONARQUBE-SETUP.md`](../../.compliance/docs/SONARQUBE-SETUP.md#pull-request-integration).
+on the branch protection rule.
 
 ## Local feedback: SonarQube for IDE, Connected Mode
 

@@ -1,5 +1,5 @@
 <Project>
-  <!-- dotnet10-compliance-overlay:start -->
-  <Import Project=".compliance/msbuild/DotNet10.Compliance.targets" />
-  <!-- dotnet10-compliance-overlay:end -->
+  <!-- Optional local overlay. Not committed; drop .compliance/ on a machine that needs it. -->
+  <Import Project="$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.targets"
+          Condition="Exists('$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.targets')" />
 </Project>

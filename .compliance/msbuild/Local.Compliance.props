@@ -1,6 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <ComplianceMode>audit</ComplianceMode>
-    <ComplianceProfile>desktop</ComplianceProfile>
-  </PropertyGroup>
-</Project>

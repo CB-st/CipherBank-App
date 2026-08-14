@@ -1,9 +1,6 @@
 # Host + UI agent contract
 
-CipherBank-app is both the MAUI composition root/host *and* the
-views/view-model layer — per `.compliance/docs/AGENT-PLACEMENT.md`, that
-means it carries both `AGENTS.host.md` and `AGENTS.ui.md` from
-`.compliance/templates/`, combined below.
+CipherBank-app is both the MAUI composition root/host and the views/view-model layer.
 
 ## Host
 
@@ -30,5 +27,3 @@ Applies to `Views/`, `ViewModels/`, `Controls/`, and `Converters/`.
 - Meet baseline accessibility: every interactive control has a programmatic name, the whole surface is keyboard-operable, and color is never the only signal.
 - Scope DI lifetimes to the view/page/window that owns the resource; do not hold UI state in a singleton across navigations.
 - Test view models/components against Application ports independent of the UI framework; test dispatcher-specific behavior separately.
-
-See `.compliance/docs/UI-COMPOSITION.md` for the full method.

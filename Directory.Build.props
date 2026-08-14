@@ -38,8 +38,9 @@
     <WarningsAsErrors>$(WarningsAsErrors);CA2100;CA5350;CA5351;CA5359;CA5360;CA5361;CA5362;CA5363;CA5364;CA5365;CA5366;CA5367;CA5368;CA5369;CA5370;CA5371;CA5372;CA5373;CA5374;CA5375;CA5376;CA5377;CA5378;CA5379;CA5380;CA5381;CA5382;CA5383;CA5384;CA5385;CA5386;CA5387;CA5388;CA5389;CA5390;CA5391;CA5392;CA5393;CA5394;CA5395;CA5396;CA5397;CA5398;CA5399;CA5400;CA5401;CA5402;CA5403;CA5404;CA5405</WarningsAsErrors>
   </PropertyGroup>
 
-  <!-- dotnet10-compliance-overlay:start -->
-  <Import Project=".compliance/msbuild/Local.Compliance.props" />
-  <Import Project=".compliance/msbuild/DotNet10.Compliance.props" />
-  <!-- dotnet10-compliance-overlay:end -->
+  <!-- Optional local overlay. Not committed; drop .compliance/ on a machine that needs it. -->
+  <Import Project="$(MSBuildThisFileDirectory).compliance/msbuild/Local.Compliance.props"
+          Condition="Exists('$(MSBuildThisFileDirectory).compliance/msbuild/Local.Compliance.props')" />
+  <Import Project="$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.props"
+          Condition="Exists('$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.props')" />
 </Project>
