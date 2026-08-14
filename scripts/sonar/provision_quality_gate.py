@@ -80,14 +80,16 @@ DEFERRED_CONDITIONS: list[dict[str, str]] = [
 
 
 @dataclass
-class Condition:
+class Condition(object):
+    """One quality-gate condition as returned by api/qualitygates/show."""
+
     id: str | None
     metric: str
     op: str
     error: str
 
 
-def _request(host: str, token: str, path: str, params: dict[str, str], *, dry_run: bool) -> dict:
+def _request(host: str, token: str, path: str, params: dict[str, str], *, dry_run: bool) -> dict[str, object]:
     """POST/GET a Sonar Web API endpoint with basic auth (token as username)."""
     url = f"{host.rstrip('/')}{path}"
     method = "GET" if path.endswith(("/list", "/show")) else "POST"
@@ -113,20 +115,36 @@ def _request(host: str, token: str, path: str, params: dict[str, str], *, dry_ru
 
 
 def _basic_auth(token: str) -> str:
+    """Encode a Sonar token as HTTP basic auth (token as username, empty password)."""
     import base64
 
     return base64.b64encode(f"{token}:".encode("utf-8")).decode("ascii")
 
 
-def find_or_create_gate(host: str, token: str, *, dry_run: bool) -> None:
-    """Ensure GATE_NAME exists; create it if this is the first run."""
+def gate_exists_on_server(names: list[object], gate_name: str) -> bool:
+    """True when the named gate is already on the server listing."""
+    return gate_name in names
+
+
+def should_fetch_conditions(*, dry_run: bool, gate_exists: bool) -> bool:
+    """False only for first-run dry-run: /show would 404 after a planned create."""
+    return gate_exists or not dry_run
+
+
+def find_or_create_gate(host: str, token: str, *, dry_run: bool) -> bool:
+    """Ensure GATE_NAME exists; create it if this is the first run.
+
+    Returns whether the gate exists on the server after this step. A dry-run
+    create leaves it missing, so callers must not GET /show.
+    """
     listing = _request(host, token, "/api/qualitygates/list", {}, dry_run=False)
     names = [gate.get("name") for gate in listing.get("qualitygates", [])]
-    if GATE_NAME in names:
+    if gate_exists_on_server(names, GATE_NAME):
         print(f"Gate '{GATE_NAME}' already exists.")
-        return
+        return True
     print(f"Creating gate '{GATE_NAME}'.")
     _request(host, token, "/api/qualitygates/create", {"name": GATE_NAME}, dry_run=dry_run)
+    return not dry_run
 
 
 def fetch_conditions(host: str, token: str) -> dict[str, Condition]:
@@ -197,6 +215,7 @@ def reconcile(
 
 
 def assign_to_project(host: str, token: str, project_key: str, *, dry_run: bool) -> None:
+    """Select GATE_NAME as the project's quality gate."""
     print(f"Assigning '{GATE_NAME}' to project '{project_key}'.")
     _request(
         host,
@@ -208,6 +227,7 @@ def assign_to_project(host: str, token: str, project_key: str, *, dry_run: bool)
 
 
 def main(argv: list[str]) -> int:
+    """Provision the live (and optional deferred) conditions, then assign the gate."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--include-deferred", action="store_true", help="Also provision the deferred conditions.")
     parser.add_argument("--dry-run", action="store_true", help="Print planned changes without calling the API.")
@@ -227,8 +247,12 @@ def main(argv: list[str]) -> int:
     if args.include_deferred:
         declared += DEFERRED_CONDITIONS
 
-    find_or_create_gate(host, token, dry_run=args.dry_run)
-    fetched = fetch_conditions(host, token)
+    exists = find_or_create_gate(host, token, dry_run=args.dry_run)
+    fetched = fetch_conditions(host, token) if should_fetch_conditions(
+        dry_run=args.dry_run, gate_exists=exists
+    ) else {}
+    if args.dry_run and not exists:
+        print("Gate does not exist yet; previewing planned conditions against an empty set.")
     reconcile(host, token, declared, fetched, dry_run=args.dry_run)
     assign_to_project(host, token, project_key, dry_run=args.dry_run)
 
