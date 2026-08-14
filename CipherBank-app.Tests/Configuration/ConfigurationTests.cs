@@ -41,6 +41,38 @@ public sealed class ConfigurationTests
     }
 
     [Fact]
+    public void Build_Default_UsesProductionDatabaseName()
+    {
+        IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
+
+        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
+    }
+
+    [Fact]
+    public void Build_Development_OverridesDatabaseName()
+    {
+        IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Development");
+
+        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.dev.db");
+    }
+
+    [Fact]
+    public void Build_Production_KeepsDefaultDatabaseName()
+    {
+        IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Production");
+
+        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
+    }
+
+    [Fact]
+    public void Build_WindowsOverlay_AppliesWindowsResource()
+    {
+        IConfiguration configuration = CipherBankDefaultsConfiguration.Build(windowsOverlay: true);
+
+        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.win.db");
+    }
+
+    [Fact]
     public void AesGcmCryptoBox_ConfiguredDefaults_RoundTrips()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
