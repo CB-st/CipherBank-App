@@ -26,9 +26,6 @@ required=(
   CipherBank-app.E2ETests/AGENTS.md
   config/README.md
   config/sonar/AGENTS.md
-  config/appsettings.json
-  config/appsettings.Development.json
-  config/appsettings.Windows.json
   config/agentic/README.md
   config/agentic/dispatch.json
   config/challenge-pass/README.md
