@@ -7,15 +7,16 @@ direction.
 
 ## Live set (PR #33)
 
-Coverage, duplicated-line density, and violations on new code. This matches the
-Sonar CAYC gate currently assigned to the project.
+Duplicated-line density and violations on new code. This matches the Sonar CAYC
+gate currently assigned to the project (PR analyses do not return a coverage
+condition).
 
 ## Deferred expansion
 
-Ratings (reliability / security / maintainability worse than A), security-hotspot
-review at 100%, and blocker / critical issue counts are commented in
-`quality-gate.yaml`. Restore them only when the same conditions exist on the
-server:
+Coverage, ratings (reliability / security / maintainability worse than A),
+security-hotspot review at 100%, and blocker / critical issue counts are
+commented in `quality-gate.yaml`. Restore them only when the same conditions
+exist on the server:
 
 1. Add the six conditions to **CipherBank New Code Gate** on Sonar.
 2. Uncomment the matching YAML block in the same change.

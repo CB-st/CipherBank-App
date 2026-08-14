@@ -10,6 +10,29 @@ namespace CipherBank_app.Tests.Architecture;
 
 public sealed class VerifySonarQualityGateTests
 {
+    private const string LiveCaycGateJson =
+        """
+        {
+          "status": "ERROR",
+          "conditions": [
+            {
+              "status": "OK",
+              "metricKey": "new_duplicated_lines_density",
+              "comparator": "GT",
+              "errorThreshold": "3",
+              "actualValue": "0.0"
+            },
+            {
+              "status": "ERROR",
+              "metricKey": "new_violations",
+              "comparator": "GT",
+              "errorThreshold": "0",
+              "actualValue": "3"
+            }
+          ]
+        }
+        """;
+
     private const string ThreeConditionGateJson =
         """
         {
@@ -60,7 +83,7 @@ public sealed class VerifySonarQualityGateTests
     [Fact]
     public void Verify_FailsWhenDeclaredYamlConditionsAreMissingFromFetchedGate()
     {
-        (int exitCode, string stdErr) = RunVerifier(ThreeConditionGateJson, ExtraDeclaredConditionYaml);
+        (int exitCode, string stdErr) = RunVerifier(LiveCaycGateJson, ExtraDeclaredConditionYaml);
 
         exitCode.Should().Be(1);
         stdErr.Should().Contain("reliability_rating");
@@ -70,10 +93,20 @@ public sealed class VerifySonarQualityGateTests
     [Fact]
     public void Verify_SucceedsWhenEveryDeclaredConditionIsPresent()
     {
-        (int exitCode, string stdErr) = RunVerifier(ThreeConditionGateJson);
+        (int exitCode, string stdErr) = RunVerifier(LiveCaycGateJson);
 
         exitCode.Should().Be(0);
         stdErr.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Verify_FailsWhenFetchedGateHasUndeclaredCoverage()
+    {
+        (int exitCode, string stdErr) = RunVerifier(ThreeConditionGateJson);
+
+        exitCode.Should().Be(1);
+        stdErr.Should().Contain("new_coverage");
+        stdErr.Should().Contain("not declared");
     }
 
     private static (int ExitCode, string StandardError) RunVerifier(string fetchedJson, string? yamlOverride = null)
@@ -92,7 +125,7 @@ public sealed class VerifySonarQualityGateTests
                 File.WriteAllText(yamlPath, yamlOverride);
             }
 
-            var start = new ProcessStartInfo
+            ProcessStartInfo start = new ProcessStartInfo
             {
                 FileName = "python3",
                 WorkingDirectory = root,
@@ -104,7 +137,7 @@ public sealed class VerifySonarQualityGateTests
             start.ArgumentList.Add(jsonPath);
             start.ArgumentList.Add(yamlPath);
 
-            using var process = Process.Start(start);
+            using Process? process = Process.Start(start);
             process.Should().NotBeNull();
             string stdErr = process!.StandardError.ReadToEnd();
             process.WaitForExit();

@@ -86,6 +86,46 @@ def yaml_match_for(metric_key: str, expected: dict[str, dict[str, str]]) -> tupl
     return None
 
 
+def compare_fetched_condition(
+    condition: dict[str, object],
+    expected: dict[str, dict[str, str]],
+    yaml_name: str,
+) -> tuple[str | None, list[str]]:
+    """Match one fetched condition to YAML; return (declared name, errors)."""
+    metric = str(condition.get("metricKey") or "")
+    match = yaml_match_for(metric, expected)
+    if match is None:
+        return None, [
+            f"fetched `{metric}` is not declared in {yaml_name}; "
+            "the live gate and the checked-in policy have split."
+        ]
+
+    name, spec = match
+    errors: list[str] = []
+    expected_op = OPERATORS.get(spec.get("operator", ""), spec.get("operator", ""))
+    actual_op = str(condition.get("comparator") or "")
+    if expected_op and actual_op != expected_op:
+        errors.append(f"`{metric}` operator is {actual_op}, yaml `{name}` expects {expected_op}.")
+
+    expected_threshold = normalize_threshold(spec.get("error_threshold", ""))
+    actual_threshold = normalize_threshold(condition.get("errorThreshold", ""))
+    if expected_threshold and actual_threshold != expected_threshold:
+        errors.append(
+            f"`{metric}` threshold is {actual_threshold}, yaml `{name}` expects {expected_threshold}."
+        )
+    return name, errors
+
+
+def missing_declared_conditions(expected: dict[str, dict[str, str]], matched_names: set[str]) -> list[str]:
+    """Fail closed when a YAML condition never appeared in the fetched gate."""
+    return [
+        f"declared `{name}` has no matching fetched Sonar metric; "
+        "the live gate is missing a checked-in condition."
+        for name in expected
+        if name not in matched_names
+    ]
+
+
 def verify(fetched_path: Path, yaml_path: Path) -> list[str]:
     """Compare fetched Sonar conditions with the checked-in YAML in both directions."""
     payload = json.loads(fetched_path.read_text(encoding="utf-8"))
@@ -98,36 +138,12 @@ def verify(fetched_path: Path, yaml_path: Path) -> list[str]:
         errors.append(f"{fetched_path} has no quality-gate conditions to compare.")
 
     for condition in conditions:
-        metric = condition.get("metricKey") or ""
-        match = yaml_match_for(metric, expected)
-        if match is None:
-            errors.append(
-                f"fetched `{metric}` is not declared in {yaml_path.name}; "
-                "the live gate and the checked-in policy have split."
-            )
-            continue
-        name, spec = match
-        matched_names.add(name)
-        expected_op = OPERATORS.get(spec.get("operator", ""), spec.get("operator", ""))
-        actual_op = condition.get("comparator") or ""
-        if expected_op and actual_op != expected_op:
-            errors.append(
-                f"`{metric}` operator is {actual_op}, yaml `{name}` expects {expected_op}."
-            )
-        expected_threshold = normalize_threshold(spec.get("error_threshold", ""))
-        actual_threshold = normalize_threshold(condition.get("errorThreshold", ""))
-        if expected_threshold and actual_threshold != expected_threshold:
-            errors.append(
-                f"`{metric}` threshold is {actual_threshold}, yaml `{name}` expects {expected_threshold}."
-            )
+        name, cond_errors = compare_fetched_condition(condition, expected, yaml_path.name)
+        errors.extend(cond_errors)
+        if name is not None:
+            matched_names.add(name)
 
-    for name in expected:
-        if name not in matched_names:
-            errors.append(
-                f"declared `{name}` has no matching fetched Sonar metric; "
-                "the live gate is missing a checked-in condition."
-            )
-
+    errors.extend(missing_declared_conditions(expected, matched_names))
     return errors
 
 
