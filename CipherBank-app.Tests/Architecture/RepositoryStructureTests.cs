@@ -15,7 +15,7 @@ public sealed partial class RepositoryStructureTests
     {
         string root = FindRepositoryRoot();
         File.Exists(Path.Combine(root, "Directory.Packages.props")).Should().BeTrue();
-        File.Exists(Path.Combine(root, "config", "sonar", "quality-gate.yaml")).Should().BeTrue();
+        File.Exists(Path.Combine(root, "scripts", "sonar", "provision_quality_gate.py")).Should().BeTrue();
         File.Exists(Path.Combine(root, "scripts", "validate-structure.sh")).Should().BeTrue();
     }
 

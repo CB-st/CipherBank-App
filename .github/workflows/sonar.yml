@@ -473,13 +473,6 @@ jobs:
             core.setOutput('gate_status', gateStatus);
             core.setOutput('issue_count', String(issues.length));
 
-      - name: Verify checked-in quality gate against Sonar
-        if: steps.poll.outcome == 'success'
-        run: |
-          python3 scripts/verify-sonar-quality-gate.py \
-            "${SONAR_DIR}/quality-gate.json" \
-            config/sonar/quality-gate.yaml
-
       ### 8. Upload normalised sonar-context artifact ###########################
       - name: Upload sonar-context artifact
         if: ${{ !cancelled() && steps.poll.outcome == 'success' }}

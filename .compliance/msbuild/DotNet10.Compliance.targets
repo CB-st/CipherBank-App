@@ -1,0 +1,10 @@
+<Project>
+  <Target Name="CheckDotNet10Compliance" BeforeTargets="BeforeBuild" Condition="'$(ComplianceMode)' == 'enforce'">
+    <Error
+      Condition="'$(TargetFrameworks)' == '' and '$(TargetFramework)' != '' and !$([System.String]::Copy('$(TargetFramework)').StartsWith('net10.0'))"
+      Text="Compliance enforcement requires a net10.0 target (platform suffixes are allowed). Current target: $(TargetFramework). Migrate and test the project, or temporarily return ComplianceMode to audit." />
+    <Warning
+      Condition="'$(TargetFrameworks)' != '' and !$([System.String]::Copy('$(TargetFrameworks)').Contains('net10.0'))"
+      Text="The multi-target list does not contain net10.0: $(TargetFrameworks). Review the compatibility plan." />
+  </Target>
+</Project>

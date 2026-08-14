@@ -1,0 +1,5 @@
+<Project>
+  <!-- dotnet10-compliance-overlay:start -->
+  <Import Project=".compliance/msbuild/DotNet10.Compliance.targets" />
+  <!-- dotnet10-compliance-overlay:end -->
+</Project>

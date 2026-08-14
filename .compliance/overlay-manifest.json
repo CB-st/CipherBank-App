@@ -1,0 +1,16 @@
+{
+  "name": "dotnet10-compliance-overlay",
+  "version": "1.4.0",
+  "target": "net10.0",
+  "language": "C# 14",
+  "managedDirectory": ".compliance",
+  "profiles": ["api", "library", "worker", "desktop", "scientific"],
+  "modes": ["audit", "enforce"],
+  "minimumPython": "3.10",
+  "mutations": [
+    "create .compliance managed files",
+    "create root AGENTS.md only when absent",
+    "append marked imports to Directory.Build.props and Directory.Build.targets",
+    "back up existing MSBuild files before modification"
+  ]
+}

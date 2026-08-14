@@ -13,7 +13,7 @@ fail()
 
 required=(
   Directory.Packages.props
-  config/sonar/quality-gate.yaml
+  scripts/sonar/provision_quality_gate.py
 )
 for path in "${required[@]}"; do
   [[ -f "${path}" ]] || fail "missing required ${path}"

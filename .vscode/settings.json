@@ -1,0 +1,17 @@
+{
+    // Connected Mode project binding for SonarQube for IDE (formerly SonarLint).
+    // No token here on purpose: each developer adds their own personal user
+    // token to their *user* settings, never to this committed workspace file:
+    //
+    //   "sonarlint.connectedMode.connections.sonarqube": [
+    //     { "connectionId": "cipherbank", "serverUrl": "https://sonar.cipherbank.money" }
+    //   ]
+    //
+    // See config/sonar/README.md for the full one-time setup, including how
+    // to export a shared .sonarlint/connectedMode.json for teammates on
+    // other IDEs.
+    "sonarlint.connectedMode.project": {
+        "connectionId": "cipherbank",
+        "projectKey": "CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c"
+    }
+}
