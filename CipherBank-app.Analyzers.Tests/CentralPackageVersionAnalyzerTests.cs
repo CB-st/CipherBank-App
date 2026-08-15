@@ -36,6 +36,24 @@ public sealed class CentralPackageVersionAnalyzerTests
     }
 
     [Fact]
+    public async Task ReportsVersionWhenAttributeFollowsNewline()
+    {
+        CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
+        {
+            TestCode = "class C { }",
+            TestState =
+            {
+                AdditionalFiles =
+                {
+                    ("CipherBank-app.Core/CipherBank-app.Core.csproj",
+                     "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <ItemGroup>\n    {|CB1001:<PackageReference Include=\"NBitcoin\"\nVersion=\"8.0.13\" />|}\n  </ItemGroup>\n</Project>\n"),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
     public async Task IgnoresDirectoryPackagesProps()
     {
         var test = new CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier>
