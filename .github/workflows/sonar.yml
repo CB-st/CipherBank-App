@@ -60,10 +60,22 @@ jobs:
           dotnet-version: |
             10.0.x
 
+      # Repository-wide CB1001–CB1004 pass. Linux cannot compile the MAUI host
+      # (net10.0-android|ios|maccatalyst), IntegrationTests (WireMock/Scriban.Signed),
+      # or E2ETests (StyleCop + TreatWarningsAsErrors). Analyzer tests load those
+      # on-disk csproj/C# trees as AdditionalFiles; Core/ChallengePass/Tests are
+      # also compiled in the Sonar job with Directory.Build.targets AdditionalFiles.
       - name: Run structure analyzer tests
         run: |
           set -euo pipefail
           mkdir -p reports
+          echo "Structure pass (real files, not a Linux compile of unbuildable TFMs):"
+          echo "  CipherBank-app (MAUI host)"
+          echo "  CipherBank-app.IntegrationTests"
+          echo "  CipherBank-app.E2ETests"
+          echo "  CipherBank-app.Core"
+          echo "  CipherBank-app.ChallengePass"
+          echo "  CipherBank-app.Tests"
           dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj -c Release --nologo \
             -p:CollectCoverage=true \
             -p:CoverletOutputFormat=opencover \
@@ -334,6 +346,9 @@ jobs:
             /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,reports/analyzer.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
+      # Do not add CipherBank-app / IntegrationTests / E2ETests here. Linux cannot
+      # compile those TFMs; CB1001–CB1004 still scan their trees via AdditionalFiles
+      # (Directory.Build.targets) and the coverage "Run structure analyzer tests" step.
       - name: Build analyzable projects
         run: |
           set -euo pipefail
