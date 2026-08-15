@@ -82,4 +82,41 @@ public sealed class CentralPackageVersionAnalyzerTests
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task ReportsVersionOnMauiHostCsproj()
+    {
+        CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
+        {
+            TestCode = "class C { }",
+            TestState =
+            {
+                AdditionalFiles =
+                {
+                    ("CipherBank-app/CipherBank-app.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <ItemGroup>
+                            {|CB1001:<PackageReference Include="NBitcoin" Version="8.0.13" />|}
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("CipherBank-app.IntegrationTests/CipherBank-app.IntegrationTests.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <ItemGroup>
+                            {|CB1001:<PackageReference Include="WireMock.Net" Version="1.6.9" />|}
+                          </ItemGroup>
+                        </Project>
+                        """),
+                    ("CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj", """
+                        <Project Sdk="Microsoft.NET.Sdk">
+                          <ItemGroup>
+                            {|CB1001:<PackageReference Include="Appium.WebDriver" Version="5.0.0" />|}
+                          </ItemGroup>
+                        </Project>
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
 }

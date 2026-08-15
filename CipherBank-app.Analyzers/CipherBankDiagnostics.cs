@@ -22,7 +22,8 @@ public static class CipherBankDiagnostics
         "PackageReference Version attributes must live in Directory.Packages.props, not '{0}'",
         Category,
         DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
 
     /// <summary>
     /// Describes CB1002.
@@ -34,7 +35,8 @@ public static class CipherBankDiagnostics
         "Properties/AssemblyInfo.cs is not allowed; use SDK-style project metadata instead",
         Category,
         DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
 
     /// <summary>
     /// Describes CB1003.
@@ -58,7 +60,8 @@ public static class CipherBankDiagnostics
         "Identifier '{0}' is retired (IProductApi, MockProductApi, AppSessionDeps)",
         Category,
         DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
 
     /// <summary>Gets the analyzer diagnostic category.</summary>
     public static string Category => "CipherBank.Structure";

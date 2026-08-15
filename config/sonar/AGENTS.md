@@ -13,7 +13,9 @@ evaluated by Sonar.
 - Never reintroduce a repo-side copy of the gate conditions (YAML, Python,
   or otherwise) that CI verifies against or pushes to the server.
 - Repository-structure rules (CPM, AssemblyInfo, Core SQL, retired names)
-  live in `CipherBank-app.Analyzers` and run on every `dotnet build`.
+  live in `CipherBank-app.Analyzers` and run on every `dotnet build`. Sibling
+  product projects are scanned via additional files so Linux CI does not need
+  to compile the MAUI host.
 
 ## Construction rules
 

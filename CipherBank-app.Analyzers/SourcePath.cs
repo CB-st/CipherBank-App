@@ -17,6 +17,20 @@ internal static class SourcePath
     internal static string Normalize(string path) => path.Replace('\\', '/');
 
     /// <summary>
+    /// True when two filesystem paths match after slash normalization.
+    /// Use: High (every additional-file dedupe). Scope: analyzer path helpers.
+    /// </summary>
+    internal static bool PathsEqual(string left, string right)
+        => string.Equals(Normalize(left), Normalize(right), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// True when the additional file is C# source.
+    /// Use: High (every additional file). Scope: sibling-project scans.
+    /// </summary>
+    internal static bool IsCSharpFile(string path)
+        => Normalize(path).EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// True when the tree is a legacy Properties/AssemblyInfo.cs file.
     /// Use: High (every C# tree). Scope: NoLegacyAssemblyInfoAnalyzer.
     /// </summary>

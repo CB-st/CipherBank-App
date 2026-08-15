@@ -312,8 +312,6 @@ jobs:
             CipherBank-app.Core/CipherBank-app.Core.csproj
             CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
             CipherBank-app.Tests/CipherBank-app.Tests.csproj
-            CipherBank-app.IntegrationTests/CipherBank-app.IntegrationTests.csproj
-            CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj
           )
           built=0
           for project in "${projects[@]}"; do

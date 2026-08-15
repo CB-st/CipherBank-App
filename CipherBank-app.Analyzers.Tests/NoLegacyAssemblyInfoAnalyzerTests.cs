@@ -45,4 +45,53 @@ public sealed class NoLegacyAssemblyInfoAnalyzerTests
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task ReportsAssemblyInfoFromAdditionalFile()
+    {
+        CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier> test = new()
+        {
+            TestCode = "class Wallet { }",
+            TestState =
+            {
+                AdditionalFiles =
+                {
+                    ("CipherBank-app/Properties/AssemblyInfo.cs", """
+                        {|CB1002:class AssemblyInfo
+                        {
+                        }|}
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task DoesNotDoubleReportWhenAdditionalAssemblyInfoIsCompilationTree()
+    {
+        CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier> test = new()
+        {
+            TestState =
+            {
+                Sources =
+                {
+                    ("CipherBank-app/Properties/AssemblyInfo.cs", """
+                        {|CB1002:class AssemblyInfo
+                        {
+                        }|}
+                        """),
+                },
+                AdditionalFiles =
+                {
+                    ("CipherBank-app/Properties/AssemblyInfo.cs", """
+                        class AssemblyInfo
+                        {
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
 }

@@ -18,14 +18,13 @@ namespace CipherBank_app.Analyzers;
 public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 {
     private const string CommandTextName = "CommandText";
+    private const string CommandTextAssignment = CommandTextName + " =";
 
     private static readonly HashSet<string> RawSqlMethods = new(StringComparer.Ordinal)
     {
         "FromSqlRaw",
         "ExecuteSqlRaw",
     };
-
-    private static readonly string CommandTextAssignment = CommandTextName + " =";
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
