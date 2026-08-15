@@ -17,11 +17,15 @@ namespace CipherBank_app.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 {
+    private const string CommandTextName = "CommandText";
+
     private static readonly HashSet<string> RawSqlMethods = new(StringComparer.Ordinal)
     {
         "FromSqlRaw",
         "ExecuteSqlRaw",
     };
+
+    private static readonly string CommandTextAssignment = CommandTextName + " =";
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
@@ -51,9 +55,9 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        var assignment = (AssignmentExpressionSyntax)context.Node;
+        AssignmentExpressionSyntax assignment = (AssignmentExpressionSyntax)context.Node;
         if (assignment.Left is not MemberAccessExpressionSyntax member
-            || member.Name.Identifier.ValueText != "CommandText")
+            || member.Name.Identifier.ValueText != CommandTextName)
         {
             return;
         }
@@ -61,7 +65,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
         context.ReportDiagnostic(Diagnostic.Create(
             CipherBankDiagnostics.ScatteredSql,
             member.Name.GetLocation(),
-            "CommandText ="));
+            CommandTextAssignment));
     }
 
     /// <summary>
@@ -75,7 +79,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        var invocation = (InvocationExpressionSyntax)context.Node;
+        InvocationExpressionSyntax invocation = (InvocationExpressionSyntax)context.Node;
         string? name = MethodName(invocation);
         if (name is null || !RawSqlMethods.Contains(name))
         {

@@ -47,7 +47,16 @@ jobs:
             10.0.x
 
       - name: Run structure analyzer tests
-        run: dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj -c Release --nologo
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj -c Release --nologo \
+            -p:CollectCoverage=true \
+            -p:CoverletOutputFormat=opencover \
+            -p:CoverletOutput="${GITHUB_WORKSPACE}/reports/analyzer.opencover.xml" \
+            -p:Include="[CipherBank-app.Analyzers]*" \
+            -p:Threshold=0
+          test -f reports/analyzer.opencover.xml
 
       - name: Run unit tests with Coverlet
         run: |
@@ -73,6 +82,7 @@ jobs:
           mkdir -p artifact-coverage
           cp -f reports/coverage.cobertura.xml artifact-coverage/
           cp -f reports/coverage.opencover.xml artifact-coverage/
+          cp -f reports/analyzer.opencover.xml artifact-coverage/
 
       - name: Upload coverage-report artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -213,8 +223,13 @@ jobs:
       - name: Verify coverage report
         run: |
           set -euo pipefail
+          analyzer=reports/analyzer.opencover.xml
           opencover=reports/coverage.opencover.xml
           cobertura=reports/coverage.cobertura.xml
+          if [ ! -f "${analyzer}" ]; then
+            echo "Missing ${analyzer} after coverage-report download." >&2
+            exit 1
+          fi
           if [ ! -f "${opencover}" ]; then
             echo "Missing ${opencover} after coverage-report download." >&2
             exit 1
@@ -286,16 +301,19 @@ jobs:
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
             /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,design_handoff_cipherbank/**" \
             /d:sonar.cpd.exclusions="**/IProductApi.cs,**/IWalletService.cs,**/IPublicQuoteService.cs,**/IMnemonicBackupService.cs,**/IPrefsSyncService.cs,**/IStepUpChallenges.cs,**/IChallengePass*.cs,**/IAccountKeySource.cs,**/ISessionChallengeClient.cs,**/IPq*.cs" \
-            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
+            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,reports/analyzer.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
       - name: Build analyzable projects
         run: |
           set -euo pipefail
           projects=(
+            CipherBank-app.Analyzers/CipherBank-app.Analyzers.csproj
             CipherBank-app.Core/CipherBank-app.Core.csproj
             CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
             CipherBank-app.Tests/CipherBank-app.Tests.csproj
+            CipherBank-app.IntegrationTests/CipherBank-app.IntegrationTests.csproj
+            CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj
           )
           built=0
           for project in "${projects[@]}"; do
@@ -484,7 +502,7 @@ jobs:
           retention-days: 14
           overwrite: true
 
-      ### 9. Log quality gate (no exit-code enforcement) ########################
+      ### 9. Fail closed on quality-gate ERROR ###################################
       - name: Report quality gate outcome
         if: steps.poll.outputs.gate_status != ''
         env:
@@ -498,7 +516,8 @@ jobs:
               echo "::notice::Quality gate: WARN -- legacy status from some CE builds; see job summary + sonar-context artifact."
               ;;
             ERROR)
-              echo "::notice::Quality gate: ERROR -- SonarQube's own PR check should show the failure; see job summary + sonar-context artifact."
+              echo "::error::Quality gate: ERROR -- see job summary + sonar-context artifact." >&2
+              exit 1
               ;;
             *)
               echo "::error::Unknown quality gate status '$GATE'; fail closed until the poll script recognises this value." >&2

@@ -64,4 +64,22 @@ public sealed class CentralPackageVersionAnalyzerTests
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task IgnoresUnclosedPackageReferenceTag()
+    {
+        CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
+        {
+            TestCode = "class C { }",
+            TestState =
+            {
+                AdditionalFiles =
+                {
+                    ("broken.csproj", "<PackageReference Include=\"NBitcoin\" Version=\"8.0.13\""),
+                    ("notes.md", "<PackageReference Include=\"NBitcoin\" Version=\"8.0.13\" />"),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
 }

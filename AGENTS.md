@@ -10,7 +10,7 @@ Start with this file, then read the nearest subtree contract and the relevant do
 | --- | --- | --- |
 | `CipherBank-app.Core` | Domain models, application services, persistence ports | MAUI controls, platform APIs |
 | `CipherBank-app` | MAUI composition root, views, ViewModels, platform adapters | Domain policy, manual SQL, static service locators |
-| `CipherBank-app.Tests` | Unit, architecture, and options regression tests | Shared mutable fixtures or production substitutes |
+| `CipherBank-app.Tests` | Unit and options regression tests | Shared mutable fixtures or production substitutes |
 | `CipherBank-app.Analyzers` | Repository-structure Roslyn diagnostics (CPM, AssemblyInfo, Core SQL, retired names) | Product behavior |
 | Integration tests | HTTP and persistence boundaries | Reimplementation of product behavior |
 | `CipherBank-app.E2ETests` | Appium journeys and page objects | Product policy or hard-coded credentials |
@@ -48,7 +48,7 @@ dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=
 | `CipherBank-app/AGENTS.md` | Host (composition/startup) + UI |
 | `CipherBank-app.Core/AGENTS.md` | Core/domain |
 | `CipherBank-app.Tests/AGENTS.md` | Unit tests |
-| `CipherBank-app.Analyzers` | Repository-structure Roslyn analyzers |
+| `CipherBank-app.Analyzers/AGENTS.md` | Repository-structure Roslyn analyzers |
 | `CipherBank-app.IntegrationTests/AGENTS.md` | Integration tests |
 | `CipherBank-app.E2ETests/AGENTS.md` | End-to-end tests |
 | `config/sonar/AGENTS.md` | Gate ownership and analyzer/suppression governance |

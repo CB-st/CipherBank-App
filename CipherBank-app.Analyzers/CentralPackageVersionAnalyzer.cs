@@ -3,7 +3,6 @@
 // </copyright>
 
 using System.Collections.Immutable;
-using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
@@ -17,9 +16,9 @@ namespace CipherBank_app.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class CentralPackageVersionAnalyzer : DiagnosticAnalyzer
 {
-    private static readonly Regex PackageVersionAttribute = new(
-        @"<PackageReference[^>]*\sVersion=[^>]*>",
-        RegexOptions.Compiled);
+    private const string PackageReferenceTag = "<PackageReference";
+    private const string VersionAttribute = " Version=";
+    private const string TabVersionAttribute = "\tVersion=";
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
@@ -67,11 +66,30 @@ public sealed class CentralPackageVersionAnalyzer : DiagnosticAnalyzer
         }
 
         string content = text.ToString();
-        Match match = PackageVersionAttribute.Match(content);
-        while (match.Success)
+        int search = 0;
+        while (search < content.Length)
         {
-            context.ReportDiagnostic(CreateDiagnostic(file.Path, text, match.Index, match.Length));
-            match = match.NextMatch();
+            int tagStart = content.IndexOf(PackageReferenceTag, search, StringComparison.Ordinal);
+            if (tagStart < 0)
+            {
+                return;
+            }
+
+            int tagEnd = content.IndexOf('>', tagStart);
+            if (tagEnd < 0)
+            {
+                return;
+            }
+
+            int tagLength = tagEnd - tagStart + 1;
+            string tag = content.Substring(tagStart, tagLength);
+            if (tag.IndexOf(VersionAttribute, StringComparison.Ordinal) >= 0
+                || tag.IndexOf(TabVersionAttribute, StringComparison.Ordinal) >= 0)
+            {
+                context.ReportDiagnostic(CreateDiagnostic(file.Path, text, tagStart, tagLength));
+            }
+
+            search = tagEnd + 1;
         }
     }
 
