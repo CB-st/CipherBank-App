@@ -21,15 +21,7 @@ internal static class AdditionalSource
     internal static bool IsOutsideCompilation(Compilation compilation, string path)
     {
         string normalized = SourcePath.Normalize(path);
-        foreach (SyntaxTree tree in compilation.SyntaxTrees)
-        {
-            if (SourcePath.PathsEqual(tree.FilePath, normalized))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return !compilation.SyntaxTrees.Any(tree => SourcePath.PathsEqual(tree.FilePath, normalized));
     }
 
     /// <summary>

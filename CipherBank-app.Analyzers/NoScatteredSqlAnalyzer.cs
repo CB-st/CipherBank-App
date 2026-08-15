@@ -18,7 +18,6 @@ namespace CipherBank_app.Analyzers;
 public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 {
     private const string CommandTextName = "CommandText";
-    private const string CommandTextAssignment = CommandTextName + " =";
 
     private static readonly HashSet<string> RawSqlMethods = new(StringComparer.Ordinal)
     {
@@ -64,7 +63,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
         context.ReportDiagnostic(Diagnostic.Create(
             CipherBankDiagnostics.ScatteredSql,
             member.Name.GetLocation(),
-            CommandTextAssignment));
+            member.Name.Identifier.ValueText));
     }
 
     /// <summary>
