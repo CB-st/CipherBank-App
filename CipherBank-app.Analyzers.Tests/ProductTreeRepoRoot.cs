@@ -3,6 +3,7 @@
 // </copyright>
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace CipherBank_app.Analyzers.Tests;
@@ -17,10 +18,18 @@ internal static class ProductTreeRepoRoot
     internal const string IntegrationTestsCsproj = "CipherBank-app.IntegrationTests/CipherBank-app.IntegrationTests.csproj";
     internal const string E2ETestsCsproj = "CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj";
     internal const string MauiHostSample = "CipherBank-app/MauiProgram.cs";
+    internal const string MauiHostNonSample = "CipherBank-app/App.xaml.cs";
     internal const string IntegrationTestsSample = "CipherBank-app.IntegrationTests/MockServerFixture.cs";
     internal const string E2ETestsSample = "CipherBank-app.E2ETests/PageObjects/BasePage.cs";
 
     private const string MauiPackageReference = "<PackageReference Include=\"CommunityToolkit.Mvvm\" />";
+
+    private static readonly string[] UnbuiltProjectDirectories =
+    {
+        "CipherBank-app",
+        "CipherBank-app.IntegrationTests",
+        "CipherBank-app.E2ETests",
+    };
 
     /// <summary>
     /// Walks parents of the test output directory until the solution root is found.
@@ -59,6 +68,57 @@ internal static class ProductTreeRepoRoot
     }
 
     /// <summary>
+    /// Returns on-disk C# files from the MAUI, IntegrationTests, and E2ETests trees.
+    /// Use: Low (structure Facts). Scope: analyzer tests.
+    /// </summary>
+    internal static List<(string RelativePath, string Content)> UnbuiltCsharpFiles()
+    {
+        string root = Find();
+        List<(string RelativePath, string Content)> files = [];
+        foreach (string project in UnbuiltProjectDirectories)
+        {
+            string projectRoot = Path.Combine(root, project);
+            foreach (string fullPath in Directory.EnumerateFiles(projectRoot, "*.cs", SearchOption.AllDirectories))
+            {
+                string relative = Path.GetRelativePath(root, fullPath).Replace('\\', '/');
+                if (IsBinOrObj(relative))
+                {
+                    continue;
+                }
+
+                files.Add((relative, File.ReadAllText(fullPath)));
+            }
+        }
+
+        if (files.Count == 0)
+        {
+            throw new InvalidOperationException("No unbuilt C# files found under the MAUI, Integration, or E2E trees.");
+        }
+
+        return files;
+    }
+
+    /// <summary>
+    /// Inserts a retired identifier into live MAUI App.xaml.cs text.
+    /// Use: Low (injected CB1004 Fact). Scope: analyzer tests.
+    /// </summary>
+    internal static string InjectRetiredApiName(string source)
+    {
+        const string original = "    public App()";
+        const string injected = "    {|CB1004:IProductApi|} Api;\n\n    public App()";
+        int index = source.IndexOf(original, StringComparison.Ordinal);
+        if (index < 0)
+        {
+            throw new InvalidOperationException("App.xaml.cs no longer declares public App().");
+        }
+
+        return string.Concat(
+            source.AsSpan(0, index),
+            injected,
+            source.AsSpan(index + original.Length));
+    }
+
+    /// <summary>
     /// Inserts a newline-separated Version attribute on the MAUI host's first CPM PackageReference.
     /// Use: Low (injected CB1001 Fact). Scope: analyzer tests.
     /// </summary>
@@ -88,5 +148,15 @@ internal static class ProductTreeRepoRoot
         return File.Exists(Path.Combine(path, "CipherBank-app.sln"))
             && File.Exists(Path.Combine(path, "CipherBank-app", "CipherBank-app.csproj"))
             && File.Exists(Path.Combine(path, "Directory.Build.targets"));
+    }
+
+    /// <summary>
+    /// True when a repository-relative path is under bin or obj.
+    /// Use: Low (unbuilt tree walk). Scope: analyzer tests.
+    /// </summary>
+    private static bool IsBinOrObj(string relativePath)
+    {
+        return relativePath.Contains("/bin/", StringComparison.OrdinalIgnoreCase)
+            || relativePath.Contains("/obj/", StringComparison.OrdinalIgnoreCase);
     }
 }
