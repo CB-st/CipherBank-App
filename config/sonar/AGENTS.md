@@ -12,9 +12,8 @@ for the construction rules below, since every PR is evaluated by Sonar.
 - Never reintroduce a repo-side copy of the gate conditions that CI verifies
   against. If the gate needs to change, change it on the server via that
   script, in a reviewed PR that touches the script.
-- `RepositoryStructureTests.cs` and `scripts/validate-structure.sh` both
-  require `scripts/sonar/provision_quality_gate.py` to exist — keep both in
-  sync if this file moves.
+- Repository-structure rules (CPM, AssemblyInfo, Core SQL, retired names)
+  live in `CipherBank-app.Analyzers`. They no longer pin this script's path.
 
 ## Construction rules
 

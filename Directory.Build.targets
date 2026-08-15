@@ -2,4 +2,21 @@
   <!-- Optional local overlay. Not committed; drop .compliance/ on a machine that needs it. -->
   <Import Project="$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.targets"
           Condition="Exists('$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.targets')" />
+
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildProjectFullPath)" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)Directory.Packages.props" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)Directory.Build.props" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)Directory.Build.targets" />
+  </ItemGroup>
+
+  <Target Name="CipherBankRequireCentralPackageManagement" BeforeTargets="CollectPackageReferences">
+    <Error Text="Directory.Packages.props is required at the repository root."
+           Condition="!Exists('$(MSBuildThisFileDirectory)Directory.Packages.props')" />
+  </Target>
+
+  <Target Name="CipherBankForbidLegacyAssemblyInfo" BeforeTargets="CoreCompile">
+    <Error Text="Legacy Properties/AssemblyInfo.cs is not allowed: $(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs"
+           Condition="Exists('$(MSBuildProjectDirectory)/Properties/AssemblyInfo.cs')" />
+  </Target>
 </Project>
