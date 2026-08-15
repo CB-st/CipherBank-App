@@ -19,6 +19,13 @@ concurrency:
 # require PIPELINE_ALLOWED_AUTHOR (CSV of GitHub logins). Defaults to
 # RED-FLAG-DEVELOPMENT when unset. GHA has no split(); membership uses
 # comma-padded contains().
+#
+# Actor vs triggering_actor: Cursor / GitHub App pushes set github.actor to the
+# bot (e.g. cursor[bot]) while github.triggering_actor stays the human who
+# started the session. Requiring actor alone skipped Sonar, context, and review
+# on PR #33 (run 31868573925), so the required scan never ran and AI replies
+# dispatched with SONAR_AVAILABLE=false. Allow either login; keep the PR-author
+# check so an untrusted branch owner still cannot reach secrets.
 
 jobs:
   coverage:
@@ -34,6 +41,13 @@ jobs:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
     steps:
+      - name: Record workflow actors
+        run: |
+          echo "event=${{ github.event_name }}"
+          echo "actor=${{ github.actor }}"
+          echo "triggering_actor=${{ github.triggering_actor }}"
+          echo "pr_author=${{ github.event.pull_request.user.login }}"
+
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -109,10 +123,16 @@ jobs:
            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
            format(',{0},', github.event.pull_request.user.login)
          )
-      && contains(
-           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-           format(',{0},', github.actor)
-         )
+      && (
+        contains(
+          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+          format(',{0},', github.actor)
+        )
+        || contains(
+          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+          format(',{0},', github.triggering_actor)
+        )
+      )
     permissions:
       contents: read
       pull-requests: read
@@ -140,10 +160,16 @@ jobs:
              format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
              format(',{0},', github.event.pull_request.user.login)
            )
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.actor)
-           )
+        && (
+          contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.actor)
+          )
+          || contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.triggering_actor)
+          )
+        )
       )
       ||
       (
@@ -152,6 +178,10 @@ jobs:
           contains(
             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
             format(',{0},', github.actor)
+          )
+          || contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.triggering_actor)
           )
           || (
             github.event.head_commit.author.username != ''
