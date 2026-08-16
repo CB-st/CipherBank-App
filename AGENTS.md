@@ -97,7 +97,7 @@ Changes to XAML resources also require a light/dark visual pass at compact and l
 - Appium story tests use stable `CB-*`/`US-*` traits and fail if a selected wave resolves zero tests.
 - Device-bound facts run through `StoryRunner`, fail when `E2E_RUN=1`, and write a gap note before rethrowing.
 - Emulator, Appium, APK-install, diagnostics, and recovery-file work belongs to dedicated lifecycle objects behind the harness façade, not inside story bodies.
-- Package reset uses `adb shell pm clear com.companyname.cipherbankapp`.
+- Package reset uses `adb uninstall` + `adb install` + `adb shell pm clear com.companyname.cipherbankapp` at session start so PIN/LocalDb do not survive across installs. In-story Fresh still uses `pm clear` only.
 - Journals, recovery pulls, and diagnostics belong under gitignored `artifacts/` and must never be committed.
 - PINs, mnemonics, tokens, keys, PANs, and full bank coordinates are never logged in production.
 

@@ -18,6 +18,7 @@ tier for high-value user stories; exhaustive branch coverage belongs in
 - Device facts use `SkippableFact` only to report a real skipped result when `E2E_RUN` is absent. Once enabled, missing prerequisites and story failures fail the run.
 - Wrap every executable device body in `StoryRunner`; it records `docs/tests/gaps/` evidence and rethrows.
 - Establish the declared device profile before exercising the story. Reset with package `com.companyname.cipherbankapp`, never the Expo package id.
+- Each harness **session** uninstalls then reinstalls so PIN and LocalDb do not survive across installs (new-device). Fresh stories also `pm clear` in-process. Sealed smoke uses `noReset` only after that session wipe.
 
 ## Documentation and complexity
 

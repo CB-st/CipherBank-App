@@ -81,9 +81,10 @@ Never commit `artifacts/e2e-local.env`, `artifacts/e2e-journal/`, or recovery pu
 
 Wave 0 one-shot runner for `CipherBank_API34`. Boots the AVD if not already
 attached, builds the MAUI app (`-f net10.0-android -c Debug
--p:EmbedAssembliesIntoApk=true`), installs the APK, starts Appium on `:4723`
-if it isn't already up, then runs the requested slice of
-`CipherBank-app.E2ETests`.
+-p:EmbedAssembliesIntoApk=true`), **uninstalls any leftover package**, installs
+the APK (`adb install`, not `-r`), `pm clear`s application data so PIN/LocalDb
+do not survive across sessions, starts Appium on `:4723` if it isn't already
+up, then runs the requested slice of `CipherBank-app.E2ETests`.
 
 ```bash
 ./scripts/e2e-android.sh --story CB-ACCOUNT-001   # one story

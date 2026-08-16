@@ -65,6 +65,10 @@ Harness credentials:
   Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
   Optional ANDROID_CERT_PINS=<current>,<backup> stamps a pin-set into the Appium Debug APK.
 
+Each run is a new-device session: uninstall the package, install the APK,
+  then pm clear so PIN / LocalDb / secure store do not survive across installs.
+  Sealed smoke waves keep data only after that fresh install, via noReset.
+
 Requires: CB_AVD emulator image, ANDROID_HOME, DOTNET_ROOT (see scripts/lib/android-env.sh).
 EOF
 }
@@ -238,32 +242,77 @@ locate_apk() {
   echo "$ROOT/$apk"
 }
 
-# Installs (or reinstalls) the given APK onto the running device.
-# Use: Medium (once per harness run). Scope: single AVD instance.
+# Uninstalls a leftover package so this harness run is a new-device install.
+# `adb install -r` keeps data; PIN and LocalDb must not survive across sessions.
+# Use: High (every harness run). Scope: single AVD instance.
+uninstall_existing_app() {
+  local pkg="$CB_MAUI_PACKAGE"
+  # Emulator-only: do not let Auto Backup rehydrate PIN/LocalDb after reinstall.
+  # Product android:allowBackup is unchanged.
+  adb shell bmgr enable false >/dev/null 2>&1 || true
+  if adb shell pm path "$pkg" >/dev/null 2>&1; then
+    log "Uninstalling $pkg (new-device session: PIN and LocalDb must not survive)"
+    adb uninstall "$pkg" >/dev/null || die "failed to uninstall $pkg"
+  else
+    log "No existing $pkg install"
+  fi
+}
+
+# Requires pm clear to report Success so a no-op wipe cannot leave stale custody.
+# Use: High (every harness run after install). Scope: single AVD instance.
+assert_app_data_cleared() {
+  local pkg="$CB_MAUI_PACKAGE"
+  local out
+  out="$(adb shell pm clear "$pkg" 2>&1)" || die "pm clear failed for $pkg: $out"
+  grep -qi Success <<<"$out" || die "pm clear did not report Success for $pkg: $out"
+}
+
+# Drops leftover lab recovery files from shared Downloads (they survive uninstall).
+# Use: Medium (once per harness run). Scope: emulator Downloads collection.
+purge_lab_recovery_exports() {
+  log "Removing leftover lab recovery files from device Downloads"
+  adb shell 'rm -f /sdcard/Download/cipherbank-recovery-*.cbr.json' >/dev/null 2>&1 || true
+}
+
+# Fresh-installs the APK: uninstall → install → pm clear (not install -r).
+# Use: High (once per harness run). Scope: single AVD instance.
 install_apk() {
   local apk="$1"
+  uninstall_existing_app
   log "Installing $apk"
-  adb install -r "$apk"
-  log "Clearing ${CB_MAUI_PACKAGE} application data"
-  adb shell pm clear "$CB_MAUI_PACKAGE" >/dev/null \
-    || die "failed to pm clear $CB_MAUI_PACKAGE after install"
+  adb install "$apk" || die "adb install failed for $apk"
+  log "Purging application data after install (LocalDb, PIN, secure store)"
+  assert_app_data_cleared
+  purge_lab_recovery_exports
+}
+
+# True when the pinned UiAutomator2 driver is installed for APPIUM_VERSION.
+# Parses --json on stdout; the human list writes ANSI to stderr and looks empty when 2>/dev/null.
+# Use: High (every harness run). Scope: local Appium driver install.
+appium_uiautomator2_pinned() {
+  npx --yes "appium@${APPIUM_VERSION}" driver list --installed --json 2>/dev/null \
+    | python3 -c 'import json,sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    raise SystemExit(1)
+driver = data.get("uiautomator2") or {}
+raise SystemExit(0 if driver.get("version") == sys.argv[1] else 1)
+' "$APPIUM_UIAUTOMATOR2_VERSION"
 }
 
 # Ensures the pinned UiAutomator2 driver is installed for APPIUM_VERSION.
 # Use: Medium (once per harness run before starting/reusing Appium). Scope: local npm/appium install.
 ensure_appium_driver() {
-  local list
   log "Ensuring Appium ${APPIUM_VERSION} + UiAutomator2 ${APPIUM_UIAUTOMATOR2_VERSION}"
-  list="$(npx --yes "appium@${APPIUM_VERSION}" driver list --installed 2>/dev/null || true)"
-  if ! grep -qiE "uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION}([[:space:]@]|$)" <<<"$list"; then
-    log "Installing/replacing uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION} (current: ${list:-none})"
+  if ! appium_uiautomator2_pinned; then
+    log "Installing/replacing uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION}"
     npx --yes "appium@${APPIUM_VERSION}" driver uninstall uiautomator2 >/dev/null 2>&1 || true
     npx --yes "appium@${APPIUM_VERSION}" driver install "uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION}" \
       || die "failed to install Appium UiAutomator2 driver ${APPIUM_UIAUTOMATOR2_VERSION}"
-    list="$(npx --yes "appium@${APPIUM_VERSION}" driver list --installed 2>/dev/null || true)"
   fi
-  grep -qiE "uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION}([[:space:]@]|$)" <<<"$list" \
-    || die "UiAutomator2 ${APPIUM_UIAUTOMATOR2_VERSION} not installed for Appium ${APPIUM_VERSION} — got: ${list}"
+  appium_uiautomator2_pinned \
+    || die "UiAutomator2 ${APPIUM_UIAUTOMATOR2_VERSION} not installed for Appium ${APPIUM_VERSION}"
 }
 
 # Reads /status from a listening Appium and fails when build.version ≠ APPIUM_VERSION.

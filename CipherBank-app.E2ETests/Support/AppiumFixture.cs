@@ -225,8 +225,9 @@ public sealed class AppiumFixture : IDisposable
                 DeviceName = Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator",
             };
 
-            // Fresh installs need App=apk. Sealed smoke must not wipe custody: omit fullReset, force
-            // noReset, still pass App so UiAutomator2 can attach, and rely on ensure-sealed bootstrap.
+            // Session wipe is uninstall+pm clear in e2e-android.sh (new-device install). Do not fullReset
+            // here: that would race the harness install. Sealed smoke keeps custody with noReset; Fresh
+            // stories call EmulatorReset.ClearAppData themselves.
             options.App = apkPath;
             options.AddAdditionalAppiumOption("noReset", sealedProfile);
             options.AddAdditionalAppiumOption("fullReset", false);
