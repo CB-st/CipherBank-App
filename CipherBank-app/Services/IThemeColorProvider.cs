@@ -7,5 +7,5 @@ namespace CipherBank_app.Services;
 /// <summary>Resolves a semantic MAUI color resource for ViewModel-owned presentation data.</summary>
 public interface IThemeColorProvider
 {
-    Color Get(string resourceKey);
+    Color GetColor(string resourceKey);
 }

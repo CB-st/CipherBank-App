@@ -7,16 +7,6 @@ using Microsoft.Maui.Graphics;
 
 namespace CipherBank_app.Controls;
 
-/// <summary>One labeled series for the compare chart.</summary>
-public sealed class ChartSeries
-{
-    public string Label { get; set; } = string.Empty;
-
-    public IReadOnlyList<ChartPoint> Points { get; set; } = Array.Empty<ChartPoint>();
-
-    public Color Stroke { get; set; } = ThemeTokens.Get("Gold");
-}
-
 /// <summary>Multi-series % change overlay (Cora CompareChart).</summary>
 public sealed class CompareChartDrawable : IDrawable
 {
@@ -54,16 +44,16 @@ public sealed class CompareChartDrawable : IDrawable
         for (int i = 0; i < indexed.Count; i++)
         {
             var pathResult = ChartMath.ToPath(indexed[i].Pts, dirtyRect.Width, dirtyRect.Height, 10, lo, hi);
-            if (pathResult.Pts.Count < 2)
+            if (pathResult.Points.Count < 2)
             {
                 continue;
             }
 
             PathF geo = new PathF();
-            geo.MoveTo((float)pathResult.Pts[0].X, (float)pathResult.Pts[0].Y);
-            for (int j = 1; j < pathResult.Pts.Count; j++)
+            geo.MoveTo(pathResult.Points[0].X, pathResult.Points[0].Y);
+            for (int j = 1; j < pathResult.Points.Count; j++)
             {
-                geo.LineTo((float)pathResult.Pts[j].X, (float)pathResult.Pts[j].Y);
+                geo.LineTo(pathResult.Points[j].X, pathResult.Points[j].Y);
             }
 
             canvas.StrokeColor = indexed[i].Stroke.Alpha > 0 ? indexed[i].Stroke : DefaultColors[i % DefaultColors.Count];

@@ -20,6 +20,8 @@ namespace CipherBank_app.ViewModels;
 /// <summary>Profile / prefs / vault — Phase D polished.</summary>
 public partial class ProfileViewModel : ObservableObject, IDisposable
 {
+    private const int MinRecoveryPasswordLength = 12;
+
     private static readonly Dictionary<string, string> SectionLabels = new()
     {
         ["cora"] = "Cora bar",
@@ -39,9 +41,6 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
     // --- Mnemonic reveal hygiene ---
     private static readonly TimeSpan MnemonicRevealTtl = TimeSpan.FromSeconds(30);
 
-    // --- Backup recovery file ---
-    private const int MinRecoveryPasswordLength = 12;
-
     private readonly IPrefsStore _prefs;
     private readonly IPrefsSyncService _prefsSync;
     private readonly ICustodyService _custody;
@@ -54,9 +53,8 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
     private readonly IStepUpAuth _stepUp;
     private readonly IMnemonicBackupService _backup;
     private readonly IBackupFileService _backupFiles;
-    private CancellationTokenSource? _mnemonicClearCts;
-
     private readonly TimeProvider _timeProvider;
+    private CancellationTokenSource? _mnemonicClearCts;
 
     public ProfileViewModel(
         IPrefsStore prefs,
@@ -477,18 +475,20 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
         _mnemonicClearCts?.Dispose();
         _mnemonicClearCts = new CancellationTokenSource();
         CancellationToken token = _mnemonicClearCts.Token;
-        _ = Task.Run(async () =>
-        {
-            try
+        _ = Task.Run(
+            async () =>
             {
-                await Task.Delay(MnemonicRevealTtl, token).ConfigureAwait(false);
-                MainThread.BeginInvokeOnMainThread(ClearMnemonicReveal);
-            }
-            catch (OperationCanceledException)
-            {
-                // superseded
-            }
-        }, token);
+                try
+                {
+                    await Task.Delay(MnemonicRevealTtl, token).ConfigureAwait(false);
+                    MainThread.BeginInvokeOnMainThread(ClearMnemonicReveal);
+                }
+                catch (OperationCanceledException)
+                {
+                    // superseded
+                }
+            },
+            token);
     }
 
     partial void OnSelectedCardChanged(VaultCardDto? value)

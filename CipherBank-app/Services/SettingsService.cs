@@ -179,12 +179,13 @@ public sealed partial class SettingsService : ISettingsService
 
         set
         {
+            string modeName = value.ToString();
             if (_logger != null)
             {
-                LogSettingChanged(_logger, "SessionProofMode", value.ToString());
+                LogSettingChanged(_logger, "SessionProofMode", modeName);
             }
 
-            Preferences.Set(IdSessionProofMode, value.ToString());
+            Preferences.Set(IdSessionProofMode, modeName);
         }
     }
 

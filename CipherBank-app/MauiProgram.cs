@@ -235,7 +235,6 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<INfcPresentmentService, NullNfcPresentmentService>();
 #endif
 
-
         // Rate Limiter (singleton)
         mauiAppBuilder.Services.AddSingleton<RateLimiter>();
 

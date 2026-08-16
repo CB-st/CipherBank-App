@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-
 namespace CipherBank_app.ViewModels;
 
 /// <summary>Holdings row with optional masked balances.</summary>

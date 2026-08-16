@@ -28,6 +28,5 @@ public sealed class ShellDialogService : IDialogService
             placeholder: null,
             maxLength: -1,
             keyboard: Keyboard.Numeric,
-            initialValue: string.Empty,
-            isPassword: true);
+            initialValue: string.Empty);
 }

@@ -8,7 +8,7 @@ namespace CipherBank_app.Services;
 public sealed class MauiThemeColorProvider : IThemeColorProvider
 {
     /// <inheritdoc />
-    public Color Get(string resourceKey)
+    public Color GetColor(string resourceKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resourceKey);
         return Application.Current?.Resources.TryGetValue(resourceKey, out var value) == true

@@ -73,7 +73,7 @@ public sealed class BiometricService : IBiometricService
 
                 BioCallback callback = new BioCallback(tcs);
                 AndroidX.Biometric.BiometricPrompt prompt = new AndroidX.Biometric.BiometricPrompt(activity, executor, callback);
-                AndroidX.Biometric.BiometricPrompt.PromptInfo.Builder info = new AndroidX.Biometric.BiometricPrompt.PromptInfo.Builder()
+                AndroidX.Biometric.BiometricPrompt.PromptInfo info = new AndroidX.Biometric.BiometricPrompt.PromptInfo.Builder()
                     .SetTitle("CipherBank")
                     .SetSubtitle(reason)
                     .SetAllowedAuthenticators(

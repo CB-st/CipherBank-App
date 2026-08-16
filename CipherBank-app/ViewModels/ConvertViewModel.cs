@@ -24,12 +24,11 @@ public partial class ConvertViewModel : ObservableObject, IDisposable
     private readonly IAppSession _session;
     private readonly IStepUpAuth _stepUp;
     private readonly IStreamHub _streamHub;
+    private readonly TimeProvider _timeProvider;
     private QuoteDto? _lockedQuote;
     private CancellationTokenSource? _tickCts;
     private bool _streamHooked;
     private bool _assetsLoaded;
-
-    private readonly TimeProvider _timeProvider;
 
     public ConvertViewModel(
         IProductClient api,
