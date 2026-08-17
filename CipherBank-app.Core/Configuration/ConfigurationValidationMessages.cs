@@ -7,7 +7,9 @@ using System.Resources;
 
 namespace CipherBank_app.Configuration;
 
-/// <summary>Non-UI validation strings surfaced through <see cref="ResourceManager"/>.</summary>
+/// <summary>
+/// Options DataAnnotation / IValidateOptions copy (resource file, not appsettings keys).
+/// </summary>
 internal static class ConfigurationValidationMessages
 {
     private static readonly ResourceManager Manager = new(

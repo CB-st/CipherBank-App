@@ -55,4 +55,11 @@
           Condition="Exists('$(MSBuildThisFileDirectory).compliance/msbuild/Local.Compliance.props')" />
   <Import Project="$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.props"
           Condition="Exists('$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.props')" />
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'CipherBank-app.Analyzers' AND '$(MSBuildProjectName)' != 'CipherBank-app.Analyzers.Tests'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)CipherBank-app.Analyzers\CipherBank-app.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
 </Project>

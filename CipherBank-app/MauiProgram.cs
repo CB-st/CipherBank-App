@@ -19,6 +19,7 @@ using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
 using CipherBank_app.Wallets;
 using Microsoft.Extensions.Configuration;
+using Plugin.Maui.Biometric;
 using Serilog;
 using Serilog.Events;
 
@@ -118,10 +119,7 @@ public static class MauiProgram
     public static MauiAppBuilder RegisterServices(this MauiAppBuilder mauiAppBuilder)
     {
         // Repository-owned defaults load before deployment/user providers override them.
-        mauiAppBuilder.Configuration.AddConfiguration(
-            CipherBankDefaultsConfiguration.Build(
-                ResolveHostEnvironment(),
-                OperatingSystem.IsWindows()));
+        mauiAppBuilder.Configuration.AddConfiguration(CipherBankDefaultsConfiguration.Build());
         mauiAppBuilder.Configuration.AddConfiguration(ChallengePassDefaultsConfiguration.Build());
         mauiAppBuilder.Services.AddCipherBankCore(
             mauiAppBuilder.Configuration,
@@ -136,6 +134,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<IPinService, PinService>();
         mauiAppBuilder.Services.AddSingleton<ICustodyService, CustodyService>();
         mauiAppBuilder.Services.AddSingleton<PinChangeCoordinator>();
+        mauiAppBuilder.Services.AddSingleton(_ => BiometricAuthenticationService.Default);
         mauiAppBuilder.Services.AddSingleton<IBiometricService, BiometricService>();
         mauiAppBuilder.Services.AddSingleton<IStepUpChallenges, MauiStepUpChallenges>();
         mauiAppBuilder.Services.AddSingleton<IStepUpAuth, StepUpAuthService>();
@@ -188,8 +187,8 @@ public static class MauiProgram
             }
         });
         mauiAppBuilder.Services.AddSingleton<InMemoryProductClient>();
-        mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductApi>();
-        // Deferred resolve breaks HttpProductApi ↔ challenge/pass client cycle (MS.DI does not auto-wrap Lazy<T>).
+        mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductClient>();
+        // Deferred resolve breaks HttpProductClient ↔ challenge/pass client cycle (MS.DI does not auto-wrap Lazy<T>).
         mauiAppBuilder.Services.AddSingleton(sp => new Lazy<IProductClient>(() => sp.GetRequiredService<IProductClient>()));
 #if DEBUG
         mauiAppBuilder.Services.AddSingleton<IProductClient>(sp =>
@@ -201,8 +200,8 @@ public static class MauiProgram
                 return sp.GetRequiredService<InMemoryProductClient>();
             }
 
-            Log.Debug("Using HttpProductApi (live /v1)");
-            return sp.GetRequiredService<HttpProductApi>();
+            Log.Debug("Using HttpProductClient (live /v1)");
+            return sp.GetRequiredService<HttpProductClient>();
         });
         mauiAppBuilder.Services.AddSingleton<MockStreamService>();
         mauiAppBuilder.Services.AddSingleton<IStreamService>(sp =>
@@ -218,7 +217,7 @@ public static class MauiProgram
             return new ClientWebSocketStreamService(settings.StreamEndpoint);
         });
 #else
-        mauiAppBuilder.Services.AddSingleton<IProductClient>(sp => sp.GetRequiredService<HttpProductApi>());
+        mauiAppBuilder.Services.AddSingleton<IProductClient>(sp => sp.GetRequiredService<HttpProductClient>());
         mauiAppBuilder.Services.AddSingleton<IStreamService>(sp =>
             new ClientWebSocketStreamService(sp.GetRequiredService<ISettingsService>().StreamEndpoint));
 #endif
@@ -234,10 +233,6 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<INfcPresentmentService, NullNfcPresentmentService>();
 #endif
 
-
-        // Rate Limiter (singleton)
-        mauiAppBuilder.Services.AddSingleton<RateLimiter>();
-
         // Navigation and dialogs
         mauiAppBuilder.Services.AddSingleton<OnboardingMnemonicHold>();
         mauiAppBuilder.Services.AddSingleton<INavigationService, ShellNavigationService>();
@@ -250,56 +245,7 @@ public static class MauiProgram
         // Error handler for ViewModel API error consolidation
         mauiAppBuilder.Services.AddSingleton<IErrorHandler, ErrorHandler>();
 
-        // Register mock services (always available for testing/development)
-        mauiAppBuilder.Services.AddSingleton<MockAuthService>();
-        mauiAppBuilder.Services.AddSingleton<MockCryptoAPIService>();
-        mauiAppBuilder.Services.AddSingleton<MockWalletService>();
-        mauiAppBuilder.Services.AddSingleton<MockTransactionService>();
         mauiAppBuilder.Services.AddSingleton<InMemoryPublicQuoteService>();
-
-        // Auth Service - Factory pattern for mock/real switching
-        mauiAppBuilder.Services.AddCipherBankHttpClient<AuthService>();
-
-#if DEBUG
-        mauiAppBuilder.Services.AddTransient<IAuthService>(sp =>
-        {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
-            {
-                Log.Debug("Using MockAuthService (based on settings)");
-                return sp.GetRequiredService<MockAuthService>();
-            }
-            else
-            {
-                Log.Debug("Using AuthService (real API)");
-                return sp.GetRequiredService<AuthService>();
-            }
-        });
-#else
-        mauiAppBuilder.Services.AddTransient<IAuthService>(sp => sp.GetRequiredService<AuthService>());
-#endif
-
-        // Crypto API Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<CryptoAPIService>();
-
-#if DEBUG
-        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp =>
-        {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
-            {
-                Log.Debug("Using MockCryptoAPIService (based on settings)");
-                return sp.GetRequiredService<MockCryptoAPIService>();
-            }
-            else
-            {
-                Log.Debug("Using CryptoAPIService (real API)");
-                return sp.GetRequiredService<CryptoAPIService>();
-            }
-        });
-#else
-        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<CryptoAPIService>());
-#endif
 
         // Public quote surface (/currencies, /quote, /iquote, /test) — separate host from product /v1
         mauiAppBuilder.Services.AddPublicApiHttpClient<PublicApiClient>();
@@ -319,50 +265,6 @@ public static class MauiProgram
         });
 #else
         mauiAppBuilder.Services.AddTransient<IPublicQuoteService>(sp => sp.GetRequiredService<PublicApiClient>());
-#endif
-
-        // Wallet Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<WalletService>();
-
-#if DEBUG
-        mauiAppBuilder.Services.AddTransient<IWalletService>(sp =>
-        {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
-            {
-                Log.Debug("Using MockWalletService (based on settings)");
-                return sp.GetRequiredService<MockWalletService>();
-            }
-            else
-            {
-                Log.Debug("Using WalletService (real API)");
-                return sp.GetRequiredService<WalletService>();
-            }
-        });
-#else
-        mauiAppBuilder.Services.AddTransient<IWalletService>(sp => sp.GetRequiredService<WalletService>());
-#endif
-
-        // Transaction Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<TransactionService>();
-
-#if DEBUG
-        mauiAppBuilder.Services.AddTransient<ITransactionService>(sp =>
-        {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
-            {
-                Log.Debug("Using MockTransactionService (based on settings)");
-                return sp.GetRequiredService<MockTransactionService>();
-            }
-            else
-            {
-                Log.Debug("Using TransactionService (real API)");
-                return sp.GetRequiredService<TransactionService>();
-            }
-        });
-#else
-        mauiAppBuilder.Services.AddTransient<ITransactionService>(sp => sp.GetRequiredService<TransactionService>());
 #endif
 
         Log.Information("Services registered successfully");
@@ -429,30 +331,5 @@ public static class MauiProgram
 
         Log.Information("Views registered successfully");
         return mauiAppBuilder;
-    }
-
-    /// <summary>
-    /// Resolves the host environment for embedded overlay selection.
-    /// Use: High. Scope: MAUI composition root only.
-    /// </summary>
-    /// <returns>
-    /// <c>DOTNET_ENVIRONMENT</c> or <c>ASPNETCORE_ENVIRONMENT</c> when set; otherwise
-    /// <c>Development</c> in DEBUG builds and <see langword="null"/> in Release so Production
-    /// does not load a missing overlay.
-    /// </returns>
-    private static string? ResolveHostEnvironment()
-    {
-        string? environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
-            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-        if (!string.IsNullOrWhiteSpace(environment))
-        {
-            return environment;
-        }
-
-#if DEBUG
-        return "Development";
-#else
-        return null;
-#endif
     }
 }

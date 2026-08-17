@@ -29,7 +29,7 @@ Use `cipherbank-dispatch` when the request crosses layers or ownership is unclea
 | --- | --- |
 | `cipherbank-build-feature` | Core service contracts, implementations, adapters, configuration, and explicit DI modules |
 | `cipherbank-build-ui` | MAUI pages/ViewModels, semantic typography/color, shared or feature-local resources |
-| `cipherbank-build-data` | EF Core entities/repositories/migrations and isolated compatibility SQL |
+| `cipherbank-build-data` | EF Core entities, repositories, and migrations |
 | `cipherbank-build-e2e` | Appium page objects, stable story traits, device state, diagnostics, and gap evidence |
 | `cipherbank-validate-stack` | Structural, unit, build, Sonar, platform, and E2E verification |
 

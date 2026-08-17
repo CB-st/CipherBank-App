@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
-
 namespace CipherBank_app.Controls;
 
 /// <summary>One funding source in a pay mix.</summary>

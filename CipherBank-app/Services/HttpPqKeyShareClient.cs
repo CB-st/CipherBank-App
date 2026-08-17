@@ -10,7 +10,7 @@ namespace CipherBank_app.Services;
 /// <summary>Live <c>POST /v1/session/key-share</c> for A2 hybrid PQ channel establishment.</summary>
 public sealed class HttpPqKeyShareClient : IPqKeyShareClient
 {
-    // Lazy breaks DI cycle: HttpProductApi → ISessionProofBuilder → A2 → this → IProductClient.
+    // Lazy breaks DI cycle: HttpProductClient → ISessionProofBuilder → A2 → this → IProductClient.
     private readonly Lazy<IProductClient> _api;
 
     public HttpPqKeyShareClient(Lazy<IProductClient> api) => _api = api;

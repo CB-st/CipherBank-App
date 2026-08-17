@@ -26,7 +26,8 @@ public partial class AddWalletViewModel : ObservableObject
         ICustodyService custody,
         IWalletRepository wallets,
         IDialogService dialogs,
-        IProductClient api, TimeProvider timeProvider)
+        IProductClient api,
+        TimeProvider timeProvider)
     {
         _timeProvider = timeProvider;
         _custody = custody;
@@ -34,7 +35,7 @@ public partial class AddWalletViewModel : ObservableObject
         _dialogs = dialogs;
         _api = api;
         AvailableSymbols = WalletRegistry.All().Select(m => m.Symbol).ToList();
-        Symbol = AvailableSymbols.FirstOrDefault() ?? "BTC";
+        Symbol = AvailableSymbols.Count > 0 ? AvailableSymbols[0] : "BTC";
         RefreshModes();
     }
 

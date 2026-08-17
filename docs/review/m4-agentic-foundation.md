@@ -18,7 +18,7 @@ This change converts the M1a-M4 conventions from passive guidance into a dispatc
 
 - Core, ChallengePass, MAUI, persistence, and E2E dependencies continue to point inward.
 - Runtime services use focused interfaces and constructor injection; feature modules remain explicit composition-time registration code.
-- EF Core owns routine persistence and `LocalDbSql` remains the only compatibility SQL owner.
+- EF Core owns routine persistence. Schema lifecycle is `Migrate()`; unmatched prototype databases are wiped.
 - Global typography, semantic color, and component styles remain canonical; feature resources derive from them and promote only after cross-feature reuse.
 - ChallengePass/custody zeroization, fused A2 identity, offline behavior, stable Appium stories, and sensitive-artifact rules are unchanged.
 - Central package ownership, project assembly metadata, warning policy, and Sonar scope are unchanged.

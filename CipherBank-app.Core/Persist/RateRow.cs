@@ -2,7 +2,21 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Persist;
 
 /// <summary>A cached market rate.</summary>
-public sealed record RateRow(string Symbol, double Usd, double Change24h, long UpdatedAtMs);
+public sealed record RateRow(string Symbol, decimal Usd, decimal Change24h, long UpdatedAtMs)
+{
+    /// <summary>Maps a one-unit inverse quote to its persisted USD rate.</summary>
+    public static RateRow FromQuote(PublicQuote quote, long updatedAtMs)
+    {
+        ArgumentNullException.ThrowIfNull(quote);
+        return new RateRow(
+            quote.InputCurrency.ToUpperInvariant(),
+            quote.Rate,
+            Change24h: 0m,
+            updatedAtMs);
+    }
+}

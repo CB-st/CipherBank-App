@@ -6,6 +6,9 @@ namespace CipherBank_app.E2ETests.Support;
 
 /// <summary>
 /// Wipes MAUI app storage on the connected device/emulator via adb, giving a deterministic Fresh state.
+/// PIN, LocalDb, and secure-store values are device-local: they do not survive <c>pm clear</c> or uninstall,
+/// which is how a new device boots. Session-level uninstall lives in <c>scripts/e2e-android.sh</c>; this
+/// type is the in-story wipe after the package is already installed.
 /// Use: Medium (once per Fresh-profile story). Scope: single adb invocation against the attached device.
 /// </summary>
 public static class EmulatorReset
@@ -20,7 +23,7 @@ public static class EmulatorReset
         Environment.GetEnvironmentVariable("CB_MAUI_PACKAGE") ?? DefaultPackage;
 
     /// <summary>
-    /// Runs `adb shell pm clear &lt;package&gt;`, wiping PIN/mnemonic/wallet state for the MAUI app.
+    /// Runs `adb shell pm clear &lt;package&gt;`, wiping PIN/mnemonic/wallet/LocalDb for the MAUI app.
     /// Throws if adb cannot be run or does not report success, so a broken harness fails fast rather than
     /// silently continuing against stale device state. Use: Medium. Scope: Fresh profile setup.
     /// </summary>

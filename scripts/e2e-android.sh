@@ -29,7 +29,7 @@ EMULATOR_LOG="${EMULATOR_LOG:-/tmp/cb-e2e-emulator.log}"
 BOOT_WAIT_ATTEMPTS="${BOOT_WAIT_ATTEMPTS:-90}"
 
 # Planned wave → Story trait map for when CipherBank-app.E2ETests ships Facts (M7).
-# On this harness branch there are no Story traits; --story/--wave defer (see e2e_story_facts_ready).
+# On this harness branch there are no Story traits; --story/--wave/--all defer (see e2e_story_facts_ready).
 # Use: Medium (once per --wave invocation). Scope: arg -> filter resolution.
 declare -A WAVE_STORIES=(
   [account]="CB-ACCOUNT-001 CB-ACCOUNT-002 CB-ACCOUNT-PIN-CHANGE US-ONB-03 US-ONB-04"
@@ -57,16 +57,17 @@ CipherBank MAUI Android Appium E2E harness
 Usage:
   scripts/e2e-android.sh --story <CB-ID>   Run one story (e.g. CB-ACCOUNT-001)
   scripts/e2e-android.sh --wave <name>     Run one wave (account|market|wallets|fund|pay|cards)
-  scripts/e2e-android.sh --all             Fresh AccountStories then sealed CoraShellSmoke (two invocations)
+  scripts/e2e-android.sh --all             Fresh AccountStories, seal-and-lock handoff, then sealed CoraShellSmoke
   scripts/e2e-android.sh --help            Show this help
 
-Harness credentials (required once Story-trait Facts land on M7):
+Harness credentials:
   E2E_TEST_PIN / E2E_TEST_PIN_ALT / E2E_RECOVERY_PASSWORD
   Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
+  Optional ANDROID_CERT_PINS=<current>,<backup> stamps a pin-set into the Appium Debug APK.
 
-Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave
-exit with a clear deferral (those Facts ship on M7 / prototype/maui-m7).
---all may run the scaffold suite without credentials.
+Each run is a new-device session: uninstall the package, install the APK,
+  then pm clear so PIN / LocalDb / secure store do not survive across installs.
+  Sealed smoke waves keep data only after that fresh install, via noReset.
 
 Requires: CB_AVD emulator image, ANDROID_HOME, DOTNET_ROOT (see scripts/lib/android-env.sh).
 EOF
@@ -124,8 +125,8 @@ parse_args() {
       ;;
   esac
 
-  if [[ "$MODE" == "story" || "$MODE" == "wave" ]] && ! e2e_story_facts_ready; then
-    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M7). Use --all for the scaffold suite, or check out prototype/maui-m7."
+  if [[ "$MODE" == "story" || "$MODE" == "wave" || "$MODE" == "all" ]] && ! e2e_story_facts_ready; then
+    die "--${MODE} requires [Trait(\"Story\", …)] Facts under CipherBank-app.E2ETests (lands on M7 / prototype/maui-m7). This APK does not implement CriticalUserJourneyTests purchase controls."
   fi
 }
 
@@ -207,9 +208,26 @@ wait_for_boot_completed() {
 # Builds the MAUI Android app with assemblies embedded so the APK is self-contained.
 # Use: Medium (once per harness run). Scope: CipherBank-app project build output.
 build_apk() {
+  local pin_xml="$ROOT/CipherBank-app/Platforms/Android/Resources/xml/network_security_config.xml"
+  local pin_backup=""
+  local build_rc=0
+  if [[ -n "${ANDROID_CERT_PINS:-}" ]]; then
+    pin_backup="$(mktemp)"
+    cp "$pin_xml" "$pin_backup"
+    log "Stamping Android cert pins from ANDROID_CERT_PINS (restore skirt after build)"
+    "$ROOT/scripts/stamp-android-cert-pins.sh" "$pin_xml" \
+      || { mv "$pin_backup" "$pin_xml"; die "failed to stamp ANDROID_CERT_PINS"; }
+  else
+    log "Android cert pins: skirt (system CAs). Set ANDROID_CERT_PINS=current,backup to test a pin-set."
+  fi
   log "Building $APP_PROJECT ($TARGET_FRAMEWORK)"
   dotnet build "$APP_PROJECT" \
-    -f "$TARGET_FRAMEWORK" -c Debug -p:EmbedAssembliesIntoApk=true
+    -f "$TARGET_FRAMEWORK" -c Debug -p:EmbedAssembliesIntoApk=true \
+    || build_rc=$?
+  if [[ -n "$pin_backup" ]]; then
+    mv "$pin_backup" "$pin_xml"
+  fi
+  [[ "$build_rc" -eq 0 ]] || die "dotnet build failed for $APP_PROJECT"
 }
 
 # Finds the freshly built debug APK under the app's Android bin output and prints an absolute path —
@@ -224,29 +242,77 @@ locate_apk() {
   echo "$ROOT/$apk"
 }
 
-# Installs (or reinstalls) the given APK onto the running device.
-# Use: Medium (once per harness run). Scope: single AVD instance.
+# Uninstalls a leftover package so this harness run is a new-device install.
+# `adb install -r` keeps data; PIN and LocalDb must not survive across sessions.
+# Use: High (every harness run). Scope: single AVD instance.
+uninstall_existing_app() {
+  local pkg="$CB_MAUI_PACKAGE"
+  # Emulator-only: do not let Auto Backup rehydrate PIN/LocalDb after reinstall.
+  # Product android:allowBackup is unchanged.
+  adb shell bmgr enable false >/dev/null 2>&1 || true
+  if adb shell pm path "$pkg" >/dev/null 2>&1; then
+    log "Uninstalling $pkg (new-device session: PIN and LocalDb must not survive)"
+    adb uninstall "$pkg" >/dev/null || die "failed to uninstall $pkg"
+  else
+    log "No existing $pkg install"
+  fi
+}
+
+# Requires pm clear to report Success so a no-op wipe cannot leave stale custody.
+# Use: High (every harness run after install). Scope: single AVD instance.
+assert_app_data_cleared() {
+  local pkg="$CB_MAUI_PACKAGE"
+  local out
+  out="$(adb shell pm clear "$pkg" 2>&1)" || die "pm clear failed for $pkg: $out"
+  grep -qi Success <<<"$out" || die "pm clear did not report Success for $pkg: $out"
+}
+
+# Drops leftover lab recovery files from shared Downloads (they survive uninstall).
+# Use: Medium (once per harness run). Scope: emulator Downloads collection.
+purge_lab_recovery_exports() {
+  log "Removing leftover lab recovery files from device Downloads"
+  adb shell 'rm -f /sdcard/Download/cipherbank-recovery-*.cbr.json' >/dev/null 2>&1 || true
+}
+
+# Fresh-installs the APK: uninstall → install → pm clear (not install -r).
+# Use: High (once per harness run). Scope: single AVD instance.
 install_apk() {
   local apk="$1"
+  uninstall_existing_app
   log "Installing $apk"
-  adb install -r "$apk"
+  adb install "$apk" || die "adb install failed for $apk"
+  log "Purging application data after install (LocalDb, PIN, secure store)"
+  assert_app_data_cleared
+  purge_lab_recovery_exports
+}
+
+# True when the pinned UiAutomator2 driver is installed for APPIUM_VERSION.
+# Parses --json on stdout; the human list writes ANSI to stderr and looks empty when 2>/dev/null.
+# Use: High (every harness run). Scope: local Appium driver install.
+appium_uiautomator2_pinned() {
+  npx --yes "appium@${APPIUM_VERSION}" driver list --installed --json 2>/dev/null \
+    | python3 -c 'import json,sys
+try:
+    data = json.load(sys.stdin)
+except Exception:
+    raise SystemExit(1)
+driver = data.get("uiautomator2") or {}
+raise SystemExit(0 if driver.get("version") == sys.argv[1] else 1)
+' "$APPIUM_UIAUTOMATOR2_VERSION"
 }
 
 # Ensures the pinned UiAutomator2 driver is installed for APPIUM_VERSION.
 # Use: Medium (once per harness run before starting/reusing Appium). Scope: local npm/appium install.
 ensure_appium_driver() {
-  local list
   log "Ensuring Appium ${APPIUM_VERSION} + UiAutomator2 ${APPIUM_UIAUTOMATOR2_VERSION}"
-  list="$(npx --yes "appium@${APPIUM_VERSION}" driver list --installed 2>/dev/null || true)"
-  if ! grep -qiE "uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION}([[:space:]@]|$)" <<<"$list"; then
-    log "Installing/replacing uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION} (current: ${list:-none})"
+  if ! appium_uiautomator2_pinned; then
+    log "Installing/replacing uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION}"
     npx --yes "appium@${APPIUM_VERSION}" driver uninstall uiautomator2 >/dev/null 2>&1 || true
     npx --yes "appium@${APPIUM_VERSION}" driver install "uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION}" \
       || die "failed to install Appium UiAutomator2 driver ${APPIUM_UIAUTOMATOR2_VERSION}"
-    list="$(npx --yes "appium@${APPIUM_VERSION}" driver list --installed 2>/dev/null || true)"
   fi
-  grep -qiE "uiautomator2@${APPIUM_UIAUTOMATOR2_VERSION}([[:space:]@]|$)" <<<"$list" \
-    || die "UiAutomator2 ${APPIUM_UIAUTOMATOR2_VERSION} not installed for Appium ${APPIUM_VERSION} — got: ${list}"
+  appium_uiautomator2_pinned \
+    || die "UiAutomator2 ${APPIUM_UIAUTOMATOR2_VERSION} not installed for Appium ${APPIUM_VERSION}"
 }
 
 # Reads /status from a listening Appium and fails when build.version ≠ APPIUM_VERSION.
@@ -313,7 +379,7 @@ ensure_appium_running() {
 
 # Loads gitignored lab credentials from artifacts/e2e-local.env into the
 # process environment when present, then requires PIN / alt / recovery password to be set.
-# Skipped until Story-trait Facts exist (M7) so the scaffold suite is not blocked.
+# Required once Story-trait Facts exist (M7). --all is fenced until then.
 # Use: High (every harness run before device tests that need credentials). Scope: scripts/e2e-android.sh.
 ensure_e2e_credentials() {
   if ! e2e_story_facts_ready; then
@@ -358,15 +424,26 @@ apply_e2e_env_file_if_unset() {
 }
 
 
-# Confirms AccountStories left a journal, force-stops the package, cold-starts it, and
-# verifies UnlockPinEntry is on screen (Welcome means the device is not sealed).
+# After AccountStories (Fact order is not a contract), establishes a sealed locked wallet:
+# runs SealedWalletHandoffTests under E2E_DEVICE_PROFILE=sealed (Welcome → Fresh→seal→Lock,
+# Home → Profile→Lock, or already Unlock), then verifies UnlockPinEntry on a cold start.
 # Use: High (--all handoff). Scope: scripts/e2e-android.sh.
 ensure_sealed_wallet_or_die() {
+  local apk="$1"
+  log "Establishing sealed locked wallet (explicit handoff; AccountStories order is not a contract)"
+  E2E_DEVICE_PROFILE=sealed run_e2e_tests "$apk" "FullyQualifiedName~SealedWalletHandoffTests"
+  verify_cold_start_unlock_or_die
+}
+
+# Force-stops the package, cold-starts it without pm clear, and requires UnlockPinEntry.
+# Welcome means the handoff did not leave a sealed wallet.
+# Use: High (--all handoff). Scope: scripts/e2e-android.sh.
+verify_cold_start_unlock_or_die() {
   local journal_dir="${E2E_JOURNAL_DIR:-artifacts/e2e-journal}"
   local package="${CB_MAUI_PACKAGE:-com.companyname.cipherbankapp}"
   local activity="${CB_MAUI_ACTIVITY:-crc6452ffdc5b3340e214.MainActivity}"
   if ! find "$journal_dir" -type f 2>/dev/null | grep -q .; then
-    die "--all smoke half needs a sealed wallet from AccountStories; no journal files under $journal_dir"
+    die "--all smoke half needs a sealed wallet journal under $journal_dir"
   fi
   if ! command -v adb >/dev/null 2>&1; then
     die "--all smoke half needs adb to verify sealed cold-start reaches Unlock"
@@ -387,7 +464,7 @@ ensure_sealed_wallet_or_die() {
       return 0
     fi
     if grep -qE 'WelcomeCreateButton|WelcomeRestoreButton|WelcomePrimaryButton' <<<"$dump"; then
-      die "--all smoke half cold-started to Welcome (device not sealed); AccountStories did not leave a wallet"
+      die "--all smoke half cold-started to Welcome after seal-and-lock handoff; device is not sealed"
     fi
     sleep 1
   done
@@ -437,9 +514,9 @@ main() {
     # incompatible boot screens — run them as separate processes so order cannot interleave.
     # Smoke half sets E2E_DEVICE_PROFILE=sealed so AppiumFixture uses noReset and keeps the
     # wallet produced by AccountStories (Appium default reset would wipe custody).
-    log "Running --all as Fresh AccountStories, then sealed CoraShellSmoke (noReset)"
+    log "Running --all as Fresh AccountStories, explicit seal-and-lock handoff, then sealed CoraShellSmoke (noReset)"
     run_e2e_tests "$apk" "FullyQualifiedName~AccountStories"
-    ensure_sealed_wallet_or_die
+    ensure_sealed_wallet_or_die "$apk"
     E2E_DEVICE_PROFILE=sealed run_e2e_tests "$apk" "FullyQualifiedName~CoraShellSmokeTests"
   else
     if [[ "$MODE" == "wave" && -n "${SEALED_SMOKE_WAVES[$MODE_VALUE]:-}" ]]; then

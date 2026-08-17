@@ -57,20 +57,9 @@ public static class MarketBootstrap
             PublicQuote quote = await publicQuotes
                 .GetInverseQuoteAsync(symbol, 1m, "USD", ct)
                 .ConfigureAwait(false);
-            refreshedRows.Add(ToRateRow(quote, nowMs));
+            refreshedRows.Add(RateRow.FromQuote(quote, nowMs));
         }
 
         await cache.UpsertAsync(refreshedRows, ct).ConfigureAwait(false);
-    }
-
-    /// <summary>Maps a one-unit inverse quote to its persisted USD rate.</summary>
-    public static RateRow ToRateRow(PublicQuote quote, long updatedAtMs)
-    {
-        ArgumentNullException.ThrowIfNull(quote);
-        return new RateRow(
-            quote.InputCurrency.ToUpperInvariant(),
-            (double)quote.Rate,
-            Change24h: 0d,
-            updatedAtMs);
     }
 }

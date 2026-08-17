@@ -181,7 +181,7 @@ public sealed partial class SettingsService : ISettingsService
         {
             if (_logger != null)
             {
-                LogSettingChanged(_logger, "SessionProofMode", value.ToString());
+                LogSessionProofModeChanged(_logger, value);
             }
 
             Preferences.Set(IdSessionProofMode, value.ToString());
@@ -263,6 +263,9 @@ public sealed partial class SettingsService : ISettingsService
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Setting {SettingName} to {Value}")]
     private static partial void LogSettingChanged(ILogger logger, string settingName, string value);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Setting SessionProofMode to {Value}")]
+    private static partial void LogSessionProofModeChanged(ILogger logger, SessionProofMode value);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Settings reset to defaults")]
     private static partial void LogSettingsResetToDefaults(ILogger logger);

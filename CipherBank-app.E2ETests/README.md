@@ -21,9 +21,11 @@ That script, in order:
 2. Starts AVD `CipherBank_API34` if no emulator is already attached
 3. Waits until `sys.boot_completed=1`
 4. Builds the MAUI app (`net10.0-android`, Debug, `EmbedAssembliesIntoApk=true`)
-5. Installs the signed APK (`adb install -r`)
+5. Uninstalls any leftover package, installs the signed APK (`adb install`, not `-r`), then `pm clear`
 6. Starts Appium on `:4723` if it is not already up
 7. Runs `dotnet test` on this project with `E2E_RUN=1`
+
+PIN, LocalDb, and secure-store values are **device-local**. They do not survive uninstall or `pm clear`, which is how a new device boots. Lab PINs come from the process environment for that session only; they are not restored onto the emulator. Sealed smoke waves keep custody **after** that fresh install via Appium `noReset`.
 
 Other entry points:
 
@@ -60,7 +62,11 @@ which npx
 MAUI package id (wipe / clear): **`com.companyname.cipherbankapp`**  
 (Do **not** use Expo’s `com.cipherbank.app`.)
 
+Each harness session is a new-device install. Prefer the script; the manual equivalent is uninstall + install + `pm clear`:
+
 ```bash
+adb uninstall com.companyname.cipherbankapp   # ok if not installed
+adb install "$APK"                            # not install -r (that keeps data)
 adb shell pm clear com.companyname.cipherbankapp
 ```
 
@@ -98,7 +104,9 @@ dotnet build CipherBank-app/CipherBank-app.csproj \
 APK="$(find CipherBank-app/bin/Debug/net10.0-android -maxdepth 1 -iname '*-Signed.apk' | head -1)"
 # Resolve to an absolute path before exporting — test cwd is the test bin dir, not the repo root.
 APK="$(pwd)/$APK"
-adb install -r "$APK"
+adb uninstall com.companyname.cipherbankapp || true
+adb install "$APK"
+adb shell pm clear com.companyname.cipherbankapp
 ```
 
 ### 4. Start Appium

@@ -19,6 +19,7 @@ public sealed class ShellDialogService : IDialogService
         Shell.Current.DisplayPromptAsync(title, message, accept, cancel);
 
     /// <inheritdoc />
+    /// MAUI Page.DisplayPromptAsync has no isPassword on this TFM; Numeric is the PIN keyboard role.
     public Task<string?> PromptPasswordAsync(string title, string message, string accept = "OK", string cancel = "Cancel") =>
         Shell.Current.DisplayPromptAsync(
             title,
@@ -28,6 +29,5 @@ public sealed class ShellDialogService : IDialogService
             placeholder: null,
             maxLength: -1,
             keyboard: Keyboard.Numeric,
-            initialValue: string.Empty,
-            isPassword: true);
+            initialValue: string.Empty);
 }

@@ -106,7 +106,6 @@ public sealed class CoraFab : ContentView
         AutomationProperties.SetIsInAccessibleTree(avatar, true);
         SemanticProperties.SetDescription(avatar, "Toggle Cora assistant");
 
-
         _root = new VerticalStackLayout
         {
             Spacing = 10,

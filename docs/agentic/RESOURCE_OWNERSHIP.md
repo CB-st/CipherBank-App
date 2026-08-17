@@ -12,8 +12,7 @@ Use an existing shared resource by reference before creating another representat
 | Runtime defaults | `config/<theme>/` | Defaults provider → typed options → constructor injection | Store secrets or read JSON ad hoc from features |
 | HTTP transport | MAUI HTTP registration extensions/handlers | Focused client interface and typed client | Construct unmanaged `HttpClient` instances |
 | Time | Core DI registration | Inject `TimeProvider` | Call ambient time in deterministic domain logic |
-| Persistence | `CipherBankDbContext` and focused repositories | Inject repository ports | Open SQLite or own command text outside persistence |
-| Compatibility SQL | `Persist/Sql/LocalDbSql.cs` | Called only by tested schema repair/scrub paths | Put manual SQL in feature services |
+| Persistence | `CipherBankDbContext`, EF migrations, and focused repositories | Inject repository ports | Open SQLite or own command text outside persistence |
 | Background work | `ISyncJobScheduler` | Priority plus injected scheduler | Use `Task.Run` or hand-sort queues in domain services |
 | Navigation/dialogs | MAUI service interfaces | Inject `INavigationService` / `IDialogService` | Call Shell globals from ViewModels |
 | Secrets and keys | Custody/ChallengePass ports | Borrow/copy according to documented ownership and zeroize | Put secrets in dispatches, configuration, logs, or analytics |

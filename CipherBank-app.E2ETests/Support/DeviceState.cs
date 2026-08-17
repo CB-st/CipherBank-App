@@ -30,6 +30,7 @@ public sealed class DeviceState
 
     /// <summary>
     /// Clears app data and relaunches so the app boots to Welcome (no sealed wallet on device).
+    /// Same empty-device outcome as a new-phone install: PIN and LocalDb are gone.
     /// Use: High. Scope: Fresh-profile stories (onboarding, restore).
     /// </summary>
     public async Task<WelcomePage> FreshAsync()

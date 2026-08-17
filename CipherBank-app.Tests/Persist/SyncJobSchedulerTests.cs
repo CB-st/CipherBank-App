@@ -146,6 +146,16 @@ public class SyncJobSchedulerTests
         taskScheduler.QueuedTasks.Should().BeGreaterThan(0);
     }
 
+    [Fact]
+    public void Default_max_concurrency_is_clamped_processor_count()
+    {
+        int derived = SyncSchedulerOptions.DeriveDefaultMaxConcurrency();
+        derived.Should().BeInRange(
+            SyncSchedulerOptions.MinConcurrency,
+            SyncSchedulerOptions.DefaultMaxConcurrencyCap);
+        new SyncSchedulerOptions().MaxConcurrency.Should().Be(derived);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)
     {
         long deadline = Environment.TickCount64 + timeoutMs;
