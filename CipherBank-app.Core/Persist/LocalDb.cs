@@ -30,6 +30,10 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 
     public Task InitializeAsync() => InitializeAsync(CancellationToken.None);
 
+    /// <summary>
+    /// Applies EF Core migrations. Prototype SQLite files without a migration history are deleted first.
+    /// Use: Medium (startup). Scope: LocalDb.
+    /// </summary>
     public async Task InitializeAsync(CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -48,8 +52,9 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
             }
 
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
+            await DiscardUnmatchedPrototypeAsync(ct).ConfigureAwait(false);
             await using CipherBankDbContext context = new CipherBankDbContext(_options);
-            await context.Database.EnsureCreatedAsync(ct).ConfigureAwait(false);
+            await context.Database.MigrateAsync(ct).ConfigureAwait(false);
             _initialized = true;
         }
         finally
@@ -83,5 +88,43 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
     {
         Dispose();
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Deletes leftover lab databases that have no applied EF migrations.
+    /// Use: Low (startup). Scope: LocalDb.
+    /// </summary>
+    private async Task DiscardUnmatchedPrototypeAsync(CancellationToken ct)
+    {
+        if (!File.Exists(_path))
+        {
+            return;
+        }
+
+        bool discard = true;
+        try
+        {
+            await using CipherBankDbContext probe = new CipherBankDbContext(_options);
+            IEnumerable<string> applied = await probe.Database.GetAppliedMigrationsAsync(ct).ConfigureAwait(false);
+            discard = !applied.Any();
+        }
+        catch (SqliteException)
+        {
+            discard = true;
+        }
+
+        if (!discard)
+        {
+            return;
+        }
+
+        SqliteConnection.ClearAllPools();
+        foreach (string candidate in new[] { _path, _path + "-wal", _path + "-shm" })
+        {
+            if (File.Exists(candidate))
+            {
+                File.Delete(candidate);
+            }
+        }
     }
 }
