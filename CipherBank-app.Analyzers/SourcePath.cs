@@ -53,16 +53,6 @@ internal static class SourcePath
     }
 
     /// <summary>
-    /// True when the tree is the blessed raw-SQL owner.
-    /// Use: High (every SQL check). Scope: NoScatteredSqlAnalyzer.
-    /// </summary>
-    internal static bool IsSqlOwner(string path)
-    {
-        string normalized = Normalize(path);
-        return normalized.EndsWith("Persist/Sql/LocalDbSql.cs", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
     /// True when the additional file is central package management.
     /// Use: High (every additional file). Scope: CentralPackageVersionAnalyzer.
     /// </summary>

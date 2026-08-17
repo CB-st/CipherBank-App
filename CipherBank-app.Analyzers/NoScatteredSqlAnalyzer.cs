@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace CipherBank_app.Analyzers;
 
 /// <summary>
-/// Flags raw SQL in CipherBank-app.Core outside Persist/Sql/LocalDbSql.cs.
+/// Flags raw SQL in CipherBank-app.Core.
 /// Use: High (every Core compilation). Scope: Core C# trees.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -91,11 +91,11 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// True when the tree is Core and is not LocalDbSql.cs.
+    /// True when the tree is Core.
     /// Use: High (every SQL syntax action). Scope: this analyzer.
     /// </summary>
     private static bool ShouldScan(string path)
-        => SourcePath.IsCoreProject(path) && !SourcePath.IsSqlOwner(path);
+        => SourcePath.IsCoreProject(path);
 
     /// <summary>
     /// Returns the invoked method identifier, if any.

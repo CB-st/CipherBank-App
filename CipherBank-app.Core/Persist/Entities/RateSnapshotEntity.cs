@@ -8,9 +8,9 @@ public sealed record RateSnapshotEntity
 {
     public string Symbol { get; set; } = string.Empty;
 
-    public double Usd { get; set; }
+    public decimal Usd { get; set; }
 
-    public double Change24H { get; set; }
+    public decimal Change24H { get; set; }
 
     public long UpdatedAtMs { get; set; }
 }

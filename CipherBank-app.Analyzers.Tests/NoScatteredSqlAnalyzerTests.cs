@@ -63,7 +63,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
-    public async Task AllowsSqlInLocalDbSql()
+    public async Task ReportsCommandTextInPersistSqlFolder()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
         {
@@ -76,8 +76,8 @@ public sealed class NoScatteredSqlAnalyzerTests
                         {
                             void Run(System.Data.IDbCommand command)
                             {
-                                command.CommandText = "SELECT 1";
-                                ExecuteSqlRaw("SELECT 1");
+                                command.{|CB1003:CommandText|} = "SELECT 1";
+                                {|CB1003:ExecuteSqlRaw("SELECT 1")|};
                             }
 
                             static void ExecuteSqlRaw(string sql) { }
