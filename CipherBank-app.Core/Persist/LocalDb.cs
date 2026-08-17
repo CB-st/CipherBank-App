@@ -121,10 +121,7 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
         SqliteConnection.ClearAllPools();
         foreach (string candidate in new[] { _path, _path + "-wal", _path + "-shm" })
         {
-            if (File.Exists(candidate))
-            {
-                File.Delete(candidate);
-            }
+            File.Delete(candidate);
         }
     }
 }
