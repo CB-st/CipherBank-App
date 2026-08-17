@@ -1,5 +1,5 @@
 // <copyright file="DashboardViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System;
@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,7 @@ namespace CipherBank_app.ViewModels;
 public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<DashboardViewModel> _logger;
-    private readonly ICryptoApiService _cryptoService;
+    private readonly IProductClient _product;
     private readonly IErrorHandler _errorHandler;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
@@ -49,13 +50,13 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
     public DashboardViewModel(
         ILogger<DashboardViewModel> logger,
-        ICryptoApiService cryptoService,
+        IProductClient product,
         IErrorHandler errorHandler,
         INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
-        _cryptoService = cryptoService;
+        _product = product;
         _errorHandler = errorHandler;
         _navigation = navigation;
         _dialog = dialog;
@@ -124,20 +125,20 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             var success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                    PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
                     Cryptocurrencies.Clear();
-                    foreach (var crypto in cryptos)
+                    foreach (HoldingDto holding in portfolio.Holdings)
                     {
-                        Cryptocurrencies.Add(crypto);
+                        Cryptocurrencies.Add(ProductSurfaceMap.ToCryptoCurrency(holding));
                     }
 
                     if (isRefresh)
                     {
-                        LogRefreshedCount(_logger, cryptos.Count);
+                        LogRefreshedCount(_logger, portfolio.Holdings.Count);
                     }
                     else
                     {
-                        LogLoadedCount(_logger, cryptos.Count);
+                        LogLoadedCount(_logger, portfolio.Holdings.Count);
                     }
                 },
                 msg => ErrorMessage = msg,

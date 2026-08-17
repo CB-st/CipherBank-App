@@ -1,5 +1,5 @@
 // <copyright file="AddWalletViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using CipherBank_app.Custody;
@@ -34,7 +34,7 @@ public partial class AddWalletViewModel : ObservableObject
         _dialogs = dialogs;
         _api = api;
         AvailableSymbols = WalletRegistry.All().Select(m => m.Symbol).ToList();
-        Symbol = AvailableSymbols.FirstOrDefault() ?? "BTC";
+        Symbol = AvailableSymbols.Count > 0 ? AvailableSymbols[0] : "BTC";
         RefreshModes();
     }
 

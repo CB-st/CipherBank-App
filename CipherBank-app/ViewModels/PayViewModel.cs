@@ -1,5 +1,5 @@
 // <copyright file="PayViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Collections.ObjectModel;
@@ -104,8 +104,8 @@ public partial class PayViewModel : ObservableObject
         double usdVal = total * (usdPct / 100.0);
         double cryptoVal = total * (cryptoPct / 100.0);
         MixTotal = total;
-        MixSources.Add(new MixSource { Asset = "USD", Value = usdVal, Color = _themeColors.Get("Success") });
-        MixSources.Add(new MixSource { Asset = CryptoSymbol.ToUpperInvariant(), Value = cryptoVal, Color = _themeColors.Get("Gold") });
+        MixSources.Add(new MixSource { Asset = "USD", Value = usdVal, Color = _themeColors.GetColor("Success") });
+        MixSources.Add(new MixSource { Asset = CryptoSymbol.ToUpperInvariant(), Value = cryptoVal, Color = _themeColors.GetColor("Gold") });
     }
 
     /// <summary>

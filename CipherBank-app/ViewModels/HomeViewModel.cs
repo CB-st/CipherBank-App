@@ -1,5 +1,5 @@
 // <copyright file="HomeViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Collections.ObjectModel;
@@ -74,13 +74,13 @@ public partial class HomeViewModel : ObservableObject
         _marketRepository = marketRepository;
         _syncJobScheduler = syncJobScheduler;
         _publicQuotes = publicQuotes;
-        _holdingsAccent = themeColors.Get("Success");
-        _localAccent = themeColors.Get("Gold");
+        _holdingsAccent = themeColors.GetColor("Success");
+        _localAccent = themeColors.GetColor("Gold");
         _seriesColors =
         [
-            themeColors.Get("Gold"),
-            themeColors.Get("Violet"),
-            themeColors.Get("Success"),
+            themeColors.GetColor("Gold"),
+            themeColors.GetColor("Violet"),
+            themeColors.GetColor("Success"),
         ];
         CoraLine = coraLines.GetLine("home");
         RefreshOnline();

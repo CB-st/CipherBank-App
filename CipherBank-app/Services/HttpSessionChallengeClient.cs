@@ -1,5 +1,5 @@
 // <copyright file="HttpSessionChallengeClient.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using CipherBank_app.ChallengePass;
@@ -10,7 +10,7 @@ namespace CipherBank_app.Services;
 /// <summary>Live <c>POST /v1/session/challenge</c> for A1 sealed challenge/pass.</summary>
 public sealed class HttpSessionChallengeClient : ISessionChallengeClient
 {
-    // Lazy breaks DI cycle: HttpProductApi → ISessionProofBuilder → this → IProductClient.
+    // Lazy breaks DI cycle: HttpProductClient → ISessionProofBuilder → this → IProductClient.
     private readonly Lazy<IProductClient> _api;
 
     public HttpSessionChallengeClient(Lazy<IProductClient> api) => _api = api;

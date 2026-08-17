@@ -1,5 +1,5 @@
 // <copyright file="MauiThemeColorProvider.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 namespace CipherBank_app.Services;
@@ -8,7 +8,7 @@ namespace CipherBank_app.Services;
 public sealed class MauiThemeColorProvider : IThemeColorProvider
 {
     /// <inheritdoc />
-    public Color Get(string resourceKey)
+    public Color GetColor(string resourceKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resourceKey);
         return Application.Current?.Resources.TryGetValue(resourceKey, out var value) == true

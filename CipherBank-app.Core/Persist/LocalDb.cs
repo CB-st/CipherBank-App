@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Persist.Sql;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,22 +12,14 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 {
     private readonly string _path;
     private readonly DbContextOptions<CipherBankDbContext> _options;
-    private readonly ILegacySchemaRepair _schemaRepair;
     private readonly SemaphoreSlim _initializeGate = new(1, 1);
     private bool _initialized;
     private bool _disposed;
 
     public LocalDb(string databasePath)
-        : this(databasePath, new LocalDbSql())
-    {
-    }
-
-    internal LocalDb(string databasePath, ILegacySchemaRepair schemaRepair)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
-        ArgumentNullException.ThrowIfNull(schemaRepair);
         _path = System.IO.Path.GetFullPath(databasePath);
-        _schemaRepair = schemaRepair;
         string connectionString = new SqliteConnectionStringBuilder { DataSource = _path }.ToString();
         _options = new DbContextOptionsBuilder<CipherBankDbContext>()
             .UseSqlite(connectionString)
@@ -39,6 +30,10 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 
     public Task InitializeAsync() => InitializeAsync(CancellationToken.None);
 
+    /// <summary>
+    /// Applies EF Core migrations. Prototype SQLite files without a migration history are deleted first.
+    /// Use: Medium (startup). Scope: LocalDb.
+    /// </summary>
     public async Task InitializeAsync(CancellationToken ct)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -57,12 +52,9 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
             }
 
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
+            await DiscardUnmatchedPrototypeAsync(ct).ConfigureAwait(false);
             await using CipherBankDbContext context = new CipherBankDbContext(_options);
-
-            // EnsureCreated no-ops when any table already exists (legacy pre-EF DBs).
-            await context.Database.EnsureCreatedAsync(ct).ConfigureAwait(false);
-            await _schemaRepair.EnsureMissingModelTablesAsync(context, ct).ConfigureAwait(false);
-            await _schemaRepair.ApplyCompatibilityAsync(context.Database.GetDbConnection(), ct).ConfigureAwait(false);
+            await context.Database.MigrateAsync(ct).ConfigureAwait(false);
             _initialized = true;
         }
         finally
@@ -96,5 +88,43 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
     {
         Dispose();
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Deletes leftover lab databases that have no applied EF migrations.
+    /// Use: Low (startup). Scope: LocalDb.
+    /// </summary>
+    private async Task DiscardUnmatchedPrototypeAsync(CancellationToken ct)
+    {
+        if (!File.Exists(_path))
+        {
+            return;
+        }
+
+        bool discard = true;
+        try
+        {
+            await using CipherBankDbContext probe = new CipherBankDbContext(_options);
+            IEnumerable<string> applied = await probe.Database.GetAppliedMigrationsAsync(ct).ConfigureAwait(false);
+            discard = !applied.Any();
+        }
+        catch (SqliteException)
+        {
+            discard = true;
+        }
+
+        if (!discard)
+        {
+            return;
+        }
+
+        SqliteConnection.ClearAllPools();
+        foreach (string candidate in new[] { _path, _path + "-wal", _path + "-shm" })
+        {
+            if (File.Exists(candidate))
+            {
+                File.Delete(candidate);
+            }
+        }
     }
 }

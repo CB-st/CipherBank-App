@@ -1,5 +1,5 @@
 // <copyright file="SparklineDrawable.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using CipherBank_app.Charts;
@@ -22,16 +22,16 @@ public sealed class SparklineDrawable : IDrawable
         }
 
         var path = ChartMath.ToPath(Series, dirtyRect.Width, dirtyRect.Height);
-        if (path.Pts.Count < 2)
+        if (path.Points.Count < 2)
         {
             return;
         }
 
         PathF geo = new PathF();
-        geo.MoveTo((float)path.Pts[0].X, (float)path.Pts[0].Y);
-        for (int i = 1; i < path.Pts.Count; i++)
+        geo.MoveTo(path.Points[0].X, path.Points[0].Y);
+        for (int i = 1; i < path.Points.Count; i++)
         {
-            geo.LineTo((float)path.Pts[i].X, (float)path.Pts[i].Y);
+            geo.LineTo(path.Points[i].X, path.Points[i].Y);
         }
 
         canvas.StrokeColor = Stroke;

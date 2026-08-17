@@ -1,5 +1,5 @@
 // <copyright file="PurchaseViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System;
@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -26,9 +27,8 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     private const decimal FeePercentage = 0.015m; // 1.5% fee
 
     private readonly ILogger<PurchaseViewModel> _logger;
-    private readonly ICryptoApiService _cryptoService;
     private readonly IPublicQuoteService _publicQuotes;
-    private readonly ITransactionService _transactionService;
+    private readonly IProductClient _product;
     private readonly IErrorHandler _errorHandler;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
@@ -70,17 +70,15 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
     public PurchaseViewModel(
         ILogger<PurchaseViewModel> logger,
-        ICryptoApiService cryptoService,
         IPublicQuoteService publicQuotes,
-        ITransactionService transactionService,
+        IProductClient product,
         IErrorHandler errorHandler,
         INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
-        _cryptoService = cryptoService;
         _publicQuotes = publicQuotes;
-        _transactionService = transactionService;
+        _product = product;
         _errorHandler = errorHandler;
         _navigation = navigation;
         _dialog = dialog;
@@ -208,10 +206,10 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                     // Fall back to market list if public currencies were empty.
                     if (AvailableCryptos.Count == 0)
                     {
-                        var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
-                        foreach (var crypto in cryptos.Where(c => CurrencySymbolMap.IsSupported(c.Symbol)))
+                        PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
+                        foreach (HoldingDto holding in portfolio.Holdings.Where(h => CurrencySymbolMap.IsSupported(h.Symbol)))
                         {
-                            AvailableCryptos.Add(crypto);
+                            AvailableCryptos.Add(ProductSurfaceMap.ToCryptoCurrency(holding));
                         }
                     }
 
@@ -321,13 +319,17 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         {
             LogPurchasing(_logger, Amount, SelectedCrypto.Symbol);
 
-            var transaction = await _transactionService.PurchaseCryptoAsync(
-                SelectedCrypto.Symbol, Amount, _cts.Token);
+            MoneyMoveDto move = await _product.ConvertAsync(
+                "USD",
+                SelectedCrypto.Symbol,
+                Amount.ToString(CultureInfo.InvariantCulture),
+                Guid.NewGuid().ToString("N"),
+                _cts.Token);
 
             var successMessage =
-                $"Successfully purchased {transaction.Amount:F8} {transaction.CryptoSymbol}!\n\n" +
-                $"Transaction ID: {transaction.Id}\n" +
-                $"Fee: {transaction.FeeAmount:F8} {transaction.CryptoSymbol}";
+                $"Successfully purchased {Amount:F8} {SelectedCrypto.Symbol}!\n\n" +
+                $"Transaction ID: {move.Id}\n" +
+                $"Status: {move.Status}";
             await _dialog.ShowAlertAsync(
                 "Purchase Complete",
                 successMessage,
@@ -339,7 +341,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             PaymentNote = string.Empty;
             CalculateTotalCost();
 
-            LogPurchaseCompleted(_logger, transaction.Id);
+            LogPurchaseCompleted(_logger, move.Id);
 
             // Optionally navigate to wallet
             var viewWallet = await _dialog.ShowConfirmAsync(

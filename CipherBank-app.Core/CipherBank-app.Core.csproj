@@ -17,6 +17,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
@@ -35,6 +38,7 @@
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="System.Threading.RateLimiting" />
     <PackageReference Include="NBitcoin" />
     <PackageReference Include="NBitcoin.Altcoins" />
     <PackageReference Include="Nethereum.HdWallet" />
@@ -74,12 +78,5 @@
                       LogicalName="CipherBank_app.Config.network.endpoints.json" />
   </ItemGroup>
 
-
-  <ItemGroup>
-    <!-- Compatibility SQL is enum-selected compile-time literals only; CA2100 false positive. -->
-    <Compile Update="Persist/Sql/LocalDbSql.cs">
-      <NoWarn>$(NoWarn);CA2100</NoWarn>
-    </Compile>
-  </ItemGroup>
 
 </Project>

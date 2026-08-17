@@ -23,13 +23,13 @@ The CipherBank-app project is the main .NET MAUI application targeting Android, 
 | Component | Lifetime | Notes |
 |-----------|----------|-------|
 | ISettingsService | Singleton | Loaded first |
-| RateLimiter | Singleton | Shared across HTTP clients |
+| SlidingWindowRateLimiter | Singleton | Shared across product/public HTTP clients |
 | INavigationService, IDialogService | Singleton | Shell wrappers |
 | IErrorHandler | Singleton | Centralized API error handling |
 | IHealthCheckClient | Transient | For Settings Test Connection (cert pinning) |
-| Mock services | Singleton | MockAuthService, MockCryptoAPIService, etc. (DEBUG only) |
-| IAuthService, ICryptoApiService, etc. | Transient | Resolved by `#if DEBUG` (mocks vs real) |
-| AuthService, CryptoAPIService, etc. | Transient | Typed HttpClient via AddCipherBankHttpClient |
+| IProductClient | Singleton | `HttpProductClient` on the Shell HTTP pipeline; DEBUG may swap `InMemoryProductClient` |
+| IPublicQuoteService | Transient | `PublicApiClient`; DEBUG may swap `InMemoryPublicQuoteService` |
+| IBiometricService | Singleton | `Plugin.Maui.Biometric` behind `IBiometric` |
 | ViewModels | Transient | Per-page |
 | Views | Transient | Per-page |
 

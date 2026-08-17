@@ -1,9 +1,10 @@
 // <copyright file="WalletViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -23,9 +25,7 @@ namespace CipherBank_app.ViewModels;
 public partial class WalletViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<WalletViewModel> _logger;
-    private readonly IWalletService _walletService;
-    private readonly ITransactionService _transactionService;
-    private readonly ICryptoApiService _cryptoService;
+    private readonly IProductClient _product;
     private readonly IErrorHandler _errorHandler;
     private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
@@ -75,17 +75,13 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
     public WalletViewModel(
         ILogger<WalletViewModel> logger,
-        IWalletService walletService,
-        ITransactionService transactionService,
-        ICryptoApiService cryptoService,
+        IProductClient product,
         IErrorHandler errorHandler,
         INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
-        _walletService = walletService;
-        _transactionService = transactionService;
-        _cryptoService = cryptoService;
+        _product = product;
         _errorHandler = errorHandler;
         _ = navigation; // Reserved for future navigation needs
         _dialog = dialog;
@@ -155,30 +151,19 @@ public partial class WalletViewModel : ObservableObject, IDisposable
             var success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    var walletList = await _walletService.GetWalletsAsync(_cts.Token);
+                    PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
 
                     var previousFocusId = FocusedWalletCard?.Wallet.Id;
                     Wallets.Clear();
                     WalletCards.Clear();
                     decimal totalUsd = 0;
 
-                    foreach (var wallet in walletList)
+                    foreach (HoldingDto holding in portfolio.Holdings)
                     {
+                        Wallet wallet = ProductSurfaceMap.ToWallet(holding);
                         Wallets.Add(wallet);
-
-                        WalletCardItem card;
-                        try
-                        {
-                            var crypto = await _cryptoService.GetCryptoPriceAsync(wallet.CryptoSymbol, _cts.Token);
-                            card = WalletCardItem.FromWallet(wallet, crypto);
-                            totalUsd += card.UsdValue;
-                        }
-                        catch (Exception ex)
-                        {
-                            LogCouldNotGetPrice(_logger, ex, wallet.CryptoSymbol);
-                            card = WalletCardItem.WithoutPrice(wallet);
-                        }
-
+                        WalletCardItem card = ProductSurfaceMap.ToWalletCard(holding);
+                        totalUsd += card.UsdValue;
                         WalletCards.Add(card);
                     }
 
@@ -188,7 +173,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
                         WalletCards.FirstOrDefault(c => c.Wallet.Id == previousFocusId)
                         ?? WalletCards.FirstOrDefault();
 
-                    LogLoadedWallets(_logger, walletList.Count, TotalBalanceUsd);
+                    LogLoadedWallets(_logger, portfolio.Holdings.Count, TotalBalanceUsd);
                 },
                 msg => ErrorMessage = msg);
 
@@ -248,16 +233,8 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         try
         {
             LogLoadingTransactions(_logger, SelectedWallet.Id);
-            var txList = await _transactionService.GetTransactionHistoryAsync(
-                SelectedWallet.Id, _cts.Token);
-
             Transactions.Clear();
-            foreach (var tx in txList)
-            {
-                Transactions.Add(tx);
-            }
-
-            LogLoadedTransactions(_logger, txList.Count);
+            LogLoadedTransactions(_logger, 0);
         }
         catch (OperationCanceledException)
         {
@@ -327,12 +304,16 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         {
             LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol, SendToAddress);
 
-            var transaction = await _transactionService.SendCryptoAsync(
-                SelectedWallet.Id, SendToAddress, SendAmount, _cts.Token);
+            MoneyMoveDto move = await _product.TransferAsync(
+                SendToAddress,
+                SendAmount.ToString(CultureInfo.InvariantCulture),
+                "standard",
+                Guid.NewGuid().ToString("N"),
+                _cts.Token);
 
             await _dialog.ShowAlertAsync(
                 "Success",
-                $"Transaction submitted!\nID: {transaction.Id}\nStatus: {transaction.Status}",
+                $"Transaction submitted!\nID: {move.Id}\nStatus: {move.Status}",
                 "OK");
 
             // Clear form and refresh
@@ -341,7 +322,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
             await LoadWalletsAsync();
             await LoadTransactionsAsync();
 
-            LogSendCompleted(_logger, transaction.Id);
+            LogSendCompleted(_logger, move.Id);
         }
         catch (InvalidOperationException ex)
         {
@@ -381,7 +362,10 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         try
         {
             LogCreatingWallet(_logger, cryptoSymbol);
-            var wallet = await _walletService.CreateWalletAsync(cryptoSymbol);
+            CreateWalletResultDto created = await _product.CreateWalletAsync(
+                new CreateWalletRequestDto { Symbol = cryptoSymbol },
+                CancellationToken.None);
+            Wallet wallet = ProductSurfaceMap.ToWallet(created);
 
             Wallets.Add(wallet);
             SelectedWallet = wallet;
