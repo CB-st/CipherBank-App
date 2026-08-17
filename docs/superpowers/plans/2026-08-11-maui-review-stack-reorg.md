@@ -11,7 +11,7 @@
 ## Global constraints
 
 - Fix on the earliest owning layer; merge / rebase upward.
-- `dotnet test CipherBank-app.Tests` green on every Core tip (M1–M3).
+- `dotnet test CipherBank-app.Analyzers.Tests` green on every Core tip (M1–M3), plus `dotnet test CipherBank-app.Tests`.
 - Shell Android build when public Core surface moves (from M3 upward into M6).
 - No Expo / `design_handoff_cipherbank/` on MAUI stack PRs.
 - Force-with-lease restacks only with explicit approval.
@@ -66,7 +66,7 @@ flowchart TB
 
 ### M1 — Platform (landed as #33)
 
-CPM (`Directory.Packages.props`), Build props, editorconfig (IDE0008 suggestion until M3 mechanical), Sonar workflow, `config/*`, structure script, csproj CPM wiring. No domain C#.
+CPM (`Directory.Packages.props`), Build props, editorconfig (IDE0008 suggestion until M3 mechanical), `CipherBank-app.Analyzers`, Sonar workflow (UI-owned gate, Coverlet OpenCover), `config/*` appsettings, csproj CPM wiring. No domain C#. No Python provisioner.
 
 ### M2 — Persist (next cut)
 

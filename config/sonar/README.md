@@ -1,50 +1,29 @@
 # Sonar quality-gate policy
 
 Sonar is the only source of truth for the quality gate. There is no
-checked-in copy for CI to verify against — see PR #33 for why the earlier
-`quality-gate.yaml` + `verify-sonar-quality-gate.py` pair was retired: it
-meant hand-keeping two rulebooks (the live gate on
-https://sonar.cipherbank.money and this repo's mirror of it) in sync, and
-that always drifts.
+checked-in copy for CI to verify against, and no repo-side script that
+pushes conditions to the server. Change the gate in the Sonar UI at
+https://sonar.cipherbank.money (project key
+`CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c`).
 
-## Definition: `scripts/sonar/provision_quality_gate.py`
+The earlier `quality-gate.yaml` + Python verifier, and later
+`provision_quality_gate.py`, were retired so this repo does not keep a
+second rulebook that drifts from the live gate.
 
-The gate ("CipherBank New Code Gate") is defined once, in
-[`scripts/sonar/provision_quality_gate.py`](../../scripts/sonar/provision_quality_gate.py),
-and pushed to the server through Sonar's own Web API. That script is the
-versioned record of what the gate is supposed to be — the same role the old
-YAML played — but it *acts* on the server instead of being diffed against
-it. Run it with an admin token (`SONAR_ADMIN_TOKEN`, not CI's `SONAR_TOKEN`)
-whenever the gate needs to change:
-
-```bash
-export SONAR_HOST_URL='https://sonar.cipherbank.money'
-export SONAR_ADMIN_TOKEN='...'   # needs 'Administer Quality Gates'
-export SONAR_PROJECT_KEY='CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c'
-
-python3 scripts/sonar/provision_quality_gate.py --dry-run   # preview
-python3 scripts/sonar/provision_quality_gate.py             # apply
-```
-
-## Live set (PR #33)
-
-Duplicated-line density and violations on new code. Coverage, the
-reliability/security/maintainability ratings, security-hotspot review, and
-blocker/critical issue counts are written into the script as a deferred set
-(`DEFERRED_CONDITIONS`) but not applied by default — pass
-`--include-deferred` once the team is ready to turn them on, in the same
-change that updates this file.
-
-## CI's role: wait, don't verify
+## CI's role: wait, then fail closed
 
 `.github/workflows/sonar.yml` runs the scanner, polls
-`api/ce/task` + `api/qualitygates/project_status`, and posts the result to
-the job summary — this is "wait for the server's gate result," per the PR
-discussion, and it's unchanged. What's gone is the extra step that used to
-diff the fetched result against `quality-gate.yaml`: there's nothing left to
-diff against, so CI just reports what Sonar says. Actual merge blocking is
-Sonar's own PR check (decoration), which should be a required status check
-on the branch protection rule.
+`api/ce/task` + `api/qualitygates/project_status`, and fails the `sonar`
+job when the gate status is `ERROR`. Merge blocking is that job plus
+Sonar's own PR check (decoration).
+
+Coverage for new code comes from Coverlet OpenCover produced by:
+
+- `CipherBank-app.Tests` (Core unit tests)
+- `CipherBank-app.Analyzers.Tests` (structure-analyzer tests)
+
+Those reports are the coverage job's handoff into the scan. A missing
+OpenCover file leaves `new_coverage` at 0% and reds the gate.
 
 ## Local feedback: SonarQube for IDE, Connected Mode
 

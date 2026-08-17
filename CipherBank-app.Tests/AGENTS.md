@@ -9,4 +9,4 @@
 
 ## This project
 
-Unit tests for CipherBank-app.Core and architecture/structure checks (`Architecture/` — repository-shape rules like `RepositoryStructureTests.cs`). Fastest tier; runs in the `coverage` job of `.github/workflows/sonar.yml` and feeds Coverlet/OpenCover into the Sonar scan.
+Unit tests for CipherBank-app.Core. Repository-shape rules (CPM versions, AssemblyInfo, Core SQL, retired API names) live in `CipherBank-app.Analyzers` and run on compile. Fastest tier; runs in the `coverage` job of `.github/workflows/sonar.yml` and feeds Coverlet/OpenCover into the Sonar scan.
