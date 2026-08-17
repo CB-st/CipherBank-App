@@ -3,11 +3,13 @@
 // </copyright>
 
 using System.Globalization;
+using CipherBank_app.Configuration;
 using CipherBank_app.Extensions;
 using CipherBank_app.Services;
-using CipherBank_app.Services.Mocks;
+using CipherBank_app.V1;
 using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 
@@ -97,11 +99,13 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder RegisterServices(this MauiAppBuilder mauiAppBuilder)
     {
+        mauiAppBuilder.Configuration.AddConfiguration(CipherBankDefaultsConfiguration.Build());
+        mauiAppBuilder.Services.AddCipherBankCore(
+            mauiAppBuilder.Configuration,
+            FileSystem.Current.AppDataDirectory);
+
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
-
-        // Rate Limiter (singleton)
-        mauiAppBuilder.Services.AddSingleton<RateLimiter>();
 
         // Navigation and dialogs
         mauiAppBuilder.Services.AddSingleton<INavigationService, ShellNavigationService>();
@@ -113,98 +117,23 @@ public static class MauiProgram
         // Error handler for ViewModel API error consolidation
         mauiAppBuilder.Services.AddSingleton<IErrorHandler, ErrorHandler>();
 
-        // Register mock services (always available for testing/development)
-        mauiAppBuilder.Services.AddSingleton<MockAuthService>();
-        mauiAppBuilder.Services.AddSingleton<MockCryptoAPIService>();
-        mauiAppBuilder.Services.AddSingleton<MockWalletService>();
-        mauiAppBuilder.Services.AddSingleton<MockTransactionService>();
-
-        // Auth Service - Factory pattern for mock/real switching
-        mauiAppBuilder.Services.AddCipherBankHttpClient<AuthService>();
-
+        mauiAppBuilder.Services.AddSingleton<InMemoryProductClient>();
+        mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductClient>();
 #if DEBUG
-        mauiAppBuilder.Services.AddTransient<IAuthService>(sp =>
+        mauiAppBuilder.Services.AddSingleton<IProductClient>(sp =>
         {
             var settings = sp.GetRequiredService<ISettingsService>();
             if (settings.UseMockServices)
             {
-                Log.Debug("Using MockAuthService (based on settings)");
-                return sp.GetRequiredService<MockAuthService>();
+                Log.Debug("Using InMemoryProductClient (based on settings)");
+                return sp.GetRequiredService<InMemoryProductClient>();
             }
-            else
-            {
-                Log.Debug("Using AuthService (real API)");
-                return sp.GetRequiredService<AuthService>();
-            }
+
+            Log.Debug("Using HttpProductClient (live /v1)");
+            return sp.GetRequiredService<HttpProductClient>();
         });
 #else
-        mauiAppBuilder.Services.AddTransient<IAuthService>(sp => sp.GetRequiredService<AuthService>());
-#endif
-
-        // Crypto API Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<CryptoAPIService>();
-
-#if DEBUG
-        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp =>
-        {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
-            {
-                Log.Debug("Using MockCryptoAPIService (based on settings)");
-                return sp.GetRequiredService<MockCryptoAPIService>();
-            }
-            else
-            {
-                Log.Debug("Using CryptoAPIService (real API)");
-                return sp.GetRequiredService<CryptoAPIService>();
-            }
-        });
-#else
-        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<CryptoAPIService>());
-#endif
-
-        // Wallet Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<WalletService>();
-
-#if DEBUG
-        mauiAppBuilder.Services.AddTransient<IWalletService>(sp =>
-        {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
-            {
-                Log.Debug("Using MockWalletService (based on settings)");
-                return sp.GetRequiredService<MockWalletService>();
-            }
-            else
-            {
-                Log.Debug("Using WalletService (real API)");
-                return sp.GetRequiredService<WalletService>();
-            }
-        });
-#else
-        mauiAppBuilder.Services.AddTransient<IWalletService>(sp => sp.GetRequiredService<WalletService>());
-#endif
-
-        // Transaction Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<TransactionService>();
-
-#if DEBUG
-        mauiAppBuilder.Services.AddTransient<ITransactionService>(sp =>
-        {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
-            {
-                Log.Debug("Using MockTransactionService (based on settings)");
-                return sp.GetRequiredService<MockTransactionService>();
-            }
-            else
-            {
-                Log.Debug("Using TransactionService (real API)");
-                return sp.GetRequiredService<TransactionService>();
-            }
-        });
-#else
-        mauiAppBuilder.Services.AddTransient<ITransactionService>(sp => sp.GetRequiredService<TransactionService>());
+        mauiAppBuilder.Services.AddSingleton<IProductClient>(sp => sp.GetRequiredService<HttpProductClient>());
 #endif
 
         Log.Information("Services registered successfully");

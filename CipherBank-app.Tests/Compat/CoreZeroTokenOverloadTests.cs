@@ -69,20 +69,12 @@ public class CoreZeroTokenOverloadTests
         await quoteApi.GetInverseQuoteAsync("BTC", 1m, "USD");
         await quoteApi.GetQuoteAsync("BTC", 1m, "USD");
 
-        RecordingWalletService wallets = new RecordingWalletService();
-        IWalletService walletApi = wallets;
-        await walletApi.GetWalletsAsync();
-        await walletApi.GetWalletAsync("id");
-        await walletApi.GetWalletBalanceAsync("id");
-        await walletApi.CreateWalletAsync("BTC");
-
         RecordingPrefsSync prefs = new RecordingPrefsSync();
         IPrefsSyncService prefsApi = prefs;
         await prefsApi.PullMergeAsync();
         await prefsApi.SaveAndPushAsync(new UserPrefs());
 
         quotes.Seen.Should().HaveCount(4).And.OnlyContain(t => t == CancellationToken.None);
-        wallets.Seen.Should().HaveCount(4).And.OnlyContain(t => t == CancellationToken.None);
         prefs.Seen.Should().HaveCount(2).And.OnlyContain(t => t == CancellationToken.None);
     }
 
@@ -245,18 +237,6 @@ public class CoreZeroTokenOverloadTests
 
         public Task<PublicQuote> GetQuoteAsync(string inputSymbol, decimal outputAmount, string outputSymbol, CancellationToken cancellationToken)
             => Record<PublicQuote>(cancellationToken);
-    }
-
-    /// <summary>IWalletService stub implementing only the token-required members.</summary>
-    private sealed class RecordingWalletService : TokenRecorder, IWalletService
-    {
-        public Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken) => Record<List<Wallet>>(cancellationToken);
-
-        public Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken) => Record<Wallet>(cancellationToken);
-
-        public Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken) => Record<decimal>(cancellationToken);
-
-        public Task<Wallet> CreateWalletAsync(string cryptoSymbol, CancellationToken cancellationToken) => Record<Wallet>(cancellationToken);
     }
 
     /// <summary>IPrefsSyncService stub implementing only the token-required members.</summary>
