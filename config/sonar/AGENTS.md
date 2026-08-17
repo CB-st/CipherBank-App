@@ -1,20 +1,21 @@
 # SonarQube and analyzability contract
 
-This directory owns gate *definition*; every project in this repo is in scope
-for the construction rules below, since every PR is evaluated by Sonar.
+This directory owns gate *ownership* documentation; every project in this
+repo is in scope for the construction rules below, since every PR is
+evaluated by Sonar.
 
 ## Gate ownership
 
 - The gate lives on `https://sonar.cipherbank.money` (project key
   `CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c`). There is no
-  checked-in mirror of it — see `README.md` in this directory for why, and
-  `scripts/sonar/provision_quality_gate.py` for how the gate gets defined.
-- Never reintroduce a repo-side copy of the gate conditions that CI verifies
-  against. If the gate needs to change, change it on the server via that
-  script, in a reviewed PR that touches the script.
-- `RepositoryStructureTests.cs` and `scripts/validate-structure.sh` both
-  require `scripts/sonar/provision_quality_gate.py` to exist — keep both in
-  sync if this file moves.
+  checked-in mirror of it and no provisioning script — see `README.md` in
+  this directory. Change the gate in the Sonar UI.
+- Never reintroduce a repo-side copy of the gate conditions (YAML, Python,
+  or otherwise) that CI verifies against or pushes to the server.
+- Repository-structure rules (CPM, AssemblyInfo, Core SQL, retired names)
+  live in `CipherBank-app.Analyzers` and run on every `dotnet build`. Sibling
+  product projects are scanned via additional files so Linux CI does not need
+  to compile the MAUI host.
 
 ## Construction rules
 
