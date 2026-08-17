@@ -54,9 +54,9 @@ development fixture; behavior-specific unit tests use Moq instead.
 ## Persistence
 
 Routine data access uses `CipherBankDbContext` and the EF Core SQLite provider.
-Repositories do not open connections or embed SQL. The only raw SQL owner is
-`Persist/Sql/LocalDbSql.cs`, which performs idempotent compatibility repair for
-databases created before EF Core and scrubs legacy cleartext recipient columns.
+Repositories do not open connections or embed SQL. Schema lifecycle is
+`Database.MigrateAsync`; unmatched prototype SQLite files without
+`__EFMigrationsHistory` are deleted rather than repaired.
 
 Recipient account and routing values are input-only: repositories convert them to
 masks before creating an EF entity, and the EF model has no cleartext properties.
@@ -91,7 +91,7 @@ sequenceDiagram
     ViewModel->>Service: Command (e.g. GetCryptoPricesAsync)
     Service->>Handler: HTTP request
     Handler->>Handler: AuthHeaderHandler (add Bearer)
-    Handler->>Handler: RateLimitingHandler (check limit)
+    Handler->>Handler: StandardResilienceHandler (rate limit, retry, CB)
     Handler->>API: Request (certificate pinning)
     API-->>Handler: Response
     Handler-->>Service: HttpResponse
@@ -105,9 +105,8 @@ sequenceDiagram
 Outgoing HTTP requests pass through the following pipeline (order matters):
 
 1. **PlatformHttpHandlerFactory** – Creates platform-specific handler with certificate pinning (iOS, Android, Windows).
-2. **RateLimitingHandler** – Sliding-window rate limiter (60 requests/minute default). Returns 429 if exceeded.
-3. **AuthHeaderHandler** – Injects Bearer token from `IAuthService`. Skips auth endpoints (`/auth/login`, `/auth/refresh`, `/auth/register`). Auto-refreshes token if expiring within 5 minutes.
-4. **StandardResilienceHandler** – Retry (3 attempts, exponential backoff, jitter), circuit breaker (50% failure, 30s break), timeouts (15s attempt, 60s total).
+2. **AuthHeaderHandler** – Injects Bearer token from `IProductSessionStore`. Skips `/v1/session` and `/v1/session/refresh`.
+3. **StandardResilienceHandler** – Outer `SlidingWindowRateLimiter` (60/min, fail-fast), then retry (3 attempts, exponential backoff, jitter), circuit breaker (50% failure, 30s break), timeouts (15s attempt, 60s total).
 
 ## Navigation
 
@@ -142,15 +141,12 @@ Pinned hostnames: `api.cipherbank.money`, `api.sandbox.cipherbank.money`. Placeh
 
 ### Other
 
-- **Rate limiting**: Client-side sliding window to avoid API abuse.
-- **Log redaction**: `LogRedactionHelper` redacts tokens, addresses, wallet IDs, etc.
-- **Address validation**: `AddressValidator` for BTC, ETH, SOL formats.
+- **Rate limiting**: BCL `SlidingWindowRateLimiter` in the Shell HTTP resilience pipeline (60/min, fail-fast).
+- **Address validation**: `AddressValidate` for BTC/LTC/DOGE/ETH/XMR formats.
 
 ## Mock vs Real Services
 
-Mock strategy is **build-time only** (no runtime switching):
+Mock strategy is **build-time plus settings** in DEBUG:
 
-- **DEBUG**: Uses mock services (`MockAuthService`, `MockCryptoAPIService`, etc.).
-- **Release**: Always uses real services (AuthService, CryptoAPIService, etc.).
-
-`UseMocks` has been removed from settings; registration is conditional via `#if DEBUG` in MauiProgram.
+- **DEBUG**: `UseMockServices` may swap `InMemoryProductClient` / `InMemoryPublicQuoteService`.
+- **Release**: Always uses `HttpProductClient` and `PublicApiClient`.

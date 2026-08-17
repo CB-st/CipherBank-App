@@ -8,14 +8,12 @@
   or secure-store state across tests.
 - Every bug fix gets a regression test that fails without the fix. Every
   configuration options class gets a default/binding validation test.
-- Architecture and repository-structure tests are merge gates, not documentation.
-  `RepositoryStructureTests` must keep requiring `scripts/sonar/provision_quality_gate.py`.
+- Architecture and repository-structure rules are merge gates, not documentation.
+  `CipherBank-app.Analyzers` enforces CPM versions, AssemblyInfo, Core SQL, and retired names.
 - Avoid timing-only assertions. Synchronize concurrent tests with tasks, gates, or
   injected schedulers.
 - Do not mock EF query providers, serializers, or framework internals.
 
 ## This project
 
-Unit tests for CipherBank-app.Core and architecture/structure checks
-(`Architecture/`). Fastest tier; runs in the `coverage` job of
-`.github/workflows/sonar.yml` and feeds Coverlet/OpenCover into the Sonar scan.
+Unit tests for CipherBank-app.Core. Repository-shape rules (CPM versions, AssemblyInfo, Core SQL, retired API names) live in `CipherBank-app.Analyzers` and run on compile. Fastest tier; runs in the `coverage` job of `.github/workflows/sonar.yml` and feeds Coverlet/OpenCover into the Sonar scan.

@@ -12,6 +12,9 @@ on:
 # PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob".
 # Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
 # split()/replace(), so membership uses comma-padded contains().
+#
+# Replies do not run the scanner. dispatch_replies looks up sonar-context-<sha>
+# from a prior Sonar job so CipherBank.AI still ingests gate/issues JSON.
 
 concurrency:
   group: ai-reply-${{ github.event.issue.number || github.event.pull_request.number }}
@@ -281,6 +284,45 @@ jobs:
     if: needs.resolve.outputs.proceed == 'true' && needs.ai_context.result == 'success'
     runs-on: ubuntu-22.04
     steps:
+    # Reply workflows do not run the scanner. Attach sonar-context-<head_sha>
+    # from a prior Sonar job so personas still ingest gate/issues JSON.
+    - name: Locate sonar-context artifact for this head
+      id: sonar_ctx
+      env:
+        PR_HEAD_SHA: ${{ needs.resolve.outputs.pr_head_sha }}
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      with:
+        script: |
+          const sha = process.env.PR_HEAD_SHA || '';
+          const name = `sonar-context-${sha}`;
+          core.setOutput('available', 'false');
+          core.setOutput('run_id', String(context.runId));
+          if (!/^[0-9a-f]{40}$/i.test(sha))
+          {
+            core.warning(`Invalid PR_HEAD_SHA; replies will run without Sonar context.`);
+            return;
+          }
+          const { owner, repo } = context.repo;
+          const { data } = await github.rest.actions.listArtifactsForRepo(
+          {
+            owner, repo, name, per_page: 10,
+          });
+          const art = (data.artifacts || []).find(a => !a.expired && a.name === name);
+          if (!art)
+          {
+            core.info(`No ${name} artifact; replies will run without Sonar context.`);
+            return;
+          }
+          const runId = art.workflow_run?.id;
+          if (!runId)
+          {
+            core.warning(`${name} found but workflow_run.id is missing.`);
+            return;
+          }
+          core.info(`Found ${name} on run ${runId} (${art.size_in_bytes} bytes)`);
+          core.setOutput('available', 'true');
+          core.setOutput('run_id', String(runId));
+
     - name: Mint CipherBank.AI dispatch token
       id: dispatch_token
       uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
@@ -313,6 +355,8 @@ jobs:
         COMMENT_KIND: ${{ needs.resolve.outputs.comment_kind }}
         COMMENTER_LOGIN: ${{ needs.resolve.outputs.commenter_login }}
         THREAD_NODE_ID: ${{ needs.resolve.outputs.thread_node_id }}
+        SONAR_AVAILABLE: ${{ steps.sonar_ctx.outputs.available }}
+        SONAR_RUN_ID: ${{ steps.sonar_ctx.outputs.run_id }}
       run: |
         set -euo pipefail
         payload_json="$(
@@ -336,6 +380,10 @@ jobs:
             },
             agent: {
               persona_ids: (env.PERSONA_IDS | fromjson)
+            },
+            sonar: {
+              available: (env.SONAR_AVAILABLE == "true"),
+              run_id: env.SONAR_RUN_ID
             },
             comment: {
               id: env.COMMENT_ID,
