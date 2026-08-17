@@ -47,24 +47,6 @@ internal static class SourcePath
         return false;
     }
 
-    /// <summary>True when the tree is Persist/Sql/LocalDbSql.cs (CB1003 owner).</summary>
-    internal static bool IsSqlOwner(this string path)
-    {
-        if (!string.Equals(Path.GetFileName(path), "LocalDbSql.cs", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        string sqlDir = Path.GetDirectoryName(path) ?? string.Empty;
-        if (!string.Equals(Path.GetFileName(sqlDir), "Sql", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        string persistDir = Path.GetDirectoryName(sqlDir) ?? string.Empty;
-        return string.Equals(Path.GetFileName(persistDir), "Persist", StringComparison.OrdinalIgnoreCase);
-    }
-
     /// <summary>True when the additional file is Directory.Packages.props.</summary>
     internal static bool IsCentralPackageFile(this string path)
         => string.Equals(Path.GetFileName(path), "Directory.Packages.props", StringComparison.OrdinalIgnoreCase);

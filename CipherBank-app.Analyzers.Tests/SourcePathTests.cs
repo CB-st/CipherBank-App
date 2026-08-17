@@ -38,14 +38,6 @@ public sealed class SourcePathTests
     }
 
     [Fact]
-    public void IsSqlOwner_RequiresPersistSqlLocalDbSql()
-    {
-        Assert.True(Path.Combine("CipherBank-app.Core", "Persist", "Sql", "LocalDbSql.cs").IsSqlOwner());
-        Assert.False(Path.Combine("CipherBank-app.Core", "Persist", "LocalDbSql.cs").IsSqlOwner());
-        Assert.False(Path.Combine("CipherBank-app.Core", "Services", "Query.cs").IsSqlOwner());
-    }
-
-    [Fact]
     public void IsCentralPackageFile_UsesFileNameNotSuffix()
     {
         Assert.True(Path.Combine("src", "Directory.Packages.props").IsCentralPackageFile());

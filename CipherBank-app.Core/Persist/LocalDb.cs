@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Persist.Sql;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,22 +12,14 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 {
     private readonly string _path;
     private readonly DbContextOptions<CipherBankDbContext> _options;
-    private readonly ILegacySchemaRepair _schemaRepair;
     private readonly SemaphoreSlim _initializeGate = new(1, 1);
     private bool _initialized;
     private bool _disposed;
 
     public LocalDb(string databasePath)
-        : this(databasePath, new LocalDbSql())
-    {
-    }
-
-    internal LocalDb(string databasePath, ILegacySchemaRepair schemaRepair)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
-        ArgumentNullException.ThrowIfNull(schemaRepair);
         _path = System.IO.Path.GetFullPath(databasePath);
-        _schemaRepair = schemaRepair;
         string connectionString = new SqliteConnectionStringBuilder { DataSource = _path }.ToString();
         _options = new DbContextOptionsBuilder<CipherBankDbContext>()
             .UseSqlite(connectionString)
@@ -58,11 +49,7 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
             await using CipherBankDbContext context = new CipherBankDbContext(_options);
-
-            // EnsureCreated no-ops when any table already exists (legacy pre-EF DBs).
             await context.Database.EnsureCreatedAsync(ct).ConfigureAwait(false);
-            await _schemaRepair.EnsureMissingModelTablesAsync(context, ct).ConfigureAwait(false);
-            await _schemaRepair.ApplyCompatibilityAsync(context.Database.GetDbConnection(), ct).ConfigureAwait(false);
             _initialized = true;
         }
         finally

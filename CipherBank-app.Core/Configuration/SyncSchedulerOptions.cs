@@ -10,6 +10,9 @@ public sealed class SyncSchedulerOptions
     /// <summary>Lower inclusive concurrency bound for validation.</summary>
     public static int MinConcurrency { get; } = 1;
 
+    /// <summary>CPU-derived default cap for on-device sync (overlay may go higher).</summary>
+    public static int DefaultMaxConcurrencyCap { get; } = 2;
+
     /// <summary>Upper inclusive concurrency bound for validation.</summary>
     public static int MaxAllowedConcurrency { get; } = 8;
 
@@ -21,15 +24,7 @@ public sealed class SyncSchedulerOptions
     /// </summary>
     public int MaxConcurrency { get; set; } = DeriveDefaultMaxConcurrency();
 
-    /// <summary>Clamps <see cref="Environment.ProcessorCount"/> into [1, 2] for on-device sync.</summary>
+    /// <summary>Clamps <see cref="Environment.ProcessorCount"/> into the mobile default range.</summary>
     public static int DeriveDefaultMaxConcurrency()
-    {
-        int processors = Environment.ProcessorCount;
-        if (processors < MinConcurrency)
-        {
-            return MinConcurrency;
-        }
-
-        return Math.Min(2, processors);
-    }
+        => Math.Clamp(Environment.ProcessorCount, MinConcurrency, DefaultMaxConcurrencyCap);
 }

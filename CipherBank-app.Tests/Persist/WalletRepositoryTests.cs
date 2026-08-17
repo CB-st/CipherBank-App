@@ -24,24 +24,8 @@ public sealed class WalletRepositoryTests
 
         DateTimeOffset earlier = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         DateTimeOffset later = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero);
-        LocalWalletRow first = new LocalWalletRow(
-            "w1",
-            "BTC",
-            "Primary",
-            "bc1qexample",
-            "m/84'/0'/0'/0/0",
-            0,
-            "hd",
-            earlier);
-        LocalWalletRow second = first with
-        {
-            Id = "w2",
-            Symbol = "ETH",
-            Label = "Secondary",
-            Address = "0xabc",
-            Path = "m/44'/60'/0'/0/0",
-            CreatedAt = later,
-        };
+        LocalWalletRow first = HdWallet("w1", "BTC", "Primary", "bc1qexample", "m/84'/0'/0'/0/0", earlier);
+        LocalWalletRow second = HdWallet("w2", "ETH", "Secondary", "0xabc", "m/44'/60'/0'/0/0", later);
 
         await repo.UpsertAsync(first);
         await repo.UpsertAsync(second);
@@ -58,4 +42,21 @@ public sealed class WalletRepositoryTests
 
         (await repo.ListAsync()).Should().ContainSingle().Which.Id.Should().Be("w2");
     }
+
+    private static LocalWalletRow HdWallet(
+        string id,
+        string symbol,
+        string label,
+        string address,
+        string derivationPath,
+        DateTimeOffset createdAt)
+        => new(
+            id,
+            symbol,
+            label,
+            address,
+            derivationPath,
+            AccountIndex: 0,
+            Kind: "hd",
+            createdAt);
 }
