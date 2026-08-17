@@ -23,7 +23,7 @@ Dependencies point inward: MAUI may depend on Core; Core never depends on MAUI. 
 2. Assembly metadata lives in the owning `.csproj`. Do not add `Properties/AssemblyInfo.cs`.
 3. Constructor injection is the default. Depend on focused interfaces, not dependency bags, static service locators, or broad API objects.
 4. Use production names for production and stateful development implementations. `Mock*` is reserved for test doubles; prefer Moq for a small collaborator contract and `InMemory*` for behavior that intentionally keeps state.
-5. Routine database work uses EF Core. Compatibility SQL is centralized in `CipherBank-app.Core/Persist/Sql/LocalDbSql.cs` when that file exists; no other production file owns SQL command text.
+5. Routine database work uses EF Core. Core must not embed SQL command text.
 6. Prefer framework facilities (`ArgumentNullException.ThrowIfNull`, `TimeProvider`, spans, options validation) over local substitutes.
 7. One primary type per C# file. The filename matches the primary type.
 

@@ -4,7 +4,7 @@ Repository-structure diagnostics. Not product behavior.
 
 - CB1001: `PackageReference Version=` outside `Directory.Packages.props`
 - CB1002: `Properties/AssemblyInfo.cs`
-- CB1003: raw SQL in Core outside `Persist/Sql/LocalDbSql.cs`
+- CB1003: raw SQL in Core
 - CB1004: retired names `IProductApi`, `MockProductApi`, `AppSessionDeps`
 
 These run on every `dotnet build` via `Directory.Build.props`. `Directory.Build.targets`
