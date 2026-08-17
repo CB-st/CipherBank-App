@@ -19,6 +19,13 @@ concurrency:
 # require PIPELINE_ALLOWED_AUTHOR (CSV of GitHub logins). Defaults to
 # RED-FLAG-DEVELOPMENT when unset. GHA has no split(); membership uses
 # comma-padded contains().
+#
+# Actor vs triggering_actor: Cursor / GitHub App pushes set github.actor to the
+# bot (e.g. cursor[bot]) while github.triggering_actor stays the human who
+# started the session. Requiring actor alone skipped Sonar, context, and review
+# on PR #33 (run 31868573925), so the required scan never ran and AI replies
+# dispatched with SONAR_AVAILABLE=false. Allow either login; keep the PR-author
+# check so an untrusted branch owner still cannot reach secrets.
 
 jobs:
   coverage:
@@ -34,20 +41,48 @@ jobs:
       DOTNET_NOLOGO: true
       DOTNET_CLI_TELEMETRY_OPTOUT: true
     steps:
+      - name: Record workflow actors
+        run: |
+          echo "event=${{ github.event_name }}"
+          echo "actor=${{ github.actor }}"
+          echo "triggering_actor=${{ github.triggering_actor }}"
+          echo "pr_author=${{ github.event.pull_request.user.login }}"
+
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ env.SCAN_COMMIT_SHA }}
           fetch-depth: 1
 
-      - name: Validate repository structure
-        run: bash scripts/validate-structure.sh
-
       - name: Set up .NET
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: |
             10.0.x
+
+      # Repository-wide CB1001–CB1004 pass. Linux cannot compile the MAUI host
+      # (net10.0-android|ios|maccatalyst), IntegrationTests (WireMock/Scriban.Signed),
+      # or E2ETests (StyleCop + TreatWarningsAsErrors). Analyzer tests load those
+      # on-disk csproj/C# trees as AdditionalFiles; Core/ChallengePass/Tests are
+      # also compiled in the Sonar job with Directory.Build.targets AdditionalFiles.
+      - name: Run structure analyzer tests
+        run: |
+          set -euo pipefail
+          mkdir -p reports
+          echo "Structure pass (real files, not a Linux compile of unbuildable TFMs):"
+          echo "  CipherBank-app (MAUI host)"
+          echo "  CipherBank-app.IntegrationTests"
+          echo "  CipherBank-app.E2ETests"
+          echo "  CipherBank-app.Core"
+          echo "  CipherBank-app.ChallengePass"
+          echo "  CipherBank-app.Tests"
+          dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj -c Release --nologo \
+            -p:CollectCoverage=true \
+            -p:CoverletOutputFormat=opencover \
+            -p:CoverletOutput="${GITHUB_WORKSPACE}/reports/analyzer.opencover.xml" \
+            -p:Include="[CipherBank-app.Analyzers]*" \
+            -p:Threshold=0
+          test -f reports/analyzer.opencover.xml
 
       - name: Run unit tests with Coverlet
         run: |
@@ -73,6 +108,7 @@ jobs:
           mkdir -p artifact-coverage
           cp -f reports/coverage.cobertura.xml artifact-coverage/
           cp -f reports/coverage.opencover.xml artifact-coverage/
+          cp -f reports/analyzer.opencover.xml artifact-coverage/
 
       - name: Upload coverage-report artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -99,10 +135,16 @@ jobs:
            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
            format(',{0},', github.event.pull_request.user.login)
          )
-      && contains(
-           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-           format(',{0},', github.actor)
-         )
+      && (
+        contains(
+          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+          format(',{0},', github.actor)
+        )
+        || contains(
+          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+          format(',{0},', github.triggering_actor)
+        )
+      )
     permissions:
       contents: read
       pull-requests: read
@@ -130,10 +172,16 @@ jobs:
              format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
              format(',{0},', github.event.pull_request.user.login)
            )
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.actor)
-           )
+        && (
+          contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.actor)
+          )
+          || contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.triggering_actor)
+          )
+        )
       )
       ||
       (
@@ -142,6 +190,10 @@ jobs:
           contains(
             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
             format(',{0},', github.actor)
+          )
+          || contains(
+            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
+            format(',{0},', github.triggering_actor)
           )
           || (
             github.event.head_commit.author.username != ''
@@ -213,8 +265,13 @@ jobs:
       - name: Verify coverage report
         run: |
           set -euo pipefail
+          analyzer=reports/analyzer.opencover.xml
           opencover=reports/coverage.opencover.xml
           cobertura=reports/coverage.cobertura.xml
+          if [ ! -f "${analyzer}" ]; then
+            echo "Missing ${analyzer} after coverage-report download." >&2
+            exit 1
+          fi
           if [ ! -f "${opencover}" ]; then
             echo "Missing ${opencover} after coverage-report download." >&2
             exit 1
@@ -286,13 +343,17 @@ jobs:
             /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
             /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,design_handoff_cipherbank/**" \
             /d:sonar.cpd.exclusions="**/IProductApi.cs,**/IWalletService.cs,**/IPublicQuoteService.cs,**/IMnemonicBackupService.cs,**/IPrefsSyncService.cs,**/IStepUpChallenges.cs,**/IChallengePass*.cs,**/IAccountKeySource.cs,**/ISessionChallengeClient.cs,**/IPq*.cs" \
-            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
+            /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,reports/analyzer.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
+      # Do not add CipherBank-app / IntegrationTests / E2ETests here. Linux cannot
+      # compile those TFMs; CB1001–CB1004 still scan their trees via AdditionalFiles
+      # (Directory.Build.targets) and the coverage "Run structure analyzer tests" step.
       - name: Build analyzable projects
         run: |
           set -euo pipefail
           projects=(
+            CipherBank-app.Analyzers/CipherBank-app.Analyzers.csproj
             CipherBank-app.Core/CipherBank-app.Core.csproj
             CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
             CipherBank-app.Tests/CipherBank-app.Tests.csproj
@@ -484,7 +545,7 @@ jobs:
           retention-days: 14
           overwrite: true
 
-      ### 9. Log quality gate (no exit-code enforcement) ########################
+      ### 9. Fail closed on quality-gate ERROR ###################################
       - name: Report quality gate outcome
         if: steps.poll.outputs.gate_status != ''
         env:
@@ -498,7 +559,8 @@ jobs:
               echo "::notice::Quality gate: WARN -- legacy status from some CE builds; see job summary + sonar-context artifact."
               ;;
             ERROR)
-              echo "::notice::Quality gate: ERROR -- SonarQube's own PR check should show the failure; see job summary + sonar-context artifact."
+              echo "::error::Quality gate: ERROR -- see job summary + sonar-context artifact." >&2
+              exit 1
               ;;
             *)
               echo "::error::Unknown quality gate status '$GATE'; fail closed until the poll script recognises this value." >&2

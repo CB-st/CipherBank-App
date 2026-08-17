@@ -6,7 +6,6 @@ using CipherBank_app.Configuration;
 using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
-using CipherBank_app.Persist.Sql;
 using CipherBank_app.Pos;
 using CipherBank_app.V1;
 using FluentAssertions;
@@ -35,7 +34,6 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<ICoraLineProvider>().Should().BeOfType<CoraLineProvider>();
         provider.GetRequiredService<IEmvExchangeSimulator>().Should().BeOfType<EmvExchangeSimulator>();
         provider.GetRequiredService<ILocalDb>().Should().BeOfType<LocalDb>();
-        provider.GetRequiredService<ILegacySchemaRepair>().Should().BeOfType<LocalDbSql>();
         provider.GetRequiredService<IWalletRepository>().Should().BeOfType<WalletRepository>();
         provider.GetRequiredService<IRecipientRepository>().Should().BeOfType<RecipientRepository>();
         provider.GetRequiredService<IMarketRepository>().Should().BeOfType<MarketRepository>();

@@ -9,4 +9,4 @@
 
 ## Repository-specific note
 
-`Persist/Sql/LocalDbSql.cs` is the one blessed exception to "no raw SQL" when that file exists: `RepositoryStructureTests.cs` and `scripts/validate-structure.sh` both enforce that no other file under this project uses `CommandText =`, `FromSqlRaw`, or `ExecuteSqlRaw`. Don't widen that exception without updating both checks.
+`NoScatteredSqlAnalyzer` in `CipherBank-app.Analyzers` reports `CommandText =`, `FromSqlRaw`, or `ExecuteSqlRaw` in any Core file. Persistence uses EF Core entities and `SaveChanges`.

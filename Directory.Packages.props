@@ -26,7 +26,9 @@
 
   <ItemGroup Label="Core">
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="10.0.1" />
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.11" />
     <PackageVersion Include="NBitcoin" Version="8.0.13" />
     <PackageVersion Include="NBitcoin.Altcoins" Version="3.0.33" />
     <PackageVersion Include="Nethereum.HdWallet" Version="6.1.0" />
@@ -37,6 +39,10 @@
   </ItemGroup>
 
   <ItemGroup Label="Analysis">
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="1.1.2" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.100" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
   </ItemGroup>
