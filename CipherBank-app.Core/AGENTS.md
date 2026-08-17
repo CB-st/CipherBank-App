@@ -18,10 +18,4 @@ Applies to `CipherBank-app.Core` in addition to the root contract.
 - Public methods must state units for numeric arguments and describe failure and
   cancellation behavior when it is not obvious from the type.
 
-## Raw SQL exception
-
-`Persist/Sql/LocalDbSql.cs` is the one blessed exception to "no raw SQL":
-`RepositoryStructureTests.cs` and `scripts/validate-structure.sh` both
-enforce that no other file under this project uses `CommandText =`,
-`FromSqlRaw`, or `ExecuteSqlRaw`. Don't widen that exception without
-updating both checks.
+`NoScatteredSqlAnalyzer` in `CipherBank-app.Analyzers` reports `CommandText =`, `FromSqlRaw`, or `ExecuteSqlRaw` in any Core file. Persistence uses EF Core `Migrate()`; production persist does not own SQL command text.

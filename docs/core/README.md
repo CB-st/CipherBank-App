@@ -4,9 +4,9 @@ The CipherBank-app.Core project contains shared interfaces, models, and utilitie
 
 ## Purpose
 
-- Define service contracts (IAuthService, IWalletService, etc.) for dependency injection and testing.
+- Define service contracts (`IProductClient`, `IPublicQuoteService`, persist ports) for dependency injection and testing.
 - Define domain models (Wallet, Transaction, CryptoCurrency, etc.) used by services and ViewModels.
-- Provide validation (AddressValidator) and utilities (RateLimiter, LogRedactionHelper).
+- Provide wallet address checks via `AddressValidate` (NBitcoin).
 
 ## Dependencies
 
@@ -29,9 +29,7 @@ The Core project is referenced by:
 CipherBank-app.Core/
 ├── Models/           # Domain models
 ├── Services/         # Interfaces
-├── Services/Logging/ # LogRedactionHelper
-├── Services/Validation/ # AddressValidator
-└── Services/         # RateLimiter
+└── Wallets/          # AddressValidate
 ```
 
 ## Related Documentation

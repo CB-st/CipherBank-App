@@ -150,7 +150,9 @@ public class SyncJobSchedulerTests
     public void Default_max_concurrency_is_clamped_processor_count()
     {
         int derived = SyncSchedulerOptions.DeriveDefaultMaxConcurrency();
-        derived.Should().BeInRange(SyncSchedulerOptions.MinConcurrency, 2);
+        derived.Should().BeInRange(
+            SyncSchedulerOptions.MinConcurrency,
+            SyncSchedulerOptions.DefaultMaxConcurrencyCap);
         new SyncSchedulerOptions().MaxConcurrency.Should().Be(derived);
     }
 

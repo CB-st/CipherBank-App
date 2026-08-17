@@ -1,5 +1,5 @@
 // <copyright file="HttpPqChannelChallengeSource.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using CipherBank_app.ChallengePass.Hybrid;
@@ -13,7 +13,7 @@ namespace CipherBank_app.Services;
 /// </summary>
 public sealed class HttpPqChannelChallengeSource : IPqChannelChallengeSource
 {
-    // Lazy breaks DI cycle with HttpProductApi ↔ challenge/pass builders.
+    // Lazy breaks DI cycle with HttpProductClient ↔ challenge/pass builders.
     private readonly Lazy<IProductClient> _api;
     private readonly IPqChannel _channel;
 

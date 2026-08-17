@@ -1,6 +1,6 @@
 # CipherBank repository contract
 
-This file governs the M1a → M4 stack. More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
+This file governs the M1a → M7 stack. More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
 
 Start with this file, then read the nearest subtree contract and the
 documentation index in `docs/README.md`.
@@ -12,9 +12,9 @@ documentation index in `docs/README.md`.
 | `CipherBank-app.Core` | Domain models, application services, persistence ports, EF Core, scheduling, product client contract | MAUI controls, platform APIs, ChallengePass algorithms |
 | `CipherBank-app.ChallengePass` | Challenge/pass suites, account-key sources, A1/A2 crypto composition, key-share ports | UI, database access, long-lived cleartext secrets |
 | `CipherBank-app` | MAUI composition root, views, ViewModels, platform adapters | Domain policy, manual SQL, static service locators |
+| `CipherBank-app.Analyzers` | Repository-structure Roslyn diagnostics (CPM, AssemblyInfo, Core SQL, retired names) | Product behavior |
 | `CipherBank-app.Tests` | Unit, architecture, options, crypto, and persistence regression tests | Shared mutable fixtures or production substitutes |
-| Integration tests | HTTP and persistence boundaries | Reimplementation of product behavior |
-| `CipherBank-app.E2ETests` | Appium lifecycle, stable story catalog, page objects, device profiles, diagnostics, and gap evidence | Product policy, hard-coded credentials, or silent E2E passes |
+| Integration/E2E projects | HTTP boundaries and complete user journeys | Reimplementation of product behavior |
 
 Dependencies point inward: MAUI and ChallengePass may depend on Core; Core never depends on either. Tests may depend on the layer they verify.
 
@@ -25,7 +25,7 @@ Dependencies point inward: MAUI and ChallengePass may depend on Core; Core never
 3. Constructor injection is the default. Depend on focused interfaces, not dependency bags, static service locators, or broad API objects.
 4. Use production names for production and stateful development implementations. `Mock*` is reserved for test doubles; prefer Moq for a small collaborator contract and `InMemory*` for behavior that intentionally keeps state.
 5. Bounded background dispatch uses an injected `TaskScheduler` and `PriorityQueue<TElement,TPriority>`. Do not hand-sort mutable work lists or call `Task.Run` inside domain services.
-6. Routine database work uses `CipherBankDbContext` and EF Core. Compatibility SQL is centralized in `CipherBank-app.Core/Persist/Sql/LocalDbSql.cs`; no other production file owns SQL command text.
+6. Routine database work uses `CipherBankDbContext` and EF Core `Migrate()`. Schema changes are a new EF migration plus a previous-migration upgrade test. Production code does not own SQL command text. Unmatched prototype SQLite files (no `__EFMigrationsHistory`) are wiped, not repaired.
 7. Prefer framework facilities (`ArgumentNullException.ThrowIfNull`, `TimeProvider`, `Math.Sign`, spans, cryptographic zeroization, options validation) over local substitutes.
 8. Repository-owned configuration is separated by theme under `config/`, documented by a neighboring `README.md`, represented by typed options, validated at startup, and free of secrets.
 9. One primary type per C# file. The filename matches the primary type.
@@ -57,24 +57,15 @@ The UI contract is in `docs/style/README.md` and `CipherBank-app/Resources/Style
 - Manrope is the interface-copy family, Space Grotesk owns display and financial hierarchy, and Space Mono is reserved for PIN/code/status roles.
 - Interactive targets remain at least 44×44 device-independent units. Meaning is never conveyed by color alone.
 
-Copy from `templates/ui/` for new pages, `templates/e2e/` for executable stories, and `templates/service/` or `templates/config/` for new capabilities. Update the template in the same change when a repository convention changes.
+Copy from `templates/ui/` for new pages and from `templates/service/` or `templates/config/` for new capabilities. Update the template in the same change when a repository convention changes.
 
 ## Quality and Sonar
 
 - `TreatWarningsAsErrors` remains enabled. Allow lists are narrow, documented, and shrinking; NuGet resolution, nullable, cancellation, and security warnings are not parked.
-- `scripts/validate-structure.sh` is the architecture gate. It checks central packages, assembly metadata, SQL ownership, required contracts, design-system files, and retired terminology.
+- `CipherBank-app.Analyzers` is the architecture gate; it runs on every `dotnet build`.
 - Local C# Sonar parity is opt-in through `./scripts/lint-csharp.sh`; CI Sonar remains the merge authority.
 - Sonar must analyze production folders and interfaces. Exclusions require a specific generated/vendor reason and the narrowest possible path.
 - Resolve findings on the earliest stack layer that owns the code, then merge upward.
-
-## Quality and Sonar
-
-- `TreatWarningsAsErrors` remains enabled. Allow lists are narrow, documented, and shrinking.
-- `scripts/validate-structure.sh` is the architecture gate.
-- CI Sonar remains the merge authority. Do not put SonarScanner or quality-gate verify into `dotnet build` / `Directory.Build.*`.
-- The live quality gate lives on Sonar. `scripts/sonar/provision_quality_gate.py`
-  is the versioned way to change it. Do not reintroduce a checked-in
-  `quality-gate.yaml` that CI diffs against the server.
 - A local `.compliance/` overlay is optional and untracked. Do not commit it.
 
 ## Required verification
@@ -82,7 +73,7 @@ Copy from `templates/ui/` for new pages, `templates/e2e/` for executable stories
 Run the narrowest relevant test first, then the complete gates for a review-ready change:
 
 ```bash
-bash scripts/validate-structure.sh
+dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj
 ./scripts/lint.sh
 dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false
 dotnet build CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
@@ -95,9 +86,7 @@ Changes to XAML resources also require a light/dark visual pass at compact and l
 ## E2E and sensitive artifacts
 
 - Appium story tests use stable `CB-*`/`US-*` traits and fail if a selected wave resolves zero tests.
-- Device-bound facts run through `StoryRunner`, fail when `E2E_RUN=1`, and write a gap note before rethrowing.
-- Emulator, Appium, APK-install, diagnostics, and recovery-file work belongs to dedicated lifecycle objects behind the harness façade, not inside story bodies.
-- Package reset uses `adb uninstall` + `adb install` + `adb shell pm clear com.companyname.cipherbankapp` at session start so PIN/LocalDb do not survive across installs. In-story Fresh still uses `pm clear` only.
+- Package reset uses `adb shell pm clear com.companyname.cipherbankapp`.
 - Journals, recovery pulls, and diagnostics belong under gitignored `artifacts/` and must never be committed.
 - PINs, mnemonics, tokens, keys, PANs, and full bank coordinates are never logged in production.
 
@@ -107,8 +96,9 @@ Changes to XAML resources also require a light/dark visual pass at compact and l
 |---|---|
 | `CipherBank-app/AGENTS.md` | Host (composition/startup) + UI (Views/ViewModels) |
 | `CipherBank-app.Core/AGENTS.md` | Core/domain, currently also carrying Application/Infrastructure concerns |
-| `CipherBank-app.Core/Persist/AGENTS.md` | Persistence ports and LocalDb SQL ownership |
-| `CipherBank-app.Tests/AGENTS.md` | Unit + architecture tests |
+| `CipherBank-app.Core/Persist/AGENTS.md` | Persist (EF Core `Migrate()`, LocalDb, sync) |
+| `CipherBank-app.Tests/AGENTS.md` | Unit tests |
+| `CipherBank-app.Analyzers/AGENTS.md` | Repository-structure Roslyn analyzers |
 | `CipherBank-app.IntegrationTests/AGENTS.md` | Integration tests |
 | `CipherBank-app.ChallengePass/AGENTS.md` | Challenge/pass suites and A1/A2 crypto |
 | `CipherBank-app.E2ETests/AGENTS.md` | End-to-end tests |

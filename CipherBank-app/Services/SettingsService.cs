@@ -1,5 +1,5 @@
 // <copyright file="SettingsService.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Globalization;
@@ -33,7 +33,7 @@ public sealed partial class SettingsService : ISettingsService
     private const bool DefaultBiometricAuthEnabled = false;
     private const int DefaultAutoLockTimeout = 5;
     private const string DefaultDefaultCurrency = "USD";
-    private const SessionProofMode DefaultSessionProofMode = SessionProofMode.ChallengePassA1;
+    private const SessionProofMode DefaultSessionProofMode = SessionProofMode.Lab;
     private const bool DefaultDeveloperModeEnabled = false;
     private const bool DefaultUseMockServices = true;
 
@@ -179,13 +179,12 @@ public sealed partial class SettingsService : ISettingsService
 
         set
         {
-            string modeName = value.ToString();
             if (_logger != null)
             {
-                LogSettingChanged(_logger, "SessionProofMode", modeName);
+                LogSessionProofModeChanged(_logger, value);
             }
 
-            Preferences.Set(IdSessionProofMode, modeName);
+            Preferences.Set(IdSessionProofMode, value.ToString());
         }
     }
 
@@ -264,6 +263,9 @@ public sealed partial class SettingsService : ISettingsService
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Setting {SettingName} to {Value}")]
     private static partial void LogSettingChanged(ILogger logger, string settingName, string value);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Setting SessionProofMode to {Value}")]
+    private static partial void LogSessionProofModeChanged(ILogger logger, SessionProofMode value);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Settings reset to defaults")]
     private static partial void LogSettingsResetToDefaults(ILogger logger);

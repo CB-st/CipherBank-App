@@ -1,5 +1,5 @@
 // <copyright file="LoginViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System;
@@ -8,10 +8,9 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CipherBank_app.Constants;
+using CipherBank_app.Models;
 using CipherBank_app.Services;
-#if DEBUG
-using CipherBank_app.Services.Mocks;
-#endif
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -24,7 +23,7 @@ namespace CipherBank_app.ViewModels;
 public partial class LoginViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<LoginViewModel> _logger;
-    private readonly IAuthService _auth;
+    private readonly IProductClient _product;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
 #if DEBUG
@@ -59,13 +58,13 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 #if DEBUG
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
-        IAuthService auth,
+        IProductClient product,
         INavigationService navigation,
         IDialogService dialog,
         ISettingsService settings)
     {
         _logger = logger;
-        _auth = auth;
+        _product = product;
         _navigation = navigation;
         _dialog = dialog;
         _settings = settings;
@@ -76,12 +75,12 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 #else
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
-        IAuthService auth,
+        IProductClient product,
         INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
-        _auth = auth;
+        _product = product;
         _navigation = navigation;
         _dialog = dialog;
     }
@@ -132,7 +131,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
             }
 
             LogAttemptingLogin(_logger, Username);
-            await _auth.LoginAsync(Username, Password, _cts.Token);
+            await _product.CreateSessionAsync(_cts.Token);
             LogLoginSuccessful(_logger);
             await _navigation.GoToAsync(Routes.Dashboard);
         }

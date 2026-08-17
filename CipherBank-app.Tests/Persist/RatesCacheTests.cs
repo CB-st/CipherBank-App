@@ -20,14 +20,14 @@ public class RatesCacheTests
 
         await cache.UpsertAsync(
             [
-                new RateRow("BTC", 67000, 1.5, 1000),
-                new RateRow("ETH", 3500, -0.5, 1001),
+                new RateRow("BTC", 67000m, 1.5m, 1000),
+                new RateRow("ETH", 3500m, -0.5m, 1001),
             ],
             default);
-        await cache.UpsertAsync([new RateRow("BTC", 68000, 2.5, 1002)], default);
+        await cache.UpsertAsync([new RateRow("BTC", 68000m, 2.5m, 1002)], default);
 
         IReadOnlyList<RateRow> rows = await cache.GetAsync(["BTC"], default);
 
-        rows.Should().Equal(new RateRow("BTC", 68000, 2.5, 1002));
+        rows.Should().Equal(new RateRow("BTC", 68000m, 2.5m, 1002));
     }
 }

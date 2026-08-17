@@ -1,13 +1,15 @@
 // <copyright file="HttpClientExtensions.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading.RateLimiting;
 using CipherBank_app.Configuration;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -29,6 +31,7 @@ public static class HttpClientExtensions
         where TClient : class
     {
         var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
+        SlidingWindowRateLimiter limiter = GetSharedRateLimiter(services);
 
         var builder = services.AddHttpClient<TClient>((sp, http) =>
         {
@@ -43,10 +46,9 @@ public static class HttpClientExtensions
             configure?.Invoke(sp, http);
         })
         .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler())
-        .AddHttpMessageHandler(sp => new RateLimitingHandler(sp))
         .AddHttpMessageHandler(sp => new AuthHeaderHandler(sp, sp.GetRequiredService<TimeProvider>()));
 
-        builder.AddStandardResilienceHandler(ConfigureResilienceOptions);
+        AddResilience(builder, limiter);
 
         return builder;
     }
@@ -60,6 +62,7 @@ public static class HttpClientExtensions
         Action<IServiceProvider, HttpClient>? configure = null)
         where TClient : class
     {
+        SlidingWindowRateLimiter limiter = GetSharedRateLimiter(services);
         var builder = services.AddHttpClient<TClient>((sp, http) =>
         {
             var settings = sp.GetRequiredService<ISettingsService>();
@@ -69,10 +72,9 @@ public static class HttpClientExtensions
             http.DefaultRequestHeaders.Add("Accept", "application/json");
             configure?.Invoke(sp, http);
         })
-        .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler())
-        .AddHttpMessageHandler(sp => new RateLimitingHandler(sp));
+        .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler());
 
-        builder.AddStandardResilienceHandler(ConfigureResilienceOptions);
+        AddResilience(builder, limiter);
         return builder;
     }
 
@@ -85,6 +87,40 @@ public static class HttpClientExtensions
             .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler());
         services.AddTransient<IHealthCheckClient, HealthCheckClient>();
         return services;
+    }
+
+    /// <summary>
+    /// Wires the shared sliding-window limiter into the outer Polly strategy.
+    /// Use: High (typed client registration). Scope: HttpClientExtensions.
+    /// </summary>
+    private static void AddResilience(IHttpClientBuilder builder, SlidingWindowRateLimiter limiter)
+    {
+        builder.AddStandardResilienceHandler(options =>
+        {
+            ConfigureResilienceOptions(options);
+            options.RateLimiter.RateLimiter = args =>
+                limiter.AcquireAsync(permitCount: 1, cancellationToken: args.Context.CancellationToken);
+        });
+    }
+
+    /// <summary>
+    /// One limiter for product and public HTTP clients.
+    /// Use: High (typed client registration). Scope: HttpClientExtensions.
+    /// </summary>
+    private static SlidingWindowRateLimiter GetSharedRateLimiter(IServiceCollection services)
+    {
+        foreach (ServiceDescriptor descriptor in services)
+        {
+            if (descriptor.ServiceType == typeof(SlidingWindowRateLimiter)
+                && descriptor.ImplementationInstance is SlidingWindowRateLimiter existing)
+            {
+                return existing;
+            }
+        }
+
+        SlidingWindowRateLimiter limiter = HttpRateLimiterFactory.Create();
+        services.AddSingleton(limiter);
+        return limiter;
     }
 
     private static void ConfigureResilienceOptions(HttpStandardResilienceOptions options)
