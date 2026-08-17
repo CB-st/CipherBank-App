@@ -12,6 +12,8 @@ documentation index in `docs/README.md`.
   validation, and platform-neutral services. It must not reference MAUI types.
 - `CipherBank-app` is the composition root and UI host. Views call ViewModels;
   ViewModels depend on interfaces; platform code stays under `Platforms/`.
+- `CipherBank-app.Analyzers` owns repository-structure Roslyn diagnostics
+  (CPM versions, AssemblyInfo, Core SQL, retired names).
 - Test projects may reference production projects. Production projects must never
   reference a test project, Moq, xUnit, FluentAssertions, or test fixtures.
 - Dependencies point toward Core. Cross-feature calls use an interface in the
@@ -25,9 +27,10 @@ documentation index in `docs/README.md`.
   `Properties/AssemblyInfo.cs` file.
 - Use constructor injection. Do not create service-locator calls or dependency
   bag records. Use Moq only in test projects for behavior-focused test doubles.
-- Use EF Core for normal database operations. Raw SQL is limited to
-  `Persist/Sql/LocalDbSql.cs` and EF migration files, must be parameterized or
-  compile-time schema SQL, and must never persist account/routing cleartext.
+- Routine database work uses `CipherBankDbContext` and EF Core `Migrate()`.
+  Schema changes are a new EF migration plus a previous-migration upgrade test.
+  Production code does not own SQL command text. Unmatched prototype SQLite files
+  (no `__EFMigrationsHistory`) are wiped, not repaired.
 - Async APIs accept and propagate `CancellationToken` unless they are deliberate
   zero-token convenience overloads. Never block on async work.
 - Prefer framework APIs (`Math.Sign`, `Math.Clamp`, `TimeProvider`,
@@ -36,15 +39,13 @@ documentation index in `docs/README.md`.
   options class, validation, and DI binding for every runtime setting.
 - Public APIs require XML summaries; non-obvious parameters and transformations
   require parameter documentation or a short rationale.
+- One primary type per C# file. The filename matches the primary type.
 
 ## Quality and Sonar
 
 - `TreatWarningsAsErrors` remains enabled. Allow lists are narrow, documented, and shrinking.
-- `scripts/validate-structure.sh` is the architecture gate.
+- `CipherBank-app.Analyzers` is the architecture gate; it runs on every `dotnet build`.
 - CI Sonar remains the merge authority. Do not put SonarScanner or quality-gate verify into `dotnet build` / `Directory.Build.*`.
-- The live quality gate lives on Sonar. `scripts/sonar/provision_quality_gate.py`
-  is the versioned way to change it. Do not reintroduce a checked-in
-  `quality-gate.yaml` that CI diffs against the server.
 - A local `.compliance/` overlay is optional and untracked. Do not commit it.
 
 ## Required verification
@@ -52,11 +53,11 @@ documentation index in `docs/README.md`.
 Run the narrowest relevant tests while editing, then run:
 
 ```bash
-./scripts/validate-structure.sh
-dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release /p:CollectCoverage=false
+dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj
+dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false
 ```
 
-The Sonar quality gate and structure validator are merge gates. Do not suppress a
+The Sonar quality gate and structure analyzers are merge gates. Do not suppress a
 new analyzer finding globally to make a branch green; fix it or document a narrow,
 time-bounded exception.
 
@@ -66,8 +67,9 @@ time-bounded exception.
 |---|---|
 | `CipherBank-app/AGENTS.md` | Host (composition/startup) + UI (Views/ViewModels) |
 | `CipherBank-app.Core/AGENTS.md` | Core/domain, currently also carrying Application/Infrastructure concerns |
-| `CipherBank-app.Core/Persist/AGENTS.md` | Persistence ports and LocalDb SQL ownership |
-| `CipherBank-app.Tests/AGENTS.md` | Unit + architecture tests |
+| `CipherBank-app.Core/Persist/AGENTS.md` | Persist (EF Core `Migrate()`, LocalDb, sync) |
+| `CipherBank-app.Tests/AGENTS.md` | Unit tests |
+| `CipherBank-app.Analyzers/AGENTS.md` | Repository-structure Roslyn analyzers |
 | `CipherBank-app.IntegrationTests/AGENTS.md` | Integration tests |
 | `CipherBank-app.E2ETests/AGENTS.md` | End-to-end tests |
 | `config/sonar/AGENTS.md` | Gate ownership and analyzer/suppression governance |

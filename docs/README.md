@@ -48,3 +48,4 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |
 | [config/sonar/README.md](config/sonar/README.md) | Sonar quality-gate policy and local SonarQube-for-IDE setup |
 | [review/m1a-comment-resolution.md](review/m1a-comment-resolution.md) | PR #25 feedback-to-change traceability |
+| [STACK_STAGED_WORK.md](STACK_STAGED_WORK.md) | Cross-stack goals that land on a later slice (do not backfill earlier PRs) |
