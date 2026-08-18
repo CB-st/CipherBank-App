@@ -2,15 +2,20 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Globalization;
+using System.Data;
 using CipherBank_app.Persist.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
 public sealed class RecipientRepository : IRecipientRepository
 {
+    internal const string DefaultRentRecipientId = "seed:rent-4th-st";
+
+    internal const string DefaultUtilitiesRecipientId = "seed:utilities-co";
+
     private const string DefaultAccountType = "checking";
 
     private readonly ILocalDb _db;
@@ -74,43 +79,55 @@ public sealed class RecipientRepository : IRecipientRepository
         await context.SaveChangesAsync().ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Inserts the two default payees in one transaction when the table is empty.
+    /// Use: High (first-run and concurrent hydration). Scope: RecipientRepository.
+    /// </summary>
     public async Task SeedDefaultsIfEmptyAsync()
     {
-        await using (CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false))
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using IDbContextTransaction transaction = await context.Database
+            .BeginTransactionAsync(IsolationLevel.Serializable)
+            .ConfigureAwait(false);
+        if (await context.Recipients.AnyAsync().ConfigureAwait(false))
         {
-            if (await context.Recipients.AnyAsync().ConfigureAwait(false))
-            {
-                return;
-            }
+            return;
         }
 
-        await UpsertAsync(new AchRecipientRow(
-            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
-            "Rent — 4th St LLC",
-            "4th St LLC",
-            "Demo Bank",
-            "021000021",
-            "88210001",
-            DefaultAccountType,
-            "Rent",
-            null,
-            null,
-            _timeProvider.GetUtcNow())).ConfigureAwait(false);
-        await UpsertAsync(new AchRecipientRow(
-            Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
-            "Utilities Co",
-            "Utilities Co",
-            "City Credit Union",
-            "110000000",
-            "44102222",
-            DefaultAccountType,
-            null,
-            null,
-            null,
-            _timeProvider.GetUtcNow())).ConfigureAwait(false);
+        await ApplyRowAsync(
+            context,
+            new AchRecipientRow(
+                DefaultRentRecipientId,
+                "Rent — 4th St LLC",
+                "4th St LLC",
+                "Demo Bank",
+                "021000021",
+                "88210001",
+                DefaultAccountType,
+                "Rent",
+                null,
+                null,
+                now)).ConfigureAwait(false);
+        await ApplyRowAsync(
+            context,
+            new AchRecipientRow(
+                DefaultUtilitiesRecipientId,
+                "Utilities Co",
+                "Utilities Co",
+                "City Credit Union",
+                "110000000",
+                "44102222",
+                DefaultAccountType,
+                null,
+                null,
+                null,
+                now)).ConfigureAwait(false);
+        await context.SaveChangesAsync().ConfigureAwait(false);
+        await transaction.CommitAsync().ConfigureAwait(false);
     }
 
-    private async Task UpsertCoreAsync(AchRecipientRow row)
+    private static async Task ApplyRowAsync(CipherBankDbContext context, AchRecipientRow row)
     {
         // Prefer fresh cleartext: editing a listed row still carries prior masks.
         string? accountMask = string.IsNullOrWhiteSpace(row.Account)
@@ -120,7 +137,6 @@ public sealed class RecipientRepository : IRecipientRepository
             ? row.RoutingMask
             : AchRecipientValidation.MaskRouting(row.Routing);
 
-        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
         RecipientEntity? entity = await context.Recipients.FindAsync(row.Id).ConfigureAwait(false);
         if (entity is null)
         {
@@ -137,6 +153,12 @@ public sealed class RecipientRepository : IRecipientRepository
         entity.Memo = row.Memo;
         entity.AccountMask = accountMask;
         entity.RoutingMask = routingMask;
+    }
+
+    private async Task UpsertCoreAsync(AchRecipientRow row)
+    {
+        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await ApplyRowAsync(context, row).ConfigureAwait(false);
         await context.SaveChangesAsync().ConfigureAwait(false);
     }
 }
