@@ -28,7 +28,7 @@ public sealed class ConfigurationTests
         cryptography!.IsValid().Should().BeTrue();
         cryptography.MatchesPersistedProfile().Should().BeTrue();
         scheduler.Should().NotBeNull();
-        scheduler!.MaxConcurrency.Should().Be(SyncSchedulerOptions.DeriveDefaultMaxConcurrency());
+        scheduler!.MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
 
         NetworkOptions? network = configuration
             .GetSection(NetworkOptions.SectionName)
