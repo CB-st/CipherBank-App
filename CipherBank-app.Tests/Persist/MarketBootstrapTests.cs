@@ -69,7 +69,10 @@ public class MarketBootstrapTests
     {
         private readonly DateTimeOffset _utcNow;
 
-        public FixedTimeProvider(DateTimeOffset utcNow) => _utcNow = utcNow;
+        public FixedTimeProvider(DateTimeOffset utcNow)
+        {
+            _utcNow = utcNow;
+        }
 
         public override DateTimeOffset GetUtcNow() => _utcNow;
     }
