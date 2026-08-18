@@ -150,9 +150,7 @@ public class SyncJobSchedulerTests
 
     [Fact]
     public void Default_max_concurrency_is_min_concurrency()
-    {
-        new SyncSchedulerOptions().MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
-    }
+        => new SyncSchedulerOptions().MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
 
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)
     {
