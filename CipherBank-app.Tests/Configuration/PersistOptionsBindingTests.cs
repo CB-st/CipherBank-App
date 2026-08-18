@@ -28,19 +28,17 @@ public sealed class PersistOptionsBindingTests
     }
 
     /// <summary>
-    /// Empty SyncScheduler section leaves the CPU-derived mobile cap in [1, 2].
+    /// Empty SyncScheduler section keeps MaxConcurrency at MinConcurrency.
     /// Use: Medium. Scope: persist options contract.
     /// </summary>
     [Fact]
-    public void EmbeddedAppSettings_BindSyncSchedulerWithinBounds()
+    public void EmbeddedAppSettings_BindSyncSchedulerDefaultsToMinConcurrency()
     {
         IConfiguration config = LoadEmbeddedAppSettings();
         SyncSchedulerOptions options = BindOptions<SyncSchedulerOptions>(
             config,
             SyncSchedulerOptions.SectionName);
-        options.MaxConcurrency.Should().BeInRange(
-            SyncSchedulerOptions.MinConcurrency,
-            SyncSchedulerOptions.DefaultMaxConcurrencyCap);
+        options.MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
     }
 
     private static T BindOptions<T>(IConfiguration config, string sectionName)
