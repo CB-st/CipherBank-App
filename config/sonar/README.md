@@ -28,6 +28,9 @@ OpenCover file leaves `new_coverage` at 0% and reds the gate.
 Scanner exclusions are limited to generated/build output, platform-owned source
 that is not compiled on Linux, resources, tests for coverage, scripts, and
 design handoff assets. Interfaces and production services are not CPD-excluded.
+EF Core migrations under `CipherBank-app.Core/Persist/Migrations/` stay
+excluded as scaffolded `Up`/`Designer` snapshots, not product policy. Do not
+widen that path.
 
 Do not store `SONAR_TOKEN` here. Configure it as a repository secret; configure
 `SONAR_HOST_URL` and `SONAR_PROJECT_KEY` as repository variables.
