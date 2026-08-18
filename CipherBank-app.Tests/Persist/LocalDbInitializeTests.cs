@@ -21,6 +21,7 @@ public sealed class LocalDbInitializeTests
         string path = Path.Combine(Path.GetTempPath(), "cb-init-" + Guid.NewGuid().ToString("N") + ".db");
         LocalDb db = new LocalDb(path);
         await db.InitializeAsync();
+        db.Path.Should().Be(Path.GetFullPath(path));
 
         await using CipherBankDbContext context = await db.CreateContextAsync();
         (await context.Wallets.CountAsync()).Should().Be(0);

@@ -27,7 +27,7 @@ public sealed class ConfigurationTests
         cryptography.Should().NotBeNull();
         cryptography!.IsValid().Should().BeTrue();
         scheduler.Should().NotBeNull();
-        scheduler!.MaxConcurrency.Should().Be(2);
+        scheduler!.MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
     }
 
     [Fact]

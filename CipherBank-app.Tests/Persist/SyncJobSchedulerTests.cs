@@ -14,7 +14,9 @@ public class SyncJobSchedulerTests
     [Fact]
     public async Task Enqueue_P2ThenP1_P1RunsBeforeWaitingP2_WhenConcurrencyAllows()
     {
-        SyncJobScheduler queue = new SyncJobScheduler();
+        SyncJobScheduler queue = new SyncJobScheduler(
+            TaskScheduler.Default,
+            new SyncSchedulerOptions { MaxConcurrency = 2 });
         List<string> order = new List<string>();
         TaskCompletionSource gate1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         TaskCompletionSource gate2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -147,13 +149,9 @@ public class SyncJobSchedulerTests
     }
 
     [Fact]
-    public void Default_max_concurrency_is_clamped_processor_count()
+    public void Default_max_concurrency_is_min_concurrency()
     {
-        int derived = SyncSchedulerOptions.DeriveDefaultMaxConcurrency();
-        derived.Should().BeInRange(
-            SyncSchedulerOptions.MinConcurrency,
-            SyncSchedulerOptions.DefaultMaxConcurrencyCap);
-        new SyncSchedulerOptions().MaxConcurrency.Should().Be(derived);
+        new SyncSchedulerOptions().MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
     }
 
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)

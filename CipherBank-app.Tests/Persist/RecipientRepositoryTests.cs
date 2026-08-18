@@ -26,6 +26,29 @@ public class RecipientRepositoryTests
         (await repo.ListAsync()).Should().HaveCount(list.Count);
     }
 
+    /// <summary>
+    /// Concurrent first-run seeds must produce one default set with stable IDs.
+    /// Use: Medium (review regression). Scope: RecipientRepositoryTests.
+    /// </summary>
+    [Fact]
+    public async Task SeedDefaultsIfEmptyAsync_ConcurrentCallsCreateOneDefaultSet()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(path);
+        await db.InitializeAsync();
+        RecipientRepository repo = new RecipientRepository(db);
+
+        await Task.WhenAll(repo.SeedDefaultsIfEmptyAsync(), repo.SeedDefaultsIfEmptyAsync());
+
+        IReadOnlyList<AchRecipientRow> listed = await repo.ListAsync();
+        listed.Should().HaveCount(2);
+        listed.Select(row => row.Id).Should().BeEquivalentTo(
+        [
+            RecipientRepository.DefaultRentRecipientId,
+            RecipientRepository.DefaultUtilitiesRecipientId,
+        ]);
+    }
+
     [Fact]
     public async Task DeleteAsync_RemovesOnlyRecipientWithMatchingId()
     {

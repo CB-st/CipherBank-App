@@ -11,7 +11,7 @@ namespace CipherBank_app.Resources;
 public static class Strings
 {
     private static readonly ResourceManager Manager =
-        new("CipherBank_app.Resources.Strings", typeof(Strings).Assembly);
+        new(typeof(Strings).FullName!, typeof(Strings).Assembly);
 
     public static string AchEnterPayeeName => Get(nameof(AchEnterPayeeName));
 

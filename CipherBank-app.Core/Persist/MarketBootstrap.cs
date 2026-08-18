@@ -46,7 +46,9 @@ public static class MarketBootstrap
         IReadOnlyList<RateRow> cachedRows = await cache.GetAsync(requestedSymbols, ct).ConfigureAwait(false);
         long nowMs = clock.GetUtcNow().ToUnixTimeMilliseconds();
         if (cachedRows.Count == requestedSymbols.Length
-            && cachedRows.All(row => nowMs - row.UpdatedAtMs <= MaxRateAge.TotalMilliseconds))
+            && cachedRows.All(row =>
+                row.UpdatedAtMs <= nowMs
+                && nowMs - row.UpdatedAtMs <= MaxRateAge.TotalMilliseconds))
         {
             return;
         }

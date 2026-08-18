@@ -105,6 +105,30 @@ public class LocalDbMigrationTests
         }
     }
 
+    [Fact]
+    public async Task InitializeAsync_NonSqliteFile_IsReplaced()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-garbage-" + Guid.NewGuid().ToString("N") + ".db");
+        try
+        {
+            await File.WriteAllTextAsync(path, "not a sqlite database");
+            await File.WriteAllTextAsync(path + "-wal", "wal leftover");
+            await File.WriteAllTextAsync(path + "-shm", "shm leftover");
+
+            LocalDb db = new LocalDb(path);
+            await db.InitializeAsync();
+
+            db.Path.Should().Be(Path.GetFullPath(path));
+            List<string> tables = await ListTablesAsync(path);
+            tables.Should().Contain("__EFMigrationsHistory");
+            tables.Should().Contain("wallets");
+        }
+        finally
+        {
+            DeleteSqliteFiles(path);
+        }
+    }
+
     private static async Task<List<string>> ListTablesAsync(string path)
     {
         await using SqliteConnection conn = new SqliteConnection(
