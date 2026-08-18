@@ -25,6 +25,11 @@ Coverage for new code comes from Coverlet OpenCover produced by:
 Those reports are the coverage job's handoff into the scan. A missing
 OpenCover file leaves `new_coverage` at 0% and reds the gate.
 
+Scanner source exclusions are limited to generated/build output, scanner reports,
+editor metadata, scripts, the out-of-stack design handoff, and EF Core
+migrations under `CipherBank-app.Core/Persist/Migrations/` (scaffolded
+`Up`/`Designer` snapshots, not product policy). Do not widen that path.
+
 ## Local feedback: SonarQube for IDE, Connected Mode
 
 For fast local feedback that uses the *same* rules and gate as CI, bind
