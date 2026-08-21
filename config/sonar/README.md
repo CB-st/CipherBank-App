@@ -2,9 +2,7 @@
 
 Sonar is the only source of truth for the quality gate. There is no
 checked-in copy for CI to verify against, and no repo-side script that
-pushes conditions to the server. Change the gate in the Sonar UI at
-https://sonar.cipherbank.money (project key
-`CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c`).
+pushes conditions to the server..
 
 The earlier `quality-gate.yaml` + Python verifier, and later
 `provision_quality_gate.py`, were retired so this repo does not keep a
