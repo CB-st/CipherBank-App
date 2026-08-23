@@ -4,7 +4,7 @@ Repository-structure diagnostics. Not product behavior.
 
 - CB1001: `PackageReference Version=` outside `Directory.Packages.props` (IDE fence; CPM already owns restore)
 - CB1002: `Properties/AssemblyInfo.cs`
-- CB1003: raw SQL anywhere in Core (`CommandText`, `FromSqlRaw`, `ExecuteSqlRaw` by identifier). Total ban — no `LocalDbSql` quarantine. Schema is EF `EnsureCreated` on M2.
+- CB1003: raw SQL anywhere in Core (`CommandText`, `FromSqlRaw`, `ExecuteSqlRaw` by identifier). Total ban — no `LocalDbSql` quarantine. Schema is EF `Migrate()` on M2.
 - CB1004: retired names `IProductApi`, `MockProductApi`, `AppSessionDeps`
 - `SourcePath`: string extensions. Slash-normalize, then `Path.GetFileName` / `Path.GetExtension`. Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo`. Do not use `Path.GetFullPath` or `Combine` on additional-file strings.
 
