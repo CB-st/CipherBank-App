@@ -17,8 +17,9 @@ concurrency:
 # Split trust: coverage stays open for every non-draft PR / push so contributors
 # get Coverlet without secrets. Secret-bearing jobs (context, sonar → review)
 # require PIPELINE_ALLOWED_AUTHOR (CSV of GitHub logins). Defaults to
-# RED-FLAG-DEVELOPMENT when unset. GHA has no split(); membership uses
-# comma-padded contains().
+# RED-FLAG-DEVELOPMENT when unset. Membership is computed in
+# pipeline-author-gate.yml (called as context-author-gate / sonar-author-gate);
+# context/sonar only read `allowed`.
 #
 # Actor vs triggering_actor: Cursor / GitHub App pushes set github.actor to the
 # bot (e.g. cursor[bot]) while github.triggering_actor stays the human who
@@ -119,32 +120,33 @@ jobs:
           retention-days: 14
           overwrite: true
 
+  # Allowlist for secret-bearing jobs. Logic lives in pipeline-author-gate.yml.
+  # Coverage stays ungated. context/sonar skip when allowed is false.
+  context-author-gate:
+    uses: ./.github/workflows/pipeline-author-gate.yml
+    with:
+      skip: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == true }}
+      require_all: ${{ github.event.pull_request.user.login }}
+      require_any: ${{ format('{0},{1}', github.actor, github.triggering_actor) }}
+
+  sonar-author-gate:
+    uses: ./.github/workflows/pipeline-author-gate.yml
+    with:
+      skip: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+      require_all: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login || '' }}
+      require_any: ${{ format('{0},{1}{2}', github.actor, github.triggering_actor, github.event_name == 'push' && format(',{0}', github.event.head_commit.author.username) || '') }}
+
   # PR context snapshot -- runs once per push and produces the
   # ai-context-bundle artifact consumed by central review/reply workflows.
   # Model providers and trusted persona/task assets live in CipherBank.AI;
   # this repo only packages PR facts and Sonar for this app (no siblings).
   #
-  # The draft / non-PR / author gate lives here (not on `review`) so untrusted
-  # or draft PRs never spend context-build cost either. Waits on `coverage`.
+  # Draft / non-PR / author skip is context-author-gate's `allowed` (not on
+  # `review`) so untrusted or draft PRs never spend context-build cost either.
+  # Waits on `coverage` and `context-author-gate`.
   context:
-    needs: [coverage]
-    if: >-
-      github.event_name == 'pull_request'
-      && !github.event.pull_request.draft
-      && contains(
-           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-           format(',{0},', github.event.pull_request.user.login)
-         )
-      && (
-        contains(
-          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-          format(',{0},', github.actor)
-        )
-        || contains(
-          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-          format(',{0},', github.triggering_actor)
-        )
-      )
+    needs: [coverage, context-author-gate]
+    if: ${{ needs.context-author-gate.outputs.allowed == 'true' }}
     permissions:
       contents: read
       pull-requests: read
@@ -163,47 +165,8 @@ jobs:
   # Sonar after coverage: GH quality-gate check + sonar-context-/report-task-<sha>
   # artifacts for AI Review. Secret-gated (SONAR_TOKEN); imports Coverlet when present.
   sonar:
-    needs: [coverage]
-    if: >-
-      (
-        github.event_name == 'pull_request'
-        && !github.event.pull_request.draft
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.pull_request.user.login)
-           )
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.actor)
-          )
-          || contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.triggering_actor)
-          )
-        )
-      )
-      ||
-      (
-        github.event_name == 'push'
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.actor)
-          )
-          || contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.triggering_actor)
-          )
-          || (
-            github.event.head_commit.author.username != ''
-            && contains(
-                 format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-                 format(',{0},', github.event.head_commit.author.username)
-               )
-          )
-        )
-      )
+    needs: [coverage, sonar-author-gate]
+    if: ${{ needs.sonar-author-gate.outputs.allowed == 'true' }}
     runs-on: ubuntu-22.04
     # Restore + library build + scan + poll. 30 leaves headroom for cold NuGet.
     timeout-minutes: 30
