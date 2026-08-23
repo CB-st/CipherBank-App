@@ -6,8 +6,8 @@
     <IsTestProject>true</IsTestProject>
     <RootNamespace>CipherBank_app.Analyzers.Tests</RootNamespace>
     <SkipCipherBankAnalyzers>true</SkipCipherBankAnalyzers>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);SA1201;SA1202;SA1107;SA1402;SA1649;xUnit1030;IDE0005;CA1707</WarningsNotAsErrors>
-    <NoWarn>$(NoWarn);IDE0005;CA1707</NoWarn>
+    <!-- CA1707: RootNamespace CipherBank_app uses underscore (assembly-aligned). -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -55,7 +55,7 @@ public sealed class NoLegacyAssemblyInfoAnalyzer : DiagnosticAnalyzer
     /// </summary>
     private static void ReportCompilationTree(CompilationAnalysisContext context, SyntaxTree tree)
     {
-        if (!SourcePath.IsLegacyAssemblyInfo(tree.FilePath))
+        if (!tree.FilePath.IsLegacyAssemblyInfo())
         {
             return;
         }
@@ -70,7 +70,7 @@ public sealed class NoLegacyAssemblyInfoAnalyzer : DiagnosticAnalyzer
     /// </summary>
     private static void ReportAdditionalAssemblyInfo(CompilationAnalysisContext context, AdditionalText file)
     {
-        if (!SourcePath.IsLegacyAssemblyInfo(file.Path)
+        if (!file.Path.IsLegacyAssemblyInfo()
             || !AdditionalSource.IsOutsideCompilation(context.Compilation, file.Path))
         {
             return;

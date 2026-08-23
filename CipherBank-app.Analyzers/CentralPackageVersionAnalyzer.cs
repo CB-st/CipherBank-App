@@ -53,7 +53,7 @@ public sealed class CentralPackageVersionAnalyzer : DiagnosticAnalyzer
     /// </summary>
     private static void ReportPackageVersions(CompilationAnalysisContext context, AdditionalText file)
     {
-        if (!SourcePath.IsMsBuildProjectFile(file.Path) || SourcePath.IsCentralPackageFile(file.Path))
+        if (!file.Path.IsMsBuildProjectFile() || file.Path.IsCentralPackageFile())
         {
             return;
         }
@@ -150,9 +150,7 @@ public sealed class CentralPackageVersionAnalyzer : DiagnosticAnalyzer
     {
         TextSpan matchSpan = new(offset, length);
         Location location = Location.Create(path, matchSpan, text.Lines.GetLinePositionSpan(matchSpan));
-        string displayPath = SourcePath.Normalize(path);
-        int slash = displayPath.LastIndexOf('/');
-        string fileName = slash >= 0 ? displayPath.Substring(slash + 1) : displayPath;
+        string fileName = Path.GetFileName(path.NormalizeSlashes());
         return Diagnostic.Create(CipherBankDiagnostics.CentralPackageVersion, location, fileName);
     }
 }

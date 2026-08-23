@@ -6,6 +6,10 @@ evaluated by Sonar.
 
 ## Gate ownership
 
+- The gate lives on `https://sonar.cipherbank.money`. The project key is a
+  public identifier (not a secret); see `README.md` in this directory. There
+  is no checked-in mirror of the gate and no provisioning script. Change the
+  gate in the Sonar UI.
 - Never reintroduce a repo-side copy of the gate conditions (YAML, Python,
   or otherwise) that CI verifies against or pushes to the server.
 - Repository-structure rules (CPM, AssemblyInfo, Core SQL, retired names)

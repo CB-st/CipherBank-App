@@ -18,16 +18,5 @@
 
 ## Emulation gate
 
-Compile-and-run in the Android emulator is owned by M7 (`prototype/maui-m7`). Do
-not run Appium from this slice. After each later reviewed stage that is meant to
-land under M7, from the M7 worktree:
-
-```bash
-dotnet test CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj
-dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android -c Debug -p:EmbedAssembliesIntoApk=true
-./scripts/e2e-android.sh --wave account
-```
-
-Each M7 harness session uninstalls, reinstalls, and `pm clear`s so PIN and
-LocalDb do not survive across installs (new-device). Lab PINs stay in the
-process environment for that session only.
+Android emulator compile-and-run is owned by M7 (`prototype/maui-m7`). Do not run
+Appium from this slice.
