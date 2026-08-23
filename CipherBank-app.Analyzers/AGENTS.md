@@ -2,7 +2,7 @@
 
 Repository-structure diagnostics. Not product behavior.
 
-- CB1001: `PackageReference Version=` outside `Directory.Packages.props`
+- CB1001: `PackageReference Version=` outside `Directory.Packages.props` (IDE fence; CPM already owns restore)
 - CB1002: `Properties/AssemblyInfo.cs`
 - CB1003: raw SQL in Core
 - CB1004: retired names `IProductApi`, `MockProductApi`, `AppSessionDeps`

@@ -15,7 +15,8 @@ namespace CipherBank_app.Tests.Configuration;
 public sealed class PersistOptionsBindingTests
 {
     /// <summary>
-    /// Embedded appsettings binds Persistence.DatabaseName through IOptions.
+    /// Embedded appsettings binds Persistence.DatabaseName (manual bind here;
+    /// host IOptions + ValidateOnStart lands on M3a).
     /// Use: Medium. Scope: persist options contract.
     /// </summary>
     [Fact]

@@ -15,7 +15,7 @@ Shared MSBuild properties and package references for all projects.
 | LangVersion | latest |
 | Nullable | enable |
 | ImplicitUsings | enable |
-| TreatWarningsAsErrors | false |
+| TreatWarningsAsErrors | true |
 | EnforceCodeStyleInBuild | true |
 | AnalysisLevel | latest |
 | AnalysisMode | Recommended |
