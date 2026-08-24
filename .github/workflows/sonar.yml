@@ -84,7 +84,7 @@ jobs:
           mkdir -p reports
           dotnet test "${test_proj}" -c Release --nologo \
             -p:CollectCoverage=true \
-            -p:CoverletOutputFormat=cobertura,opencover \
+            -p:CoverletOutputFormat=\"cobertura,opencover\" \
             -p:CoverletOutput="${GITHUB_WORKSPACE}/reports/coverage" \
             -p:Threshold=0
           test -f reports/coverage.cobertura.xml
