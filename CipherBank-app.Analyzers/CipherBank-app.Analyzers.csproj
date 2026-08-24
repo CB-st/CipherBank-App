@@ -31,4 +31,8 @@
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CipherBank-app.Analyzers.Tests" />
+  </ItemGroup>
 </Project>

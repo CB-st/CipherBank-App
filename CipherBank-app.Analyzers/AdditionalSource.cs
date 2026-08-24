@@ -20,8 +20,8 @@ internal static class AdditionalSource
     /// </summary>
     internal static bool IsOutsideCompilation(Compilation compilation, string path)
     {
-        string normalized = SourcePath.Normalize(path);
-        return !compilation.SyntaxTrees.Any(tree => SourcePath.PathsEqual(tree.FilePath, normalized));
+        SourcePath source = SourcePath.From(path);
+        return !compilation.SyntaxTrees.Any(tree => source.Equals(SourcePath.From(tree.FilePath)));
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ internal static class AdditionalSource
     {
         tree = null!;
         text = null!;
-        if (!SourcePath.IsCSharpFile(file.Path))
+        if (!SourcePath.From(file.Path).IsCSharpFile)
         {
             return false;
         }
