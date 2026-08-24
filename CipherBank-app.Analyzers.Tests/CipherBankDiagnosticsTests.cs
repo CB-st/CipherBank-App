@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Analyzers;
 using Xunit;
 
 namespace CipherBank_app.Analyzers.Tests;

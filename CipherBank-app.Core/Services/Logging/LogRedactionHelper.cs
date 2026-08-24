@@ -2,8 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-
 namespace CipherBank_app.Services.Logging;
 
 /// <summary>
@@ -17,10 +15,10 @@ public static class LogRedactionHelper
 
     /// <summary>
     /// Redacts a username, showing only the first and last characters.
-    /// Example: "testuser123" becomes "t*********3"
+    /// Example: "testuser123" becomes "t*********3".
     /// </summary>
-    /// <param name="username">The username to redact</param>
-    /// <returns>Redacted username</returns>
+    /// <param name="username">The username to redact.</param>
+    /// <returns>Redacted username.</returns>
     public static string RedactUsername(string? username)
     {
         if (string.IsNullOrEmpty(username))
@@ -38,10 +36,10 @@ public static class LogRedactionHelper
 
     /// <summary>
     /// Redacts a wallet ID, showing only the first 4 and last 4 characters.
-    /// Example: "wallet1234567890abcdef" becomes "wall...cdef"
+    /// Example: "wallet1234567890abcdef" becomes "wall...cdef".
     /// </summary>
-    /// <param name="walletId">The wallet ID to redact</param>
-    /// <returns>Redacted wallet ID</returns>
+    /// <param name="walletId">The wallet ID to redact.</param>
+    /// <returns>Redacted wallet ID.</returns>
     public static string RedactWalletId(string? walletId)
     {
         if (string.IsNullOrEmpty(walletId))
@@ -59,10 +57,10 @@ public static class LogRedactionHelper
 
     /// <summary>
     /// Redacts a cryptocurrency address, showing only the first 6 and last 4 characters.
-    /// Example: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa" becomes "1A1zP1...fNa"
+    /// Example: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa" becomes "1A1zP1...fNa".
     /// </summary>
-    /// <param name="address">The address to redact</param>
-    /// <returns>Redacted address</returns>
+    /// <param name="address">The address to redact.</param>
+    /// <returns>Redacted address.</returns>
     public static string RedactAddress(string? address)
     {
         if (string.IsNullOrEmpty(address))
@@ -80,10 +78,10 @@ public static class LogRedactionHelper
 
     /// <summary>
     /// Redacts an authentication token, showing only the first 8 characters.
-    /// Example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." becomes "eyJhbGci..."
+    /// Example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." becomes "eyJhbGci...".
     /// </summary>
-    /// <param name="token">The token to redact</param>
-    /// <returns>Redacted token</returns>
+    /// <param name="token">The token to redact.</param>
+    /// <returns>Redacted token.</returns>
     public static string RedactToken(string? token)
     {
         if (string.IsNullOrEmpty(token))
@@ -101,10 +99,10 @@ public static class LogRedactionHelper
 
     /// <summary>
     /// Redacts an email address, showing only the first 2 characters and domain.
-    /// Example: "user@example.com" becomes "us***@example.com"
+    /// Example: "user@example.com" becomes "us***@example.com".
     /// </summary>
-    /// <param name="email">The email to redact</param>
-    /// <returns>Redacted email</returns>
+    /// <param name="email">The email to redact.</param>
+    /// <returns>Redacted email.</returns>
     public static string RedactEmail(string? email)
     {
         if (string.IsNullOrEmpty(email))
@@ -131,10 +129,10 @@ public static class LogRedactionHelper
 
     /// <summary>
     /// Redacts a transaction ID, showing only the first 8 and last 4 characters.
-    /// Example: "tx_1234567890abcdef" becomes "tx_12345...cdef"
+    /// Example: "tx_1234567890abcdef" becomes "tx_12345...cdef".
     /// </summary>
-    /// <param name="transactionId">The transaction ID to redact</param>
-    /// <returns>Redacted transaction ID</returns>
+    /// <param name="transactionId">The transaction ID to redact.</param>
+    /// <returns>Redacted transaction ID.</returns>
     public static string RedactTransactionId(string? transactionId)
     {
         if (string.IsNullOrEmpty(transactionId))
@@ -153,9 +151,9 @@ public static class LogRedactionHelper
     /// <summary>
     /// Redacts sensitive data from a generic string based on its apparent type.
     /// </summary>
-    /// <param name="value">The value to redact</param>
-    /// <param name="showChars">Number of characters to show at start and end (default: 4)</param>
-    /// <returns>Redacted value</returns>
+    /// <param name="value">The value to redact.</param>
+    /// <param name="showChars">Number of characters to show at start and end (default: 4).</param>
+    /// <returns>Redacted value.</returns>
     public static string Redact(string? value, int showChars = 4)
     {
         if (string.IsNullOrEmpty(value))

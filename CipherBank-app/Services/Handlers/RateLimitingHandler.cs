@@ -2,12 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Services.Handlers;
@@ -93,11 +88,11 @@ public sealed partial class RateLimitingHandler : DelegatingHandler
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit exceeded, wait time {WaitTime} exceeds maximum {MaxWait}")]
-    private static partial void LogRateLimitExceeded(ILogger logger, TimeSpan waitTime, TimeSpan maxWait);
+    static partial void LogRateLimitExceeded(ILogger logger, TimeSpan waitTime, TimeSpan maxWait);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Rate limited, waiting {WaitTime} before retry")]
-    private static partial void LogRateLimitedWaiting(ILogger logger, TimeSpan waitTime);
+    static partial void LogRateLimitedWaiting(ILogger logger, TimeSpan waitTime);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit still exceeded after waiting")]
-    private static partial void LogRateLimitStillExceeded(ILogger logger);
+    static partial void LogRateLimitStillExceeded(ILogger logger);
 }

@@ -3,7 +3,6 @@
 // </copyright>
 
 using System.Net;
-using System.Net.Http;
 using System.Reflection;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Handlers;

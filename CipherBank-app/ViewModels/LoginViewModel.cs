@@ -2,15 +2,10 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Globalization;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
 #if DEBUG
-using CipherBank_app.Services.Mocks;
 #endif
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;

@@ -146,7 +146,11 @@ public sealed class CentralPackageVersionAnalyzer : DiagnosticAnalyzer
     /// Builds CB1001 at the match offset.
     /// Use: Medium (each offender). Scope: this analyzer.
     /// </summary>
-    private static Diagnostic CreateDiagnostic(string path, SourceText text, int offset, int length)
+    private static Diagnostic CreateDiagnostic(
+        string path,
+        SourceText text,
+        int offset,
+        int length)
     {
         TextSpan matchSpan = new(offset, length);
         Location location = Location.Create(path, matchSpan, text.Lines.GetLinePositionSpan(matchSpan));

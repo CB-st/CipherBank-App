@@ -1,3 +1,7 @@
+// <copyright file="SecurityTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
@@ -203,7 +207,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
         {
             fromWalletId = "wallet_123",
             toAddress = "bc1qsensitiveaddress",
-            amount = 1.5m
+            amount = 1.5m,
         };
 
         // Act

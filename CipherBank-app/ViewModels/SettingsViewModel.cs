@@ -2,10 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -92,23 +88,23 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Available theme modes.
+    /// Gets available theme modes.
     /// </summary>
     public string[] ThemeModes { get; } = ["System", "Light", "Dark"];
 
     /// <summary>
-    /// Available currencies.
+    /// Gets available currencies.
     /// </summary>
     public string[] Currencies { get; } = ["USD", "EUR", "GBP", "CAD", "AUD", "JPY"];
 
     /// <summary>
-    /// Available auto-lock timeout options.
+    /// Gets available auto-lock timeout options.
     /// </summary>
     public int[] AutoLockOptions { get; } = [0, 1, 5, 15, 30, 60];
 
 #if DEBUG
     /// <summary>
-    /// Available environments for development.
+    /// Gets available environments for development.
     /// </summary>
     public string[] Environments { get; } = ["Production", "Sandbox", "Development", "Local"];
 #endif

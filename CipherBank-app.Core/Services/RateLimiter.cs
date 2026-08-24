@@ -2,10 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Services;
@@ -43,12 +40,12 @@ public sealed partial class RateLimiter : IDisposable
     }
 
     /// <summary>
-    /// Maximum number of requests allowed per window. Default: 60.
+    /// Gets maximum number of requests allowed per window. Default: 60.
     /// </summary>
     public int MaxRequests { get; }
 
     /// <summary>
-    /// Time window duration. Default: 1 minute.
+    /// Gets time window duration. Default: 1 minute.
     /// </summary>
     public TimeSpan WindowDuration { get; }
 

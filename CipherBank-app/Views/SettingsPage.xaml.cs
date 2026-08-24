@@ -34,22 +34,7 @@ public partial class SettingsPage : ContentPage
     }
 
 #if DEBUG
-    // Developer-only affordances are built in code so they are not compiled into Release builds.
-    private void AddDeveloperControls()
-    {
-        // Tap the version label three times to toggle developer mode.
-        VersionLabel.GestureRecognizers.Add(new TapGestureRecognizer
-        {
-            Command = _viewModel.TapVersionCommand,
-        });
-
-        // The developer card is inserted right after the API configuration card and is
-        // only visible once developer mode has been enabled.
-        var insertIndex = SettingsLayout.Children.IndexOf(ApiSettingsCard) + 1;
-        SettingsLayout.Children.Insert(insertIndex, BuildDeveloperCard());
-    }
-
-    private Border BuildDeveloperCard()
+    private static Border BuildDeveloperCard()
     {
         var headerLabel = new Label
         {
@@ -151,5 +136,20 @@ public partial class SettingsPage : ContentPage
 
     private static Style? GetStyle(string key) =>
         Application.Current?.Resources.TryGetValue(key, out var value) == true ? value as Style : null;
+
+    // Developer-only affordances are built in code so they are not compiled into Release builds.
+    private void AddDeveloperControls()
+    {
+        // Tap the version label three times to toggle developer mode.
+        VersionLabel.GestureRecognizers.Add(new TapGestureRecognizer
+        {
+            Command = _viewModel.TapVersionCommand,
+        });
+
+        // The developer card is inserted right after the API configuration card and is
+        // only visible once developer mode has been enabled.
+        var insertIndex = SettingsLayout.Children.IndexOf(ApiSettingsCard) + 1;
+        SettingsLayout.Children.Insert(insertIndex, BuildDeveloperCard());
+    }
 #endif
 }

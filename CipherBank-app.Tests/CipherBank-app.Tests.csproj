@@ -49,8 +49,4 @@
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <AdditionalFiles Include="stylecop.json" />
-  </ItemGroup>
-
 </Project>

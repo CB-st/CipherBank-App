@@ -2,8 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace CipherBank_app.Services.Validation;
@@ -20,9 +18,9 @@ public static partial class AddressValidator
     /// <summary>
     /// Validates a cryptocurrency address for the specified symbol.
     /// </summary>
-    /// <param name="address">The address to validate</param>
+    /// <param name="address">The address to validate.</param>
     /// <param name="symbol">The cryptocurrency symbol (BTC, ETH, SOL, etc.)</param>
-    /// <returns>True if the address format is valid, false otherwise</returns>
+    /// <returns>True if the address format is valid, false otherwise.</returns>
     public static bool IsValidAddress(string address, string symbol)
     {
         if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(symbol))
