@@ -280,11 +280,12 @@ jobs:
           # shellcheck disable=SC2086
           # Sources/tests come from MSBuild project graphs; pass exclusions and
           # optional coverage paths as begin properties (not a properties file).
-          # Persist/Migrations is EF Core scaffolding (generated_code=true); product
-          # policy lives in the model, not the designer/Up snapshots.
           # CPD exclusions: intentional zero-token DIM overload pairs on Core/ChallengePass
           # interfaces (S4136-adjacent duplicates that are not real copy-paste debt).
           # Do NOT exclude PrefsWireDto / RateLimiter / MockProductApi.
+          # Do NOT exclude CipherBank-app.Core/Persist/Migrations (EF migrate path is in scope).
+          # sonar.coverage.exclusions is FROZEN. Do not add entries. Cover product code
+          # instead; SonarCoverageExclusionTests locks the exact list below.
           dotnet sonarscanner begin \
             /k:"${SONAR_PROJECT_KEY}" \
             /n:"CipherBank App" \
@@ -292,13 +293,14 @@ jobs:
             /d:sonar.host.url="${SONAR_HOST_URL}" \
             /d:sonar.scanner.skipJreProvisioning=true \
             /d:sonar.sourceEncoding=UTF-8 \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,CipherBank-app.Core/Persist/Migrations/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
-            /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,CipherBank-app.Core/Persist/Migrations/**,design_handoff_cipherbank/**" \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
+            /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,design_handoff_cipherbank/**" \
             /d:sonar.cpd.exclusions="**/IProductApi.cs,**/IWalletService.cs,**/IPublicQuoteService.cs,**/IMnemonicBackupService.cs,**/IPrefsSyncService.cs,**/IStepUpChallenges.cs,**/IChallengePass*.cs,**/IAccountKeySource.cs,**/ISessionChallengeClient.cs,**/IPq*.cs" \
             /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,reports/analyzer.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
-      # MAUI / IntegrationTests / E2ETests are not compiled on Linux.
+      # Scan graph: Analyzers + Core + unit tests. Sibling trees still reach
+      # structure analyzers via Directory.Build.targets additional files.
       - name: Build analyzable projects
         run: |
           set -euo pipefail

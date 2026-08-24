@@ -43,7 +43,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Reports CommandText assignments outside the SQL owner.
+    /// Reports CommandText assignments in Core.
     /// Use: High (every assignment). Scope: Core C# trees.
     /// </summary>
     private static void AnalyzeAssignment(SyntaxNodeAnalysisContext context)
@@ -67,7 +67,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Reports FromSqlRaw / ExecuteSqlRaw invocations outside the SQL owner.
+    /// Reports FromSqlRaw / ExecuteSqlRaw invocations in Core.
     /// Use: High (every invocation). Scope: Core C# trees.
     /// </summary>
     private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)

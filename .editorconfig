@@ -124,14 +124,6 @@ dotnet_diagnostic.IDE0008.severity = suggestion # Promote to warning with Core m
 dotnet_diagnostic.IDE0028.severity = none       # Collection expression burn-down deferred for tests
 dotnet_diagnostic.SA1515.severity = suggestion
 
-# Persist catalog/DDL SQL is schema text, not UI copy (SONAR_GATE deferred S4055 family).
-# CA2100: EF GenerateCreateScript DDL execution is model-derived, not user input.
-# CA1859: prefer Sonar S3242 general ICollection parameter over concrete HashSet.
-[CipherBank-app.Core/Persist/Sql/**.cs]
-dotnet_diagnostic.S4055.severity = none
-dotnet_diagnostic.CA2100.severity = none
-dotnet_diagnostic.CA1859.severity = none
-
 # Analyzer public API keeps XML comments (CS1591/SA16xx as warnings → errors).
 [CipherBank-app.Analyzers/**.cs]
 dotnet_diagnostic.CS1591.severity = warning
