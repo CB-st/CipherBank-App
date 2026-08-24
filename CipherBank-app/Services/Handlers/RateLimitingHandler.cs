@@ -88,11 +88,11 @@ public sealed partial class RateLimitingHandler : DelegatingHandler
     }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit exceeded, wait time {WaitTime} exceeds maximum {MaxWait}")]
-    static partial void LogRateLimitExceeded(ILogger logger, TimeSpan waitTime, TimeSpan maxWait);
+    private static partial void LogRateLimitExceeded(ILogger logger, TimeSpan waitTime, TimeSpan maxWait);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Rate limited, waiting {WaitTime} before retry")]
-    static partial void LogRateLimitedWaiting(ILogger logger, TimeSpan waitTime);
+    private static partial void LogRateLimitedWaiting(ILogger logger, TimeSpan waitTime);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit still exceeded after waiting")]
-    static partial void LogRateLimitStillExceeded(ILogger logger);
+    private static partial void LogRateLimitStillExceeded(ILogger logger);
 }
