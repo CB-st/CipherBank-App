@@ -6,7 +6,7 @@ Repository-structure diagnostics. Not product behavior.
 - CB1002: `Properties/AssemblyInfo.cs`
 - CB1003: raw SQL in Core outside `Persist/Sql/LocalDbSql.cs`
 - CB1004: retired names `IProductApi`, `MockProductApi`, `AppSessionDeps`
-- `SourcePath`: value type around host-native additional-file strings. Uses `Path.GetFileName` / `GetExtension` / `GetDirectoryName` (no separator rewriting). Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo` / `LocalDbSql`. Do not use `Path.GetFullPath` or `Combine` on additional-file strings.
+- `SourcePath`: string extensions on host-native additional-file paths. Uses `Path.GetFileName` / `GetExtension` / `GetDirectoryName` (no separator rewriting). Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo` / `LocalDbSql`. Do not use `Path.GetFullPath` or `Combine` on additional-file strings.
 
 These run on every `dotnet build` via `Directory.Build.props`. `Directory.Build.targets`
 feeds every product `.csproj` and product C# file as additional files, so CB1001,

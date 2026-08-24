@@ -19,10 +19,7 @@ internal static class AdditionalSource
     /// Use: High (every additional file). Scope: sibling-project scans.
     /// </summary>
     internal static bool IsOutsideCompilation(Compilation compilation, string path)
-    {
-        SourcePath source = SourcePath.From(path);
-        return !compilation.SyntaxTrees.Any(tree => source.Equals(SourcePath.From(tree.FilePath)));
-    }
+        => !compilation.SyntaxTrees.Any(tree => tree.FilePath.PathsEqual(path));
 
     /// <summary>
     /// Parses an additional C# file for token walks. Locations must use
@@ -37,7 +34,7 @@ internal static class AdditionalSource
     {
         tree = null!;
         text = null!;
-        if (!SourcePath.From(file.Path).IsCSharpFile)
+        if (!file.Path.IsCSharpFile())
         {
             return false;
         }
