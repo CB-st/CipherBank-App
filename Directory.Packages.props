@@ -24,6 +24,7 @@
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="9.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Shiny.Hosting.Maui" Version="3.3.4" />
+    <PackageVersion Include="Plugin.Maui.Biometric" Version="0.0.5" />
   </ItemGroup>
 
   <ItemGroup Label="ChallengePass">

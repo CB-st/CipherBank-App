@@ -1,5 +1,5 @@
 // <copyright file="SettingsPage.xaml.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using CipherBank_app.ViewModels;
@@ -49,7 +49,7 @@ public partial class SettingsPage : ContentPage
         SettingsLayout.Children.Insert(insertIndex, BuildDeveloperCard());
     }
 
-    private Border BuildDeveloperCard()
+    private static Border BuildDeveloperCard()
     {
         var headerLabel = new Label
         {

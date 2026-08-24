@@ -1,15 +1,17 @@
 // <copyright file="HttpClientExtensions.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.RateLimiting;
+using CipherBank_app.Configuration;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Options;
 using Polly;
 
 namespace CipherBank_app.Extensions;
@@ -52,6 +54,31 @@ public static class HttpClientExtensions
     }
 
     /// <summary>
+    /// Registers an unauthenticated HttpClient for the public quote surface
+    /// (<c>/currencies</c>, <c>/quote</c>, <c>/iquote</c>, <c>/test</c>).
+    /// </summary>
+    public static IHttpClientBuilder AddPublicApiHttpClient<TClient>(
+        this IServiceCollection services,
+        Action<IServiceProvider, HttpClient>? configure = null)
+        where TClient : class
+    {
+        SlidingWindowRateLimiter limiter = GetSharedRateLimiter(services);
+        var builder = services.AddHttpClient<TClient>((sp, http) =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            var network = sp.GetRequiredService<IOptions<NetworkOptions>>().Value;
+            http.BaseAddress = new Uri(network.Resolve(settings.Environment).PublicApiBase);
+            http.Timeout = TimeSpan.FromSeconds(30);
+            http.DefaultRequestHeaders.Add("Accept", "application/json");
+            configure?.Invoke(sp, http);
+        })
+        .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler());
+
+        AddResilience(builder, limiter);
+        return builder;
+    }
+
+    /// <summary>
     /// Registers the HealthCheck named HttpClient with certificate pinning for connection testing.
     /// </summary>
     public static IServiceCollection AddHealthCheckClient(this IServiceCollection services)
@@ -77,7 +104,7 @@ public static class HttpClientExtensions
     }
 
     /// <summary>
-    /// One limiter for product HTTP clients.
+    /// One limiter for product and public HTTP clients.
     /// Use: High (typed client registration). Scope: HttpClientExtensions.
     /// </summary>
     private static SlidingWindowRateLimiter GetSharedRateLimiter(IServiceCollection services)

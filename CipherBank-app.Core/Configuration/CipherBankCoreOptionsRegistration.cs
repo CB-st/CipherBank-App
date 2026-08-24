@@ -45,5 +45,7 @@ internal static class CipherBankCoreOptionsRegistration
             .Bind(configuration.GetSection(CoraOptions.SectionName));
         services.AddOptions<CarouselLayoutConfig>()
             .Bind(configuration.GetSection(CarouselLayoutConfig.SectionName));
+        services.AddOptions<NetworkOptions>()
+            .Bind(configuration.GetSection(NetworkOptions.SectionName));
     }
 }

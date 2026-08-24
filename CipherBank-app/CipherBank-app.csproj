@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+        <!-- Linux hosts only need Android; iOS/MacCatalyst require macOS workloads. -->
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('linux'))">net10.0-android</TargetFrameworks>
+        <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
         <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
         <!-- <TargetFrameworks>$(TargetFrameworks);net10.0-tizen</TargetFrameworks> -->
@@ -37,6 +39,12 @@
         <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
         <WindowsPackageType>None</WindowsPackageType>
 
+        <!-- Re-enable WAE; narrow NoWarn to documented Shell StyleCop/IDE debt (security CAs stay errors). -->
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608</WarningsNotAsErrors>
+        <!-- IDE*: multi-TFM / generated noise. SA*: Shell StyleCop docs/ordering/header debt (not security). -->
+        <NoWarn>$(NoWarn);IDE0005;IDE0008;IDE0052;SA1028;SA1116;SA1117;SA1118;SA1201;SA1202;SA1203;SA1204;SA1210;SA1214;SA1402;SA1507;SA1516;SA1518;SA1600;SA1601;SA1602;SA1611;SA1615;SA1618;SA1623;SA1629;SA1633;SA1642;SA1649</NoWarn>
+
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -68,6 +76,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
+        <ProjectReference Include="..\CipherBank-app.ChallengePass\CipherBank-app.ChallengePass.csproj" />
     </ItemGroup>
 
     <!-- Compile only the source files that belong to the active platform. -->
@@ -89,6 +98,7 @@
 
     <ItemGroup>
         <PackageReference Include="CommunityToolkit.Mvvm" />
+        <PackageReference Include="Plugin.Maui.Biometric" />
         <PackageReference Include="Microsoft.Extensions.Http" />
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
         <PackageReference Include="Microsoft.Extensions.Logging" />
@@ -98,8 +108,8 @@
         <PackageReference Include="Serilog" />
         <PackageReference Include="Serilog.Extensions.Hosting" />
         <PackageReference Include="Serilog.Sinks.File" />
-        <!-- CommunityToolkit.Maui and Shiny temporarily removed due to .NET 10 compatibility -->
-        <!-- Versions remain in Directory.Packages.props if these packages are re-enabled. -->
+        <!-- CommunityToolkit.Maui 12.2.0 / Markup 6.0.1 require Microsoft.Maui.* >= 9 && < 10; NU1608 on MAUI 10.0.0 (2026-08-17 spike). -->
+        <!-- Shiny.Hosting.Maui 3.3.4 is host-only; Shiny.Nfc was not carried into v3. Do not add Plugin.Maui.NFC. -->
         <!-- <PackageReference Include="CommunityToolkit.Maui" /> -->
         <!-- <PackageReference Include="CommunityToolkit.Maui.Markup" /> -->
         <!-- <PackageReference Include="Shiny.Hosting.Maui" /> -->

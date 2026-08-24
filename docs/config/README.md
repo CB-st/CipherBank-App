@@ -142,6 +142,6 @@ transitive resolution deterministic.
 
 ## Runtime config/
 
-Runtime defaults are grouped by security, dispatch, persistence, and UI theme.
+Runtime defaults are grouped by security, dispatch, network, persistence, and UI theme.
 Each theme has a README, JSON defaults, a typed options class, startup validation,
 and DI binding. See [`../../config/README.md`](../../config/README.md).

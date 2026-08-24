@@ -54,5 +54,7 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>CipherBank uses Face ID as a logical unlock gate. Your custody key stays in Secure Storage.</string>
 </dict>
 </plist>

@@ -71,6 +71,9 @@
     <EmbeddedResource Include="..\config\appsettings.Windows.json"
                       Link="config\appsettings.Windows.json"
                       LogicalName="CipherBank_app.Config.appsettings.Windows.json" />
+    <EmbeddedResource Include="..\config\network\endpoints.json"
+                      Link="config\network\endpoints.json"
+                      LogicalName="CipherBank_app.Config.network.endpoints.json" />
   </ItemGroup>
 
 
