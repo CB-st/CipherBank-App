@@ -95,7 +95,10 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     /// Use: High (every SQL syntax action). Scope: this analyzer.
     /// </summary>
     private static bool ShouldScan(string path)
-        => path.IsCoreProject() && !path.IsSqlOwner();
+    {
+        SourcePath source = SourcePath.From(path);
+        return source.IsCoreProject && !source.IsSqlOwner;
+    }
 
     /// <summary>
     /// Returns the invoked method identifier, if any.
