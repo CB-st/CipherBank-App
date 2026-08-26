@@ -5,58 +5,81 @@
 namespace CipherBank_app.Analyzers;
 
 /// <summary>
-/// Path extensions for analyzer additional-file strings.
-/// Uses <see cref="Path.GetFileName"/> / <see cref="Path.GetExtension"/> /
-/// <see cref="Path.GetDirectoryName"/> on host-native paths. Do not call
-/// <see cref="Path.GetFullPath"/> or Combine on additional-file strings, and do
-/// not rewrite path separators.
+/// Host-native additional-file path. Segments come from <see cref="Path.GetFileName"/>,
+/// <see cref="Path.GetExtension"/>, and <see cref="Path.GetDirectoryName"/>.
+/// Do not call <see cref="Path.GetFullPath"/> or Combine on additional-file strings,
+/// and do not rewrite path separators.
 /// </summary>
-internal static class SourcePath
+internal readonly struct SourcePath : IEquatable<SourcePath>
 {
-    /// <summary>True when two host paths match (case-insensitive).</summary>
-    internal static bool PathsEqual(this string left, string right)
-        => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+    private readonly string _value;
 
-    /// <summary>True when the additional file is C# source.</summary>
-    internal static bool IsCSharpFile(this string path)
-        => string.Equals(Path.GetExtension(path), ".cs", StringComparison.OrdinalIgnoreCase);
+    private SourcePath(string value) => _value = value;
 
-    /// <summary>True when the tree is Properties/AssemblyInfo.cs.</summary>
-    internal static bool IsLegacyAssemblyInfo(this string path)
+    /// <summary>Gets the host-native path string Roslyn supplied.</summary>
+    internal string Value => _value;
+
+    /// <summary>Gets the last segment via <see cref="Path.GetFileName"/>.</summary>
+    internal string FileName => Path.GetFileName(_value);
+
+    /// <summary>Gets the extension via <see cref="Path.GetExtension"/>.</summary>
+    internal string Extension => Path.GetExtension(_value);
+
+    /// <summary>Gets the parent path via <see cref="Path.GetDirectoryName"/>.</summary>
+    internal SourcePath Parent => From(Path.GetDirectoryName(_value));
+
+    /// <summary>Gets a value indicating whether this path has no segments left.</summary>
+    internal bool IsEmpty => string.IsNullOrEmpty(_value);
+
+    /// <summary>Gets a value indicating whether the additional file is C# source.</summary>
+    internal bool IsCSharpFile
+        => string.Equals(Extension, ".cs", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Gets a value indicating whether the tree is Properties/AssemblyInfo.cs.</summary>
+    internal bool IsLegacyAssemblyInfo
+        => string.Equals(FileName, "AssemblyInfo.cs", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(Parent.FileName, "Properties", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Gets a value indicating whether a directory segment is CipherBank-app.Core.</summary>
+    internal bool IsCoreProject
     {
-        if (!string.Equals(Path.GetFileName(path), "AssemblyInfo.cs", StringComparison.OrdinalIgnoreCase))
+        get
         {
+            for (SourcePath current = this; !current.IsEmpty; current = current.Parent)
+            {
+                if (string.Equals(current.FileName, "CipherBank-app.Core", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
-
-        string directory = Path.GetDirectoryName(path) ?? string.Empty;
-        return string.Equals(Path.GetFileName(directory), "Properties", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>True when the tree lives under CipherBank-app.Core.</summary>
-    internal static bool IsCoreProject(this string path)
-    {
-        for (string? current = path; !string.IsNullOrEmpty(current); current = Path.GetDirectoryName(current))
-        {
-            if (string.Equals(Path.GetFileName(current), "CipherBank-app.Core", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
+    /// <summary>Gets a value indicating whether the additional file is Directory.Packages.props.</summary>
+    internal bool IsCentralPackageFile
+        => string.Equals(FileName, "Directory.Packages.props", StringComparison.OrdinalIgnoreCase);
 
-        return false;
-    }
+    /// <summary>Gets a value indicating whether the additional file is .csproj, .props, or .targets.</summary>
+    internal bool IsMsBuildProjectFile
+        => string.Equals(Extension, ".csproj", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Extension, ".props", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Extension, ".targets", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>True when the additional file is Directory.Packages.props.</summary>
-    internal static bool IsCentralPackageFile(this string path)
-        => string.Equals(Path.GetFileName(path), "Directory.Packages.props", StringComparison.OrdinalIgnoreCase);
+    /// <inheritdoc />
+    public bool Equals(SourcePath other)
+        => string.Equals(_value, other._value, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>True when the additional file is .csproj, .props, or .targets.</summary>
-    internal static bool IsMsBuildProjectFile(this string path)
-    {
-        string extension = Path.GetExtension(path);
-        return string.Equals(extension, ".csproj", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(extension, ".props", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(extension, ".targets", StringComparison.OrdinalIgnoreCase);
-    }
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => obj is SourcePath other && Equals(other);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(_value);
+
+    /// <inheritdoc />
+    public override string ToString() => _value;
+
+    /// <summary>Wraps a Roslyn/MSBuild additional-file path.</summary>
+    internal static SourcePath From(string? path) => new(path ?? string.Empty);
 }
