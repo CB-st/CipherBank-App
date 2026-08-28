@@ -5,16 +5,17 @@ on:
     types: [closed]
 
 # Author gate: only consolidate tickets for allowlisted PR authors.
-# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob". Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions
-# have no split()/replace(), so membership uses comma-padded contains().
+# Membership is pipeline-author-gate.yml (PIPELINE_ALLOWED_AUTHOR CSV).
 
 jobs:
+  author-gate:
+    uses: ./.github/workflows/pipeline-author-gate.yml
+    with:
+      require_all: ${{ github.event.pull_request.user.login }}
+
   dispatch-ticket-consolidation:
-    if: >-
-      contains(
-        format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-        format(',{0},', github.event.pull_request.user.login)
-      )
+    needs: author-gate
+    if: ${{ needs.author-gate.outputs.allowed == 'true' }}
     runs-on: ubuntu-22.04
     permissions:
       contents: read

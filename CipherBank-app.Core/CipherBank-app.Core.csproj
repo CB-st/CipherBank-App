@@ -5,15 +5,78 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>CipherBank_app</RootNamespace>
+    <!-- Phase 3: SA1402/SA1649 removed after Stage 2 one-type-per-file splits. -->
+    <!-- Phase 3 Stage 3: SA1402/SA1649 removed. CA1707 kept for RootNamespace CipherBank_app (assembly-aligned). -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IDE0005</WarningsNotAsErrors>
+    <NoWarn>$(NoWarn);IDE0005;CA1707</NoWarn>
+    <Company>CipherBank</Company>
+    <Product>CipherBank App Core</Product>
+    <Description>Platform-neutral CipherBank domain and application services.</Description>
+    <RepositoryUrl>https://github.com/CB-st/CipherBank-App</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <!-- Microsoft.Data.Sqlite transitively pulls SQLitePCLRaw.bundle_e_sqlite3; exclude it
+         (and the desktop lib) so Android APKs only get sqlitepclraw.lib.e_sqlite3.android.
+         CipherBank-app.Tests references the desktop package without ExcludeAssets. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>all</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>all</ExcludeAssets>
+    </PackageReference>
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="NBitcoin" />
+    <PackageReference Include="NBitcoin.Altcoins" />
+    <PackageReference Include="Nethereum.HdWallet" />
+    <PackageReference Include="QRCoder" />
   </ItemGroup>
 
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Custody storage-key constants stay internal; the unit suite needs them to seed legacy blobs. -->
+    <InternalsVisibleTo Include="CipherBank-app.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.CLSCompliantAttribute">
+      <_Parameter1>false</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.InteropServices.ComVisibleAttribute">
+      <_Parameter1>false</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\config\appsettings.json"
+                      Link="config\appsettings.json"
+                      LogicalName="CipherBank_app.Config.appsettings.json" />
+    <EmbeddedResource Include="..\config\appsettings.Development.json"
+                      Link="config\appsettings.Development.json"
+                      LogicalName="CipherBank_app.Config.appsettings.Development.json" />
+    <EmbeddedResource Include="..\config\appsettings.Windows.json"
+                      Link="config\appsettings.Windows.json"
+                      LogicalName="CipherBank_app.Config.appsettings.Windows.json" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <!-- Compatibility SQL is enum-selected compile-time literals only; CA2100 false positive. -->
+    <Compile Update="Persist/Sql/LocalDbSql.cs">
+      <NoWarn>$(NoWarn);CA2100</NoWarn>
+    </Compile>
   </ItemGroup>
 
 </Project>

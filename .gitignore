@@ -30,6 +30,14 @@ out/
 # Cursor
 .cursor/
 
+# Local .NET 10 compliance overlay (docs, examples, audit/enforce MSBuild).
+# Apply on a developer machine; do not commit.
+.compliance/
+
+# Python
+__pycache__/
+*.py[cod]
+
 # Claude Code
 .claude/
 
@@ -72,10 +80,6 @@ out/
 *.svclog
 *.scc
 
-# Top-level docs (architecture, summaries)
-/*.md
-/*.mmd
-
 # Test results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
@@ -86,3 +90,11 @@ coverage*.json
 coverage*.xml
 *.coverage
 *.coveragexml
+reports/
+
+# E2E run artifacts (journals, recovery dumps, gap scratch) — never commit device journals
+artifacts/
+
+# Expo handoff — out of MAUI merge path
+design_handoff_cipherbank/
+.worktrees/
