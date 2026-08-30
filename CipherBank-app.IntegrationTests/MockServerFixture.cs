@@ -1,3 +1,7 @@
+// <copyright file="MockServerFixture.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using System.Net;
 using System.Text.Json;
 using WireMock.RequestBuilders;
@@ -13,13 +17,15 @@ namespace CipherBank_app.IntegrationTests;
 public class MockServerFixture : IDisposable
 {
     public WireMockServer Server { get; }
+
     public string BaseUrl => Server.Url!;
+
     public HttpClient HttpClient { get; }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
+        WriteIndented = true,
     };
 
     public MockServerFixture()
@@ -66,7 +72,7 @@ public class MockServerFixture : IDisposable
                 {
                     accessToken = "test_access_token_12345",
                     refreshToken = "test_refresh_token_67890",
-                    expiresUtc = DateTimeOffset.UtcNow.AddHours(1)
+                    expiresUtc = DateTimeOffset.UtcNow.AddHours(1),
                 }));
 
         // Refresh endpoint
@@ -80,7 +86,7 @@ public class MockServerFixture : IDisposable
                 {
                     accessToken = "refreshed_access_token",
                     refreshToken = "refreshed_refresh_token",
-                    expiresUtc = DateTimeOffset.UtcNow.AddHours(1)
+                    expiresUtc = DateTimeOffset.UtcNow.AddHours(1),
                 }));
     }
 
@@ -90,7 +96,7 @@ public class MockServerFixture : IDisposable
         {
             new { symbol = "BTC", name = "Bitcoin", currentPrice = 97500.00m, priceChange24h = 1250.50m, percentChange24h = 1.30m, marketCap = 1920000000000m, volume24h = 45000000000m, iconUrl = "https://example.com/btc.png" },
             new { symbol = "ETH", name = "Ethereum", currentPrice = 3450.00m, priceChange24h = -45.25m, percentChange24h = -1.29m, marketCap = 415000000000m, volume24h = 18000000000m, iconUrl = "https://example.com/eth.png" },
-            new { symbol = "SOL", name = "Solana", currentPrice = 195.00m, priceChange24h = 8.45m, percentChange24h = 4.53m, marketCap = 92000000000m, volume24h = 5500000000m, iconUrl = "https://example.com/sol.png" }
+            new { symbol = "SOL", name = "Solana", currentPrice = 195.00m, priceChange24h = 8.45m, percentChange24h = 4.53m, marketCap = 92000000000m, volume24h = 5500000000m, iconUrl = "https://example.com/sol.png" },
         };
 
         // Get all prices
@@ -127,7 +133,7 @@ public class MockServerFixture : IDisposable
         var wallets = new[]
         {
             new { id = "wallet_btc_001", cryptoSymbol = "BTC", cryptoName = "Bitcoin", balance = 0.52483921m, address = "bc1qtest123456789", createdAt = DateTimeOffset.UtcNow.AddDays(-30) },
-            new { id = "wallet_eth_001", cryptoSymbol = "ETH", cryptoName = "Ethereum", balance = 3.84729184m, address = "0xtest123456789", createdAt = DateTimeOffset.UtcNow.AddDays(-20) }
+            new { id = "wallet_eth_001", cryptoSymbol = "ETH", cryptoName = "Ethereum", balance = 3.84729184m, address = "0xtest123456789", createdAt = DateTimeOffset.UtcNow.AddDays(-20) },
         };
 
         // Get all wallets
@@ -153,7 +159,7 @@ public class MockServerFixture : IDisposable
                     cryptoName = "Solana",
                     balance = 0m,
                     address = "newsolanaaddress123",
-                    createdAt = DateTimeOffset.UtcNow
+                    createdAt = DateTimeOffset.UtcNow,
                 }));
     }
 
@@ -162,7 +168,7 @@ public class MockServerFixture : IDisposable
         var transactions = new[]
         {
             new { id = "tx_001", type = "Purchase", amount = 0.1m, cryptoSymbol = "BTC", fromAddress = (string?)null, toAddress = "bc1qtest", timestamp = DateTimeOffset.UtcNow.AddDays(-5), status = "Confirmed", feeAmount = 0.0015m },
-            new { id = "tx_002", type = "Send", amount = 0.05m, cryptoSymbol = "BTC", fromAddress = "bc1qtest", toAddress = "bc1qother", timestamp = DateTimeOffset.UtcNow.AddDays(-2), status = "Confirmed", feeAmount = 0.00005m }
+            new { id = "tx_002", type = "Send", amount = 0.05m, cryptoSymbol = "BTC", fromAddress = (string?)"bc1qtest", toAddress = "bc1qother", timestamp = DateTimeOffset.UtcNow.AddDays(-2), status = "Confirmed", feeAmount = 0.00005m },
         };
 
         // Get transaction history
@@ -192,7 +198,7 @@ public class MockServerFixture : IDisposable
                     toAddress = "bc1qmywallet",
                     timestamp = DateTimeOffset.UtcNow,
                     status = "Confirmed",
-                    feeAmount = 0.0015m
+                    feeAmount = 0.0015m,
                 }));
 
         // Send crypto
@@ -212,7 +218,7 @@ public class MockServerFixture : IDisposable
                     toAddress = "bc1qrecipient",
                     timestamp = DateTimeOffset.UtcNow,
                     status = "Pending",
-                    feeAmount = 0.00005m
+                    feeAmount = 0.00005m,
                 }));
     }
 

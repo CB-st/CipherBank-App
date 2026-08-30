@@ -1,3 +1,7 @@
+// <copyright file="WalletPage.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 
@@ -24,7 +28,8 @@ public class WalletPage : BasePage
     private static readonly By ConfirmSendButton = By.Id("ConfirmSendButton");
     private static readonly By CancelSendButton = By.Id("CancelSendButton");
 
-    public WalletPage(AppiumDriver driver) : base(driver)
+    public WalletPage(AppiumDriver driver)
+        : base(driver)
     {
     }
 

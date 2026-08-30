@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using CipherBank_app.Animations;
-using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Layouts;
 
 namespace CipherBank_app.Controls;
@@ -112,7 +111,7 @@ public class ArcCardDeck : ContentView
     }
 
     /// <summary>
-    /// 0 when a card is centered, rising toward 1 as the drag passes the midpoint between
+    /// Gets 0 when a card is centered, rising toward 1 as the drag passes the midpoint between
     /// cards. Pages observe this to dim dependent panels proportionally while dragging.
     /// </summary>
     public double DragFraction

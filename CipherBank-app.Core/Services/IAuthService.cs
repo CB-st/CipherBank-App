@@ -25,7 +25,7 @@ public interface IAuthService
     /// Revokes the current access and refresh tokens on the server.
     /// Should be called before logout to invalidate tokens server-side.
     /// </summary>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>True if revocation succeeded, false otherwise</returns>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if revocation succeeded, false otherwise.</returns>
     Task<bool> RevokeTokenAsync(CancellationToken cancellationToken = default);
 }

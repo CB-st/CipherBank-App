@@ -27,22 +27,18 @@ public partial class LoginPage : ContentPage
 #endif
     }
 
-    private void OnUsernameCompleted(object? sender, EventArgs e)
-    {
-        // Move focus to password field when Enter is pressed on username
-        PasswordEntry.Focus();
-    }
-
-    private void OnPasswordCompleted(object? sender, EventArgs e)
-    {
-        // Submit login when Enter is pressed on password field
-        if (_viewModel.SignInCommand.CanExecute(null))
-        {
-            _viewModel.SignInCommand.Execute(null);
-        }
-    }
-
 #if DEBUG
+    private static void ApplyThemeColor(VisualElement element, BindableProperty property, string lightKey, string darkKey) =>
+        element.SetAppThemeColor(property, GetColor(lightKey), GetColor(darkKey));
+
+    private static Color GetColor(string key) =>
+        Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
+            ? color
+            : Colors.Transparent;
+
+    private static Style? GetStyle(string key) =>
+        Application.Current?.Resources.TryGetValue(key, out var value) == true ? value as Style : null;
+
     // Developer-only affordances are built in code so they are not compiled into Release builds.
     private void AddDeveloperControls()
     {
@@ -85,16 +81,20 @@ public partial class LoginPage : ContentPage
         var insertIndex = LoginFormLayout.Children.IndexOf(LoginButton) + 1;
         LoginFormLayout.Children.Insert(insertIndex, testCredentials);
     }
-
-    private static void ApplyThemeColor(VisualElement element, BindableProperty property, string lightKey, string darkKey) =>
-        element.SetAppThemeColor(property, GetColor(lightKey), GetColor(darkKey));
-
-    private static Color GetColor(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
-            ? color
-            : Colors.Transparent;
-
-    private static Style? GetStyle(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true ? value as Style : null;
 #endif
+
+    private void OnUsernameCompleted(object? sender, EventArgs e)
+    {
+        // Move focus to password field when Enter is pressed on username
+        PasswordEntry.Focus();
+    }
+
+    private void OnPasswordCompleted(object? sender, EventArgs e)
+    {
+        // Submit login when Enter is pressed on password field
+        if (_viewModel.SignInCommand.CanExecute(null))
+        {
+            _viewModel.SignInCommand.Execute(null);
+        }
+    }
 }

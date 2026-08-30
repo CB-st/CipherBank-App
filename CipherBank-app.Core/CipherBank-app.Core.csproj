@@ -27,10 +27,12 @@
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>all</ExcludeAssets>
+      <IncludeAssets>none</IncludeAssets>
     </PackageReference>
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>all</ExcludeAssets>
+      <IncludeAssets>none</IncludeAssets>
     </PackageReference>
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" />
     <PackageReference Include="Microsoft.Extensions.Http" />
@@ -39,10 +41,6 @@
     <PackageReference Include="NBitcoin.Altcoins" />
     <PackageReference Include="Nethereum.HdWallet" />
     <PackageReference Include="QRCoder" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
 
   <ItemGroup>

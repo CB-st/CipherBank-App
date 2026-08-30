@@ -1,6 +1,9 @@
-﻿using Android.App;
+﻿// <copyright file="MainActivity.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
+using Android.App;
 using Android.Content.PM;
-using Android.OS;
 
 namespace CipherBank_app;
 

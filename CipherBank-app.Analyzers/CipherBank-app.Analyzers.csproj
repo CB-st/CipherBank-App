@@ -27,11 +27,6 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
   </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="stylecop.json" />
-  </ItemGroup>
-
   <ItemGroup>
     <InternalsVisibleTo Include="CipherBank-app.Analyzers.Tests" />
   </ItemGroup>

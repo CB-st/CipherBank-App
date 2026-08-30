@@ -1,3 +1,7 @@
+// <copyright file="ApiIntegrationTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using System.Net;
 using System.Net.Http.Json;
 using CipherBank_app.Models;

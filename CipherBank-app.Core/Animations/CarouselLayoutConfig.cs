@@ -9,30 +9,30 @@ namespace CipherBank_app.Animations;
 /// </summary>
 public sealed record CarouselLayoutConfig
 {
-    /// <summary>Horizontal spacing (device-independent px) between adjacent cards.</summary>
+    /// <summary>Gets horizontal spacing (device-independent px) between adjacent cards.</summary>
     public double Stride { get; init; } = 220;
 
-    /// <summary>Maximum 3D tilt in degrees applied to off-center cards.</summary>
+    /// <summary>Gets maximum 3D tilt in degrees applied to off-center cards.</summary>
     public double MaxTilt { get; init; } = 45;
 
-    /// <summary>Scale reduction per unit of distance from center.</summary>
+    /// <summary>Gets scale reduction per unit of distance from center.</summary>
     public double ScaleFalloff { get; init; } = 0.18;
 
-    /// <summary>Minimum scale for far cards.</summary>
+    /// <summary>Gets minimum scale for far cards.</summary>
     public double MinScale { get; init; } = 0.82;
 
-    /// <summary>Opacity reduction per unit of distance from center.</summary>
+    /// <summary>Gets opacity reduction per unit of distance from center.</summary>
     public double OpacityFalloff { get; init; } = 0.35;
 
-    /// <summary>Minimum opacity for far cards.</summary>
+    /// <summary>Gets minimum opacity for far cards.</summary>
     public double MinOpacity { get; init; } = 0.4;
 
-    /// <summary>Downward arc drop, applied as ArcDrop * distance^2.</summary>
+    /// <summary>Gets downward arc drop, applied as ArcDrop * distance^2.</summary>
     public double ArcDrop { get; init; } = 28;
 
-    /// <summary>Spacing multiplier applied beyond the first neighbor (compresses far cards).</summary>
+    /// <summary>Gets spacing multiplier applied beyond the first neighbor (compresses far cards).</summary>
     public double EdgeCompression { get; init; } = 0.6;
 
-    /// <summary>Shared default instance.</summary>
+    /// <summary>Gets shared default instance.</summary>
     public static CarouselLayoutConfig Default { get; } = new();
 }
