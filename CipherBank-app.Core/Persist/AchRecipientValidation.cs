@@ -9,18 +9,13 @@ namespace CipherBank_app.Persist;
 /// <summary>ACH recipient field validation (Cora RecipientPickerModal parity).</summary>
 public static class AchRecipientValidation
 {
-    private static readonly int RoutingNumberDigitCountValue = 9;
-    private static readonly int AccountNumberMinDigitsValue = 4;
-    private static readonly int MaskVisibleTrailingDigitsValue = 4;
-    private static readonly int MemoMaxLengthValue = 140;
+    public const int RoutingNumberDigitCount = 9;
 
-    public static int RoutingNumberDigitCount => RoutingNumberDigitCountValue;
+    public const int AccountNumberMinDigits = 4;
 
-    public static int AccountNumberMinDigits => AccountNumberMinDigitsValue;
+    public const int MaskVisibleTrailingDigits = 4;
 
-    public static int MaskVisibleTrailingDigits => MaskVisibleTrailingDigitsValue;
-
-    public static int MemoMaxLength => MemoMaxLengthValue;
+    public const int MemoMaxLength = 140;
 
     public static string? Validate(
         string name,
