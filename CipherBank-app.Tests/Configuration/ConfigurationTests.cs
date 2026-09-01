@@ -32,6 +32,13 @@ public sealed class ConfigurationTests
         scheduler.Resolve().Should().BeInRange(
             SyncSchedulerOptions.MinConcurrency,
             SyncSchedulerOptions.MaxAllowedConcurrency);
+
+        NetworkOptions? network = configuration
+            .GetSection(NetworkOptions.SectionName)
+            .Get<NetworkOptions>();
+        network.Should().NotBeNull();
+        network!.DefaultEnvironment.Should().Be("Sandbox");
+        network.Environments.Should().ContainKey("Production");
     }
 
     [Fact]

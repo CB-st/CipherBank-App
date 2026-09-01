@@ -379,7 +379,7 @@ Prefs wire + bootstrap (prefs + ACH contacts). Bootstrap **never** carries custo
 
 ## 5b · Public quotes (`IPublicQuoteService`)
 
-Live PriceCache host (`api.cipherbank.money`). Impl: `PublicApiClient` / `MockPublicQuoteService`. Maps tickers via `CurrencySymbolMap` (BTC↔BITCOIN, XMR↔MONERO).
+Live PriceCache host (`api.cipherbank.money`). Impl: `PublicApiClient` / `InMemoryPublicQuoteService`. Maps tickers via `CurrencySymbolMap` (BTC↔BITCOIN, XMR↔MONERO).
 
 | INVOKE | HTTP | Role |
 |---|---|---|
@@ -561,7 +561,7 @@ Payload is **token reference only** — never PAN.
 | `ILocalDb` + repos + seeder | Core SQLite |
 | `ISessionProofBuilder` | Lab / A1 / A2 from `SessionProofMode` |
 | `IProductClient` | `HttpProductClient` / `InMemoryProductClient` |
-| `IPublicQuoteService` | `PublicApiClient` / `MockPublicQuoteService` |
+| `IPublicQuoteService` | `PublicApiClient` / `InMemoryPublicQuoteService` |
 | `IStreamService` | WSS / `MockStreamService` |
 | `IAppSession` | `AppSession` |
 | Challenge clients | HTTP or in-memory |

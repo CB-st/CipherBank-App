@@ -32,7 +32,7 @@ public class GlowBackdrop : Grid
         double translationX,
         double translationY)
     {
-        var ellipse = new Ellipse
+        Ellipse ellipse = new Ellipse
         {
             WidthRequest = size,
             HeightRequest = size,

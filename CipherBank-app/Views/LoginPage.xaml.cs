@@ -47,7 +47,7 @@ public partial class LoginPage : ContentPage
     private void AddDeveloperControls()
     {
         // Environment badge overlay, shown only in test/non-production environments.
-        var badgeLabel = new Label
+        Label badgeLabel = new Label
         {
             TextColor = Colors.White,
             FontAttributes = FontAttributes.Bold,
@@ -55,7 +55,7 @@ public partial class LoginPage : ContentPage
         };
         badgeLabel.SetBinding(Label.TextProperty, new Binding(nameof(LoginViewModel.EnvironmentBadge)));
 
-        var badge = new Border
+        Border badge = new Border
         {
             StrokeThickness = 0,
             Padding = new Thickness(10, 5),
@@ -70,7 +70,7 @@ public partial class LoginPage : ContentPage
         RootGrid.Children.Add(badge);
 
         // Quick-login button for filling mock credentials.
-        var testCredentials = new Button
+        Button testCredentials = new Button
         {
             Text = "Use Test Credentials",
             AutomationId = "TestCredentialsButton",

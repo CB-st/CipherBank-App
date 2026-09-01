@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+===================================================================================
+Certificate pinning — skirt until ops publishes current AND backup SPKI hashes
+===================================================================================
+Do NOT ship REPLACE_WITH_* placeholder digests: Android pin-sets with a fake or
+single live leaf fail closed (TLS to api.cipherbank.money dies on rotation).
+
+Default (Debug / Appium): no <pin-set>. Prod/sandbox/dev trust the system CA
+store so the emulator can talk to real APIs without a test pin.
+
+Optional Appium pin-path: export ANDROID_CERT_PINS=<current>,<backup> before
+scripts/e2e-android.sh — the harness stamps this file for that Debug build,
+then restores the skirt.
+
+Optional CI deployment test: map GitHub secret ANDROID_CERT_PINS (current,backup)
+into the same env and run scripts/stamp-android-cert-pins.sh before a Release
+APK. Still requires both hashes; we will not invent a backup pin.
+
+When ops publishes the real pair, stamp them here (or via the secret) and keep
+the backup pin for rotation.
+
+To obtain a live leaf pin:
+  openssl s_client -servername api.cipherbank.money -connect api.cipherbank.money:443 < /dev/null 2>/dev/null | \
+    openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
+    openssl dgst -sha256 -binary | openssl enc -base64
+===================================================================================
+-->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="false">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+
+  <!-- Local lab cleartext (emulator host loopback). Keep off production API hosts. -->
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="true">localhost</domain>
+    <domain includeSubdomains="true">10.0.2.2</domain>
+  </domain-config>
+
+  <!-- Prod / sandbox / dev: system CAs until real pin sets are published. -->
+  <domain-config>
+    <domain includeSubdomains="true">api.cipherbank.money</domain>
+    <domain includeSubdomains="true">api.sandbox.cipherbank.money</domain>
+    <domain includeSubdomains="true">api.dev.cipherbank.money</domain>
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </domain-config>
+</network-security-config>

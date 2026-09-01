@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CipherBank_app.Views.BackupQuizPage"
+             Title="Confirm backup"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}"
+             AutomationId="BackupQuizPage">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+
+      <Label Text="Confirm 3 words from your recovery phrase"
+             Style="{StaticResource SectionHeader}" />
+
+      <CollectionView ItemsSource="{Binding Rows}" AutomationId="BackupQuizRows">
+        <CollectionView.ItemTemplate>
+          <DataTemplate>
+            <VerticalStackLayout Spacing="6" Padding="0,0,0,10">
+              <Label Text="{Binding Prompt}" Style="{StaticResource BodyStrong}" AutomationId="BackupQuizPrompt" />
+              <Entry Text="{Binding Answer}" Placeholder="word" AutomationId="BackupQuizAnswerEntry" />
+            </VerticalStackLayout>
+          </DataTemplate>
+        </CollectionView.ItemTemplate>
+      </CollectionView>
+
+      <Label Text="{Binding Error}"
+             TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
+             IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
+             AutomationId="BackupQuizErrorLabel" />
+      <Button Text="Verify" Command="{Binding VerifyCommand}" AutomationId="BackupQuizVerifyButton" />
+
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

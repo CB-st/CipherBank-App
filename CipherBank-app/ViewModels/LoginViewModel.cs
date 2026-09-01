@@ -1,5 +1,5 @@
 // <copyright file="LoginViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System;
@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CipherBank_app.Constants;
+using CipherBank_app.Models;
 using CipherBank_app.Services;
 using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;

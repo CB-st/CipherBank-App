@@ -1,5 +1,5 @@
 // <copyright file="PurchaseViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System;
@@ -27,6 +27,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     private const decimal FeePercentage = 0.015m; // 1.5% fee
 
     private readonly ILogger<PurchaseViewModel> _logger;
+    private readonly IPublicQuoteService _publicQuotes;
     private readonly IProductClient _product;
     private readonly IErrorHandler _errorHandler;
     private readonly INavigationService _navigation;
@@ -69,12 +70,14 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
     public PurchaseViewModel(
         ILogger<PurchaseViewModel> logger,
+        IPublicQuoteService publicQuotes,
         IProductClient product,
         IErrorHandler errorHandler,
         INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
+        _publicQuotes = publicQuotes;
         _product = product;
         _errorHandler = errorHandler;
         _navigation = navigation;
@@ -179,11 +182,35 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             var success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
+                    var supported = await _publicQuotes.GetCurrenciesAsync(_cts.Token);
+                    var purchaseSymbols = supported
+                        .Where(s => !s.Equals("USD", StringComparison.OrdinalIgnoreCase))
+                        .Where(CurrencySymbolMap.IsSupported)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
                     AvailableCryptos.Clear();
-                    PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
-                    foreach (HoldingDto holding in portfolio.Holdings.Where(h => CurrencySymbolMap.IsSupported(h.Symbol)))
+                    foreach (var symbol in purchaseSymbols)
                     {
-                        AvailableCryptos.Add(ProductSurfaceMap.ToCryptoCurrency(holding));
+                        var quote = await _publicQuotes.GetInverseQuoteAsync(symbol, 1m, "USD", _cts.Token);
+                        AvailableCryptos.Add(new CryptoCurrency(
+                            symbol.ToUpperInvariant(),
+                            symbol.ToUpperInvariant(),
+                            quote.OutputAmount,
+                            0m,
+                            0m,
+                            0m,
+                            0m, null));
+                    }
+
+                    // Fall back to market list if public currencies were empty.
+                    if (AvailableCryptos.Count == 0)
+                    {
+                        PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
+                        foreach (HoldingDto holding in portfolio.Holdings.Where(h => CurrencySymbolMap.IsSupported(h.Symbol)))
+                        {
+                            AvailableCryptos.Add(ProductSurfaceMap.ToCryptoCurrency(holding));
+                        }
                     }
 
                     if (AvailableCryptos.Count > 0)
