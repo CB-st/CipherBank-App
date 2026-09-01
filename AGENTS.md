@@ -64,6 +64,8 @@ Copy from `templates/ui/` for new pages and from `templates/service/` or `templa
 - `TreatWarningsAsErrors` remains enabled. Allow lists are narrow, documented, and shrinking; NuGet resolution, nullable, cancellation, and security warnings are not parked.
 - `CipherBank-app.Analyzers` is the architecture gate; it runs on every `dotnet build`.
 - Local C# Sonar parity is opt-in through `./scripts/lint-csharp.sh`; CI Sonar remains the merge authority.
+- Do not put SonarScanner or quality-gate verify into `dotnet build` / `Directory.Build.*`.
+- Run the local Docker scanner (`sonar-scan` / `dotnet sonarscanner` against `http://127.0.0.1:9000`) before pushing Persist changes so new issues are caught off CI. Local results are not a gate pass.
 - Sonar must analyze production folders and interfaces. Exclusions require a specific generated/vendor reason and the narrowest possible path.
 - Resolve findings on the earliest stack layer that owns the code, then merge upward.
 - A local `.compliance/` overlay is optional and untracked. Do not commit it.
