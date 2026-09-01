@@ -36,8 +36,7 @@ public sealed class SyncSchedulerOptions
 
         if (MaxConcurrency < MinConcurrency || MaxConcurrency > MaxAllowedConcurrency)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(MaxConcurrency),
+            throw new InvalidOperationException(
                 $"MaxConcurrency must be 0 (unset) or between {MinConcurrency} and {MaxAllowedConcurrency}.");
         }
 

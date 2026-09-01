@@ -32,6 +32,7 @@ Dependencies point inward: MAUI may depend on Core; Core never depends on MAUI. 
 - `TreatWarningsAsErrors` remains enabled. Allow lists are narrow, documented, and shrinking.
 - `CipherBank-app.Analyzers` is the architecture gate; it runs on every `dotnet build`.
 - CI Sonar remains the merge authority. Do not put SonarScanner or quality-gate verify into `dotnet build` / `Directory.Build.*`.
+- Run the local Docker scanner (`sonar-scan` / `dotnet sonarscanner` against `http://127.0.0.1:9000`) before pushing Persist changes so new issues are caught off CI. Local results are not a gate pass.
 - A local `.compliance/` overlay is optional and untracked. Do not commit it.
 
 ## Required verification
