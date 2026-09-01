@@ -24,4 +24,7 @@
   <data name="DatabaseNameMustBeFileName" xml:space="preserve">
     <value>DatabaseName must not contain a path.</value>
   </data>
+  <data name="DefaultRecipientsInvalid" xml:space="preserve">
+    <value>DefaultRecipients must have unique non-blank ids and names.</value>
+  </data>
 </root>

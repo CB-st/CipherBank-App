@@ -1,3 +1,0 @@
-# Generated EF Core migrations. Do not treat these as hand-maintained product types.
-[*.cs]
-generated_code = true
