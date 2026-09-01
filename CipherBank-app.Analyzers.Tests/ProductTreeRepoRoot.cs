@@ -100,12 +100,12 @@ internal static class ProductTreeRepoRoot
     /// </summary>
     internal static string InjectRetiredApiName(string source)
     {
-        const string original = "    public App()";
-        const string injected = "    {|CB1004:IProductApi|} Api;\n\n    public App()";
+        const string original = "    public App(";
+        const string injected = "    {|CB1004:IProductApi|} Api;\n\n    public App(";
         int index = source.IndexOf(original, StringComparison.Ordinal);
         if (index < 0)
         {
-            throw new InvalidOperationException("App.xaml.cs no longer declares public App().");
+            throw new InvalidOperationException("App.xaml.cs no longer declares public App(.");
         }
 
         return string.Concat(

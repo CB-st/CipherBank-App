@@ -7,8 +7,8 @@ using System.Text.Json.Serialization;
 
 namespace CipherBank_app.Persist;
 
-/// <summary>User preference model (Cora prefs).</summary>
-public sealed class UserPrefs
+/// <summary>User preference model (Cora prefs). Implements <see cref="IUserPrefs"/> as the JSON-backed bag.</summary>
+public sealed class UserPrefs : IUserPrefs
 {
     public static readonly string[] DefaultHomeOrder =
     {

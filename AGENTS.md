@@ -1,6 +1,6 @@
 # CipherBank repository contract
 
-This file governs the M1a → M6 stack. More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
+This file governs the M6 Cora Shell slice (stacked on M5 ChallengePass / M2 Persist). More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
 
 Start with this file, then read the nearest subtree contract and the
 documentation index in `docs/README.md`.

@@ -24,10 +24,11 @@ dotnet_separate_import_directive_groups = false
 # Use file-scoped namespaces
 csharp_style_namespace_declarations = file_scoped:suggestion
 
-# Prefer explicit types (Sonar IDE0008). Warning on M3 Core carve (was suggestion on M1).
-csharp_style_var_for_built_in_types = false:warning
-csharp_style_var_when_type_is_apparent = false:warning
-csharp_style_var_elsewhere = false:warning
+# Prefer explicit types (Sonar IDE0008). Kept at suggestion on the platform slice so
+# CPM/CI can merge before Core mechanical IDE0008 conversion; raise to warning in M1a-core.
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = false:suggestion
+csharp_style_var_elsewhere = false:suggestion
 
 # Prefer expression-bodied members when single line
 csharp_style_expression_bodied_methods = when_on_single_line:suggestion
@@ -119,17 +120,9 @@ dotnet_diagnostic.SA1615.severity = none
 dotnet_diagnostic.SA1623.severity = none
 dotnet_diagnostic.SA1629.severity = none
 dotnet_diagnostic.IDE0007.severity = none       # Conflicts with IDE0008 / Sonar gate
-dotnet_diagnostic.IDE0008.severity = warning    # M3: explicit types after Core carve
+dotnet_diagnostic.IDE0008.severity = suggestion # Promote to warning with Core mechanical pass
 dotnet_diagnostic.IDE0028.severity = none       # Collection expression burn-down deferred for tests
 dotnet_diagnostic.SA1515.severity = suggestion
-
-# Persist catalog/DDL SQL is schema text, not UI copy (SONAR_GATE deferred S4055 family).
-# CA2100: EF GenerateCreateScript DDL execution is model-derived, not user input.
-# CA1859: prefer Sonar S3242 general ICollection parameter over concrete HashSet.
-[CipherBank-app.Core/Persist/Sql/**.cs]
-dotnet_diagnostic.S4055.severity = none
-dotnet_diagnostic.CA2100.severity = none
-dotnet_diagnostic.CA1859.severity = none
 
 # Analyzer public API keeps XML comments (CS1591/SA16xx as warnings → errors).
 [CipherBank-app.Analyzers/**.cs]
