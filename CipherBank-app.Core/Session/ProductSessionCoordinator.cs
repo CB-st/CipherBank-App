@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Net.Http;
 using System.Text.Json;
 using CipherBank_app.Persist;
 using CipherBank_app.V1;

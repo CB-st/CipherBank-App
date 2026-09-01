@@ -11,7 +11,8 @@ public sealed class UserDataCryptoCatalog : IUserDataCryptoCatalog
     private string _activeSuiteId;
 
     /// <summary>
-    /// Registers built-in RSA+AES suite (PQ suite id reserved, not registered until implemented).
+    /// Initializes a new instance of the <see cref="UserDataCryptoCatalog"/> class
+    /// with the built-in RSA+AES suite (PQ suite id reserved, not registered until implemented).
     /// Use: Low (composition root). Scope: process lifetime.
     /// </summary>
     public UserDataCryptoCatalog()
@@ -20,7 +21,8 @@ public sealed class UserDataCryptoCatalog : IUserDataCryptoCatalog
     }
 
     /// <summary>
-    /// Test / custom suite injection. Use: Low (tests). Scope: process lifetime.
+    /// Initializes a new instance of the <see cref="UserDataCryptoCatalog"/> class for tests and custom suites.
+    /// Use: Low (tests). Scope: process lifetime.
     /// </summary>
     public UserDataCryptoCatalog(IEnumerable<UserDataCryptoSuite> suites, string activeSuiteId)
     {

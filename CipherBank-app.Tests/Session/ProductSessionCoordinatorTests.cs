@@ -17,7 +17,7 @@ public class ProductSessionCoordinatorTests
     public async Task StartAsync_PreservesLocalIdleTimeoutWhenRefreshFails()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
         PrefsStore prefs = new PrefsStore(db);
         UserPrefs local = await prefs.LoadAsync();
@@ -62,7 +62,7 @@ public class ProductSessionCoordinatorTests
     public async Task StartAsync_StopsHubWhenConnectFails()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
         PrefsStore prefs = new PrefsStore(db);
 

@@ -10,16 +10,19 @@ namespace CipherBank_app.Persist;
 /// <inheritdoc />
 public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 {
+    private readonly FileInfo _databaseFile;
     private readonly string _path;
     private readonly DbContextOptions<CipherBankDbContext> _options;
     private readonly SemaphoreSlim _initializeGate = new(1, 1);
     private bool _initialized;
     private bool _disposed;
 
-    public LocalDb(string databasePath)
+    public LocalDb(FileInfo databaseFile)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(databasePath);
-        _path = System.IO.Path.GetFullPath(databasePath);
+        ArgumentNullException.ThrowIfNull(databaseFile);
+        ArgumentException.ThrowIfNullOrWhiteSpace(databaseFile.ToString());
+        _databaseFile = databaseFile;
+        _path = System.IO.Path.GetFullPath(databaseFile.ToString());
         string connectionString = new SqliteConnectionStringBuilder { DataSource = _path }.ToString();
         _options = new DbContextOptionsBuilder<CipherBankDbContext>()
             .UseSqlite(connectionString)
@@ -27,6 +30,8 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
     }
 
     public string Path => _path;
+
+    public FileInfo DatabaseFile => _databaseFile;
 
     public Task InitializeAsync() => InitializeAsync(CancellationToken.None);
 
@@ -53,8 +58,12 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
             await DiscardUnmatchedPrototypeAsync(ct).ConfigureAwait(false);
-            await using CipherBankDbContext context = new CipherBankDbContext(_options);
-            await context.Database.MigrateAsync(ct).ConfigureAwait(false);
+            CipherBankDbContext context = new CipherBankDbContext(_options);
+            await using (context)
+            {
+                await context.Database.MigrateAsync(ct).ConfigureAwait(false);
+            }
+
             _initialized = true;
         }
         finally
@@ -104,9 +113,12 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
         bool discard = true;
         try
         {
-            await using CipherBankDbContext probe = new CipherBankDbContext(_options);
-            IEnumerable<string> applied = await probe.Database.GetAppliedMigrationsAsync(ct).ConfigureAwait(false);
-            discard = !applied.Any();
+            CipherBankDbContext probe = new CipherBankDbContext(_options);
+            await using (probe)
+            {
+                IEnumerable<string> applied = await probe.Database.GetAppliedMigrationsAsync(ct).ConfigureAwait(false);
+                discard = !applied.Any();
+            }
         }
         catch (SqliteException)
         {

@@ -28,8 +28,9 @@ internal static class CipherBankCoreOptionsRegistration
         services.AddOptions<SyncSchedulerOptions>()
             .Bind(configuration.GetSection(SyncSchedulerOptions.SectionName))
             .Validate(
-                static options => options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
-                    && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency,
+                static options => options.MaxConcurrency == 0
+                    || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
+                        && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency),
                 ConfigurationValidationMessages.SyncConcurrencyOutOfRange)
             .ValidateOnStart();
         services.AddOptions<PersistenceOptions>()
@@ -40,6 +41,9 @@ internal static class CipherBankCoreOptionsRegistration
             .Validate(
                 static options => Path.GetFileName(options.DatabaseName) == options.DatabaseName,
                 ConfigurationValidationMessages.DatabaseNameMustBeFileName)
+            .Validate(
+                static options => options.AreDefaultRecipientsValid(),
+                ConfigurationValidationMessages.DefaultRecipientsInvalid)
             .ValidateOnStart();
         services.AddOptions<CoraOptions>()
             .Bind(configuration.GetSection(CoraOptions.SectionName));

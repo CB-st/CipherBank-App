@@ -25,14 +25,14 @@ public sealed class CipherBankDbContextFactoryTests
     }
 
     /// <summary>
-    /// Null args fail before a design-time database path is built.
+    /// Design-time factory ignores args; <c>dotnet ef</c> may pass an empty array.
     /// Use: Low. Scope: CipherBankDbContextFactory.
     /// </summary>
     [Fact]
-    public void CreateDbContext_NullArgs_Throws()
+    public void CreateDbContext_NullArgs_AreIgnored()
     {
         CipherBankDbContextFactory factory = new CipherBankDbContextFactory();
-        Action act = () => factory.CreateDbContext(null!);
-        act.Should().Throw<ArgumentNullException>();
+        using CipherBankDbContext context = factory.CreateDbContext(null!);
+        context.Database.IsSqlite().Should().BeTrue();
     }
 }

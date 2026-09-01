@@ -14,8 +14,8 @@ evaluated by Sonar.
   or otherwise) that CI verifies against or pushes to the server.
 - Repository-structure rules (CPM, AssemblyInfo, Core SQL, retired names)
   live in `CipherBank-app.Analyzers` and run on every `dotnet build`. Sibling
-  product projects are scanned via additional files so Linux CI does not need
-  to compile the MAUI host.
+  product trees are also fed as additional files so structure diagnostics
+  still fire when a job builds only part of the solution.
 
 ## Construction rules
 
@@ -45,3 +45,8 @@ evaluated by Sonar.
 Never add broad `NoWarn`, analysis exclusions, or disabled rules. A narrow
 suppression must state the rule key, safety rationale, evidence, owner, and
 revisit condition.
+
+Never grow `CoverageExclusions` in `config/sonar/exclusions.json` or the
+matching `sonar.coverage.exclusions` property in `.github/workflows/sonar.yml`.
+That list is frozen; cover product code instead. Shrink only with an explicit
+policy change. The dedicated JSON file is the source of truth for analyzer tests.

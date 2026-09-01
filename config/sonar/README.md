@@ -23,10 +23,11 @@ Coverage for new code comes from Coverlet OpenCover produced by:
 Those reports are the coverage job's handoff into the scan. A missing
 OpenCover file leaves `new_coverage` at 0% and reds the gate.
 
-Scanner source exclusions are limited to generated/build output, scanner reports,
-editor metadata, scripts, the out-of-stack design handoff, and EF Core
-migrations under `CipherBank-app.Core/Persist/Migrations/` (scaffolded
-`Up`/`Designer` snapshots, not product policy). Do not widen that path.
+Scanner source and coverage exclusion arrays live in
+[`exclusions.json`](exclusions.json). Analyzer tests lock
+`.github/workflows/sonar.yml` to that file. Do not add `Persist/Migrations`
+or other product Core paths. Do not grow `CoverageExclusions`; cover product
+code instead. Shrink only with an explicit policy change.
 
 Scanner exclusions are limited to generated/build output, platform-owned source
 that is not compiled on Linux, resources, tests for coverage, scripts, and
