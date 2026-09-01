@@ -14,7 +14,7 @@ public class RatesCacheTests
     public async Task UpsertThenGet_FiltersBySymbol()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-rates-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
         RatesCache cache = new RatesCache(db);
 

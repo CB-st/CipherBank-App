@@ -13,6 +13,7 @@ public sealed class AesGcmUserDataBlockCipher : IUserDataBlockCipher
     private readonly IUserDataSymmetricCipher _symmetric;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="AesGcmUserDataBlockCipher"/> class.
     /// Wraps a symmetric AEAD for pack seal/open. Use: Low (suite build). Scope: userdata crypto.
     /// </summary>
     public AesGcmUserDataBlockCipher(IUserDataSymmetricCipher symmetric)

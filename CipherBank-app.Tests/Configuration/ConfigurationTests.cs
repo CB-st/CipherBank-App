@@ -28,7 +28,10 @@ public sealed class ConfigurationTests
         cryptography!.IsValid().Should().BeTrue();
         cryptography.MatchesPersistedProfile().Should().BeTrue();
         scheduler.Should().NotBeNull();
-        scheduler!.MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
+        scheduler!.MaxConcurrency.Should().Be(0);
+        scheduler.Resolve().Should().BeInRange(
+            SyncSchedulerOptions.MinConcurrency,
+            SyncSchedulerOptions.MaxAllowedConcurrency);
     }
 
     [Fact]

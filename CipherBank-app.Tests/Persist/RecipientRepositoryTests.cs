@@ -2,7 +2,9 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Configuration;
 using CipherBank_app.Persist;
+using CipherBank_app.Tests.Configuration;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -16,9 +18,9 @@ public class RecipientRepositoryTests
     public async Task SeedAndList_Works()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
-        RecipientRepository repo = new RecipientRepository(db);
+        RecipientRepository repo = new RecipientRepository(db, EmbeddedAppSettings.BindPersistence());
         await repo.SeedDefaultsIfEmptyAsync();
         IReadOnlyList<AchRecipientRow> list = await repo.ListAsync();
         list.Should().HaveCountGreaterThanOrEqualTo(2);
@@ -34,9 +36,9 @@ public class RecipientRepositoryTests
     public async Task SeedDefaultsIfEmptyAsync_ConcurrentCallsCreateOneDefaultSet()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
-        RecipientRepository repo = new RecipientRepository(db);
+        RecipientRepository repo = new RecipientRepository(db, EmbeddedAppSettings.BindPersistence());
 
         await Task.WhenAll(repo.SeedDefaultsIfEmptyAsync(), repo.SeedDefaultsIfEmptyAsync());
 
@@ -53,9 +55,9 @@ public class RecipientRepositoryTests
     public async Task DeleteAsync_RemovesOnlyRecipientWithMatchingId()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
-        RecipientRepository repo = new RecipientRepository(db);
+        RecipientRepository repo = new RecipientRepository(db, EmbeddedAppSettings.BindPersistence());
         AchRecipientRow recipientToDelete = new AchRecipientRow(
             "delete-me",
             "Delete me",
@@ -81,9 +83,9 @@ public class RecipientRepositoryTests
     public async Task UpsertAsync_DoesNotPersistCleartextAccountOrRouting()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
-        RecipientRepository repo = new RecipientRepository(db);
+        RecipientRepository repo = new RecipientRepository(db, EmbeddedAppSettings.BindPersistence());
         await repo.UpsertAsync(new AchRecipientRow(
             "payee-1",
             "Payee",
@@ -104,30 +106,33 @@ public class RecipientRepositoryTests
         listed[0].AccountMask.Should().Be(AchRecipientValidation.MaskAccount("88210001"));
         listed[0].RoutingMask.Should().Be(AchRecipientValidation.MaskRouting("021000021"));
 
-        await using CipherBankDbContext context = await db.CreateContextAsync();
-        SqliteConnection conn = (SqliteConnection)context.Database.GetDbConnection();
-        await conn.OpenAsync();
-        await using SqliteCommand cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT account_mask, routing_mask FROM recipients WHERE id=$id";
-        cmd.Parameters.AddWithValue("$id", "payee-1");
-        await using SqliteDataReader reader = await cmd.ExecuteReaderAsync();
-        (await reader.ReadAsync()).Should().BeTrue();
-        reader.GetString(0).Should().Contain("0001");
-        reader.GetString(1).Should().Contain("0021");
-        await reader.DisposeAsync();
-
-        await using SqliteCommand schema = conn.CreateCommand();
-        schema.CommandText = "SELECT name FROM pragma_table_info('recipients')";
-        List<string> columns = new List<string>();
-        await using SqliteDataReader schemaReader = await schema.ExecuteReaderAsync();
-        while (await schemaReader.ReadAsync())
+        CipherBankDbContext context = await db.CreateContextAsync();
+        await using (context)
         {
-            columns.Add(schemaReader.GetString(0));
-        }
+            SqliteConnection conn = (SqliteConnection)context.Database.GetDbConnection();
+            await conn.OpenAsync();
+            await using SqliteCommand cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT account_mask, routing_mask FROM recipients WHERE id=$id";
+            cmd.Parameters.AddWithValue("$id", "payee-1");
+            await using SqliteDataReader reader = await cmd.ExecuteReaderAsync();
+            (await reader.ReadAsync()).Should().BeTrue();
+            reader.GetString(0).Should().Contain("0001");
+            reader.GetString(1).Should().Contain("0021");
+            await reader.DisposeAsync();
 
-        columns.Should().NotContain("account");
-        columns.Should().NotContain("routing");
-        columns.Should().NotContain("account_full");
+            await using SqliteCommand schema = conn.CreateCommand();
+            schema.CommandText = "SELECT name FROM pragma_table_info('recipients')";
+            List<string> columns = new List<string>();
+            await using SqliteDataReader schemaReader = await schema.ExecuteReaderAsync();
+            while (await schemaReader.ReadAsync())
+            {
+                columns.Add(schemaReader.GetString(0));
+            }
+
+            columns.Should().NotContain("account");
+            columns.Should().NotContain("routing");
+            columns.Should().NotContain("account_full");
+        }
     }
 
     /// <summary>
@@ -138,9 +143,9 @@ public class RecipientRepositoryTests
     public async Task UpsertAsync_RecomputesMasksWhenCleartextReplaced()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
-        RecipientRepository repo = new RecipientRepository(db);
+        RecipientRepository repo = new RecipientRepository(db, EmbeddedAppSettings.BindPersistence());
         await repo.UpsertAsync(new AchRecipientRow(
             "payee-1",
             "Payee",
@@ -164,5 +169,20 @@ public class RecipientRepositoryTests
         AchRecipientRow updated = (await repo.ListAsync()).Should().ContainSingle().Subject;
         updated.AccountMask.Should().Be(AchRecipientValidation.MaskAccount("99998888"));
         updated.RoutingMask.Should().Be(AchRecipientValidation.MaskRouting("021000021"));
+    }
+
+    /// <summary>
+    /// An empty DefaultRecipients list is valid and inserts nothing.
+    /// Use: Medium. Scope: RecipientRepository.SeedDefaultsIfEmptyAsync.
+    /// </summary>
+    [Fact]
+    public async Task SeedDefaultsIfEmptyAsync_EmptyOptions_DoesNotInsert()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new LocalDb(new FileInfo(path));
+        await db.InitializeAsync();
+        RecipientRepository repo = new RecipientRepository(db, new PersistenceOptions());
+        await repo.SeedDefaultsIfEmptyAsync();
+        (await repo.ListAsync()).Should().BeEmpty();
     }
 }

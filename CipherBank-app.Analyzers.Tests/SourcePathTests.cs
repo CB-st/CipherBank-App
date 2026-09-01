@@ -9,53 +9,58 @@ namespace CipherBank_app.Analyzers.Tests;
 public sealed class SourcePathTests
 {
     [Fact]
-    public void NormalizeSlashes_UnifiesBackslashes()
+    public void From_UsesPathFileNameAndExtension()
     {
-        Assert.Equal("a/b/c.cs", @"a\b\c.cs".NormalizeSlashes());
+        SourcePath source = SourcePath.From(Path.Combine("a", "b", "c.cs"));
+        Assert.Equal("c.cs", source.FileName);
+        Assert.Equal(".cs", source.Extension);
+        Assert.Equal("b", source.Parent.FileName);
+        Assert.NotNull(source.File);
     }
 
     [Fact]
-    public void PathsEqual_IgnoresSlashStyleAndCase()
+    public void Equals_IgnoresCase()
     {
-        Assert.True(@"src\Core\File.cs".PathsEqual("src/core/file.cs"));
+        string path = Path.Combine("src", "Core", "File.cs");
+        Assert.True(SourcePath.NamesEqual(SourcePath.From(path), SourcePath.From(path.ToUpperInvariant())));
     }
 
     [Fact]
     public void IsCSharpFile_UsesPathExtension()
     {
-        Assert.True(@"src\Wallet.cs".IsCSharpFile());
-        Assert.False(@"src\Wallet.csproj".IsCSharpFile());
+        Assert.True(SourcePath.From(Path.Combine("src", "Wallet.cs")).IsCSharpFile);
+        Assert.False(SourcePath.From(Path.Combine("src", "Wallet.csproj")).IsCSharpFile);
     }
 
     [Fact]
     public void IsLegacyAssemblyInfo_UsesFileNameAndPropertiesFolder()
     {
-        Assert.True(@"CipherBank-app.Core\Properties\AssemblyInfo.cs".IsLegacyAssemblyInfo());
-        Assert.True("Properties/AssemblyInfo.cs".IsLegacyAssemblyInfo());
-        Assert.False(@"Properties\Other.cs".IsLegacyAssemblyInfo());
+        Assert.True(SourcePath.From(Path.Combine("CipherBank-app.Core", "Properties", "AssemblyInfo.cs")).IsLegacyAssemblyInfo);
+        Assert.True(SourcePath.From(Path.Combine("Properties", "AssemblyInfo.cs")).IsLegacyAssemblyInfo);
+        Assert.False(SourcePath.From(Path.Combine("Properties", "Other.cs")).IsLegacyAssemblyInfo);
     }
 
     [Fact]
-    public void IsCoreProject_FindsCoreSegmentOnWindowsPaths()
+    public void IsCoreProject_FindsCoreDirectorySegment()
     {
-        Assert.True(@"C:\src\CipherBank-app.Core\Persist\LocalDb.cs".IsCoreProject());
-        Assert.False(@"C:\src\CipherBank-app\MauiProgram.cs".IsCoreProject());
+        Assert.True(SourcePath.From(Path.Combine("src", "CipherBank-app.Core", "Persist", "LocalDb.cs")).IsCoreProject);
+        Assert.False(SourcePath.From(Path.Combine("src", "CipherBank-app", "MauiProgram.cs")).IsCoreProject);
     }
 
     [Fact]
     public void IsCentralPackageFile_UsesFileNameNotSuffix()
     {
-        Assert.True(@"C:\src\Directory.Packages.props".IsCentralPackageFile());
-        Assert.True("Directory.Packages.props".IsCentralPackageFile());
-        Assert.False("MyDirectory.Packages.props".IsCentralPackageFile());
+        Assert.True(SourcePath.From(Path.Combine("src", "Directory.Packages.props")).IsCentralPackageFile);
+        Assert.True(SourcePath.From("Directory.Packages.props").IsCentralPackageFile);
+        Assert.False(SourcePath.From("MyDirectory.Packages.props").IsCentralPackageFile);
     }
 
     [Fact]
     public void IsMsBuildProjectFile_UsesPathExtension()
     {
-        Assert.True(@"src\App.csproj".IsMsBuildProjectFile());
-        Assert.True(@"src\build.props".IsMsBuildProjectFile());
-        Assert.True(@"src\build.targets".IsMsBuildProjectFile());
-        Assert.False(@"src\App.cs".IsMsBuildProjectFile());
+        Assert.True(SourcePath.From(Path.Combine("src", "App.csproj")).IsMsBuildProjectFile);
+        Assert.True(SourcePath.From(Path.Combine("src", "build.props")).IsMsBuildProjectFile);
+        Assert.True(SourcePath.From(Path.Combine("src", "build.targets")).IsMsBuildProjectFile);
+        Assert.False(SourcePath.From(Path.Combine("src", "App.cs")).IsMsBuildProjectFile);
     }
 }
