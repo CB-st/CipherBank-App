@@ -1,5 +1,5 @@
 // <copyright file="KeysViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using CipherBank_app.Constants;
@@ -45,14 +45,13 @@ public partial class KeysViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Parks the mnemonic in scoped hold, clears this page's copy, and opens BackupQuiz (no route query).
+    /// Parks the mnemonic in scoped hold and opens BackupQuiz (no route query).
     /// Use: High (continue). Scope: Keys → BackupQuiz handoff.
     /// </summary>
     [RelayCommand]
     private async Task ContinueAsync()
     {
         _mnemonicHold.Set(Mnemonic);
-        Mnemonic = string.Empty;
         await _nav.GoToAsync(Routes.BackupQuiz);
     }
 }

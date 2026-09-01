@@ -1,5 +1,5 @@
 // <copyright file="StaticAccountKeySource.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Security.Cryptography;
@@ -21,8 +21,8 @@ public sealed class StaticAccountKeySource : IAccountKeySource, IDisposable
 
     public StaticAccountKeySource(AccountKeyPair pair, HybridPrivateIdentity? hybrid)
     {
-        _pair = new AccountKeyPair(CopyBuffer(pair.PublicKey), CopyBuffer(pair.PrivateKey));
-        _hybrid = CopyHybrid(hybrid);
+        _pair = pair;
+        _hybrid = hybrid;
     }
 
     /// <summary>
@@ -81,27 +81,5 @@ public sealed class StaticAccountKeySource : IAccountKeySource, IDisposable
         }
 
         _disposed = true;
-    }
-
-    private static HybridPrivateIdentity? CopyHybrid(HybridPrivateIdentity? hybrid)
-    {
-        if (hybrid is null)
-        {
-            return null;
-        }
-
-        return new HybridPrivateIdentity
-        {
-            X25519PublicKey = CopyBuffer(hybrid.X25519PublicKey),
-            X25519PrivateKey = CopyBuffer(hybrid.X25519PrivateKey),
-            MlKemPublicKey = CopyBuffer(hybrid.MlKemPublicKey),
-            MlKemPrivateKey = CopyBuffer(hybrid.MlKemPrivateKey),
-        };
-    }
-
-    private static byte[] CopyBuffer(byte[] source)
-    {
-        ArgumentNullException.ThrowIfNull(source);
-        return source.ToArray();
     }
 }

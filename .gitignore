@@ -104,3 +104,8 @@ artifacts/
 # Expo handoff — out of MAUI merge path
 design_handoff_cipherbank/
 .worktrees/
+
+__pycache__/
+*.pyc
+docs/reviews/_legacy_comments_raw.json
+docs/reviews/_connor_noah_comments.json

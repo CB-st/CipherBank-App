@@ -1,5 +1,5 @@
 // <copyright file="RecipientRepository.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Data;
@@ -14,12 +14,12 @@ namespace CipherBank_app.Persist;
 public sealed class RecipientRepository : IRecipientRepository
 {
     /// <summary>
-    /// Stable seed primary key for the demo rent payee. Must match config/appsettings Persistence:DefaultRecipients.
+    /// Stable seed primary key for the demo rent payee. Must match Persistence:DefaultRecipients.
     /// </summary>
     internal const string DefaultRentRecipientId = "seed:rent-4th-st";
 
     /// <summary>
-    /// Stable seed primary key for the demo utilities payee. Must match config/appsettings Persistence:DefaultRecipients.
+    /// Stable seed primary key for the demo utilities payee. Must match Persistence:DefaultRecipients.
     /// </summary>
     internal const string DefaultUtilitiesRecipientId = "seed:utilities-co";
 

@@ -62,18 +62,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\config\appsettings.json"
-                      Link="config\appsettings.json"
-                      LogicalName="CipherBank_app.Config.appsettings.json" />
-    <EmbeddedResource Include="..\config\appsettings.Development.json"
-                      Link="config\appsettings.Development.json"
-                      LogicalName="CipherBank_app.Config.appsettings.Development.json" />
-    <EmbeddedResource Include="..\config\appsettings.Windows.json"
-                      Link="config\appsettings.Windows.json"
-                      LogicalName="CipherBank_app.Config.appsettings.Windows.json" />
+    <EmbeddedResource Include="..\config\security\cryptography.json"
+                      Link="config\security\cryptography.json"
+                      LogicalName="CipherBank_app.Config.security.cryptography.json" />
+    <EmbeddedResource Include="..\config\dispatch\sync-scheduler.json"
+                      Link="config\dispatch\sync-scheduler.json"
+                      LogicalName="CipherBank_app.Config.dispatch.sync-scheduler.json" />
+    <EmbeddedResource Include="..\config\persistence\database.json"
+                      Link="config\persistence\database.json"
+                      LogicalName="CipherBank_app.Config.persistence.database.json" />
     <EmbeddedResource Include="..\config\network\endpoints.json"
                       Link="config\network\endpoints.json"
                       LogicalName="CipherBank_app.Config.network.endpoints.json" />
+    <EmbeddedResource Include="..\config\ui\cora-lines.json"
+                      Link="config\ui\cora-lines.json"
+                      LogicalName="CipherBank_app.Config.ui.cora-lines.json" />
+    <EmbeddedResource Include="..\config\ui\carousel.json"
+                      Link="config\ui\carousel.json"
+                      LogicalName="CipherBank_app.Config.ui.carousel.json" />
   </ItemGroup>
 
 

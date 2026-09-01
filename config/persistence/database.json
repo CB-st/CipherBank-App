@@ -1,0 +1,27 @@
+{
+  "_comment": "Names the on-device EF Core SQLite database. Directory is supplied by the platform host. DefaultRecipients are demo fixtures (public ABA test routing), not customer secrets. Ids are stable seed primary keys.",
+  "Persistence": {
+    "DatabaseName": "cipherbank.db",
+    "DefaultRecipients": [
+      {
+        "Id": "seed:rent-4th-st",
+        "Name": "Rent — 4th St LLC",
+        "Holder": "4th St LLC",
+        "Bank": "Demo Bank",
+        "Routing": "021000021",
+        "Account": "88210001",
+        "AccountType": "checking",
+        "Memo": "Rent"
+      },
+      {
+        "Id": "seed:utilities-co",
+        "Name": "Utilities Co",
+        "Holder": "Utilities Co",
+        "Bank": "City Credit Union",
+        "Routing": "110000000",
+        "Account": "44102222",
+        "AccountType": "checking"
+      }
+    ]
+  }
+}

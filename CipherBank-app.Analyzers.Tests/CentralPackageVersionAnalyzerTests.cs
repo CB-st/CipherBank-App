@@ -13,7 +13,7 @@ public sealed class CentralPackageVersionAnalyzerTests
     [Fact]
     public async Task ReportsVersionOnCsprojPackageReference()
     {
-        var test = new CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
         {
             TestCode = "class C { }",
             TestState =
@@ -54,7 +54,7 @@ public sealed class CentralPackageVersionAnalyzerTests
     [Fact]
     public async Task IgnoresDirectoryPackagesProps()
     {
-        var test = new CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
         {
             TestCode = "class C { }",
             TestState =

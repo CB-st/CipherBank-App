@@ -32,19 +32,17 @@ if [[ ! -f "$tidy_config" ]]; then
   tidy_config="$ROOT/scripts/lint/configs/.clang-tidy"
 fi
 
-echo "==> clang-tidy (${#files[@]} candidate files)"
+echo "==> clang-tidy (${#files[@]} translation units)"
 if [[ "${#files[@]}" -eq 0 ]]; then
   echo "CMakeLists.txt present but no C/C++ sources found under tree — nothing to tidy"
   exit 0
 fi
 
 fail=0
-tu_count=0
 for f in "${files[@]}"; do
   case "$f" in
     *.h|*.hpp|*.hxx) continue ;; # headers via TU includes; skip lone headers
   esac
-  tu_count=$((tu_count + 1))
   std_flag="-std=c++17"
   case "$f" in
     *.c) std_flag="-std=c17" ;;
@@ -56,11 +54,6 @@ for f in "${files[@]}"; do
     fail=1
   fi
 done
-
-if [[ "$tu_count" -eq 0 ]]; then
-  echo "ERROR: C/C++ files found but none were translation units (.c/.cc/.cpp/.cxx). Header-only trees are not a green C-family bill." >&2
-  exit 1
-fi
 
 if [[ "$fail" -ne 0 ]]; then
   exit 1

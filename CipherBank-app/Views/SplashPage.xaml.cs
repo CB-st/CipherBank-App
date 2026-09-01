@@ -1,5 +1,5 @@
 // <copyright file="SplashPage.xaml.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 namespace CipherBank_app.Views;

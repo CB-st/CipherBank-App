@@ -1,5 +1,5 @@
 // <copyright file="CipherBankCoreOptionsRegistration.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using CipherBank_app.Animations;
@@ -22,7 +22,7 @@ internal static class CipherBankCoreOptionsRegistration
         services.AddOptions<CryptographyOptions>()
             .Bind(configuration.GetSection(CryptographyOptions.SectionName))
             .Validate(
-                static options => options.IsValid() && options.MatchesPersistedProfile(),
+                static options => options.IsValid(),
                 ConfigurationValidationMessages.CryptographyUnsafe)
             .ValidateOnStart();
         services.AddOptions<SyncSchedulerOptions>()

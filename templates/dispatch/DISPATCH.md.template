@@ -1,0 +1,40 @@
+# __FEATURE__ dispatch
+
+## Request
+
+__SUMMARY__
+
+## Routing
+
+| Field | Selection |
+| --- | --- |
+| Workflow | `__WORKFLOW__` |
+| Primary skill | `__SKILL__` |
+| Owning layer | `__OWNER__` |
+| Follow-up skills | `__FOLLOW_UPS__` |
+
+## Boundaries
+
+- In scope: __IN_SCOPE__
+- Out of scope: __OUT_OF_SCOPE__
+- Preserved invariants: __INVARIANTS__
+- Forbidden dependencies: __FORBIDDEN__
+
+## Construction
+
+- Contract: `__CONTRACT_PATH__`
+- Implementation/adapter: `__IMPLEMENTATION_PATH__`
+- Composition root: `__COMPOSITION_ROOT__`
+- Configuration: `__CONFIG_PATH__`
+- Shared resources: __SHARED_RESOURCES__
+- Tests: `__TEST_PATH__`
+
+## Gates
+
+1. `__NARROW_GATE__`
+2. `bash scripts/validate-structure.sh`
+3. `__PLATFORM_GATE__`
+
+## Handoff evidence
+
+__EVIDENCE__

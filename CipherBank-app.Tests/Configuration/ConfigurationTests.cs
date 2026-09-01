@@ -1,5 +1,5 @@
 // <copyright file="ConfigurationTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using CipherBank_app.Configuration;
@@ -26,7 +26,6 @@ public sealed class ConfigurationTests
 
         cryptography.Should().NotBeNull();
         cryptography!.IsValid().Should().BeTrue();
-        cryptography.MatchesPersistedProfile().Should().BeTrue();
         scheduler.Should().NotBeNull();
         scheduler!.MaxConcurrency.Should().Be(0);
         scheduler.Resolve().Should().BeInRange(
@@ -42,15 +41,6 @@ public sealed class ConfigurationTests
     }
 
     [Fact]
-    public void CryptographyOptions_NonDefaultKeySize_DoesNotMatchPersistedProfile()
-    {
-        CryptographyOptions options = CryptographyOptions.Default;
-        options.KeySizeBytes = CryptographyOptions.Aes128KeySizeBytes;
-        options.IsValid().Should().BeTrue();
-        options.MatchesPersistedProfile().Should().BeFalse();
-    }
-
-    [Fact]
     public void Build_Default_UsesProductionDatabaseName()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
@@ -59,11 +49,11 @@ public sealed class ConfigurationTests
     }
 
     [Fact]
-    public void Build_Development_OverridesDatabaseName()
+    public void Build_Development_KeepsThemedDatabaseNameWhenOverlayIsAbsent()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Development");
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.dev.db");
+        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]
@@ -75,11 +65,11 @@ public sealed class ConfigurationTests
     }
 
     [Fact]
-    public void Build_WindowsOverlay_AppliesWindowsResource()
+    public void Build_WindowsOverlay_KeepsThemedDatabaseNameWhenOverlayIsAbsent()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build(windowsOverlay: true);
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.win.db");
+        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]

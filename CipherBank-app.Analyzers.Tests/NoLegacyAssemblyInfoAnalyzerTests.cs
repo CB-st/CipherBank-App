@@ -13,7 +13,7 @@ public sealed class NoLegacyAssemblyInfoAnalyzerTests
     [Fact]
     public async Task ReportsPropertiesAssemblyInfo()
     {
-        var test = new CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -33,7 +33,7 @@ public sealed class NoLegacyAssemblyInfoAnalyzerTests
     [Fact]
     public async Task IgnoresOrdinarySource()
     {
-        var test = new CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier> test = new()
         {
             TestCode = """
                 class Wallet

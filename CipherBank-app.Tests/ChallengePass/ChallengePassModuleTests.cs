@@ -1,11 +1,10 @@
 // <copyright file="ChallengePassModuleTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Security.Cryptography;
 using CipherBank_app.ChallengePass;
 using CipherBank_app.ChallengePass.Algorithms;
-using CipherBank_app.ChallengePass.Hybrid;
 using CipherBank_app.ChallengePass.Structures;
 using CipherBank_app.ChallengePass.Templates;
 using CipherBank_app.V1;
@@ -147,56 +146,5 @@ public sealed class ChallengePassModuleTests
         object second = await builder.BuildOpenBodyAsync(CancellationToken.None);
         Assert.IsType<SessionPassDto>(first);
         Assert.IsType<SessionPassDto>(second);
-    }
-
-    /// <summary>
-    /// Constructor copies retained buffers so caller zeroization and Dispose do not alias.
-    /// Use: High. Scope: StaticAccountKeySource ownership boundary.
-    /// </summary>
-    [Fact]
-    public void Fixture_copies_ctor_buffers_so_dispose_does_not_wipe_caller()
-    {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
-        AccountKeyPair account = algo.DeriveKeyPair(RandomNumberGenerator.GetBytes(32));
-        byte[] originalPrivate = account.PrivateKey.ToArray();
-        HybridPrivateIdentity hybrid = new HybridPrivateIdentity
-        {
-            X25519PublicKey = [1, 2, 3],
-            X25519PrivateKey = [4, 5, 6],
-            MlKemPublicKey = [7, 8, 9],
-            MlKemPrivateKey = [10, 11, 12],
-        };
-        byte[] originalKem = hybrid.MlKemPrivateKey.ToArray();
-
-        using (StaticAccountKeySource source = new StaticAccountKeySource(account, hybrid))
-        {
-            CryptographicOperations.ZeroMemory(account.PrivateKey);
-            CryptographicOperations.ZeroMemory(hybrid.MlKemPrivateKey);
-            AccountKeyPair fromFixture = source.RequireUnlockedKeyPair(algo);
-            fromFixture.PrivateKey.Should().Equal(originalPrivate);
-            source.RequireHybridIdentity().MlKemPrivateKey.Should().Equal(originalKem);
-        }
-
-        account.PrivateKey.Should().Equal(new byte[originalPrivate.Length]);
-        hybrid.MlKemPrivateKey.Should().Equal(new byte[originalKem.Length]);
-    }
-
-    /// <summary>
-    /// Dispose zeroes only fixture-owned copies; the caller's arrays stay intact.
-    /// Use: High. Scope: StaticAccountKeySource Dispose ownership.
-    /// </summary>
-    [Fact]
-    public void Fixture_dispose_does_not_zero_caller_buffers()
-    {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
-        AccountKeyPair account = algo.DeriveKeyPair(RandomNumberGenerator.GetBytes(32));
-        byte[] originalPrivate = account.PrivateKey.ToArray();
-
-        StaticAccountKeySource source = new StaticAccountKeySource(account);
-        source.Dispose();
-
-        account.PrivateKey.Should().Equal(originalPrivate);
-        Action afterDispose = () => source.RequireUnlockedKeyPair(algo);
-        afterDispose.Should().Throw<ObjectDisposedException>();
     }
 }

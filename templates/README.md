@@ -6,6 +6,11 @@ change. Templates are scaffolds, not generated source and are excluded from buil
 
 | Template | Use |
 | --- | --- |
+| `dispatch/` | Machine/human work packets that select skills, ownership, resources, and gates |
+| `feature/FeatureModule.cs.template` | One explicit composition entry point for a vertical feature slice |
+| `feature/README.md` / `feature/TEMPLATE.md` | Cross-layer feature placement and completion contract |
+| `resource/FeatureResources.xaml.template` | Feature-local MAUI resources derived from shared semantic tokens |
+| `resource/README.md` / `resource/TEMPLATE.md` | Resource reuse, promotion, registration, and accessibility rules |
 | `service/ServiceInterface.cs.template` | A platform-neutral capability contract |
 | `service/Service.cs.template` | Constructor-injected production implementation |
 | `service/ServiceTests.cs.template` | Moq-based behavior test |

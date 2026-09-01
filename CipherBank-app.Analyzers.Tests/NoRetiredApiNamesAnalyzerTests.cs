@@ -13,7 +13,7 @@ public sealed class NoRetiredApiNamesAnalyzerTests
     [Fact]
     public async Task ReportsIProductApi()
     {
-        var test = new CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier> test = new()
         {
             CompilerDiagnostics = CompilerDiagnostics.None,
             TestCode = """
@@ -29,7 +29,7 @@ public sealed class NoRetiredApiNamesAnalyzerTests
     [Fact]
     public async Task ReportsMockProductApiAndAppSessionDeps()
     {
-        var test = new CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier> test = new()
         {
             CompilerDiagnostics = CompilerDiagnostics.None,
             TestCode = """
@@ -45,7 +45,7 @@ public sealed class NoRetiredApiNamesAnalyzerTests
     [Fact]
     public async Task IgnoresUnrelatedIdentifiers()
     {
-        var test = new CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier> test = new()
         {
             CompilerDiagnostics = CompilerDiagnostics.None,
             TestCode = """

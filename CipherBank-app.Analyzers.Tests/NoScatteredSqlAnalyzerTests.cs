@@ -13,7 +13,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsCommandTextOutsideOwner()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -37,7 +37,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsFromSqlRawOutsideOwner()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -63,7 +63,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsCommandTextInPersistSqlFolder()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -90,7 +90,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task IgnoresSqlOutsideCore()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {

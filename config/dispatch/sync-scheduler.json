@@ -1,0 +1,6 @@
+{
+  "_comment": "Controls TaskScheduler-backed sync dispatch. Keep concurrency bounded on mobile devices.",
+  "SyncScheduler": {
+    "_comment": "Omit MaxConcurrency (0 = unset) so Resolve() uses half the processor count, clamped 1–8."
+  }
+}

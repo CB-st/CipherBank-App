@@ -105,7 +105,7 @@ internal static class ProductTreeRepoRoot
         int index = source.IndexOf(original, StringComparison.Ordinal);
         if (index < 0)
         {
-            throw new InvalidOperationException("App.xaml.cs no longer declares public App(.");
+            throw new InvalidOperationException("App.xaml.cs no longer declares a public App constructor.");
         }
 
         return string.Concat(

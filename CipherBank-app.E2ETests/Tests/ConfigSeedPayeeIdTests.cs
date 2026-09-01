@@ -35,7 +35,7 @@ public sealed class ConfigSeedPayeeIdTests
         DirectoryInfo? directory = new(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            string candidate = Path.Combine(directory.FullName, "config", "appsettings.json");
+            string candidate = Path.Combine(directory.FullName, "config", "persistence", "database.json");
             if (File.Exists(candidate) && File.Exists(Path.Combine(directory.FullName, "CipherBank-app.sln")))
             {
                 return candidate;
@@ -44,6 +44,6 @@ public sealed class ConfigSeedPayeeIdTests
             directory = directory.Parent;
         }
 
-        throw new InvalidOperationException("Could not locate config/appsettings.json from the E2E test assembly.");
+        throw new InvalidOperationException("Could not locate config/persistence/database.json from the E2E test assembly.");
     }
 }

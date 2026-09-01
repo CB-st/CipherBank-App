@@ -1,29 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 ===================================================================================
-Certificate pinning — skirt until ops publishes current AND backup SPKI hashes
+Certificate pinning — blocked until ops publishes real SPKI hashes
 ===================================================================================
-Do NOT ship REPLACE_WITH_* placeholder digests: Android pin-sets with a fake or
-single live leaf fail closed (TLS to api.cipherbank.money dies on rotation).
+Do NOT ship REPLACE_WITH_* placeholder digests: Android pin-sets with fake pins
+break TLS to api.cipherbank.money / api.sandbox.cipherbank.money.
 
-Default (Debug / Appium): no <pin-set>. Prod/sandbox/dev trust the system CA
-store so the emulator can talk to real APIs without a test pin.
+Until production + backup pins are published, those hosts trust the system CA
+store (same posture as api.dev). When pins land, restore <pin-set> blocks here.
 
-Optional Appium pin-path: export ANDROID_CERT_PINS=<current>,<backup> before
-scripts/e2e-android.sh — the harness stamps this file for that Debug build,
-then restores the skirt.
-
-Optional CI deployment test: map GitHub secret ANDROID_CERT_PINS (current,backup)
-into the same env and run scripts/stamp-android-cert-pins.sh before a Release
-APK. Still requires both hashes; we will not invent a backup pin.
-
-When ops publishes the real pair, stamp them here (or via the secret) and keep
-the backup pin for rotation.
-
-To obtain a live leaf pin:
+To obtain pins:
   openssl s_client -servername api.cipherbank.money -connect api.cipherbank.money:443 < /dev/null 2>/dev/null | \
     openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
     openssl dgst -sha256 -binary | openssl enc -base64
+
+Always include a backup pin for certificate rotation.
 ===================================================================================
 -->
 <network-security-config>
