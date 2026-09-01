@@ -57,7 +57,7 @@ public sealed class ProductTreeStructureAnalyzerTests
         Assert.Contains(ProductTreeRepoRoot.IntegrationTestsSample, paths);
         Assert.Contains("CipherBank-app.IntegrationTests/SecurityTests.cs", paths);
         Assert.Contains(ProductTreeRepoRoot.E2ETestsSample, paths);
-        Assert.Contains("CipherBank-app.E2ETests/Tests/CriticalUserJourneyTests.cs", paths);
+        Assert.Contains("CipherBank-app.E2ETests/Tests/CoraShellSmokeTests.cs", paths);
         Assert.True(paths.Count > 3, $"Expected the full unbuilt trees, found {paths.Count} files.");
     }
 

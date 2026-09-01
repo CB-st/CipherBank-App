@@ -20,8 +20,9 @@ CipherBank-app.E2ETests/
 │   ├── PosLabPage.cs
 │   └── … (legacy Login/Dashboard/Wallet/Purchase)
 └── Tests/
-    ├── CoraShellSmokeTests.cs   # preferred
-    └── CriticalUserJourneyTests.cs  # legacy (skipped when Cora Shell is primary)
+    ├── CoraShellSmokeTests.cs
+    ├── AccountStories.cs
+    └── HarnessFilterContractTests.cs / … (host-only harness Facts)
 ```
 
 ## Dependencies
@@ -80,9 +81,10 @@ Never commit `artifacts/e2e-local.env`, `artifacts/e2e-journal/`, or recovery pu
 
 Wave 0 one-shot runner for `CipherBank_API34`. Boots the AVD if not already
 attached, builds the MAUI app (`-f net10.0-android -c Debug
--p:EmbedAssembliesIntoApk=true`), installs the APK, starts Appium on `:4723`
-if it isn't already up, then runs the requested slice of
-`CipherBank-app.E2ETests`.
+-p:EmbedAssembliesIntoApk=true`), **uninstalls any leftover package**, installs
+the APK (`adb install`, not `-r`), `pm clear`s application data so PIN/LocalDb
+do not survive across sessions, starts Appium on `:4723` if it isn't already
+up, then runs the requested slice of `CipherBank-app.E2ETests`.
 
 ```bash
 ./scripts/e2e-android.sh --story CB-ACCOUNT-001   # one story
@@ -92,9 +94,8 @@ if it isn't already up, then runs the requested slice of
 ```
 
 `--wave account` runs every Wave 0–1 account/onboarding Fact in `AccountStories.cs`: `CB-ACCOUNT-001`,
-`US-ONB-03`, `US-ONB-04`, `CB-ACCOUNT-PIN-CHANGE`, `CB-ACCOUNT-002` — not only the `CB_ACCOUNT_*`-named
-methods, since the two negative Facts (`US-ONB-03`/`04`) keep a `US_ONB_*` method-name prefix. See
-`WAVE_STORIES` map in `scripts/e2e-android.sh`.
+`US-ONB-03`, `US-ONB-04`, `CB-ACCOUNT-PIN-CHANGE`, and `CB-ACCOUNT-002`. Selection is based on stable
+`Story` traits rather than test method names. See the `WAVE_STORIES` map in `scripts/e2e-android.sh`.
 
 Env/path setup (`ANDROID_HOME`, `ANDROID_SDK_ROOT`, `DOTNET_ROOT`, `CB_MAUI_PACKAGE`,
 `CB_AVD`) lives in `scripts/lib/android-env.sh` and is sourced automatically.

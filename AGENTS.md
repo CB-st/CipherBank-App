@@ -1,6 +1,6 @@
 # CipherBank repository contract
 
-This file governs the M6 Cora Shell slice (stacked on M5 ChallengePass / M2 Persist). More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
+This file governs the M7 E2E slice (stacked on M6 Cora Shell / M2 Persist). More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
 
 Start with this file, then read the nearest subtree contract and the
 documentation index in `docs/README.md`.
@@ -80,6 +80,7 @@ dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj
 dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false
 dotnet build CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
 dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android
+dotnet test CipherBank-app.E2ETests/CipherBank-app.E2ETests.csproj
 ```
 
 Changes to XAML resources also require a light/dark visual pass at compact and large text settings. Changes to persistence require clean-database and upgrade-shape tests. Changes to ChallengePass require A1, A2, malformed-input, cancellation, and zeroization coverage.

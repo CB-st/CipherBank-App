@@ -1,5 +1,5 @@
 // <copyright file="PurchasePage.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Globalization;
@@ -26,6 +26,9 @@ public class PurchasePage : BasePage
     private static readonly By FeeLabel = By.Id("FeeLabel");
     private static readonly By BackButton = By.Id("BackButton");
 
+    /// <summary>
+    /// Initializes PurchasePage with its Appium/test collaborators. Use: High. Scope: one PurchasePage instance.
+    /// </summary>
     public PurchasePage(AppiumDriver driver)
         : base(driver)
     {
@@ -47,7 +50,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public PurchasePage EnterAmount(decimal amount)
     {
-        EnterText(AmountField, amount.ToString("F2", CultureInfo.InvariantCulture));
+        EnterText(AmountField, amount.ToString("0.00", CultureInfo.InvariantCulture));
         return this;
     }
 
@@ -147,6 +150,9 @@ public class PurchasePage : BasePage
         return new DashboardPage(Driver);
     }
 
+    /// <summary>
+    /// Waits until the PurchasePage anchor control is visible. Use: High. Scope: PurchasePage.
+    /// </summary>
     public override void WaitForPageLoad()
     {
         WaitForElement(ViewAllButton);

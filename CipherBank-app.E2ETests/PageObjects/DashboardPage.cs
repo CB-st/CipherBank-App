@@ -1,5 +1,5 @@
 // <copyright file="DashboardPage.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using OpenQA.Selenium;
@@ -23,6 +23,9 @@ public class DashboardPage : BasePage
     private static readonly By RefreshButton = By.Id("RefreshButton");
     private static readonly By TransactionsList = By.Id("RecentTransactionsList");
 
+    /// <summary>
+    /// Initializes DashboardPage with its Appium/test collaborators. Use: High. Scope: one DashboardPage instance.
+    /// </summary>
     public DashboardPage(AppiumDriver driver)
         : base(driver)
     {
@@ -104,6 +107,9 @@ public class DashboardPage : BasePage
         return IsElementDisplayed(TransactionsList);
     }
 
+    /// <summary>
+    /// Waits until the DashboardPage anchor control is visible. Use: High. Scope: DashboardPage.
+    /// </summary>
     public override void WaitForPageLoad()
     {
         WaitForElement(WelcomeLabel);

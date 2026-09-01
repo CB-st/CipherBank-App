@@ -1,0 +1,36 @@
+// <copyright file="__FEATURE__Stories.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using CipherBank_app.E2ETests.Stories;
+using CipherBank_app.E2ETests.Support;
+using Xunit;
+
+namespace CipherBank_app.E2ETests.Tests;
+
+[Collection("E2E Tests")]
+public sealed class __FEATURE__Stories
+{
+    private readonly AppiumFixture? _fixture;
+
+    public __FEATURE__Stories(AppiumFixtureHolder holder)
+    {
+        _fixture = holder.Fixture;
+    }
+
+    /// <summary>Executes __STORY_ID__ on a __DEVICE_PROFILE__ device. Use: High. Scope: one story fact.</summary>
+    [SkippableFact]
+    [Trait("Story", StoryIds.__STORY_CONSTANT__)]
+    public Task __METHOD__()
+    {
+        Skip.If(_fixture is null, "E2E_RUN not set");
+        return StoryRunner.RunAsync(
+            StoryIds.__STORY_CONSTANT__,
+            async () =>
+            {
+                // Establish __DEVICE_PROFILE__, drive page objects, and assert visible behavior.
+                await Task.CompletedTask;
+            },
+            _fixture);
+    }
+}

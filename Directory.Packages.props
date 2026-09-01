@@ -65,6 +65,7 @@
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="Selenium.WebDriver" Version="4.27.0" />
     <PackageVersion Include="WireMock.Net" Version="1.6.9" />
+    <PackageVersion Include="Xunit.SkippableFact" Version="1.5.61" />
     <PackageVersion Include="xunit" Version="2.9.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>

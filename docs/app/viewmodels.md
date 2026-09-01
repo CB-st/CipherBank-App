@@ -8,12 +8,12 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **File**: `ViewModels/LoginViewModel.cs`
 
-**Dependencies**: `ILogger`, `IAuthService`, `INavigationService`, `IDialogService`
+**Dependencies**: `ILogger`, `IProductClient`, `INavigationService`, `IDialogService`
 
 **Properties**: Username, Password, IsBusy, ErrorMessage
 
 **Commands**:
-- `SignInCommand` – Validates input, calls `LoginAsync`, navigates via `INavigationService` on success. Uses `IDialogService` for error alerts.
+- `SignInCommand` – Validates input, calls `IProductClient.CreateSessionAsync` (username/password remain UI-required, not sent), navigates via `INavigationService` on success.
 
 **Methods**: `CancelLogin()` – Cancels in-flight login.
 
@@ -23,7 +23,7 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **File**: `ViewModels/DashboardViewModel.cs`
 
-**Dependencies**: `ILogger`, `ICryptoApiService`, `IErrorHandler`, `INavigationService`, `IDialogService`
+**Dependencies**: `ILogger`, `IProductClient`, `IErrorHandler`, `INavigationService`, `IDialogService`
 
 **Properties**: Cryptocurrencies, SelectedCrypto, IsLoading, IsRefreshing, ErrorMessage, TotalPortfolioValue
 
@@ -42,7 +42,7 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **File**: `ViewModels/WalletViewModel.cs`
 
-**Dependencies**: `ILogger`, `IWalletService`, `ITransactionService`, `ICryptoApiService`, `IErrorHandler`, `INavigationService`, `IDialogService`
+**Dependencies**: `ILogger`, `IProductClient`, `IErrorHandler`, `INavigationService`, `IDialogService`
 
 **Properties**: Wallets, Transactions, SelectedWallet, TotalBalance, TotalBalanceUsd, IsLoading, IsLoadingTransactions, ErrorMessage, SendToAddress, SendAmount, IsSending
 
@@ -64,7 +64,7 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **Implements**: `IQueryAttributable` (for `?symbol=` query param)
 
-**Dependencies**: `ILogger`, `ICryptoApiService`, `ITransactionService`, `IErrorHandler`, `INavigationService`, `IDialogService`
+**Dependencies**: `ILogger`, `IPublicQuoteService`, `IProductClient`, `IErrorHandler`, `INavigationService`, `IDialogService`
 
 **Properties**: AvailableCryptos, SelectedCrypto, Amount, TotalCost, Fee, IsPurchasing, IsLoading, ErrorMessage, AmountText
 
@@ -90,7 +90,7 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **File**: `ViewModels/SettingsViewModel.cs`
 
-**Dependencies**: `ILogger`, `ISettingsService`, `IAuthService`, `INavigationService`, `IDialogService`, `IHealthCheckClient`
+**Dependencies**: `ILogger`, `ISettingsService`, `IProductSessionStore`, `IAppSession`, `INavigationService`, `IDialogService`, `IHealthCheckClient`
 
 **Properties**: ApiEndpoint, ThemeMode, NotificationsEnabled, BiometricEnabled, AutoLockTimeout, DefaultCurrency, IsTesting, IsSaving, StatusMessage, IsStatusSuccess
 

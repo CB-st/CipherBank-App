@@ -4,67 +4,11 @@ Service implementations, HTTP handlers, and mocks in `CipherBank-app/Services/`.
 
 ---
 
-## AuthService
+## Product HTTP
 
-**File**: `Services/AuthService.cs`
+Shell registers `AddCipherBankHttpClient<HttpProductClient>()` and resolves `IProductClient` from that typed client (DEBUG may swap `InMemoryProductClient`). Core no longer registers a competing `HttpClient`. 401 refresh stays on `HttpProductClient`.
 
-Implements `IAuthService`. Uses `HttpClient` for login/refresh; stores tokens in `SecureStorage`.
-
-| Method | Description |
-|--------|-------------|
-| LoginAsync | POST `auth/login`, stores tokens in SecureStorage |
-| RefreshAsync | POST `auth/refresh`, updates stored tokens |
-| GetStoredTokenAsync | Reads from SecureStorage |
-| IsTokenExpiredAsync | Compares ExpiresUtc to UtcNow |
-| LogoutAsync | Clears SecureStorage |
-| RevokeTokenAsync | POST to revoke endpoint (if available) |
-
-**Storage keys**: `auth_access_token`, `auth_refresh_token`, `auth_expires_utc`.
-
----
-
-## CryptoAPIService
-
-**File**: `Services/CryptoAPIService.cs`
-
-Implements `ICryptoApiService`. HTTP client for market data.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GetCryptoPricesAsync | GET /api/v1/crypto/prices | All crypto prices |
-| GetCryptoPriceAsync | GET /api/v1/crypto/prices/{symbol} | Single price |
-| GetPriceHistoryAsync | GET /api/v1/crypto/history/{symbol}?period= | Price history |
-| SearchCryptoAsync | GET /api/v1/crypto/search?q= | Search by name/symbol |
-
----
-
-## WalletService
-
-**File**: `Services/WalletService.cs`
-
-Implements `IWalletService`. Manages wallet CRUD and balance.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GetWalletsAsync | GET /api/v1/wallets | All wallets |
-| GetWalletAsync | GET /api/v1/wallets/{id} | Single wallet |
-| GetWalletBalanceAsync | GET /api/v1/wallets/{id}/balance | Balance |
-| CreateWalletAsync | POST /api/v1/wallets | Create wallet |
-
----
-
-## TransactionService
-
-**File**: `Services/TransactionService.cs`
-
-Implements `ITransactionService`. Manages transactions.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GetTransactionHistoryAsync | GET /api/v1/transactions?walletId={id} | History |
-| PurchaseCryptoAsync | POST /api/v1/transactions/purchase | Buy crypto |
-| SendCryptoAsync | POST /api/v1/transactions/send | Send to address |
-| GetTransactionStatusAsync | GET /api/v1/transactions/{id}/status | Status |
+Public quotes use `AddPublicApiHttpClient<PublicApiClient>()` / `IPublicQuoteService` (DEBUG may swap `InMemoryPublicQuoteService`).
 
 ---
 
@@ -77,11 +21,19 @@ Implements `ISettingsService`. Uses `Preferences` for persistence.
 | Property | Default |
 |----------|---------|
 | CipherBankEndpointBase | https://api.sandbox.cipherbank.money |
-| ThemeMode | System | System |
-| NotificationsEnabled | true | true |
-| BiometricAuthEnabled | false | false |
-| AutoLockTimeoutMinutes | 5 | 5 |
-| DefaultCurrency | USD | USD |
+| ThemeMode | System |
+| NotificationsEnabled | true |
+| BiometricAuthEnabled | false |
+| AutoLockTimeoutMinutes | 5 |
+| DefaultCurrency | USD |
+
+---
+
+## BiometricService
+
+**File**: `Services/BiometricService.cs`
+
+Implements `IBiometricService` with `Plugin.Maui.Biometric` (`IBiometric` from `BiometricAuthenticationService.Default`). Logical gate only — the custody AES key stays in SecureStorage.
 
 ---
 
@@ -89,7 +41,7 @@ Implements `ISettingsService`. Uses `Preferences` for persistence.
 
 **File**: `Services/HealthCheckClient.cs`
 
-Used by Settings Test Connection. Uses app's configured HttpClient (certificate pinning) to hit `/health`. Replaces raw `HttpClient` for security and consistency.
+Used by Settings Test Connection. Uses the app's configured HttpClient (certificate pinning) to hit `/health`.
 
 ---
 
@@ -105,7 +57,7 @@ Abstraction for `Shell.Current.GoToAsync` and `GoBackAsync`. Enables ViewModel t
 
 **File**: `Services/ShellDialogService.cs`
 
-Abstraction for `Shell.Current.DisplayAlertAsync`. Enables ViewModel testability.
+Abstraction for Shell alerts/prompts. CommunityToolkit.Maui 12.2.0 does not restore on MAUI 10 (NU1608); this wrapper stays.
 
 ---
 
@@ -121,15 +73,13 @@ Centralizes catch logic for `HttpRequestException`, `UnauthorizedAccessException
 
 **File**: `Services/Handlers/AuthHeaderHandler.cs`
 
-`DelegatingHandler` that injects Bearer token from `IAuthService`. Skips `/auth/login`, `/auth/refresh`, `/auth/register`. Auto-refreshes token if expiring within 5 minutes.
+`DelegatingHandler` that injects Bearer token from `IProductSessionStore`. Skips `/v1/session` and `/v1/session/refresh`.
 
 ---
 
-## RateLimitingHandler
+## HTTP rate limiting
 
-**File**: `Services/Handlers/RateLimitingHandler.cs`
-
-`DelegatingHandler` that uses `RateLimiter`. Waits up to 30s for a permit; returns 429 if still rate limited.
+Shared `SlidingWindowRateLimiter` (60/min, fail-fast) registered by `AddCipherBankHttpClient` / `AddPublicApiHttpClient` and wired into `AddStandardResilienceHandler`.
 
 ---
 
@@ -152,9 +102,8 @@ Static factory. Returns platform-specific handler:
 
 | File | Implements | Description |
 |------|------------|-------------|
-| MockAuthService.cs | IAuthService | In-memory login; accepts any credentials |
-| MockCryptoAPIService.cs | ICryptoApiService | Returns sample BTC, ETH, SOL data |
-| MockWalletService.cs | IWalletService | Returns sample wallets |
-| MockTransactionService.cs | ITransactionService | Returns sample transactions |
+| InMemoryProductClient | IProductClient | DEBUG product stand-in |
+| InMemoryPublicQuoteService | IPublicQuoteService | DEBUG public quotes |
+| MockStreamService | IStreamService | DEBUG stream hub |
 
-Mocks are used in DEBUG builds only (`#if DEBUG`). `ResetToDefaults()` exposed for Settings reset.
+Mocks are used in DEBUG builds only (`#if DEBUG`).

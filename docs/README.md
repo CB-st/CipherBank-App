@@ -1,12 +1,13 @@
 # CipherBank documentation
 
-Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass M3 stack.
+Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass M4 stack.
 
 ## Overview
 
-CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. M3 adds the
-onboarding/custody, portfolio, money-movement, vault, POS/NFC, product HTTP, and
-public quote surfaces over the M2 ChallengePass foundation.
+CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. M3 provides the
+shipping onboarding/custody, portfolio, money-movement, vault, POS/NFC, product
+HTTP, and public quote surfaces. M4 adds the Appium story catalog, device-state
+profiles, account/recovery journeys, harness lifecycle, diagnostics, and gap evidence.
 
 ## Prerequisites
 
@@ -52,12 +53,14 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 | [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
 | [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end Appium overview (full story map lands on M4) |
+| [tests/STORY_ID_MAP.md](tests/STORY_ID_MAP.md) | M4 story ownership, executable coverage, and backlog status |
 | [tests/e2e-local.env.example](tests/e2e-local.env.example) | Template for gitignored harness credentials |
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |
 | [config/sonar/README.md](config/sonar/README.md) | Sonar quality-gate policy and local SonarQube-for-IDE setup |
 | [review/m1a-comment-resolution.md](review/m1a-comment-resolution.md) | M1a PR #25 feedback map |
 | [review/m2-alignment-resolution.md](review/m2-alignment-resolution.md) | M2 PR #21 and M1a forward-port map |
 | [review/m3-alignment-resolution.md](review/m3-alignment-resolution.md) | M3 feature preservation and architecture alignment map |
+| [review/m4-alignment-resolution.md](review/m4-alignment-resolution.md) | M4 E2E forward-port and architecture alignment map |
 | [STACK_STAGED_WORK.md](STACK_STAGED_WORK.md) | Cross-stack goals that land on a later slice (do not backfill earlier PRs) |
 
 Reusable scaffolds are indexed in [../templates/README.md](../templates/README.md).
