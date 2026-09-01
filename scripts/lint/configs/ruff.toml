@@ -1,0 +1,19 @@
+# Org-default Ruff config for CipherBank Cursor checkouts.
+# Used by scripts/lint-python.sh when no project ruff.toml is preferred.
+# Policy: docs/LOCAL_LINT.md
+
+line-length = 100
+target-version = "py311"
+exclude = [
+  ".git",
+  ".venv",
+  "venv",
+  "bin",
+  "obj",
+  "node_modules",
+  "artifacts",
+]
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = []

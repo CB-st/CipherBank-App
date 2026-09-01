@@ -90,6 +90,33 @@ jobs:
           test -f reports/coverage.cobertura.xml
           test -f reports/coverage.opencover.xml
 
+
+      - name: Summarize coverage for AI reviewers
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          root = ET.parse("reports/coverage.cobertura.xml").getroot()
+          line_pct = float(root.attrib.get("line-rate", "0")) * 100
+          branch_pct = float(root.attrib.get("branch-rate", "0")) * 100
+          lines = [
+              "CipherBank unit coverage (Coverlet / CipherBank-app.Tests)",
+              f"line-rate:   {line_pct:.2f}%  ({root.attrib.get('lines-covered', '?')}/{root.attrib.get('lines-valid', '?')} lines)",
+              f"branch-rate: {branch_pct:.2f}%  ({root.attrib.get('branches-covered', '?')}/{root.attrib.get('branches-valid', '?')} branches)",
+              "modules:",
+          ]
+          for pkg in root.findall("packages/package"):
+              name = pkg.attrib.get("name", "?")
+              lp = float(pkg.attrib.get("line-rate", "0")) * 100
+              bp = float(pkg.attrib.get("branch-rate", "0")) * 100
+              lines.append(f"  - {name}: line {lp:.2f}% / branch {bp:.2f}%")
+          lines.append("report: coverage.cobertura.xml")
+          Path("reports/cipherbank_coverage_report.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          print(Path("reports/cipherbank_coverage_report.txt").read_text(encoding="utf-8"))
+          PY
+
       - name: Stage coverage artifact
         run: |
           set -euo pipefail
@@ -97,6 +124,9 @@ jobs:
           cp -f reports/coverage.cobertura.xml artifact-coverage/
           cp -f reports/coverage.opencover.xml artifact-coverage/
           cp -f reports/analyzer.opencover.xml artifact-coverage/
+          if [ -f reports/cipherbank_coverage_report.txt ]; then
+            cp -f reports/cipherbank_coverage_report.txt artifact-coverage/
+          fi
 
       - name: Upload coverage-report artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

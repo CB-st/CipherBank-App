@@ -29,6 +29,13 @@ Scanner source and coverage exclusion arrays live in
 or other product Core paths. Do not grow `CoverageExclusions`; cover product
 code instead. Shrink only with an explicit policy change.
 
+Scanner exclusions are limited to generated/build output, platform-owned source
+that is not compiled on Linux, resources, tests for coverage, scripts, and
+design handoff assets. Interfaces and production services are not CPD-excluded.
+
+Do not store `SONAR_TOKEN` here. Configure it as a repository secret; configure
+`SONAR_HOST_URL` and `SONAR_PROJECT_KEY` as repository variables.
+
 ## Local feedback: SonarQube for IDE, Connected Mode
 
 For fast local feedback that uses the *same* rules and gate as CI, bind

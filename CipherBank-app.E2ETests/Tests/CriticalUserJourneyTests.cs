@@ -24,9 +24,10 @@ public class CriticalUserJourneyTests : IDisposable
 
     public CriticalUserJourneyTests()
     {
-        // Configure Appium driver based on target platform
-        // This setup assumes Appium server is running locally
+        // Configure Appium driver based on target platform.
+        // Prefer APPIUM_SERVER_URL from scripts/e2e-android.sh; else APPIUM_PORT (default 4723).
         var platform = Environment.GetEnvironmentVariable("TEST_PLATFORM") ?? "android";
+        var serverUrl = ResolveAppiumServerUrl();
 
         if (platform.Equals("ios", StringComparison.OrdinalIgnoreCase))
         {
@@ -39,7 +40,7 @@ public class CriticalUserJourneyTests : IDisposable
             options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("IOS_DEVICE") ?? "iPhone 15");
             options.AddAdditionalAppiumOption("platformVersion", Environment.GetEnvironmentVariable("IOS_VERSION") ?? "17.0");
 
-            _driver = new IOSDriver(new Uri("http://localhost:4723"), options);
+            _driver = new IOSDriver(new Uri(serverUrl), options);
         }
         else
         {
@@ -51,10 +52,26 @@ public class CriticalUserJourneyTests : IDisposable
             };
             options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator");
 
-            _driver = new AndroidDriver(new Uri("http://localhost:4723"), options);
+            _driver = new AndroidDriver(new Uri(serverUrl), options);
         }
 
         _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+    }
+
+    /// <summary>
+    /// Prefer APPIUM_SERVER_URL; otherwise http://127.0.0.1:{APPIUM_PORT} (default 4723).
+    /// Use: High (fixture ctor). Scope: CriticalUserJourneyTests / harness env.
+    /// </summary>
+    private static string ResolveAppiumServerUrl()
+    {
+        string? explicitUrl = Environment.GetEnvironmentVariable("APPIUM_SERVER_URL");
+        if (!string.IsNullOrWhiteSpace(explicitUrl))
+        {
+            return explicitUrl;
+        }
+
+        string port = Environment.GetEnvironmentVariable("APPIUM_PORT") ?? "4723";
+        return $"http://127.0.0.1:{port}";
     }
 
     /// <summary>
