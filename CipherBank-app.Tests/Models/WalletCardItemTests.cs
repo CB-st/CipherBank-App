@@ -13,7 +13,7 @@ public class WalletCardItemTests
     [Fact]
     public void FromWallet_ComputesUsdValueAndPassesPercent()
     {
-        var card = WalletCardItem.FromWallet(MakeWallet(2m), MakeCrypto(price: 50000m, percent: 3.5m));
+        WalletCardItem card = WalletCardItem.FromWallet(MakeWallet(2m), MakeCrypto(price: 50000m, percent: 3.5m));
 
         card.UsdValue.Should().Be(100000m);
         card.PercentChange24h.Should().Be(3.5m);
@@ -27,7 +27,7 @@ public class WalletCardItemTests
     [Fact]
     public void FromWallet_NegativeChange_IsNotPriceUp()
     {
-        var card = WalletCardItem.FromWallet(MakeWallet(1m), MakeCrypto(price: 10m, percent: -2.25m));
+        WalletCardItem card = WalletCardItem.FromWallet(MakeWallet(1m), MakeCrypto(price: 10m, percent: -2.25m));
 
         card.IsPriceUp.Should().BeFalse();
         card.FormattedPercentChange.Should().Be("-2.25%");
@@ -36,7 +36,7 @@ public class WalletCardItemTests
     [Fact]
     public void WithoutPrice_ZeroesMarketData()
     {
-        var card = WalletCardItem.WithoutPrice(MakeWallet(5m));
+        WalletCardItem card = WalletCardItem.WithoutPrice(MakeWallet(5m));
 
         card.UsdValue.Should().Be(0m);
         card.PercentChange24h.Should().Be(0m);
@@ -47,5 +47,5 @@ public class WalletCardItemTests
         new("w1", "BTC", "Bitcoin", balance, "addr-1", DateTimeOffset.UnixEpoch);
 
     private static CryptoCurrency MakeCrypto(decimal price, decimal percent) =>
-        new("BTC", "Bitcoin", price, PriceChange24h: 0, percent, MarketCap: 0, Volume24h: 0, IconUrl: string.Empty);
+        new("BTC", "Bitcoin", price, PriceChange24h: 0, percent, MarketCap: 0, Volume24h: 0, IconUrl: null);
 }
