@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
@@ -15,13 +16,22 @@ public sealed class PersistMigrationsExclusionTests
     [Fact]
     public void SonarWorkflow_DoesNotExcludePersistMigrations()
     {
+        FrozenSonarExclusions lists = FrozenSonarExclusions.Load();
+        Assert.False(
+            lists.NamesPersistMigrations(),
+            $"{FrozenSonarExclusions.RelativePath} must not name Persist/Migrations.");
+
         string yaml = ProductTreeRepoRoot.Read(".github/workflows/sonar.yml");
-        Assert.DoesNotContain(
-            $"sonar.exclusions=\"**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,{MigrationsPath}/**,",
-            yaml);
-        Assert.DoesNotContain(
-            $"sonar.coverage.exclusions=\"**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,{MigrationsPath}/**,",
-            yaml);
+        Match sources = Regex.Match(
+            yaml,
+            @"/d:sonar\.exclusions=""([^""]+)""");
+        Match coverage = Regex.Match(
+            yaml,
+            @"/d:sonar\.coverage\.exclusions=""([^""]+)""");
+        Assert.True(sources.Success, "sonar.exclusions property missing from sonar.yml");
+        Assert.True(coverage.Success, "sonar.coverage.exclusions property missing from sonar.yml");
+        Assert.Equal(lists.SourceCsv, sources.Groups[1].Value);
+        Assert.Equal(lists.CoverageCsv, coverage.Groups[1].Value);
         Assert.DoesNotContain("not compiled on Linux", yaml, StringComparison.OrdinalIgnoreCase);
     }
 

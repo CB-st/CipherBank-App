@@ -19,6 +19,7 @@ public sealed class PrefsStore : IPrefsStore
         _db = db;
     }
 
+    /// <inheritdoc />
     public async Task<UserPrefs> LoadAsync()
     {
         await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
@@ -28,14 +29,29 @@ public sealed class PrefsStore : IPrefsStore
             .Select(entity => entity.Value)
             .SingleOrDefaultAsync()
             .ConfigureAwait(false);
-        UserPrefs prefs = string.IsNullOrWhiteSpace(json)
-            ? new UserPrefs()
-            : JsonSerializer.Deserialize<UserPrefs>(json) ?? new UserPrefs();
-
+        UserPrefs prefs = DeserializePrefs(json);
         prefs.NormalizeHomeSections();
         return prefs;
+
+        static UserPrefs DeserializePrefs(string? payload)
+        {
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                return new UserPrefs();
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<UserPrefs>(payload) ?? new UserPrefs();
+            }
+            catch (JsonException)
+            {
+                return new UserPrefs();
+            }
+        }
     }
 
+    /// <inheritdoc />
     public Task SaveAsync(UserPrefs prefs)
     {
         ArgumentNullException.ThrowIfNull(prefs);

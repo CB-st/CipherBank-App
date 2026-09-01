@@ -9,21 +9,22 @@ namespace CipherBank_app.Analyzers.Tests;
 
 public sealed class SonarCoverageExclusionTests
 {
-    // Frozen allowlist. Do not grow this list; shrink only with an explicit policy change.
-    private const string FrozenCoverageExclusions =
-        "**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,design_handoff_cipherbank/**";
-
     [Fact]
-    public void SonarWorkflow_CoverageExclusions_AreFrozen()
+    public void SonarWorkflow_CoverageExclusions_MatchDedicatedFile()
     {
+        FrozenSonarExclusions lists = FrozenSonarExclusions.Load();
         string yaml = ProductTreeRepoRoot.Read(".github/workflows/sonar.yml");
-        Match match = Regex.Match(
+        Match coverage = Regex.Match(
             yaml,
             @"/d:sonar\.coverage\.exclusions=""([^""]+)""");
-        Assert.True(match.Success, "sonar.coverage.exclusions property missing from sonar.yml");
-        Assert.Equal(FrozenCoverageExclusions, match.Groups[1].Value);
+        Assert.True(coverage.Success, "sonar.coverage.exclusions property missing from sonar.yml");
+        Assert.Equal(lists.CoverageCsv, coverage.Groups[1].Value);
+        Assert.Equal(5, lists.CoverageExclusions.Count);
 
-        string[] entries = match.Groups[1].Value.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(5, entries.Length);
+        Match sources = Regex.Match(
+            yaml,
+            @"/d:sonar\.exclusions=""([^""]+)""");
+        Assert.True(sources.Success, "sonar.exclusions property missing from sonar.yml");
+        Assert.Equal(lists.SourceCsv, sources.Groups[1].Value);
     }
 }

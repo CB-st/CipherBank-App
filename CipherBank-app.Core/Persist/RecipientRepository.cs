@@ -12,8 +12,14 @@ namespace CipherBank_app.Persist;
 /// <inheritdoc />
 public sealed class RecipientRepository : IRecipientRepository
 {
+    /// <summary>
+    /// Stable seed primary key for the demo rent payee. Not a host tunable — changing it duplicates rows.
+    /// </summary>
     internal const string DefaultRentRecipientId = "seed:rent-4th-st";
 
+    /// <summary>
+    /// Stable seed primary key for the demo utilities payee. Not a host tunable — changing it duplicates rows.
+    /// </summary>
     internal const string DefaultUtilitiesRecipientId = "seed:utilities-co";
 
     private const string DefaultAccountType = "checking";
