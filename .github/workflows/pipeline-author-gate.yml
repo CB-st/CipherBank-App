@@ -1,0 +1,86 @@
+name: Pipeline author gate
+
+# Reusable PIPELINE_ALLOWED_AUTHOR check (CSV, default RED-FLAG-DEVELOPMENT).
+# Comma-padded substring match; logins may contain [bot].
+
+on:
+  workflow_call:
+    inputs:
+      require_all:
+        description: CSV of logins; every non-empty entry must be on the allowlist
+        type: string
+        required: false
+        default: ''
+      require_any:
+        description: CSV of logins; if non-empty, at least one must be on the allowlist
+        type: string
+        required: false
+        default: ''
+      skip:
+        description: When true, allowed is false (draft PR, non-PR issue comment, etc.)
+        type: boolean
+        required: false
+        default: false
+    outputs:
+      allowed:
+        description: true when the caller may run secret-bearing jobs
+        value: ${{ jobs.gate.outputs.allowed }}
+
+jobs:
+  gate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      allowed: ${{ steps.check.outputs.allowed }}
+    steps:
+      - name: Evaluate PIPELINE_ALLOWED_AUTHOR
+        id: check
+        env:
+          REQUIRE_ALL: ${{ inputs.require_all }}
+          REQUIRE_ANY: ${{ inputs.require_any }}
+          SKIP: ${{ inputs.skip }}
+          ALLOWED_CSV: ${{ vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT' }}
+        run: |
+          set -euo pipefail
+          in_list() {
+            local login="$1"
+            [ -n "${login}" ] || return 1
+            local padded=",${ALLOWED_CSV},"
+            local needle=",${login},"
+            [[ "${padded}" == *"${needle}"* ]]
+          }
+
+          allowed=true
+          if [ "${SKIP}" = "true" ]; then
+            allowed=false
+          fi
+
+          if [ "${allowed}" = true ] && [ -n "${REQUIRE_ALL}" ]; then
+            IFS=',' read -ra all_logins <<< "${REQUIRE_ALL}"
+            for login in "${all_logins[@]}"; do
+              if ! in_list "${login}"; then
+                allowed=false
+                break
+              fi
+            done
+          fi
+
+          if [ "${allowed}" = true ] && [ -n "${REQUIRE_ANY}" ]; then
+            any=false
+            IFS=',' read -ra any_logins <<< "${REQUIRE_ANY}"
+            for login in "${any_logins[@]}"; do
+              if in_list "${login}"; then
+                any=true
+                break
+              fi
+            done
+            if [ "${any}" != true ]; then
+              allowed=false
+            fi
+          fi
+
+          echo "skip=${SKIP} require_all=${REQUIRE_ALL} require_any=${REQUIRE_ANY}"
+          echo "allowed=${allowed}"
+          echo "allowed=${allowed}" >> "${GITHUB_OUTPUT}"

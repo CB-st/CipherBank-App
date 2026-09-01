@@ -11,6 +11,8 @@
     <Company>CipherBank</Company>
     <Product>CipherBank App Analyzers</Product>
     <Description>Repository-structure Roslyn analyzers for CipherBank.</Description>
+    <!-- CA1707: RootNamespace CipherBank_app uses underscore (assembly-aligned). -->
+    <!-- RS2008: analyzer diagnostic IDs are project-owned, not in a Microsoft catalog. -->
     <NoWarn>$(NoWarn);CA1707;RS2008</NoWarn>
   </PropertyGroup>
 
@@ -30,5 +32,9 @@
 
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CipherBank-app.Analyzers.Tests" />
   </ItemGroup>
 </Project>

@@ -43,7 +43,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Reports CommandText assignments outside the SQL owner.
+    /// Reports CommandText assignments in Core.
     /// Use: High (every assignment). Scope: Core C# trees.
     /// </summary>
     private static void AnalyzeAssignment(SyntaxNodeAnalysisContext context)
@@ -67,7 +67,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Reports FromSqlRaw / ExecuteSqlRaw invocations outside the SQL owner.
+    /// Reports FromSqlRaw / ExecuteSqlRaw invocations in Core.
     /// Use: High (every invocation). Scope: Core C# trees.
     /// </summary>
     private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
@@ -95,7 +95,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     /// Use: High (every SQL syntax action). Scope: this analyzer.
     /// </summary>
     private static bool ShouldScan(string path)
-        => SourcePath.IsCoreProject(path);
+        => SourcePath.From(path).IsCoreProject;
 
     /// <summary>
     /// Returns the invoked method identifier, if any.

@@ -11,6 +11,7 @@ namespace CipherBank_app.UserData;
 public sealed class UserDataCryptoSuite
 {
     /// <summary>
+    /// Initializes a new instance of the <see cref="UserDataCryptoSuite"/> class.
     /// Binds algorithm slots for a stable suite id. Use: Low (catalog). Scope: userdata crypto.
     /// </summary>
     public UserDataCryptoSuite(

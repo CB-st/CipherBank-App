@@ -18,7 +18,7 @@ public sealed class WalletRepositoryTests
     public async Task UpsertListDelete_RoundTripsRows()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-wallet-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
         WalletRepository repo = new WalletRepository(db);
 

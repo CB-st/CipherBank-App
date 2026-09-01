@@ -15,3 +15,8 @@
   routing values are input-only and are not mapped.
 - Schema is greenfield. There is no pre-EF compatibility SQL.
 - Repository async methods propagate cancellation tokens to EF Core.
+
+## Emulation gate
+
+Android emulator compile-and-run is owned by M7 (`prototype/maui-m7`). Do not run
+Appium from this slice.

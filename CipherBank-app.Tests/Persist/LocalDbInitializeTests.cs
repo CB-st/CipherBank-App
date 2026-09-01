@@ -19,16 +19,19 @@ public sealed class LocalDbInitializeTests
     public async Task InitializeAsync_CreatesEmptyModelTables()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-init-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
         db.Path.Should().Be(Path.GetFullPath(path));
 
-        await using CipherBankDbContext context = await db.CreateContextAsync();
-        (await context.Wallets.CountAsync()).Should().Be(0);
-        (await context.Recipients.CountAsync()).Should().Be(0);
-        (await context.Preferences.CountAsync()).Should().Be(0);
-        (await context.RateSnapshots.CountAsync()).Should().Be(0);
-        (await context.OhlcPoints.CountAsync()).Should().Be(0);
-        (await context.SyncMetadata.CountAsync()).Should().Be(0);
+        CipherBankDbContext context = await db.CreateContextAsync();
+        await using (context)
+        {
+            (await context.Wallets.CountAsync()).Should().Be(0);
+            (await context.Recipients.CountAsync()).Should().Be(0);
+            (await context.Preferences.CountAsync()).Should().Be(0);
+            (await context.RateSnapshots.CountAsync()).Should().Be(0);
+            (await context.OhlcPoints.CountAsync()).Should().Be(0);
+            (await context.SyncMetadata.CountAsync()).Should().Be(0);
+        }
     }
 }

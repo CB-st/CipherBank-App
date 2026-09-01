@@ -149,8 +149,16 @@ public class SyncJobSchedulerTests
     }
 
     [Fact]
-    public void Default_max_concurrency_is_min_concurrency()
-        => new SyncSchedulerOptions().MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
+    public void Unset_max_concurrency_resolves_to_half_processor_count()
+    {
+        SyncSchedulerOptions options = new SyncSchedulerOptions();
+        options.MaxConcurrency.Should().Be(0);
+        options.Resolve().Should().Be(
+            Math.Clamp(
+                (int)Math.Ceiling(Environment.ProcessorCount / 2.0),
+                SyncSchedulerOptions.MinConcurrency,
+                SyncSchedulerOptions.MaxAllowedConcurrency));
+    }
 
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)
     {

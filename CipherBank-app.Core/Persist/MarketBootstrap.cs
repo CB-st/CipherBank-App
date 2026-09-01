@@ -15,7 +15,8 @@ public static class MarketBootstrap
 
     /// <summary>
     /// Gets cached rates for the requested symbols and refreshes the entire set when
-    /// the cache is incomplete or any row is stale.
+    /// the cache is incomplete or any row is stale, using <see cref="TimeProvider.System"/>.
+    /// Use: High (home rates). Scope: MarketBootstrap consumers.
     /// </summary>
     public static Task HydrateAndRefreshAsync(
         IRatesCache cache,
@@ -24,6 +25,11 @@ public static class MarketBootstrap
         CancellationToken ct)
         => HydrateAndRefreshAsync(cache, publicQuotes, symbols, null, ct);
 
+    /// <summary>
+    /// Gets cached rates for the requested symbols and refreshes the entire set when
+    /// the cache is incomplete or any row is stale.
+    /// Use: High (home rates). Scope: MarketBootstrap consumers.
+    /// </summary>
     public static async Task HydrateAndRefreshAsync(
         IRatesCache cache,
         IPublicQuoteService publicQuotes,
@@ -32,6 +38,7 @@ public static class MarketBootstrap
         CancellationToken ct)
     {
         TimeProvider clock = timeProvider ?? TimeProvider.System;
+        DateTimeOffset now = clock.GetUtcNow();
 
         string[] requestedSymbols = symbols
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
@@ -44,15 +51,13 @@ public static class MarketBootstrap
         }
 
         IReadOnlyList<RateRow> cachedRows = await cache.GetAsync(requestedSymbols, ct).ConfigureAwait(false);
-        long nowMs = clock.GetUtcNow().ToUnixTimeMilliseconds();
         if (cachedRows.Count == requestedSymbols.Length
-            && cachedRows.All(row =>
-                row.UpdatedAtMs <= nowMs
-                && nowMs - row.UpdatedAtMs <= MaxRateAge.TotalMilliseconds))
+            && cachedRows.All(row => IsFresh(row, now)))
         {
             return;
         }
 
+        long nowMs = now.ToUnixTimeMilliseconds();
         List<RateRow> refreshedRows = new List<RateRow>(requestedSymbols.Length);
         foreach (string? symbol in requestedSymbols)
         {
@@ -63,5 +68,15 @@ public static class MarketBootstrap
         }
 
         await cache.UpsertAsync(refreshedRows, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// True when the stored unix-ms timestamp is not in the future and is within <see cref="MaxRateAge"/>.
+    /// Use: High (hydrate). Scope: MarketBootstrap.
+    /// </summary>
+    private static bool IsFresh(RateRow row, DateTimeOffset now)
+    {
+        DateTimeOffset updatedAt = DateTimeOffset.FromUnixTimeMilliseconds(row.UpdatedAtMs);
+        return updatedAt <= now && now - updatedAt <= MaxRateAge;
     }
 }

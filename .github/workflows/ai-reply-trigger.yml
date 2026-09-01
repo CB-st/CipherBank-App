@@ -9,9 +9,7 @@ on:
     types: [submitted]
 
 # Author gate: PR author AND commenter/reviewer must both be allowlisted.
-# PIPELINE_ALLOWED_AUTHOR is a CSV of GitHub logins, e.g. "alice,bob".
-# Defaults to RED-FLAG-DEVELOPMENT when unset. GHA expressions have no
-# split()/replace(), so membership uses comma-padded contains().
+# Membership is pipeline-author-gate.yml (PIPELINE_ALLOWED_AUTHOR CSV).
 #
 # Replies do not run the scanner. dispatch_replies looks up sonar-context-<sha>
 # from a prior Sonar job so CipherBank.AI still ingests gate/issues JSON.
@@ -27,44 +25,15 @@ permissions:
   actions: write
 
 jobs:
+  author-gate:
+    uses: ./.github/workflows/pipeline-author-gate.yml
+    with:
+      skip: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request == null }}
+      require_all: ${{ format('{0},{1}', github.event.pull_request.user.login || github.event.issue.user.login, github.event.comment.user.login || github.event.review.user.login) }}
+
   resolve:
-    if: >-
-      (
-        github.event_name == 'issue_comment'
-        && github.event.issue.pull_request != null
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.issue.user.login)
-           )
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.comment.user.login)
-           )
-      )
-      ||
-      (
-        github.event_name == 'pull_request_review_comment'
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.pull_request.user.login)
-           )
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.comment.user.login)
-           )
-      )
-      ||
-      (
-        github.event_name == 'pull_request_review'
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.pull_request.user.login)
-           )
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.review.user.login)
-           )
-      )
+    needs: author-gate
+    if: ${{ needs.author-gate.outputs.allowed == 'true' }}
     runs-on: ubuntu-22.04
     outputs:
       proceed: ${{ steps.resolve.outputs.proceed }}
@@ -83,18 +52,12 @@ jobs:
     steps:
     - name: Resolve reply trigger
       id: resolve
-      env:
-        PIPELINE_ALLOWED_AUTHOR: ${{ vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT' }}
       uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
         script: |
           const { owner, repo } = context.repo;
           const eventName = context.eventName;
           const payload = context.payload;
-          const allowedAuthors = (process.env.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT')
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean);
           const skip = (reason) =>
           {
             core.info(`Skipping reply trigger: ${reason}`);
@@ -135,10 +98,6 @@ jobs:
             return skip('missing pull request or comment payload');
           if (pr.draft)
             return skip('pull request is draft');
-
-          const prAuthor = pr.user?.login || '';
-          if (!allowedAuthors.includes(prAuthor))
-            return skip(`PR author '${prAuthor}' is not in allowlist (${allowedAuthors.join(', ')})`);
 
           const resolveReviewCommentThreadNodeId = async () =>
           {
@@ -225,8 +184,6 @@ jobs:
             return skip('comment author is missing');
           if (comment.user?.type === 'Bot')
             return skip(`comment author is a bot (${author})`);
-          if (!allowedAuthors.includes(author))
-            return skip(`commenter '${author}' is not in allowlist (${allowedAuthors.join(', ')})`);
           if (kind === 'review' && !body.trim())
             return skip('submitted review body is empty');
 

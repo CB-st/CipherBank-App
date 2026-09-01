@@ -97,6 +97,8 @@ public class CoraShellSmokeTests
                 var send = home.GoToSendTab();
                 send.WaitForPageLoad();
                 send.HasParitySurfaces().Should().BeTrue("US-SND-01: ACH payee fields + amount/speed/send");
+                send.PageSourceContainsConfigSeedPayees().Should().BeTrue(
+                    "US-SND-01: saved payees are config ids seed:rent-4th-st / seed:utilities-co (names, not GUIDs)");
             },
             _fixture);
     }

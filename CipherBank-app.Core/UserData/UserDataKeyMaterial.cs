@@ -17,6 +17,7 @@ public sealed class UserDataKeyMaterial : IDisposable
     private bool _disposed;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="UserDataKeyMaterial"/> class.
     /// Wraps copies of KEK and enroll-seed for session-scoped use.
     /// Use: Medium (after unlock). Scope: userdata sync / pack seal.
     /// </summary>

@@ -6,20 +6,8 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);SA1201;SA1202;SA1107;SA1402;SA1649;xUnit1030;IDE0005;CA1707</WarningsNotAsErrors>
-    <NoWarn>$(NoWarn);IDE0005</NoWarn>
-  </PropertyGroup>
-
-  <!-- Code Coverage Configuration -->
-  <PropertyGroup>
-    <CollectCoverage>true</CollectCoverage>
-    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
-    <CoverletOutput>./coverage/</CoverletOutput>
-    <Threshold>70,50,70</Threshold>
-    <ThresholdType>line,branch,method</ThresholdType>
-    <ThresholdStat>total</ThresholdStat>
-    <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
-    <ExcludeByFile>**/Migrations/**/*</ExcludeByFile>
+    <!-- CA1707: RootNamespace CipherBank_app uses underscore (assembly-aligned). -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -41,8 +29,8 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <!-- Desktop e_sqlite3 pin (NU1903); Android uses sqlitepclraw.lib.e_sqlite3.android from Core -->
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />

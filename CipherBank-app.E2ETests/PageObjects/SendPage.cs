@@ -54,4 +54,15 @@ public class SendPage : BasePage
     /// Waits until the SendPage anchor control is visible. Use: High. Scope: SendPage.
     /// </summary>
     public override void WaitForPageLoad() => WaitForElement(SubmitButton);
+
+    /// <summary>
+    /// True when the send surface lists the config-backed demo payees (stable seed ids).
+    /// Use: High (US-SND-01). Scope: SendPage after SeedDefaultsIfEmptyAsync.
+    /// </summary>
+    public bool PageSourceContainsConfigSeedPayees()
+    {
+        string source = Driver.PageSource;
+        return source.Contains("4th St LLC", StringComparison.Ordinal)
+            && source.Contains("Utilities Co", StringComparison.Ordinal);
+    }
 }

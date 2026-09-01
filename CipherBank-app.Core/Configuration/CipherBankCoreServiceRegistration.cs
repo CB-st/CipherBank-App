@@ -33,12 +33,15 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton<ILocalDb>(provider =>
         {
             PersistenceOptions options = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
-            return new LocalDb(Path.Combine(databaseDirectory, options.DatabaseName));
+            return new LocalDb(new FileInfo(Path.Combine(databaseDirectory, options.DatabaseName)));
         });
         services.AddSingleton<IMarketRepository, MarketRepository>();
         services.AddSingleton<IPrefsStore, PrefsStore>();
         services.AddSingleton<IRatesCache, RatesCache>();
-        services.AddSingleton<IRecipientRepository, RecipientRepository>();
+        services.AddSingleton<IRecipientRepository>(provider => new RecipientRepository(
+            provider.GetRequiredService<ILocalDb>(),
+            provider.GetRequiredService<IOptions<PersistenceOptions>>().Value,
+            provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IWalletRepository, WalletRepository>();
 
         // Production product wire: host (MauiProgram) registers HttpProductClient on the
