@@ -41,6 +41,7 @@ public sealed class CipherBankDbContext : DbContext
             entity.Property(value => value.Path).HasColumnName("path");
             entity.Property(value => value.AccountIndex).HasColumnName("account_index");
             entity.Property(value => value.Kind).HasColumnName("kind").IsRequired();
+            // SQLite has no datetime affinity; store ISO-8601 round-trip (O) and parse invariant.
             entity.Property(value => value.CreatedAt)
                 .HasColumnName("created_at")
                 .HasConversion(
@@ -60,6 +61,7 @@ public sealed class CipherBankDbContext : DbContext
             entity.Property(value => value.Memo).HasColumnName("memo");
             entity.Property(value => value.AccountMask).HasColumnName("account_mask");
             entity.Property(value => value.RoutingMask).HasColumnName("routing_mask");
+            // SQLite has no datetime affinity; store ISO-8601 round-trip (O) and parse invariant.
             entity.Property(value => value.CreatedAt)
                 .HasColumnName("created_at")
                 .HasConversion(

@@ -24,6 +24,8 @@ internal static class ConfigurationValidationMessages
 
     internal static string DatabaseNameMustBeFileName => Require(nameof(DatabaseNameMustBeFileName));
 
+    internal static string DefaultRecipientsInvalid => Require(nameof(DefaultRecipientsInvalid));
+
     private static string Require(string name)
         => Manager.GetString(name, CultureInfo.InvariantCulture)
            ?? throw new InvalidOperationException($"Missing resource string '{name}'.");

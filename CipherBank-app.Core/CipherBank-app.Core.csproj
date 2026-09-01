@@ -5,10 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>CipherBank_app</RootNamespace>
-    <!-- Phase 3: SA1402/SA1649 removed after Stage 2 one-type-per-file splits. -->
-    <!-- Phase 3 Stage 3: SA1402/SA1649 removed. CA1707 kept for RootNamespace CipherBank_app (assembly-aligned). -->
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);IDE0005</WarningsNotAsErrors>
-    <NoWarn>$(NoWarn);IDE0005;CA1707</NoWarn>
+    <!-- CA1707: RootNamespace CipherBank_app uses underscore (assembly-aligned). -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
     <Company>CipherBank</Company>
     <Product>CipherBank App Core</Product>
     <Description>Platform-neutral CipherBank domain and application services.</Description>

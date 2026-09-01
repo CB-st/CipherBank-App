@@ -4,7 +4,12 @@
 
 namespace CipherBank_app.Persist;
 
-/// <summary>Priority job scheduler for market persist work (P1 chart / P2 cold bootstrap).</summary>
+/// <summary>
+/// Named, deduplicating, priority job queue for market persist work (P1 chart / P2 cold bootstrap).
+/// Execution is delegated to an injected <see cref="TaskScheduler"/>; this type does not inherit
+/// <see cref="TaskScheduler"/> or use <see cref="ThreadPriority"/> because those APIs do not provide
+/// keyed skip-duplicates, P1-before-P2 among waiting work, a mobile concurrency cap, or <see cref="DrainAsync"/>.
+/// </summary>
 public interface ISyncJobScheduler
 {
     /// <summary>

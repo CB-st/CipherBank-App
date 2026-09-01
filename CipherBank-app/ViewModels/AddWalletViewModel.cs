@@ -26,8 +26,7 @@ public partial class AddWalletViewModel : ObservableObject
         ICustodyService custody,
         IWalletRepository wallets,
         IDialogService dialogs,
-        IProductClient api,
-        TimeProvider timeProvider)
+        IProductClient api, TimeProvider timeProvider)
     {
         _timeProvider = timeProvider;
         _custody = custody;

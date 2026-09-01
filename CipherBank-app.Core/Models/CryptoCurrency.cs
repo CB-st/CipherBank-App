@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
-using System;
 using System.Globalization;
 
 namespace CipherBank_app.Models;

@@ -17,8 +17,9 @@ concurrency:
 # Split trust: coverage stays open for every non-draft PR / push so contributors
 # get Coverlet without secrets. Secret-bearing jobs (context, sonar → review)
 # require PIPELINE_ALLOWED_AUTHOR (CSV of GitHub logins). Defaults to
-# RED-FLAG-DEVELOPMENT when unset. GHA has no split(); membership uses
-# comma-padded contains().
+# RED-FLAG-DEVELOPMENT when unset. Membership is computed in
+# pipeline-author-gate.yml (called as context-author-gate / sonar-author-gate);
+# context/sonar only read `allowed`.
 #
 # Actor vs triggering_actor: Cursor / GitHub App pushes set github.actor to the
 # bot (e.g. cursor[bot]) while github.triggering_actor stays the human who
@@ -60,22 +61,10 @@ jobs:
           dotnet-version: |
             10.0.x
 
-      # Repository-wide CB1001–CB1004 pass. Linux cannot compile the MAUI host
-      # (net10.0-android|ios|maccatalyst), IntegrationTests (WireMock/Scriban.Signed),
-      # or E2ETests (StyleCop + TreatWarningsAsErrors). Analyzer tests load those
-      # on-disk csproj/C# trees as AdditionalFiles; Core/ChallengePass/Tests are
-      # also compiled in the Sonar job with Directory.Build.targets AdditionalFiles.
       - name: Run structure analyzer tests
         run: |
           set -euo pipefail
           mkdir -p reports
-          echo "Structure pass (real files, not a Linux compile of unbuildable TFMs):"
-          echo "  CipherBank-app (MAUI host)"
-          echo "  CipherBank-app.IntegrationTests"
-          echo "  CipherBank-app.E2ETests"
-          echo "  CipherBank-app.Core"
-          echo "  CipherBank-app.ChallengePass"
-          echo "  CipherBank-app.Tests"
           dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj -c Release --nologo \
             -p:CollectCoverage=true \
             -p:CoverletOutputFormat=opencover \
@@ -93,7 +82,6 @@ jobs:
             exit 1
           fi
           mkdir -p reports
-          # OpenCover for sonar.cs.opencover.reportsPaths; cobertura for tooling.
           dotnet test "${test_proj}" -c Release --nologo \
             -p:CollectCoverage=true \
             -p:CoverletOutputFormat=\"cobertura,opencover\" \
@@ -135,10 +123,10 @@ jobs:
           mkdir -p artifact-coverage
           cp -f reports/coverage.cobertura.xml artifact-coverage/
           cp -f reports/coverage.opencover.xml artifact-coverage/
+          cp -f reports/analyzer.opencover.xml artifact-coverage/
           if [ -f reports/cipherbank_coverage_report.txt ]; then
             cp -f reports/cipherbank_coverage_report.txt artifact-coverage/
           fi
-          cp -f reports/analyzer.opencover.xml artifact-coverage/
 
       - name: Upload coverage-report artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -149,32 +137,33 @@ jobs:
           retention-days: 14
           overwrite: true
 
+  # Allowlist for secret-bearing jobs. Logic lives in pipeline-author-gate.yml.
+  # Coverage stays ungated. context/sonar skip when allowed is false.
+  context-author-gate:
+    uses: ./.github/workflows/pipeline-author-gate.yml
+    with:
+      skip: ${{ github.event_name != 'pull_request' || github.event.pull_request.draft == true }}
+      require_all: ${{ github.event.pull_request.user.login }}
+      require_any: ${{ format('{0},{1}', github.actor, github.triggering_actor) }}
+
+  sonar-author-gate:
+    uses: ./.github/workflows/pipeline-author-gate.yml
+    with:
+      skip: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == true }}
+      require_all: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login || '' }}
+      require_any: ${{ format('{0},{1}{2}', github.actor, github.triggering_actor, github.event_name == 'push' && format(',{0}', github.event.head_commit.author.username) || '') }}
+
   # PR context snapshot -- runs once per push and produces the
   # ai-context-bundle artifact consumed by central review/reply workflows.
   # Model providers and trusted persona/task assets live in CipherBank.AI;
   # this repo only packages PR facts and Sonar for this app (no siblings).
   #
-  # The draft / non-PR / author gate lives here (not on `review`) so untrusted
-  # or draft PRs never spend context-build cost either. Waits on `coverage`.
+  # Draft / non-PR / author skip is context-author-gate's `allowed` (not on
+  # `review`) so untrusted or draft PRs never spend context-build cost either.
+  # Waits on `coverage` and `context-author-gate`.
   context:
-    needs: [coverage]
-    if: >-
-      github.event_name == 'pull_request'
-      && !github.event.pull_request.draft
-      && contains(
-           format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-           format(',{0},', github.event.pull_request.user.login)
-         )
-      && (
-        contains(
-          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-          format(',{0},', github.actor)
-        )
-        || contains(
-          format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-          format(',{0},', github.triggering_actor)
-        )
-      )
+    needs: [coverage, context-author-gate]
+    if: ${{ needs.context-author-gate.outputs.allowed == 'true' }}
     permissions:
       contents: read
       pull-requests: read
@@ -193,47 +182,8 @@ jobs:
   # Sonar after coverage: GH quality-gate check + sonar-context-/report-task-<sha>
   # artifacts for AI Review. Secret-gated (SONAR_TOKEN); imports Coverlet when present.
   sonar:
-    needs: [coverage]
-    if: >-
-      (
-        github.event_name == 'pull_request'
-        && !github.event.pull_request.draft
-        && contains(
-             format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-             format(',{0},', github.event.pull_request.user.login)
-           )
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.actor)
-          )
-          || contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.triggering_actor)
-          )
-        )
-      )
-      ||
-      (
-        github.event_name == 'push'
-        && (
-          contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.actor)
-          )
-          || contains(
-            format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-            format(',{0},', github.triggering_actor)
-          )
-          || (
-            github.event.head_commit.author.username != ''
-            && contains(
-                 format(',{0},', vars.PIPELINE_ALLOWED_AUTHOR || 'RED-FLAG-DEVELOPMENT'),
-                 format(',{0},', github.event.head_commit.author.username)
-               )
-          )
-        )
-      )
+    needs: [coverage, sonar-author-gate]
+    if: ${{ needs.sonar-author-gate.outputs.allowed == 'true' }}
     runs-on: ubuntu-22.04
     # Restore + library build + scan + poll. 30 leaves headroom for cold NuGet.
     timeout-minutes: 30
@@ -360,11 +310,13 @@ jobs:
           # shellcheck disable=SC2086
           # Sources/tests come from MSBuild project graphs; pass exclusions and
           # optional coverage paths as begin properties (not a properties file).
-          # Persist/Migrations is EF Core scaffolding (generated_code=true); product
-          # policy lives in the model, not the designer/Up snapshots.
           # CPD exclusions: intentional zero-token DIM overload pairs on Core/ChallengePass
           # interfaces (S4136-adjacent duplicates that are not real copy-paste debt).
           # Do NOT exclude PrefsWireDto / RateLimiter / MockProductApi.
+          # Do NOT exclude CipherBank-app.Core/Persist/Migrations (EF migrate path is in scope).
+          # sonar.coverage.exclusions is FROZEN. Do not add entries. Cover product code
+          # instead; config/sonar/exclusions.json is the dedicated list and
+          # SonarCoverageExclusionTests locks sonar.yml to that file.
           dotnet sonarscanner begin \
             /k:"${SONAR_PROJECT_KEY}" \
             /n:"CipherBank App" \
@@ -372,22 +324,20 @@ jobs:
             /d:sonar.host.url="${SONAR_HOST_URL}" \
             /d:sonar.scanner.skipJreProvisioning=true \
             /d:sonar.sourceEncoding=UTF-8 \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,CipherBank-app.Core/Persist/Migrations/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
-            /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,CipherBank-app.Core/Persist/Migrations/**,design_handoff_cipherbank/**" \
+            /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
+            /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,design_handoff_cipherbank/**" \
             /d:sonar.cpd.exclusions="**/IProductApi.cs,**/IWalletService.cs,**/IPublicQuoteService.cs,**/IMnemonicBackupService.cs,**/IPrefsSyncService.cs,**/IStepUpChallenges.cs,**/IChallengePass*.cs,**/IAccountKeySource.cs,**/ISessionChallengeClient.cs,**/IPq*.cs" \
             /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,reports/analyzer.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
-      # Do not add CipherBank-app / IntegrationTests / E2ETests here. Linux cannot
-      # compile those TFMs; CB1001–CB1004 still scan their trees via AdditionalFiles
-      # (Directory.Build.targets) and the coverage "Run structure analyzer tests" step.
+      # Scan graph: Analyzers + Core + unit tests. Sibling trees still reach
+      # structure analyzers via Directory.Build.targets additional files.
       - name: Build analyzable projects
         run: |
           set -euo pipefail
           projects=(
             CipherBank-app.Analyzers/CipherBank-app.Analyzers.csproj
             CipherBank-app.Core/CipherBank-app.Core.csproj
-            CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
             CipherBank-app.Tests/CipherBank-app.Tests.csproj
           )
           built=0

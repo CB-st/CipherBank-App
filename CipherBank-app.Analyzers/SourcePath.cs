@@ -5,73 +5,79 @@
 namespace CipherBank_app.Analyzers;
 
 /// <summary>
-/// Path predicates shared by the structure analyzers.
-/// Use: High (every compilation). Scope: CipherBank-app.Analyzers.
+/// Host-native additional-file path. <see cref="FileInfo"/> is sealed, so this type wraps one
+/// and keeps the original Roslyn string for predicates (no <see cref="Path.GetFullPath"/>).
 /// </summary>
-internal static class SourcePath
+internal sealed class SourcePath
 {
-    /// <summary>
-    /// Normalizes slashes so predicates are OS-agnostic.
-    /// Use: High (every path check). Scope: analyzer path helpers.
-    /// </summary>
-    internal static string Normalize(string path) => path.Replace('\\', '/');
+    private readonly string _path;
+    private readonly FileInfo _file;
 
-    /// <summary>
-    /// True when two filesystem paths match after slash normalization.
-    /// Use: High (every additional-file dedupe). Scope: analyzer path helpers.
-    /// </summary>
-    internal static bool PathsEqual(string left, string right)
-        => string.Equals(Normalize(left), Normalize(right), StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// True when the additional file is C# source.
-    /// Use: High (every additional file). Scope: sibling-project scans.
-    /// </summary>
-    internal static bool IsCSharpFile(string path)
-        => Normalize(path).EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// True when the tree is a legacy Properties/AssemblyInfo.cs file.
-    /// Use: High (every C# tree). Scope: NoLegacyAssemblyInfoAnalyzer.
-    /// </summary>
-    internal static bool IsLegacyAssemblyInfo(string path)
+    private SourcePath(string path)
     {
-        string normalized = Normalize(path);
-        return normalized.EndsWith("/Properties/AssemblyInfo.cs", StringComparison.OrdinalIgnoreCase)
-            || normalized.Equals("Properties/AssemblyInfo.cs", StringComparison.OrdinalIgnoreCase);
+        _path = path;
+        _file = new FileInfo(string.IsNullOrEmpty(path) ? "_" : path);
     }
 
-    /// <summary>
-    /// True when the tree lives under CipherBank-app.Core.
-    /// Use: High (every SQL check). Scope: NoScatteredSqlAnalyzer.
-    /// </summary>
-    internal static bool IsCoreProject(string path)
+    /// <summary>Gets the wrapped file identity for the additional path.</summary>
+    internal FileInfo File => _file;
+
+    /// <summary>Gets the last segment via <see cref="Path.GetFileName"/>.</summary>
+    internal string FileName => Path.GetFileName(_path);
+
+    /// <summary>Gets the extension via <see cref="Path.GetExtension"/>.</summary>
+    internal string Extension => Path.GetExtension(_path);
+
+    /// <summary>Gets the parent path via <see cref="Path.GetDirectoryName"/>.</summary>
+    internal SourcePath Parent => From(Path.GetDirectoryName(_path));
+
+    /// <summary>Gets a value indicating whether this path has no segments left.</summary>
+    internal bool IsEmpty => string.IsNullOrEmpty(_path);
+
+    /// <summary>Gets a value indicating whether the additional file is C# source.</summary>
+    internal bool IsCSharpFile
+        => string.Equals(Extension, ".cs", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Gets a value indicating whether the tree is Properties/AssemblyInfo.cs.</summary>
+    internal bool IsLegacyAssemblyInfo
+        => string.Equals(FileName, "AssemblyInfo.cs", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(Parent.FileName, "Properties", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Gets a value indicating whether a directory segment is CipherBank-app.Core.</summary>
+    internal bool IsCoreProject
     {
-        string normalized = Normalize(path);
-        return normalized.IndexOf("/CipherBank-app.Core/", StringComparison.OrdinalIgnoreCase) >= 0
-            || normalized.StartsWith("CipherBank-app.Core/", StringComparison.OrdinalIgnoreCase);
+        get
+        {
+            for (SourcePath current = this; !current.IsEmpty; current = current.Parent)
+            {
+                if (string.Equals(current.FileName, "CipherBank-app.Core", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
-    /// <summary>
-    /// True when the additional file is central package management.
-    /// Use: High (every additional file). Scope: CentralPackageVersionAnalyzer.
-    /// </summary>
-    internal static bool IsCentralPackageFile(string path)
-    {
-        string normalized = Normalize(path);
-        return normalized.EndsWith("/Directory.Packages.props", StringComparison.OrdinalIgnoreCase)
-            || normalized.Equals("Directory.Packages.props", StringComparison.OrdinalIgnoreCase);
-    }
+    /// <summary>Gets a value indicating whether the additional file is Directory.Packages.props.</summary>
+    internal bool IsCentralPackageFile
+        => string.Equals(FileName, "Directory.Packages.props", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Gets a value indicating whether the additional file is .csproj, .props, or .targets.</summary>
+    internal bool IsMsBuildProjectFile
+        => string.Equals(Extension, ".csproj", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Extension, ".props", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Extension, ".targets", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// True when the additional file is an MSBuild project/props/targets file.
-    /// Use: High (every additional file). Scope: CentralPackageVersionAnalyzer.
+    /// Compares original additional-file strings, ignoring case. <see cref="FileInfo"/> equality is
+    /// reference-based and resolving <c>FullName</c> would call GetFullPath.
+    /// Use: High (compilation tree dedupe). Scope: analyzer additional files.
     /// </summary>
-    internal static bool IsMsBuildProjectFile(string path)
-    {
-        string normalized = Normalize(path);
-        return normalized.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
-            || normalized.EndsWith(".props", StringComparison.OrdinalIgnoreCase)
-            || normalized.EndsWith(".targets", StringComparison.OrdinalIgnoreCase);
-    }
+    internal static bool NamesEqual(SourcePath left, SourcePath right)
+        => string.Equals(left._path, right._path, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Wraps a Roslyn/MSBuild additional-file path.</summary>
+    internal static SourcePath From(string? path) => new(path ?? string.Empty);
 }

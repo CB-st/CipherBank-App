@@ -55,29 +55,32 @@ public sealed class MarketRepository : IMarketRepository
             return;
         }
 
-        await using CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
-        long[] timestamps = latestByTimestamp.Keys.ToArray();
-        Dictionary<long, OhlcPointEntity> existing = await context.OhlcPoints
-            .Where(entity => entity.Symbol == normalizedSymbol && timestamps.Contains(entity.Timestamp))
-            .ToDictionaryAsync(entity => entity.Timestamp, ct)
-            .ConfigureAwait(false);
-
-        foreach (KeyValuePair<long, double> point in latestByTimestamp)
+        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        await using (context)
         {
-            if (!existing.TryGetValue(point.Key, out OhlcPointEntity? entity))
+            long[] timestamps = latestByTimestamp.Keys.ToArray();
+            Dictionary<long, OhlcPointEntity> existing = await context.OhlcPoints
+                .Where(entity => entity.Symbol == normalizedSymbol && timestamps.Contains(entity.Timestamp))
+                .ToDictionaryAsync(entity => entity.Timestamp, ct)
+                .ConfigureAwait(false);
+
+            foreach (KeyValuePair<long, double> point in latestByTimestamp)
             {
-                entity = new OhlcPointEntity
+                if (!existing.TryGetValue(point.Key, out OhlcPointEntity? entity))
                 {
-                    Symbol = normalizedSymbol,
-                    Timestamp = point.Key,
-                };
-                context.OhlcPoints.Add(entity);
+                    entity = new OhlcPointEntity
+                    {
+                        Symbol = normalizedSymbol,
+                        Timestamp = point.Key,
+                    };
+                    context.OhlcPoints.Add(entity);
+                }
+
+                entity.Value = point.Value;
             }
 
-            entity.Value = point.Value;
+            await context.SaveChangesAsync(ct).ConfigureAwait(false);
         }
-
-        await context.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyList<(long T, double V)>> GetOhlcCoreAsync(
@@ -87,19 +90,22 @@ public sealed class MarketRepository : IMarketRepository
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
         string normalizedSymbol = symbol.ToUpperInvariant();
-        await using CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
-        IQueryable<OhlcPointEntity> query = context.OhlcPoints
-            .AsNoTracking()
-            .Where(entity => entity.Symbol == normalizedSymbol);
-        if (fromT.HasValue)
+        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        await using (context)
         {
-            query = query.Where(entity => entity.Timestamp >= fromT.Value);
-        }
+            IQueryable<OhlcPointEntity> query = context.OhlcPoints
+                .AsNoTracking()
+                .Where(entity => entity.Symbol == normalizedSymbol);
+            if (fromT.HasValue)
+            {
+                query = query.Where(entity => entity.Timestamp >= fromT.Value);
+            }
 
-        List<OhlcPointEntity> entities = await query
-            .OrderBy(entity => entity.Timestamp)
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
-        return entities.Select(entity => (entity.Timestamp, entity.Value)).ToList();
+            List<OhlcPointEntity> entities = await query
+                .OrderBy(entity => entity.Timestamp)
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+            return entities.Select(entity => (entity.Timestamp, entity.Value)).ToList();
+        }
     }
 }

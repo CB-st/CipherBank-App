@@ -9,10 +9,10 @@ namespace CipherBank_app.Persist;
 /// <summary>ACH recipient field validation (Cora RecipientPickerModal parity).</summary>
 public static class AchRecipientValidation
 {
-    private const int RoutingNumberDigitCountValue = 9;
-    private const int AccountNumberMinDigitsValue = 4;
-    private const int MaskVisibleTrailingDigitsValue = 4;
-    private const int MemoMaxLengthValue = 140;
+    private static readonly int RoutingNumberDigitCountValue = 9;
+    private static readonly int AccountNumberMinDigitsValue = 4;
+    private static readonly int MaskVisibleTrailingDigitsValue = 4;
+    private static readonly int MemoMaxLengthValue = 140;
 
     public static int RoutingNumberDigitCount => RoutingNumberDigitCountValue;
 
@@ -43,14 +43,19 @@ public static class AchRecipientValidation
         string account,
         string accountType,
         string? memo)
-        => FirstError(
+    {
+        string?[] errors =
+        [
             RequireNonBlank(name, Strings.AchEnterPayeeName),
             RequireNonBlank(holder, Strings.AchEnterAccountHolderName),
             RequireNonBlank(bank, Strings.AchEnterBankName),
             ValidateRouting(routing),
             ValidateAccount(account),
             ValidateAccountType(accountType),
-            ValidateMemo(memo));
+            ValidateMemo(memo),
+        ];
+        return Array.Find(errors, static e => e is not null);
+    }
 
     /// <summary>
     /// Masks an account number to trailing digits for display.
@@ -81,13 +86,6 @@ public static class AchRecipientValidation
 
         return "•••• " + digits[^MaskVisibleTrailingDigits..];
     }
-
-    /// <summary>
-    /// Returns the first non-null error message from ordered validation steps.
-    /// Use: High (Validate). Scope: this helper.
-    /// </summary>
-    private static string? FirstError(params string?[] errors)
-        => Array.Find(errors, static e => e is not null);
 
     /// <summary>
     /// Requires a non-blank string; returns <paramref name="message"/> when empty.

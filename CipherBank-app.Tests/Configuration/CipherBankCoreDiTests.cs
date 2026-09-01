@@ -10,6 +10,7 @@ using CipherBank_app.Pos;
 using CipherBank_app.V1;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CipherBank_app.Tests.Configuration;
@@ -33,7 +34,12 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<ICryptoBox>().Should().BeOfType<AesGcmCryptoBox>();
         provider.GetRequiredService<ICoraLineProvider>().Should().BeOfType<CoraLineProvider>();
         provider.GetRequiredService<IEmvExchangeSimulator>().Should().BeOfType<EmvExchangeSimulator>();
-        provider.GetRequiredService<ILocalDb>().Should().BeOfType<LocalDb>();
+        LocalDb localDb = provider.GetRequiredService<ILocalDb>().Should().BeOfType<LocalDb>().Subject;
+        PersistenceOptions persistence = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
+        Path.GetFileName(localDb.Path).Should().Be(persistence.DatabaseName);
+        persistence.DefaultRecipients.Select(row => row.Id).Should().Equal(
+            "seed:rent-4th-st",
+            "seed:utilities-co");
         provider.GetRequiredService<IWalletRepository>().Should().BeOfType<WalletRepository>();
         provider.GetRequiredService<IRecipientRepository>().Should().BeOfType<RecipientRepository>();
         provider.GetRequiredService<IMarketRepository>().Should().BeOfType<MarketRepository>();

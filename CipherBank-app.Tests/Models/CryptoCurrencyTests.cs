@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
-using System;
 using CipherBank_app.Models;
 using FluentAssertions;
 using Xunit;

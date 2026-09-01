@@ -200,8 +200,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                             0m,
                             0m,
                             0m,
-                            0m,
-                            null));
+                            0m, null));
                     }
 
                     // Fall back to market list if public currencies were empty.

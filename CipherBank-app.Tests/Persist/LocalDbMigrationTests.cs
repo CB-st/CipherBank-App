@@ -18,7 +18,7 @@ public class LocalDbMigrationTests
         string path = Path.Combine(Path.GetTempPath(), "cb-migrate-" + Guid.NewGuid().ToString("N") + ".db");
         try
         {
-            LocalDb db = new LocalDb(path);
+            LocalDb db = new LocalDb(new FileInfo(path));
             await db.InitializeAsync();
 
             List<string> tables = await ListTablesAsync(path);
@@ -42,16 +42,19 @@ public class LocalDbMigrationTests
         string path = Path.Combine(Path.GetTempPath(), "cb-migrate-idem-" + Guid.NewGuid().ToString("N") + ".db");
         try
         {
-            await using (LocalDb first = new LocalDb(path))
+            await using (LocalDb first = new LocalDb(new FileInfo(path)))
             {
                 await first.InitializeAsync();
             }
 
-            await using LocalDb second = new LocalDb(path);
+            await using LocalDb second = new LocalDb(new FileInfo(path));
             await second.InitializeAsync();
 
-            await using CipherBankDbContext context = await second.CreateContextAsync();
-            (await context.Database.GetAppliedMigrationsAsync()).Should().NotBeEmpty();
+            CipherBankDbContext context = await second.CreateContextAsync();
+            await using (context)
+            {
+                (await context.Database.GetAppliedMigrationsAsync()).Should().NotBeEmpty();
+            }
         }
         finally
         {
@@ -84,7 +87,7 @@ public class LocalDbMigrationTests
                 await create.ExecuteNonQueryAsync();
             }
 
-            LocalDb db = new LocalDb(path);
+            LocalDb db = new LocalDb(new FileInfo(path));
             await db.InitializeAsync();
 
             List<string> tables = await ListTablesAsync(path);
@@ -115,7 +118,7 @@ public class LocalDbMigrationTests
             await File.WriteAllTextAsync(path + "-wal", "wal leftover");
             await File.WriteAllTextAsync(path + "-shm", "shm leftover");
 
-            LocalDb db = new LocalDb(path);
+            LocalDb db = new LocalDb(new FileInfo(path));
             await db.InitializeAsync();
 
             db.Path.Should().Be(Path.GetFullPath(path));

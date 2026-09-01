@@ -6,7 +6,6 @@ using CipherBank_app.ChallengePass;
 using CipherBank_app.ChallengePass.Algorithms;
 using CipherBank_app.ChallengePass.Configuration;
 using CipherBank_app.ChallengePass.Hybrid;
-using CipherBank_app.ChallengePass.Structures;
 using CipherBank_app.ChallengePass.Templates;
 using CipherBank_app.Custody;
 using CipherBank_app.V1;

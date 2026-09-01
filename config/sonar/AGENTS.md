@@ -6,16 +6,16 @@ evaluated by Sonar.
 
 ## Gate ownership
 
-- The gate lives on `https://sonar.cipherbank.money` (project key
-  `CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c`). There is no
-  checked-in mirror of it and no provisioning script — see `README.md` in
-  this directory. Change the gate in the Sonar UI.
+- The gate lives on `https://sonar.cipherbank.money`. The project key is a
+  public identifier (not a secret); see `README.md` in this directory. There
+  is no checked-in mirror of the gate and no provisioning script. Change the
+  gate in the Sonar UI.
 - Never reintroduce a repo-side copy of the gate conditions (YAML, Python,
   or otherwise) that CI verifies against or pushes to the server.
 - Repository-structure rules (CPM, AssemblyInfo, Core SQL, retired names)
   live in `CipherBank-app.Analyzers` and run on every `dotnet build`. Sibling
-  product projects are scanned via additional files so Linux CI does not need
-  to compile the MAUI host.
+  product trees are also fed as additional files so structure diagnostics
+  still fire when a job builds only part of the solution.
 
 ## Construction rules
 
@@ -45,3 +45,8 @@ evaluated by Sonar.
 Never add broad `NoWarn`, analysis exclusions, or disabled rules. A narrow
 suppression must state the rule key, safety rationale, evidence, owner, and
 revisit condition.
+
+Never grow `CoverageExclusions` in `config/sonar/exclusions.json` or the
+matching `sonar.coverage.exclusions` property in `.github/workflows/sonar.yml`.
+That list is frozen; cover product code instead. Shrink only with an explicit
+policy change. The dedicated JSON file is the source of truth for analyzer tests.

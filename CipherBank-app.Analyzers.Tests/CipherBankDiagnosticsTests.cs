@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Analyzers;
 using Xunit;
 
 namespace CipherBank_app.Analyzers.Tests;
@@ -12,6 +11,7 @@ public sealed class CipherBankDiagnosticsTests
     [Fact]
     public void RuleIds_AreStable()
     {
+        // TODO: Build a way to generate tests from the descriptors, matrix of inputs to tests.
         Assert.Equal("CB1001", CipherBankDiagnostics.CentralPackageVersion.Id);
         Assert.Equal("CB1002", CipherBankDiagnostics.LegacyAssemblyInfo.Id);
         Assert.Equal("CB1003", CipherBankDiagnostics.ScatteredSql.Id);

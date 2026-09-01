@@ -2,9 +2,7 @@
 
 Sonar is the only source of truth for the quality gate. There is no
 checked-in copy for CI to verify against, and no repo-side script that
-pushes conditions to the server. Change the gate in the Sonar UI at
-https://sonar.cipherbank.money (project key
-`CB-st_CipherBank-App_59d7f589-fd7d-4064-9687-e720f9b3443c`).
+pushes conditions to the server..
 
 The earlier `quality-gate.yaml` + Python verifier, and later
 `provision_quality_gate.py`, were retired so this repo does not keep a
@@ -25,13 +23,17 @@ Coverage for new code comes from Coverlet OpenCover produced by:
 Those reports are the coverage job's handoff into the scan. A missing
 OpenCover file leaves `new_coverage` at 0% and reds the gate.
 
-Scanner exclusions are limited to generated/build output, platform-owned source
-that is not compiled on Linux, resources, tests for coverage, scripts, and
-design handoff assets. Platform adapters and tests are excluded from coverage
-calculation only; interfaces and production services are not CPD-excluded.
-EF Core migrations under `CipherBank-app.Core/Persist/Migrations/` stay
-excluded as scaffolded `Up`/`Designer` snapshots, not product policy. Do not
-widen that path.
+Scanner source and coverage exclusion arrays live in
+[`exclusions.json`](exclusions.json). Analyzer tests lock
+`.github/workflows/sonar.yml` to that file. Do not add `Persist/Migrations`
+or other product Core paths. Do not grow `CoverageExclusions`; cover product
+code instead. Shrink only with an explicit policy change.
+
+Scanner source exclusions are limited to generated/build output, scanner reports,
+editor metadata, scripts, and the out-of-stack design handoff. Platform sources
+and MAUI resources remain visible to analysis. Platform adapters and tests are
+excluded from coverage calculation only; interfaces and production services are
+not CPD-excluded.
 
 Do not store `SONAR_TOKEN` here. Configure it as a repository secret; configure
 `SONAR_HOST_URL` and `SONAR_PROJECT_KEY` as repository variables.

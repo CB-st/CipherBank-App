@@ -17,6 +17,7 @@ public sealed class PublicQuoteTests
 
         quote.Rate.Should().Be(50_000m);
         quote.InverseRate.Should().Be(0.00002m);
+        (quote.Rate * quote.InverseRate).Should().Be(1m);
     }
 
     [Fact]

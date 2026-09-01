@@ -15,6 +15,7 @@ public sealed class UserDataEnrollKeyPair : IDisposable
     private bool _disposed;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="UserDataEnrollKeyPair"/> class.
     /// Wraps enroll algorithm output for challenge decrypt / ENROLL_USER.
     /// Use: Medium (unlock). Scope: userdata enroll session.
     /// </summary>

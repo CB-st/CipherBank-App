@@ -35,22 +35,25 @@ public sealed class RatesCache : IRatesCache
             .Distinct(StringComparer.Ordinal)
             .ToArray() ?? [];
 
-        await using CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
-        IQueryable<RateSnapshotEntity> query = context.RateSnapshots.AsNoTracking();
-        if (requestedSymbols.Length > 0)
+        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        await using (context)
         {
-            query = query.Where(entity => requestedSymbols.Contains(entity.Symbol));
-        }
+            IQueryable<RateSnapshotEntity> query = context.RateSnapshots.AsNoTracking();
+            if (requestedSymbols.Length > 0)
+            {
+                query = query.Where(entity => requestedSymbols.Contains(entity.Symbol));
+            }
 
-        return await query
-            .OrderBy(entity => entity.Symbol)
-            .Select(entity => new RateRow(
-                entity.Symbol,
-                entity.Usd,
-                entity.Change24H,
-                entity.UpdatedAtMs))
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
+            return await query
+                .OrderBy(entity => entity.Symbol)
+                .Select(entity => new RateRow(
+                    entity.Symbol,
+                    entity.Usd,
+                    entity.Change24H,
+                    entity.UpdatedAtMs))
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+        }
     }
 
     private async Task UpsertCoreAsync(IEnumerable<RateRow> rows, CancellationToken ct)
@@ -65,29 +68,32 @@ public sealed class RatesCache : IRatesCache
             return;
         }
 
-        await using CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
-        string[] symbols = normalized.Select(row => row.Symbol).ToArray();
-        List<RateSnapshotEntity> existingRows = await context.RateSnapshots
-            .Where(entity => symbols.Contains(entity.Symbol))
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
-        Dictionary<string, RateSnapshotEntity> existing = existingRows.ToDictionary(
-            entity => entity.Symbol,
-            StringComparer.Ordinal);
-
-        foreach (RateRow row in normalized)
+        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        await using (context)
         {
-            if (!existing.TryGetValue(row.Symbol, out RateSnapshotEntity? entity))
+            string[] symbols = normalized.Select(row => row.Symbol).ToArray();
+            List<RateSnapshotEntity> existingRows = await context.RateSnapshots
+                .Where(entity => symbols.Contains(entity.Symbol))
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+            Dictionary<string, RateSnapshotEntity> existing = existingRows.ToDictionary(
+                entity => entity.Symbol,
+                StringComparer.Ordinal);
+
+            foreach (RateRow row in normalized)
             {
-                entity = new RateSnapshotEntity { Symbol = row.Symbol };
-                context.RateSnapshots.Add(entity);
+                if (!existing.TryGetValue(row.Symbol, out RateSnapshotEntity? entity))
+                {
+                    entity = new RateSnapshotEntity { Symbol = row.Symbol };
+                    context.RateSnapshots.Add(entity);
+                }
+
+                entity.Usd = row.Usd;
+                entity.Change24H = row.Change24h;
+                entity.UpdatedAtMs = row.UpdatedAtMs;
             }
 
-            entity.Usd = row.Usd;
-            entity.Change24H = row.Change24h;
-            entity.UpdatedAtMs = row.UpdatedAtMs;
+            await context.SaveChangesAsync(ct).ConfigureAwait(false);
         }
-
-        await context.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 }

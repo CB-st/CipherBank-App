@@ -10,7 +10,7 @@ namespace CipherBank_app.ChallengePass.Hybrid;
 
 /// <summary>
 /// Portable ML-KEM-768 via BouncyCastle.Cryptography.
-/// Uses <see cref="MLKemPrivateKeyParameters.FromSeed"/> only — avoids SecureRandom
+/// Uses <see cref="MLKemPrivateKeyParameters.FromSeed(MLKemParameters, byte[])"/> only — avoids SecureRandom
 /// ambiguity with legacy BouncyCastle.Crypto pulled by NBitcoin.
 /// </summary>
 public static class MlKem768Provider

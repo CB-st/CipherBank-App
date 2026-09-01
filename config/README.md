@@ -11,7 +11,7 @@ or deployment providers may override them after defaults are loaded.
 | `challenge-pass/` | `ChallengePass` | Installed session suite selection (non-secret identifiers only) |
 | `dispatch/` | `SyncScheduler` | Sync concurrency and dispatch behavior |
 | `network/` | `Network` | Product API and WebSocket endpoints by environment |
-| `persistence/` | `Persistence` | On-device database naming and initialization |
+| `persistence/` | `Persistence` | On-device database naming, initialization, and demo payee seeds |
 | `sonar/` | server quality gate | New-code quality thresholds and project assignment contract |
 | `ui/` | `Cora`, `Carousel` | Cora copy and carousel layout defaults |
 

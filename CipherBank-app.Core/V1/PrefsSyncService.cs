@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
-using System.Net.Http;
 using System.Text.Json;
 using CipherBank_app.Persist;
 

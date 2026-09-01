@@ -27,7 +27,17 @@ public sealed class ConfigurationTests
         cryptography.Should().NotBeNull();
         cryptography!.IsValid().Should().BeTrue();
         scheduler.Should().NotBeNull();
-        scheduler!.MaxConcurrency.Should().Be(SyncSchedulerOptions.MinConcurrency);
+        scheduler!.MaxConcurrency.Should().Be(0);
+        scheduler.Resolve().Should().BeInRange(
+            SyncSchedulerOptions.MinConcurrency,
+            SyncSchedulerOptions.MaxAllowedConcurrency);
+
+        NetworkOptions? network = configuration
+            .GetSection(NetworkOptions.SectionName)
+            .Get<NetworkOptions>();
+        network.Should().NotBeNull();
+        network!.DefaultEnvironment.Should().Be("Sandbox");
+        network.Environments.Should().ContainKey("Production");
     }
 
     [Fact]
