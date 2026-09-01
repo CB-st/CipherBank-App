@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Data;
+using CipherBank_app.Configuration;
 using CipherBank_app.Persist.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -13,28 +14,32 @@ namespace CipherBank_app.Persist;
 public sealed class RecipientRepository : IRecipientRepository
 {
     /// <summary>
-    /// Stable seed primary key for the demo rent payee. Not a host tunable — changing it duplicates rows.
+    /// Stable seed primary key for the demo rent payee. Must match config/appsettings Persistence:DefaultRecipients.
     /// </summary>
     internal const string DefaultRentRecipientId = "seed:rent-4th-st";
 
     /// <summary>
-    /// Stable seed primary key for the demo utilities payee. Not a host tunable — changing it duplicates rows.
+    /// Stable seed primary key for the demo utilities payee. Must match config/appsettings Persistence:DefaultRecipients.
     /// </summary>
     internal const string DefaultUtilitiesRecipientId = "seed:utilities-co";
 
-    private const string DefaultAccountType = "checking";
+    private static readonly string DefaultAccountType = "checking";
 
     private readonly ILocalDb _db;
+    private readonly PersistenceOptions _options;
     private readonly TimeProvider _timeProvider;
 
-    public RecipientRepository(ILocalDb db)
-        : this(db, TimeProvider.System)
+    public RecipientRepository(ILocalDb db, PersistenceOptions options, TimeProvider? timeProvider = null)
     {
-    }
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(options);
+        if (!options.AreDefaultRecipientsValid())
+        {
+            throw new ArgumentException("DefaultRecipients must have unique non-blank ids and names.", nameof(options));
+        }
 
-    public RecipientRepository(ILocalDb db, TimeProvider timeProvider)
-    {
         _db = db;
+        _options = options;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -42,24 +47,27 @@ public sealed class RecipientRepository : IRecipientRepository
 
     public async Task<IReadOnlyList<AchRecipientRow>> ListAsync()
     {
-        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
-        return await context.Recipients
-            .AsNoTracking()
-            .OrderBy(entity => entity.Name)
-            .Select(entity => new AchRecipientRow(
-                entity.Id,
-                entity.Name,
-                entity.Holder,
-                entity.Bank,
-                Routing: null,
-                Account: null,
-                entity.AccountType,
-                entity.Memo,
-                entity.AccountMask,
-                entity.RoutingMask,
-                entity.CreatedAt))
-            .ToListAsync()
-            .ConfigureAwait(false);
+        CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using (context)
+        {
+            return await context.Recipients
+                .AsNoTracking()
+                .OrderBy(entity => entity.Name)
+                .Select(entity => new AchRecipientRow(
+                    entity.Id,
+                    entity.Name,
+                    entity.Holder,
+                    entity.Bank,
+                    Routing: null,
+                    Account: null,
+                    entity.AccountType,
+                    entity.Memo,
+                    entity.AccountMask,
+                    entity.RoutingMask,
+                    entity.CreatedAt))
+                .ToListAsync()
+                .ConfigureAwait(false);
+        }
     }
 
     /// <summary>
@@ -74,63 +82,67 @@ public sealed class RecipientRepository : IRecipientRepository
     public async Task DeleteAsync(string id)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
-        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
-        RecipientEntity? entity = await context.Recipients.FindAsync(id).ConfigureAwait(false);
-        if (entity is null)
+        CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using (context)
         {
-            return;
-        }
+            RecipientEntity? entity = await context.Recipients.FindAsync(id).ConfigureAwait(false);
+            if (entity is null)
+            {
+                return;
+            }
 
-        context.Recipients.Remove(entity);
-        await context.SaveChangesAsync().ConfigureAwait(false);
+            context.Recipients.Remove(entity);
+            await context.SaveChangesAsync().ConfigureAwait(false);
+        }
     }
 
     /// <summary>
-    /// Inserts the two default payees in one transaction when the table is empty.
+    /// Inserts configured default payees in one transaction when the table is empty.
     /// Use: High (first-run and concurrent hydration). Scope: RecipientRepository.
     /// </summary>
     public async Task SeedDefaultsIfEmptyAsync()
     {
-        DateTimeOffset now = _timeProvider.GetUtcNow();
-        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
-        await using IDbContextTransaction transaction = await context.Database
-            .BeginTransactionAsync(IsolationLevel.Serializable)
-            .ConfigureAwait(false);
-        if (await context.Recipients.AnyAsync().ConfigureAwait(false))
+        if (_options.DefaultRecipients.Count == 0)
         {
             return;
         }
 
-        await ApplyRowAsync(
-            context,
-            new AchRecipientRow(
-                DefaultRentRecipientId,
-                "Rent — 4th St LLC",
-                "4th St LLC",
-                "Demo Bank",
-                "021000021",
-                "88210001",
-                DefaultAccountType,
-                "Rent",
-                null,
-                null,
-                now)).ConfigureAwait(false);
-        await ApplyRowAsync(
-            context,
-            new AchRecipientRow(
-                DefaultUtilitiesRecipientId,
-                "Utilities Co",
-                "Utilities Co",
-                "City Credit Union",
-                "110000000",
-                "44102222",
-                DefaultAccountType,
-                null,
-                null,
-                null,
-                now)).ConfigureAwait(false);
-        await context.SaveChangesAsync().ConfigureAwait(false);
-        await transaction.CommitAsync().ConfigureAwait(false);
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using (context)
+        {
+            IDbContextTransaction transaction = await context.Database
+                .BeginTransactionAsync(IsolationLevel.Serializable)
+                .ConfigureAwait(false);
+            await using (transaction)
+            {
+                if (await context.Recipients.AnyAsync().ConfigureAwait(false))
+                {
+                    return;
+                }
+
+                foreach (DefaultRecipientOptions seed in _options.DefaultRecipients)
+                {
+                    await ApplyRowAsync(
+                        context,
+                        new AchRecipientRow(
+                            seed.Id,
+                            seed.Name,
+                            seed.Holder,
+                            seed.Bank,
+                            seed.Routing,
+                            seed.Account,
+                            string.IsNullOrWhiteSpace(seed.AccountType) ? DefaultAccountType : seed.AccountType,
+                            seed.Memo,
+                            null,
+                            null,
+                            now)).ConfigureAwait(false);
+                }
+
+                await context.SaveChangesAsync().ConfigureAwait(false);
+                await transaction.CommitAsync().ConfigureAwait(false);
+            }
+        }
     }
 
     private static async Task ApplyRowAsync(CipherBankDbContext context, AchRecipientRow row)
@@ -163,8 +175,11 @@ public sealed class RecipientRepository : IRecipientRepository
 
     private async Task UpsertCoreAsync(AchRecipientRow row)
     {
-        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
-        await ApplyRowAsync(context, row).ConfigureAwait(false);
-        await context.SaveChangesAsync().ConfigureAwait(false);
+        CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using (context)
+        {
+            await ApplyRowAsync(context, row).ConfigureAwait(false);
+            await context.SaveChangesAsync().ConfigureAwait(false);
+        }
     }
 }

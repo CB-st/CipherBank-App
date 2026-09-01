@@ -15,7 +15,7 @@ public class PrefsStoreTests
     public async Task SaveLoad_IdleSecondsRoundTrip()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
         PrefsStore store = new PrefsStore(db);
         UserPrefs prefs = await store.LoadAsync();
@@ -39,7 +39,7 @@ public class PrefsStoreTests
     public async Task LoadAsync_InvalidJson_ReturnsDefaults()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(path);
+        LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
         await using (CipherBankDbContext context = await db.CreateContextAsync())
         {

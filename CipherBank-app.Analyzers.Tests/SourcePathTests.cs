@@ -15,13 +15,14 @@ public sealed class SourcePathTests
         Assert.Equal("c.cs", source.FileName);
         Assert.Equal(".cs", source.Extension);
         Assert.Equal("b", source.Parent.FileName);
+        Assert.NotNull(source.File);
     }
 
     [Fact]
     public void Equals_IgnoresCase()
     {
         string path = Path.Combine("src", "Core", "File.cs");
-        Assert.True(SourcePath.From(path).Equals(SourcePath.From(path.ToUpperInvariant())));
+        Assert.True(SourcePath.NamesEqual(SourcePath.From(path), SourcePath.From(path.ToUpperInvariant())));
     }
 
     [Fact]

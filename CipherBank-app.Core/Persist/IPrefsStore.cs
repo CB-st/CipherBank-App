@@ -4,7 +4,10 @@
 
 namespace CipherBank_app.Persist;
 
-/// <summary>SQLite-backed prefs.</summary>
+/// <summary>
+/// SQLite-backed prefs. Load/save use concrete <see cref="UserPrefs"/> so System.Text.Json can
+/// materialize the bag; <see cref="IUserPrefs"/> is the read shape for UI/sync.
+/// </summary>
 public interface IPrefsStore
 {
     /// <summary>

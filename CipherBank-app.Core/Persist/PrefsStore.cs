@@ -22,16 +22,19 @@ public sealed class PrefsStore : IPrefsStore
     /// <inheritdoc />
     public async Task<UserPrefs> LoadAsync()
     {
-        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
-        string? json = await context.Preferences
-            .AsNoTracking()
-            .Where(entity => entity.Key == Key)
-            .Select(entity => entity.Value)
-            .SingleOrDefaultAsync()
-            .ConfigureAwait(false);
-        UserPrefs prefs = DeserializePrefs(json);
-        prefs.NormalizeHomeSections();
-        return prefs;
+        CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using (context)
+        {
+            string? json = await context.Preferences
+                .AsNoTracking()
+                .Where(entity => entity.Key == Key)
+                .Select(entity => entity.Value)
+                .SingleOrDefaultAsync()
+                .ConfigureAwait(false);
+            UserPrefs prefs = DeserializePrefs(json);
+            prefs.NormalizeHomeSections();
+            return prefs;
+        }
 
         static UserPrefs DeserializePrefs(string? payload)
         {
@@ -62,17 +65,20 @@ public sealed class PrefsStore : IPrefsStore
     private async Task SaveCoreAsync(UserPrefs prefs)
     {
         string json = JsonSerializer.Serialize(prefs);
-        await using CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
-        PreferenceEntity? entity = await context.Preferences.FindAsync(Key).ConfigureAwait(false);
-        if (entity is null)
+        CipherBankDbContext context = await _db.CreateContextAsync().ConfigureAwait(false);
+        await using (context)
         {
-            context.Preferences.Add(new PreferenceEntity { Key = Key, Value = json });
-        }
-        else
-        {
-            entity.Value = json;
-        }
+            PreferenceEntity? entity = await context.Preferences.FindAsync(Key).ConfigureAwait(false);
+            if (entity is null)
+            {
+                context.Preferences.Add(new PreferenceEntity { Key = Key, Value = json });
+            }
+            else
+            {
+                entity.Value = json;
+            }
 
-        await context.SaveChangesAsync().ConfigureAwait(false);
+            await context.SaveChangesAsync().ConfigureAwait(false);
+        }
     }
 }

@@ -7,8 +7,11 @@ namespace CipherBank_app.Persist;
 /// <summary>SQLite public environment (Cora persist schema).</summary>
 public interface ILocalDb
 {
-    /// <summary>Gets the on-disk SQLite path for this database instance.</summary>
+    /// <summary>Gets the on-disk SQLite path for this database instance (SQLite DataSource).</summary>
     string Path { get; }
+
+    /// <summary>Gets the database file as a <see cref="FileInfo"/>.</summary>
+    FileInfo DatabaseFile { get; }
 
     /// <summary>
     /// Applies pending EF migrations on first open.

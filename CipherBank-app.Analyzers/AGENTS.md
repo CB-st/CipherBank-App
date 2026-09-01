@@ -6,7 +6,7 @@ Repository-structure diagnostics. Not product behavior.
 - CB1002: `Properties/AssemblyInfo.cs`
 - CB1003: raw SQL anywhere in Core (`CommandText`, `FromSqlRaw`, `ExecuteSqlRaw` by identifier). Total ban — no `LocalDbSql` quarantine. Schema is EF `Migrate()` on M2.
 - CB1004: retired names `IProductApi`, `MockProductApi`, `AppSessionDeps`
-- `SourcePath`: host-native additional-file path value. Segments from `Path.GetFileName` / `GetExtension` / `GetDirectoryName` (no separator rewriting). Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo`. Do not use `Path.GetFullPath` or `Combine` on additional-file strings.
+- `SourcePath`: wraps a `FileInfo` (sealed, so not a subclass) for additional-file paths. Segments from `Path.GetFileName` / `GetExtension` / `GetDirectoryName` on the original Roslyn string (no separator rewriting, no `GetFullPath`). Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo`. Compare paths with `SourcePath.NamesEqual`.
 
 These run on every `dotnet build` via `Directory.Build.props`. `Directory.Build.targets`
 feeds every product `.csproj` and product C# file as additional files, so CB1001,
