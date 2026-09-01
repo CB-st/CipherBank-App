@@ -1,3 +1,7 @@
+// <copyright file="CriticalUserJourneyTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using CipherBank_app.E2ETests.PageObjects;
 using FluentAssertions;
 using OpenQA.Selenium.Appium;
@@ -30,7 +34,7 @@ public class CriticalUserJourneyTests : IDisposable
             {
                 PlatformName = "iOS",
                 AutomationName = "XCUITest",
-                App = Environment.GetEnvironmentVariable("IOS_APP_PATH") ?? "/path/to/CipherBank.app"
+                App = Environment.GetEnvironmentVariable("IOS_APP_PATH") ?? "/path/to/CipherBank.app",
             };
             options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("IOS_DEVICE") ?? "iPhone 15");
             options.AddAdditionalAppiumOption("platformVersion", Environment.GetEnvironmentVariable("IOS_VERSION") ?? "17.0");
@@ -43,7 +47,7 @@ public class CriticalUserJourneyTests : IDisposable
             {
                 PlatformName = "Android",
                 AutomationName = "UiAutomator2",
-                App = Environment.GetEnvironmentVariable("ANDROID_APK_PATH") ?? "/path/to/CipherBank.apk"
+                App = Environment.GetEnvironmentVariable("ANDROID_APK_PATH") ?? "/path/to/CipherBank.apk",
             };
             options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator");
 
@@ -195,5 +199,6 @@ public class CriticalUserJourneyTests : IDisposable
     {
         _driver?.Quit();
         _driver?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

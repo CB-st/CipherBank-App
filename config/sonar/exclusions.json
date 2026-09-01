@@ -1,0 +1,19 @@
+{
+  "_comment": "Frozen Sonar scanner exclusion lists. Analyzer tests lock .github/workflows/sonar.yml to these arrays. Do not grow CoverageExclusions; cover product code instead. Shrink only with an explicit policy change.",
+  "SourceExclusions": [
+    "**/bin/**",
+    "**/obj/**",
+    "**/Platforms/**",
+    "**/Resources/**",
+    "design_handoff_cipherbank/**",
+    ".cursor/**",
+    "reports/**"
+  ],
+  "CoverageExclusions": [
+    "**/Platforms/**",
+    "**/Resources/**",
+    "**/*Tests*/**",
+    "scripts/**",
+    "design_handoff_cipherbank/**"
+  ]
+}

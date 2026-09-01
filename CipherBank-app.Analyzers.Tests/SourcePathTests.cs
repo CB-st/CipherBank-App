@@ -15,13 +15,14 @@ public sealed class SourcePathTests
         Assert.Equal("c.cs", source.FileName);
         Assert.Equal(".cs", source.Extension);
         Assert.Equal("b", source.Parent.FileName);
+        Assert.NotNull(source.File);
     }
 
     [Fact]
     public void Equals_IgnoresCase()
     {
         string path = Path.Combine("src", "Core", "File.cs");
-        Assert.True(SourcePath.From(path).Equals(SourcePath.From(path.ToUpperInvariant())));
+        Assert.True(SourcePath.NamesEqual(SourcePath.From(path), SourcePath.From(path.ToUpperInvariant())));
     }
 
     [Fact]
@@ -44,14 +45,6 @@ public sealed class SourcePathTests
     {
         Assert.True(SourcePath.From(Path.Combine("src", "CipherBank-app.Core", "Persist", "LocalDb.cs")).IsCoreProject);
         Assert.False(SourcePath.From(Path.Combine("src", "CipherBank-app", "MauiProgram.cs")).IsCoreProject);
-    }
-
-    [Fact]
-    public void IsSqlOwner_RequiresPersistSqlLocalDbSql()
-    {
-        Assert.True(SourcePath.From(Path.Combine("CipherBank-app.Core", "Persist", "Sql", "LocalDbSql.cs")).IsSqlOwner);
-        Assert.False(SourcePath.From(Path.Combine("CipherBank-app.Core", "Persist", "LocalDbSql.cs")).IsSqlOwner);
-        Assert.False(SourcePath.From(Path.Combine("CipherBank-app.Core", "Services", "Query.cs")).IsSqlOwner);
     }
 
     [Fact]

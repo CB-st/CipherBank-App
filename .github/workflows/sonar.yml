@@ -61,22 +61,10 @@ jobs:
           dotnet-version: |
             10.0.x
 
-      # Repository-wide CB1001–CB1004 pass. Linux cannot compile the MAUI host
-      # (net10.0-android|ios|maccatalyst), IntegrationTests (WireMock/Scriban.Signed),
-      # or E2ETests (StyleCop + TreatWarningsAsErrors). Analyzer tests load those
-      # on-disk csproj/C# trees as AdditionalFiles; Core/ChallengePass/Tests are
-      # also compiled in the Sonar job with Directory.Build.targets AdditionalFiles.
       - name: Run structure analyzer tests
         run: |
           set -euo pipefail
           mkdir -p reports
-          echo "Structure pass (real files, not a Linux compile of unbuildable TFMs):"
-          echo "  CipherBank-app (MAUI host)"
-          echo "  CipherBank-app.IntegrationTests"
-          echo "  CipherBank-app.E2ETests"
-          echo "  CipherBank-app.Core"
-          echo "  CipherBank-app.ChallengePass"
-          echo "  CipherBank-app.Tests"
           dotnet test CipherBank-app.Analyzers.Tests/CipherBank-app.Analyzers.Tests.csproj -c Release --nologo \
             -p:CollectCoverage=true \
             -p:CoverletOutputFormat=opencover \
@@ -94,7 +82,6 @@ jobs:
             exit 1
           fi
           mkdir -p reports
-          # OpenCover for sonar.cs.opencover.reportsPaths; cobertura for tooling.
           dotnet test "${test_proj}" -c Release --nologo \
             -p:CollectCoverage=true \
             -p:CoverletOutputFormat=\"cobertura,opencover\" \
@@ -296,6 +283,10 @@ jobs:
           # CPD exclusions: intentional zero-token DIM overload pairs on Core/ChallengePass
           # interfaces (S4136-adjacent duplicates that are not real copy-paste debt).
           # Do NOT exclude PrefsWireDto / RateLimiter / MockProductApi.
+          # Do NOT exclude CipherBank-app.Core/Persist/Migrations (EF migrate path is in scope).
+          # sonar.coverage.exclusions is FROZEN. Do not add entries. Cover product code
+          # instead; config/sonar/exclusions.json is the dedicated list and
+          # SonarCoverageExclusionTests locks sonar.yml to that file.
           dotnet sonarscanner begin \
             /k:"${SONAR_PROJECT_KEY}" \
             /n:"CipherBank App" \
@@ -309,16 +300,14 @@ jobs:
             /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,reports/analyzer.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
-      # Do not add CipherBank-app / IntegrationTests / E2ETests here. Linux cannot
-      # compile those TFMs; CB1001–CB1004 still scan their trees via AdditionalFiles
-      # (Directory.Build.targets) and the coverage "Run structure analyzer tests" step.
+      # Scan graph: Analyzers + Core + unit tests. Sibling trees still reach
+      # structure analyzers via Directory.Build.targets additional files.
       - name: Build analyzable projects
         run: |
           set -euo pipefail
           projects=(
             CipherBank-app.Analyzers/CipherBank-app.Analyzers.csproj
             CipherBank-app.Core/CipherBank-app.Core.csproj
-            CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
             CipherBank-app.Tests/CipherBank-app.Tests.csproj
           )
           built=0

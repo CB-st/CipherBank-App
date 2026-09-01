@@ -44,8 +44,8 @@ public static class CipherBankDiagnostics
     /// </summary>
     public static readonly DiagnosticDescriptor ScatteredSql = new(
         "CB1003",
-        "Raw SQL belongs in LocalDbSql.cs",
-        "Raw SQL ('{0}') is owned only by CipherBank-app.Core/Persist/Sql/LocalDbSql.cs",
+        "Raw SQL is not allowed in Core",
+        "Raw SQL ('{0}') is not allowed in CipherBank-app.Core",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
