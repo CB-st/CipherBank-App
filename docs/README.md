@@ -1,50 +1,52 @@
-# CipherBank Documentation
+# CipherBank documentation
 
-Documentation for the CipherBank-app repository, a .NET 10 MAUI cross-platform cryptocurrency banking application.
+Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass stack.
 
-## Overview
+## Build prerequisites
 
-CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. It provides cryptocurrency wallet management, market data, purchases, and transactions with a focus on security (certificate pinning, secure storage, rate limiting).
+- .NET 10 SDK and the workload for the target MAUI platform
+- Android SDK/JDK for the primary Android build
+- Appium only for device-level E2E execution
 
-## Prerequisites
-
-- **.NET 10 SDK** (10.0.101 or later)
-- **MAUI workload** for your target platform(s)
-
-## Build and Run
+## Build and test
 
 ```bash
-# Restore packages
 dotnet restore
-
-# Build
-dotnet build
-
-# Run (specify framework for multi-target projects)
-dotnet build -f net10.0-android -t:Run
-dotnet build -f net10.0-ios -t:Run
-dotnet build -f net10.0-maccatalyst -t:Run
-dotnet build -f net10.0-windows10.0.19041.0 -t:Run
+dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=false
+dotnet build CipherBank-app.ChallengePass/CipherBank-app.ChallengePass.csproj
+dotnet build CipherBank-app/CipherBank-app.csproj -f net10.0-android
 ```
 
-## Documentation Index
+## Documentation index
 
 | Document | Description |
-|----------|-------------|
-| [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
+| --- | --- |
+| [../AGENTS.md](../AGENTS.md) | Repository architecture, coding, security, UI, and verification contract |
+| [architecture.md](architecture.md) | Architecture, data flow, security, and HTTP pipeline |
+| [style/README.md](style/README.md) | Typography, semantic color, components, layout, and accessibility |
+| [BUILD_LOG.md](BUILD_LOG.md) | Prototype layer map and implementation history |
+| [MAUI_FUNCTION_REF.md](MAUI_FUNCTION_REF.md) | MAUI/Core/ChallengePass function map |
+| [SONAR_GATE.md](SONAR_GATE.md) | Sonar quality-gate policy |
+| [SONAR_STRUCTURAL_PLAN.md](SONAR_STRUCTURAL_PLAN.md) | One-type-per-file and caller-map work |
+| [LOCAL_LINT.md](LOCAL_LINT.md) | Multi-language local lint workflow |
+| [LOCAL_SONAR_LINT.md](LOCAL_SONAR_LINT.md) | Local SonarAnalyzer and IDE connected-mode guidance |
 | [core/README.md](core/README.md) | Core library overview |
-| [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |
-| [core/services.md](core/services.md) | Core service interfaces and utilities |
-| [app/README.md](app/README.md) | MAUI app overview, DI, MauiProgram |
-| [app/services.md](app/services.md) | Service implementations, HTTP handlers, mocks |
+| [core/models.md](core/models.md) | Domain models |
+| [core/services.md](core/services.md) | Core ports and services |
+| [app/README.md](app/README.md) | MAUI app and composition root |
+| [app/services.md](app/services.md) | MAUI service adapters and HTTP clients |
 | [app/viewmodels.md](app/viewmodels.md) | ViewModels and commands |
-| [app/views.md](app/views.md) | Views/Pages and XAML bindings |
+| [app/views.md](app/views.md) | Pages and XAML bindings |
 | [app/converters.md](app/converters.md) | Value converters |
-| [app/platforms.md](app/platforms.md) | Platform-specific code (certificate pinning) |
-| [tests/README.md](tests/README.md) | Test strategy overview |
+| [app/platforms.md](app/platforms.md) | Platform-specific adapters |
+| [tests/README.md](tests/README.md) | Test strategy |
 | [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
-| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end tests |
-| [config/README.md](config/README.md) | Build config, analyzers, tooling |
+| [tests/e2e-tests.md](tests/e2e-tests.md) | Appium E2E tests |
+| [tests/e2e-local.env.example](tests/e2e-local.env.example) | Gitignored local E2E credential template |
+| [config/README.md](config/README.md) | Build, analyzer, and tooling configuration |
 | [config/sonar/README.md](config/sonar/README.md) | Sonar quality-gate policy and local SonarQube-for-IDE setup |
-| [review/m1a-comment-resolution.md](review/m1a-comment-resolution.md) | PR #25 feedback-to-change traceability |
+| [review/m1a-comment-resolution.md](review/m1a-comment-resolution.md) | M1a PR #25 feedback map |
+| [review/m2-alignment-resolution.md](review/m2-alignment-resolution.md) | M2 PR #21 and M1a forward-port map |
+
+Reusable scaffolds are indexed in [../templates/README.md](../templates/README.md).
