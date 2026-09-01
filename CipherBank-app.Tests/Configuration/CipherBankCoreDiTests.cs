@@ -7,6 +7,7 @@ using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Pos;
+using CipherBank_app.V1;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -45,6 +46,10 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<IPrefsStore>().Should().BeOfType<PrefsStore>();
         provider.GetRequiredService<IRatesCache>().Should().BeOfType<RatesCache>();
         provider.GetRequiredService<ISyncJobScheduler>().Should().BeOfType<SyncJobScheduler>();
+        provider.GetRequiredService<ISessionProofBuilder>().Should().BeOfType<LabSessionProofBuilder>();
+        provider.GetRequiredService<IProductSessionStore>().Should().BeOfType<InMemoryProductSessionStore>();
+        provider.Invoking(p => p.GetRequiredService<IProductClient>())
+            .Should().Throw<InvalidOperationException>("the host registers HttpProductClient on the Shell HTTP pipeline");
     }
 
     /// <summary>

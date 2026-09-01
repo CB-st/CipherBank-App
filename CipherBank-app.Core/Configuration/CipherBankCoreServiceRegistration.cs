@@ -6,6 +6,7 @@ using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Pos;
+using CipherBank_app.V1;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -42,5 +43,11 @@ internal static class CipherBankCoreServiceRegistration
             provider.GetRequiredService<IOptions<PersistenceOptions>>().Value,
             provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IWalletRepository, WalletRepository>();
+
+        // Production product wire: host (MauiProgram) registers HttpProductClient on the
+        // pinned/rate-limited pipeline. Isolated Core tests construct the client directly.
+        services.AddSingleton<ISessionProofBuilder, LabSessionProofBuilder>();
+        services.AddSingleton<IProductSessionStore, InMemoryProductSessionStore>();
+        services.AddTransient<ProductAuthHeaderHandler>();
     }
 }

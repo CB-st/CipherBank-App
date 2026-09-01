@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -21,7 +22,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<SettingsViewModel> _logger;
     private readonly ISettingsService _settings;
-    private readonly IAuthService _authService;
+    private readonly IProductSessionStore _sessions;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
     private readonly IHealthCheckClient _healthCheck;
@@ -75,14 +76,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public SettingsViewModel(
         ILogger<SettingsViewModel> logger,
         ISettingsService settings,
-        IAuthService authService,
+        IProductSessionStore sessions,
         INavigationService navigation,
         IDialogService dialog,
         IHealthCheckClient healthCheck)
     {
         _logger = logger;
         _settings = settings;
-        _authService = authService;
+        _sessions = sessions;
         _navigation = navigation;
         _dialog = dialog;
         _healthCheck = healthCheck;
@@ -193,7 +194,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 // avoid clobbering the custom ApiEndpoint saved above.
                 _settings.Environment = SelectedEnvironment;
                 LogEnvironmentChanged(_logger, previousEnvironment, SelectedEnvironment);
-                await _authService.LogoutAsync();
+                _sessions.Clear();
 
                 // Apply theme before leaving so the change persists into the login screen.
                 ApplyTheme();
@@ -338,7 +339,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         try
         {
             LogUserLoggingOut(_logger);
-            await _authService.LogoutAsync();
+            _sessions.Clear();
             await _navigation.GoToAsync(Routes.Login);
             LogUserLoggedOut(_logger);
         }
