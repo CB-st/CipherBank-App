@@ -23,16 +23,31 @@ public sealed class RecipientRepository : IRecipientRepository
     /// </summary>
     internal const string DefaultUtilitiesRecipientId = "seed:utilities-co";
 
-    private static readonly string DefaultAccountType = "checking";
+    private const string DefaultAccountType = "checking";
 
     private readonly ILocalDb _db;
     private readonly PersistenceOptions _options;
     private readonly TimeProvider _timeProvider;
 
-    public RecipientRepository(ILocalDb db, PersistenceOptions options, TimeProvider? timeProvider = null)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RecipientRepository"/> class using
+    /// <see cref="TimeProvider.System"/>.
+    /// Use: Medium (tests / composition). Scope: persist.
+    /// </summary>
+    public RecipientRepository(ILocalDb db, PersistenceOptions options)
+        : this(db, options, TimeProvider.System)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="RecipientRepository"/> class with an explicit clock.
+    /// Use: Medium (host DI). Scope: persist.
+    /// </summary>
+    public RecipientRepository(ILocalDb db, PersistenceOptions options, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(timeProvider);
         if (!options.AreDefaultRecipientsValid())
         {
             throw new ArgumentException("DefaultRecipients must have unique non-blank ids and names.", nameof(options));
@@ -40,7 +55,7 @@ public sealed class RecipientRepository : IRecipientRepository
 
         _db = db;
         _options = options;
-        _timeProvider = timeProvider ?? TimeProvider.System;
+        _timeProvider = timeProvider;
     }
 
     public Task EnsureSchemaAsync() => _db.InitializeAsync();

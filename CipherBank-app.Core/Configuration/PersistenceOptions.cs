@@ -14,7 +14,7 @@ public sealed class PersistenceOptions
     /// <summary>
     /// Demo payees inserted when the recipients table is empty. Stable ids; changing them duplicates rows.
     /// </summary>
-    public IList<DefaultRecipientOptions> DefaultRecipients { get; set; } = new List<DefaultRecipientOptions>();
+    public IList<DefaultRecipientOptions> DefaultRecipients { get; } = new List<DefaultRecipientOptions>();
 
     /// <summary>
     /// True when every seed row has a unique non-blank id and name. An empty list is valid (no seed).
