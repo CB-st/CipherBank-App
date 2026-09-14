@@ -2,10 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -141,9 +139,9 @@ public sealed partial class MockAuthService : IAuthService
     private static string GenerateJwtToken(string username)
     {
         // Generate a mock JWT-like token (not a real JWT, just for testing)
-        string header = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
+        string header = Convert.ToBase64String(Encoding.UTF8.GetBytes(
             "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"));
-        string payload = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(
+        string payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(
             $"{{\"sub\":\"{username}\",\"iat\":{DateTimeOffset.UtcNow.ToUnixTimeSeconds()},\"exp\":{DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds()}}}"));
         string signature = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
 

@@ -25,7 +25,7 @@ public sealed class ProductTreeStructureAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsVersionWhenInjectedIntoLiveMauiCsproj()
+    public async Task ReportsVersionWhenInjectedIntoLiveMauiCsprojAsync()
     {
         CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
         {
@@ -96,7 +96,7 @@ public sealed class ProductTreeStructureAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsRetiredNameWhenInjectedIntoNonSampleUnbuiltFile()
+    public async Task ReportsRetiredNameWhenInjectedIntoNonSampleUnbuiltFileAsync()
     {
         CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier> test = new()
         {
@@ -144,7 +144,7 @@ public sealed class ProductTreeStructureAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsViewModelGlobalWhenInjectedIntoLiveTree()
+    public async Task ReportsViewModelGlobalWhenInjectedIntoLiveTreeAsync()
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
         {

@@ -14,9 +14,9 @@ public class RatesCacheTests
     public async Task UpsertThenGet_FiltersBySymbol()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-rates-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        RatesCache cache = new RatesCache(db);
+        RatesCache cache = new(db);
 
         await cache.UpsertAsync(
             [
@@ -39,9 +39,9 @@ public class RatesCacheTests
     public async Task UpsertAsync_OlderTimestamp_DoesNotReplaceNewerSnapshot()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-rates-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        RatesCache cache = new RatesCache(db);
+        RatesCache cache = new(db);
 
         await cache.UpsertAsync([new RateRow("BTC", 68_000m, 2.5m, 2_000)], default);
         await cache.UpsertAsync([new RateRow(" btc ", 67_000m, 1.5m, 1_000)], default);

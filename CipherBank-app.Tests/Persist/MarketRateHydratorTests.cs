@@ -15,7 +15,7 @@ public sealed class MarketRateHydratorTests
     [Fact]
     public void FromQuote_MapsInverseQuoteRateAndTimestamp()
     {
-        PublicQuote quote = new PublicQuote("btc", 1m, "USD", 67_123.45m);
+        PublicQuote quote = new("btc", 1m, "USD", 67_123.45m);
 
         RateRow row = RateRow.FromQuote(quote, updatedAtMs: 1_000);
 
@@ -25,12 +25,12 @@ public sealed class MarketRateHydratorTests
     [Fact]
     public async Task HydrateAndRefreshAsync_RefreshesWhenCachedTimestampIsInTheFuture()
     {
-        DateTimeOffset now = new DateTimeOffset(2026, 8, 18, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset now = new(2026, 8, 18, 12, 0, 0, TimeSpan.Zero);
         long nowMs = now.ToUnixTimeMilliseconds();
-        MemoryRatesCache cache = new MemoryRatesCache();
+        MemoryRatesCache cache = new();
         cache.Seed(new RateRow("BTC", 1m, 0m, nowMs + (long)TimeSpan.FromHours(1).TotalMilliseconds));
-        CountingQuoteService quotes = new CountingQuoteService();
-        MarketRateHydrator hydrator = new MarketRateHydrator(
+        CountingQuoteService quotes = new();
+        MarketRateHydrator hydrator = new(
             cache,
             quotes,
             new FixedTimeProvider(now));
@@ -45,12 +45,12 @@ public sealed class MarketRateHydratorTests
     [Fact]
     public async Task HydrateAndRefreshAsync_ReusesRowYoungerThanMaxAge()
     {
-        DateTimeOffset now = new DateTimeOffset(2026, 8, 18, 12, 0, 0, TimeSpan.Zero);
+        DateTimeOffset now = new(2026, 8, 18, 12, 0, 0, TimeSpan.Zero);
         long nowMs = now.ToUnixTimeMilliseconds();
-        MemoryRatesCache cache = new MemoryRatesCache();
+        MemoryRatesCache cache = new();
         cache.Seed(new RateRow("BTC", 1m, 0m, nowMs - (long)TimeSpan.FromMinutes(1).TotalMilliseconds));
-        CountingQuoteService quotes = new CountingQuoteService();
-        MarketRateHydrator hydrator = new MarketRateHydrator(
+        CountingQuoteService quotes = new();
+        MarketRateHydrator hydrator = new(
             cache,
             quotes,
             new FixedTimeProvider(now));
@@ -99,7 +99,7 @@ public sealed class MarketRateHydratorTests
                 return Task.FromResult<IReadOnlyList<RateRow>>(Rows.Values.ToList());
             }
 
-            List<RateRow> matched = new List<RateRow>();
+            List<RateRow> matched = new();
             foreach (string symbol in symbols)
             {
                 if (Rows.TryGetValue(symbol, out RateRow? row))

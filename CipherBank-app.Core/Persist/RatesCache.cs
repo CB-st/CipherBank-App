@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Persist;
 
-/// <inheritdoc />
+/// <inheritdoc cref="IRatesCache" />
 public sealed class RatesCache : IRatesCache, IDisposable
 {
     private readonly ILocalDb _db;
@@ -100,7 +100,7 @@ public sealed class RatesCache : IRatesCache, IDisposable
                     context.Entry(entity!).CurrentValues.SetValues(new
                     {
                         row.Usd,
-                        Change24H = row.Change24h,
+                        Change24H = row.Change24H,
                         row.UpdatedAtMs,
                     });
                 }

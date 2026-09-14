@@ -2,12 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -17,13 +12,13 @@ namespace CipherBank_app.Services.Mocks;
 /// Mock implementation of ICryptoAPIService for development and testing.
 /// Provides realistic cryptocurrency market data without making actual API calls.
 /// </summary>
-public sealed partial class MockCryptoAPIService : ICryptoApiService
+public sealed partial class MockCryptoApiService : ICryptoApiService
 {
     // Simulated latency range in milliseconds
     private const int MinLatencyMs = 100;
     private const int MaxLatencyMs = 500;
 
-    private static readonly List<CryptoCurrency> MockCryptos =
+    private static readonly List<CryptoCurrency> _mockCryptos =
     [
         new("BTC", "Bitcoin", 97500.00m, 1250.50m, 1.30m, 1920000000000m, 45000000000m, "https://assets.coingecko.com/coins/images/1/large/bitcoin.png"),
         new("ETH", "Ethereum", 3450.00m, -45.25m, -1.29m, 415000000000m, 18000000000m, "https://assets.coingecko.com/coins/images/279/large/ethereum.png"),
@@ -37,12 +32,12 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
         new("LINK", "Chainlink", 25.30m, 0.95m, 3.90m, 15800000000m, 680000000m, "https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png"),
     ];
 
-    private readonly ILogger<MockCryptoAPIService> _logger;
+    private readonly ILogger<MockCryptoApiService> _logger;
 
-    public MockCryptoAPIService(ILogger<MockCryptoAPIService> logger)
+    public MockCryptoApiService(ILogger<MockCryptoApiService> logger)
     {
         _logger = logger;
-        LogInitialized(_logger, MockCryptos.Count);
+        LogInitialized(_logger, _mockCryptos.Count);
     }
 
     public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken = default)
@@ -51,7 +46,7 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
         await SimulateNetworkDelayAsync(cancellationToken);
 
         // Add slight price variations to simulate real-time data
-        var cryptos = MockCryptos.Select(c => AddPriceVariation(c)).ToList();
+        var cryptos = _mockCryptos.Select(c => AddPriceVariation(c)).ToList();
 
         LogReturnedPrices(_logger, cryptos.Count);
         return cryptos;
@@ -64,7 +59,7 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
         LogGettingPriceForSymbol(_logger, symbol);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var crypto = MockCryptos.FirstOrDefault(c =>
+        var crypto = _mockCryptos.FirstOrDefault(c =>
             c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
 
         if (crypto == null)
@@ -86,7 +81,7 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
         LogGettingPriceHistory(_logger, symbol, period);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var crypto = MockCryptos.FirstOrDefault(c =>
+        var crypto = _mockCryptos.FirstOrDefault(c =>
             c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase))
             ?? throw new KeyNotFoundException($"Cryptocurrency with symbol '{symbol}' not found");
 
@@ -106,7 +101,7 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
         LogSearchingCrypto(_logger, query);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var results = MockCryptos
+        var results = _mockCryptos
             .Where(c => c.Symbol.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                        c.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
             .Select(AddPriceVariation)
@@ -121,14 +116,14 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
         // Add up to +/- 0.5% price variation to simulate real-time updates
         var variation = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 0.01) - 0.005);
         var newPrice = crypto.CurrentPrice * (1 + variation);
-        var newChange = crypto.PriceChange24h + (crypto.CurrentPrice * variation);
-        var newPercent = crypto.PercentChange24h + (variation * 100);
+        var newChange = crypto.PriceChange24H + (crypto.CurrentPrice * variation);
+        var newPercent = crypto.PercentChange24H + (variation * 100);
 
         return crypto with
         {
             CurrentPrice = Math.Round(newPrice, crypto.CurrentPrice < 1 ? 6 : 2),
-            PriceChange24h = Math.Round(newChange, crypto.CurrentPrice < 1 ? 6 : 2),
-            PercentChange24h = Math.Round(newPercent, 2),
+            PriceChange24H = Math.Round(newChange, crypto.CurrentPrice < 1 ? 6 : 2),
+            PercentChange24H = Math.Round(newPercent, 2),
         };
     }
 

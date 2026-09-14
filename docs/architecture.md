@@ -86,6 +86,19 @@ Route constants are defined in `Constants/Routes.cs`:
 | Routes.PurchaseWithSymbol(symbol) | `//PurchasePage?symbol=BTC` | PurchasePage with pre-selected crypto |
 | Routes.Settings | `//SettingsPage` | SettingsPage |
 
+## Persistence Work Scheduling
+
+`SyncJobScheduler` accepts keyed interactive and background persist jobs used by
+the downstream M7 market-data flows. A .NET 10 unbounded prioritized channel
+orders waiting jobs by application priority and submission sequence. A fixed
+number of asynchronous consumers each await an entire job before reading the
+next, enforcing whole-operation concurrency across `await` boundaries.
+
+The scheduler adds only policy the channel does not provide: keyed in-flight
+deduplication, linked caller/shutdown cancellation, observable completion,
+drain, and deterministic disposal. `SyncPriority` remains queue vocabulary;
+OS `ThreadPriority` and `TaskScheduler` govern different scheduling concerns.
+
 ## Security
 
 ### Certificate Pinning

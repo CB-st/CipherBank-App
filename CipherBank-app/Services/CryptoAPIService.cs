@@ -2,13 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -18,17 +13,17 @@ namespace CipherBank_app.Services;
 /// Production implementation of ICryptoAPIService using HTTP client.
 /// Retrieves cryptocurrency market data from the CipherBank API.
 /// </summary>
-public sealed partial class CryptoAPIService : ICryptoApiService
+public sealed partial class CryptoApiService : ICryptoApiService
 {
     private const string PricesEndpoint = "api/v1/crypto/prices";
     private const string PriceEndpoint = "api/v1/crypto/price";
     private const string HistoryEndpoint = "api/v1/crypto/history";
     private const string SearchEndpoint = "api/v1/crypto/search";
 
-    private readonly ILogger<CryptoAPIService> _logger;
+    private readonly ILogger<CryptoApiService> _logger;
     private readonly HttpClient _http;
 
-    public CryptoAPIService(ILogger<CryptoAPIService> logger, HttpClient http)
+    public CryptoApiService(ILogger<CryptoApiService> logger, HttpClient http)
     {
         _logger = logger;
         _http = http;

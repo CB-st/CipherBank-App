@@ -14,7 +14,7 @@ namespace CipherBank_app.Views;
 /// Code-behind for the Wallet page: triggers the initial load and manages the deck's
 /// page-indicator dots, the detail-panel cross-fade, and the empty state.
 /// </summary>
-public partial class WalletPage : ContentPage
+public partial class WalletPage
 {
     private readonly WalletViewModel _viewModel;
     private bool _isCrossFading;

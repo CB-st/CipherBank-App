@@ -3,11 +3,12 @@
 // </copyright>
 
 using CipherBank_app.Models;
+using CipherBank_app.Persist.Entities;
 
 namespace CipherBank_app.Persist;
 
 /// <summary>A cached market rate. <see cref="Symbol"/> normalizes to uppercase at construction.</summary>
-public sealed record RateRow(string Symbol, decimal Usd, decimal Change24h, long UpdatedAtMs)
+public sealed record RateRow(string Symbol, decimal Usd, decimal Change24H, long UpdatedAtMs)
 {
     private readonly string _symbol = NormalizeSymbol(Symbol);
 
@@ -15,7 +16,7 @@ public sealed record RateRow(string Symbol, decimal Usd, decimal Change24h, long
     /// Initializes a new instance of the <see cref="RateRow"/> class from a persisted snapshot
     /// entity. Use: High (every rates read). Scope: RatesCache projections.
     /// </summary>
-    public RateRow(Persist.Entities.RateSnapshotEntity entity)
+    public RateRow(RateSnapshotEntity entity)
         : this(entity.Symbol, entity.Usd, entity.Change24H, entity.UpdatedAtMs)
     {
     }
@@ -34,7 +35,7 @@ public sealed record RateRow(string Symbol, decimal Usd, decimal Change24h, long
         return new RateRow(
             quote.InputCurrency,
             quote.Rate,
-            Change24h: 0m,
+            Change24H: 0m,
             updatedAtMs);
     }
 

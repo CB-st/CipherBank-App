@@ -9,7 +9,7 @@ namespace CipherBank_app.Views;
 /// <summary>
 /// Code-behind for the Purchase page.
 /// </summary>
-public partial class PurchasePage : ContentPage
+public partial class PurchasePage
 {
     private readonly PurchaseViewModel _viewModel;
     private bool _isOpeningPicker;

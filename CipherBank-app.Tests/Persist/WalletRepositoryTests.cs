@@ -18,12 +18,12 @@ public sealed class WalletRepositoryTests
     public async Task UpsertListDelete_RoundTripsRows()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-wallet-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        WalletRepository repo = new WalletRepository(db);
+        WalletRepository repo = new(db);
 
-        DateTimeOffset earlier = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        DateTimeOffset later = new DateTimeOffset(2026, 1, 2, 0, 0, 0, TimeSpan.Zero);
+        DateTimeOffset earlier = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        DateTimeOffset later = new(2026, 1, 2, 0, 0, 0, TimeSpan.Zero);
         LocalWalletRow first = HdWallet("w1", "BTC", "Primary", "bc1qexample", "m/84'/0'/0'/0/0", earlier);
         LocalWalletRow second = HdWallet("w2", "ETH", "Secondary", "0xabc", "m/44'/60'/0'/0/0", later);
 
@@ -51,8 +51,8 @@ public sealed class WalletRepositoryTests
     public async Task ListAsync_CanceledToken_ThrowsOperationCanceledException()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-wallet-" + Guid.NewGuid().ToString("N") + ".db");
-        WalletRepository repo = new WalletRepository(new LocalDb(new FileInfo(path)));
-        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        WalletRepository repo = new(new LocalDb(new FileInfo(path)));
+        using CancellationTokenSource cancellation = new();
         await cancellation.CancelAsync();
 
         Func<Task> act = async () => await repo.ListAsync(cancellation.Token);

@@ -13,16 +13,16 @@ public record CryptoCurrency(
     string Symbol,
     string Name,
     decimal CurrentPrice,
-    decimal PriceChange24h,
-    decimal PercentChange24h,
+    decimal PriceChange24H,
+    decimal PercentChange24H,
     decimal MarketCap,
-    decimal Volume24h,
+    decimal Volume24H,
     string IconUrl)
 {
-    public bool IsPriceUp => PercentChange24h >= 0;
+    public bool IsPriceUp => PercentChange24H >= 0;
 
     public string FormattedPrice => $"${CurrentPrice.ToString("N2", CultureInfo.InvariantCulture)}";
 
     public string FormattedPercentChange =>
-        $"{(PercentChange24h >= 0 ? "+" : string.Empty)}{PercentChange24h.ToString("F2", CultureInfo.InvariantCulture)}%";
+        $"{(PercentChange24H >= 0 ? "+" : string.Empty)}{PercentChange24H.ToString("F2", CultureInfo.InvariantCulture)}%";
 }

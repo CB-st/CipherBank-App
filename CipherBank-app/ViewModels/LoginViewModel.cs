@@ -2,19 +2,14 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Globalization;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
-#if DEBUG
-using CipherBank_app.Services.Mocks;
-#endif
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+#if DEBUG
+#endif
 
 namespace CipherBank_app.ViewModels;
 
@@ -34,26 +29,26 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     private bool _disposed;
 
     [ObservableProperty]
-    private string username = string.Empty;
+    private string _username = string.Empty;
 
     [ObservableProperty]
-    private string password = string.Empty;
+    private string _password = string.Empty;
 
     [ObservableProperty]
-    private bool isBusy;
+    private bool _isBusy;
 
     [ObservableProperty]
-    private string? errorMessage;
+    private string? _errorMessage;
 
 #if DEBUG
     [ObservableProperty]
-    private bool isTestEnvironment;
+    private bool _isTestEnvironment;
 
     [ObservableProperty]
-    private string? environmentBadge;
+    private string? _environmentBadge;
 
     [ObservableProperty]
-    private string? statusMessage;
+    private string? _statusMessage;
 #endif
 
 #if DEBUG
@@ -140,7 +135,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         {
             LogNetworkError(_logger, ex);
             ErrorMessage = "Network error. Please check your connection and try again.";
-            await _dialog.ShowAlertAsync("Connection Error", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Connection Error", ErrorMessage);
         }
         catch (OperationCanceledException)
         {
@@ -151,13 +146,13 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         {
             LogInvalidOperation(_logger, ex);
             ErrorMessage = "Invalid credentials or server error";
-            await _dialog.ShowAlertAsync("Login Failed", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Login Failed", ErrorMessage);
         }
         catch (Exception ex)
         {
             LogUnexpectedError(_logger, ex);
             ErrorMessage = "An unexpected error occurred. Please try again.";
-            await _dialog.ShowAlertAsync("Error", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Error", ErrorMessage);
         }
         finally
         {
@@ -183,8 +178,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         {
             await _dialog.ShowAlertAsync(
                 "Not Available",
-                "Test credentials are only available when using mock services.",
-                "OK");
+                "Test credentials are only available when using mock services.");
         }
     }
 

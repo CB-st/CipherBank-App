@@ -11,7 +11,7 @@ the durable rationale so future rounds do not relitigate settled questions.
   vocabulary instead of a domain enum.
 - **Decision:** declined. `ThreadPriority` specifies OS thread scheduling
   priority (its values ascend with urgency, opposite to our lowest-first
-  `PriorityQueue` dequeue order) and does not describe work-item queue ordering.
+  prioritized-channel dequeue order) and does not describe work-item queue ordering.
   Framework precedent separates the two concepts: WPF's `DispatcherPriority` is
   its own enum for prioritized work items on one thread, and Win32 thread pools
   define a dedicated `TP_CALLBACK_PRIORITY` for callbacks. `SyncPriority`
@@ -23,8 +23,8 @@ the durable rationale so future rounds do not relitigate settled questions.
   [WPF threading model / DispatcherPriority](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/threading-model)
   ("the Dispatcher selects work items on a priority basis"),
   [TP_CALLBACK_PRIORITY](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ne-winnt-tp_callback_priority),
-  [PriorityQueue&lt;TElement,TPriority&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.priorityqueue-2)
-  (dequeues the lowest priority value first).
+  [Channel.CreateUnboundedPrioritized](https://learn.microsoft.com/en-us/dotnet/api/system.threading.channels.channel.createunboundedprioritized)
+  (creates an unbounded channel ordered by its configured comparer).
 - **Forward guidance:** new queue lanes extend `SyncPriority`; never repurpose
   OS scheduling enums for work-item ordering.
 
@@ -37,16 +37,18 @@ the durable rationale so future rounds do not relitigate settled questions.
   subclass caps only synchronous segments and cannot enforce a whole-job
   concurrency ceiling, named dedupe, rank ordering among waiting jobs, or a
   test drain. The docs example throttles synchronous work — a different
-  problem. `AGENTS.md` codifies the composed shape (injected `TaskScheduler` +
-  `PriorityQueue`).
+  problem. `SyncJobScheduler` instead uses .NET 10's prioritized channel with
+  a fixed number of consumers; each consumer awaits a whole logical operation
+  before reading another job.
 - **Evidence:**
   [TaskScheduler class + LimitedConcurrencyLevelTaskScheduler example](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler)
   (the example's queue holds `Task` bodies and counts running delegates, not
   logical async operations),
-  [TaskScheduler.QueueTask](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler.queuetask).
-- **Forward guidance:** keep the scheduler a deduping task factory over the
-  injected platform `TaskScheduler`; revisit only with an argument that defeats
-  the async-slot analysis.
+  [TaskScheduler.QueueTask](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler.queuetask),
+  [Channel.CreateUnboundedPrioritized](https://learn.microsoft.com/en-us/dotnet/api/system.threading.channels.channel.createunboundedprioritized).
+- **Forward guidance:** keep whole-operation throttling in the fixed channel
+  consumers and keyed deduplication in `SyncJobScheduler`; use a
+  `TaskScheduler` subclass only for synchronous task-segment scheduling.
 
 ## 3. `PersistenceOptions` bounds: `static readonly` instead of `const`
 

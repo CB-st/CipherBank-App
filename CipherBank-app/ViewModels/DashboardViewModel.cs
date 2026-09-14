@@ -2,11 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Collections.ObjectModel;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
@@ -30,22 +26,22 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     private bool _disposed;
 
     [ObservableProperty]
-    private ObservableCollection<CryptoCurrency> cryptocurrencies = [];
+    private ObservableCollection<CryptoCurrency> _cryptocurrencies = [];
 
     [ObservableProperty]
-    private CryptoCurrency? selectedCrypto;
+    private CryptoCurrency? _selectedCrypto;
 
     [ObservableProperty]
-    private bool isLoading;
+    private bool _isLoading;
 
     [ObservableProperty]
-    private bool isRefreshing;
+    private bool _isRefreshing;
 
     [ObservableProperty]
-    private string? errorMessage;
+    private string? _errorMessage;
 
     [ObservableProperty]
-    private decimal totalPortfolioValue;
+    private decimal _totalPortfolioValue;
 
     public DashboardViewModel(
         ILogger<DashboardViewModel> logger,
@@ -156,8 +152,6 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                         LogLoadPricesCancelled(_logger);
                     }
                 }
-
-                return;
             }
         }
         catch (Exception ex)
@@ -210,11 +204,6 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ViewCryptoDetailsAsync(CryptoCurrency crypto)
     {
-        if (crypto == null)
-        {
-            return;
-        }
-
         LogViewingDetails(_logger, crypto.Symbol);
         SelectedCrypto = crypto;
 
@@ -222,8 +211,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         var detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
         await _dialog.ShowAlertAsync(
             crypto.Name,
-            detailMessage,
-            "OK");
+            detailMessage);
     }
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators

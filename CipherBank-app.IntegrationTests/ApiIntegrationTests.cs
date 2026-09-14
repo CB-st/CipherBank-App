@@ -1,3 +1,7 @@
+// <copyright file="ApiIntegrationTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using System.Net;
 using System.Net.Http.Json;
 using CipherBank_app.Models;
@@ -12,12 +16,10 @@ namespace CipherBank_app.IntegrationTests;
 /// </summary>
 public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 {
-    private readonly MockServerFixture _fixture;
     private readonly HttpClient _client;
 
     public ApiIntegrationTests(MockServerFixture fixture)
     {
-        _fixture = fixture;
         _client = fixture.HttpClient;
     }
 

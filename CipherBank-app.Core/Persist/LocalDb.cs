@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Persist;
 
-/// <inheritdoc />
+/// <inheritdoc cref="ILocalDb" />
 public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 {
     private readonly string _path;
@@ -55,7 +55,7 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
 
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_path)!);
             await DiscardUnmatchedPrototypeAsync(ct).ConfigureAwait(false);
-            CipherBankDbContext context = new CipherBankDbContext(_options);
+            CipherBankDbContext context = new(_options);
             await using (context)
             {
                 await context.Database.MigrateAsync(ct).ConfigureAwait(false);
@@ -106,10 +106,10 @@ public sealed class LocalDb : ILocalDb, IAsyncDisposable, IDisposable
             return;
         }
 
-        bool discard = true;
+        bool discard;
         try
         {
-            CipherBankDbContext probe = new CipherBankDbContext(_options);
+            CipherBankDbContext probe = new(_options);
             await using (probe)
             {
                 IEnumerable<string> applied = await probe.Database.GetAppliedMigrationsAsync(ct).ConfigureAwait(false);

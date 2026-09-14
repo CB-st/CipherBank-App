@@ -33,8 +33,8 @@ public sealed class PersistenceOptions : IOptionsSection
     /// </summary>
     public bool AreDefaultRecipientsValid()
     {
-        List<string> ids = new List<string>(DefaultRecipients.Count);
-        List<string> names = new List<string>(DefaultRecipients.Count);
+        List<string> ids = new(DefaultRecipients.Count);
+        List<string> names = new(DefaultRecipients.Count);
         foreach (DefaultRecipientOptions row in DefaultRecipients)
         {
             if (!IsRecipientValid(row))

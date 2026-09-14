@@ -43,7 +43,7 @@ public static class CipherBankDefaultsConfiguration
         bool windowsOverlay)
     {
         Assembly assembly = typeof(CipherBankDefaultsConfiguration).Assembly;
-        ConfigurationBuilder builder = new ConfigurationBuilder();
+        ConfigurationBuilder builder = new();
         builder.AddJsonStream(OpenRequiredResource(assembly, BaseResourceName));
         if (!string.IsNullOrWhiteSpace(environment))
         {

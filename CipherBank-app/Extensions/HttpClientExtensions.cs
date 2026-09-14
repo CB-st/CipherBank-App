@@ -3,7 +3,6 @@
 // </copyright>
 
 using System.Net;
-using System.Net.Http;
 using System.Reflection;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Handlers;
@@ -21,6 +20,7 @@ public static class HttpClientExtensions
     /// Registers a typed HttpClient with CipherBank's standard configuration:
     /// certificate pinning, rate limiting, auth headers, and resilience.
     /// </summary>
+    /// <typeparam name="TClient">The typed client to register.</typeparam>
     public static IHttpClientBuilder AddCipherBankHttpClient<TClient>(
         this IServiceCollection services,
         Action<IServiceProvider, HttpClient>? configure = null)

@@ -2,48 +2,58 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Threading.Channels;
 using CipherBank_app.Configuration;
 
 namespace CipherBank_app.Persist;
 
-/// <inheritdoc />
+/// <inheritdoc cref="ISyncJobScheduler" />
 public sealed class SyncJobScheduler : ISyncJobScheduler, IDisposable
 {
-    private readonly object _gate = new();
-    private readonly PriorityQueue<QueuedJob, (int Priority, long Sequence)> _queue = new();
+    private static readonly IComparer<QueuedJob> _jobComparer = Comparer<QueuedJob>.Create(
+        static (left, right) =>
+        {
+            int priority = left.Priority.CompareTo(right.Priority);
+            return priority != 0 ? priority : left.Sequence.CompareTo(right.Sequence);
+        });
+
+    private readonly Lock _gate = new();
+    private readonly Channel<QueuedJob> _channel;
     private readonly Dictionary<string, QueuedJob> _jobs = new(StringComparer.Ordinal);
-    private readonly TaskFactory _taskFactory;
     private readonly CancellationTokenSource _shutdown = new();
-    private readonly int _maxConcurrency;
     private long _sequence;
-    private int _running;
     private bool _disposed;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SyncJobScheduler"/> class over
-    /// <see cref="TaskScheduler.Default"/> with default options.
+    /// Initializes a new instance of the <see cref="SyncJobScheduler"/> class with default options.
     /// Use: Medium (tests). Scope: persist.
     /// </summary>
     public SyncJobScheduler()
-        : this(TaskScheduler.Default, new SyncSchedulerOptions())
+        : this(new SyncSchedulerOptions())
     {
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SyncJobScheduler"/> class over an injected
-    /// platform <see cref="TaskScheduler"/>.
+    /// Initializes a new instance of the <see cref="SyncJobScheduler"/> class.
     /// Use: Medium (host DI / tests). Scope: persist.
     /// </summary>
-    public SyncJobScheduler(TaskScheduler taskScheduler, SyncSchedulerOptions options)
+    public SyncJobScheduler(SyncSchedulerOptions options)
     {
-        ArgumentNullException.ThrowIfNull(taskScheduler);
         ArgumentNullException.ThrowIfNull(options);
-        _taskFactory = new TaskFactory(
-            CancellationToken.None,
-            TaskCreationOptions.DenyChildAttach,
-            TaskContinuationOptions.None,
-            taskScheduler);
-        _maxConcurrency = options.Resolve();
+        int maxConcurrency = options.Resolve();
+        _channel = Channel.CreateUnboundedPrioritized(
+            new UnboundedPrioritizedChannelOptions<QueuedJob>
+            {
+                AllowSynchronousContinuations = false,
+                Comparer = _jobComparer,
+                SingleReader = maxConcurrency == 1,
+                SingleWriter = false,
+            });
+
+        for (int i = 0; i < maxConcurrency; i++)
+        {
+            _ = Task.Run(ProcessQueueAsync);
+        }
     }
 
     /// <inheritdoc />
@@ -75,10 +85,20 @@ public sealed class SyncJobScheduler : ISyncJobScheduler, IDisposable
             CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(
                 ct,
                 _shutdown.Token);
-            QueuedJob job = new QueuedJob(key, work, cancellation);
+            QueuedJob job = new(
+                key,
+                priority,
+                ++_sequence,
+                work,
+                cancellation);
             _jobs.Add(key, job);
-            _queue.Enqueue(job, ((int)priority, ++_sequence));
-            DispatchEligibleLocked();
+            if (!_channel.Writer.TryWrite(job))
+            {
+                _jobs.Remove(key);
+                cancellation.Dispose();
+                throw new ObjectDisposedException(nameof(SyncJobScheduler));
+            }
+
             return job.Completion.Task;
         }
     }
@@ -114,7 +134,7 @@ public sealed class SyncJobScheduler : ISyncJobScheduler, IDisposable
     /// </summary>
     public void Dispose()
     {
-        List<QueuedJob> abandoned;
+        List<QueuedJob> abandoned = new();
         lock (_gate)
         {
             if (_disposed)
@@ -123,83 +143,105 @@ public sealed class SyncJobScheduler : ISyncJobScheduler, IDisposable
             }
 
             _disposed = true;
-
-            // Drain before canceling so a completion-time dispatch cannot start queued work.
-            abandoned = new List<QueuedJob>(_queue.Count);
-            while (_queue.Count > 0)
+            _channel.Writer.TryComplete();
+            abandoned.AddRange(_jobs.Values.Where(static job => !job.Started));
+            foreach (QueuedJob job in abandoned)
             {
-                QueuedJob job = _queue.Dequeue();
-                abandoned.Add(job);
                 _jobs.Remove(job.Key);
             }
 
-            _shutdown.Cancel();
-            _shutdown.Dispose();
+            while (_channel.Reader.TryRead(out _))
+            {
+            }
         }
 
+        _shutdown.Cancel();
         foreach (QueuedJob job in abandoned)
         {
-            // The linked token is already canceled by the shutdown source above, so the
-            // completion carries the same cancellation cause callers observe elsewhere.
             job.Completion.TrySetCanceled(job.Cancellation.Token);
             job.Cancellation.Dispose();
         }
+
+        _shutdown.Dispose();
     }
 
     /// <summary>
-    /// Starts queued jobs through the task factory while whole-job capacity remains.
-    /// Caller holds the gate.
-    /// Use: High (after each enqueue / completion). Scope: SyncJobScheduler instance.
+    /// Consumes prioritized jobs sequentially within one logical worker.
+    /// Use: High (one loop per configured worker). Scope: SyncJobScheduler instance.
     /// </summary>
-    private void DispatchEligibleLocked()
+    private async Task ProcessQueueAsync()
     {
-        // A running job can complete after Dispose; its completion callback must not
-        // start work on a disposed scheduler.
-        if (_disposed)
+        await foreach (QueuedJob job in _channel.Reader.ReadAllAsync().ConfigureAwait(false))
         {
+            await ExecuteJobAsync(job).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Executes one complete asynchronous job and transfers its terminal state to callers.
+    /// Use: High (per dequeued job). Scope: channel worker.
+    /// </summary>
+    private async Task ExecuteJobAsync(QueuedJob job)
+    {
+        bool schedulerDisposed;
+        bool shouldRun;
+        lock (_gate)
+        {
+            schedulerDisposed = _disposed;
+            shouldRun = !schedulerDisposed && !job.Cancellation.IsCancellationRequested;
+            if (shouldRun)
+            {
+                job.Started = true;
+            }
+            else if (!schedulerDisposed)
+            {
+                _jobs.Remove(job.Key);
+            }
+        }
+
+        if (!shouldRun)
+        {
+            if (schedulerDisposed)
+            {
+                return;
+            }
+
+            job.Completion.TrySetCanceled(job.Cancellation.Token);
+            job.Cancellation.Dispose();
             return;
         }
 
-        while (_running < _maxConcurrency && _queue.Count > 0)
+        Exception? failure = null;
+        bool canceled = false;
+        try
         {
-            QueuedJob job = _queue.Dequeue();
-            _running++;
-            Task run = _taskFactory.StartNew(
-                    () => job.Work(job.Cancellation.Token),
-                    CancellationToken.None)
-                .Unwrap();
-            _ = run.ContinueWith(
-                completed => OnJobCompleted(job, completed),
-                CancellationToken.None,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
+            await job.Work(job.Cancellation.Token).ConfigureAwait(false);
         }
-    }
-
-    /// <summary>
-    /// Transfers terminal task state to the observable completion and releases the job key.
-    /// Use: High (per job). Scope: SyncJobScheduler dispatch.
-    /// </summary>
-    private void OnJobCompleted(QueuedJob job, Task completed)
-    {
-        if (completed.IsCanceled)
+        catch (OperationCanceledException) when (job.Cancellation.IsCancellationRequested)
         {
-            job.Completion.TrySetCanceled(job.Cancellation.Token);
+            canceled = true;
         }
-        else if (completed.Exception is not null)
+        catch (Exception exception)
         {
-            job.Completion.TrySetException(completed.Exception.InnerExceptions);
-        }
-        else
-        {
-            job.Completion.TrySetResult();
+            failure = exception;
         }
 
         lock (_gate)
         {
             _jobs.Remove(job.Key);
-            _running--;
-            DispatchEligibleLocked();
+        }
+
+        if (canceled)
+        {
+            job.Completion.TrySetCanceled(job.Cancellation.Token);
+        }
+        else if (failure is not null)
+        {
+            job.Completion.TrySetException(failure);
+        }
+        else
+        {
+            job.Completion.TrySetResult();
         }
 
         job.Cancellation.Dispose();
@@ -207,9 +249,13 @@ public sealed class SyncJobScheduler : ISyncJobScheduler, IDisposable
 
     private sealed record QueuedJob(
         string Key,
+        SyncPriority Priority,
+        long Sequence,
         Func<CancellationToken, Task> Work,
         CancellationTokenSource Cancellation)
     {
+        internal bool Started { get; set; }
+
         internal TaskCompletionSource Completion { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
     }

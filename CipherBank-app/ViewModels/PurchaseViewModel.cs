@@ -2,13 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Linq;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
@@ -35,37 +30,37 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     private bool _disposed;
 
     [ObservableProperty]
-    private ObservableCollection<CryptoCurrency> availableCryptos = [];
+    private ObservableCollection<CryptoCurrency> _availableCryptos = [];
 
     [ObservableProperty]
-    private CryptoCurrency? selectedCrypto;
+    private CryptoCurrency? _selectedCrypto;
 
     [ObservableProperty]
-    private CryptoCurrency? focusedCrypto;
+    private CryptoCurrency? _focusedCrypto;
 
     [ObservableProperty]
-    private string paymentNote = string.Empty;
+    private string _paymentNote = string.Empty;
 
     [ObservableProperty]
-    private decimal amount;
+    private decimal _amount;
 
     [ObservableProperty]
-    private decimal totalCost;
+    private decimal _totalCost;
 
     [ObservableProperty]
-    private decimal fee;
+    private decimal _fee;
 
     [ObservableProperty]
-    private bool isPurchasing;
+    private bool _isPurchasing;
 
     [ObservableProperty]
-    private bool isLoading;
+    private bool _isLoading;
 
     [ObservableProperty]
-    private string? errorMessage;
+    private string? _errorMessage;
 
     [ObservableProperty]
-    private string amountText = string.Empty;
+    private string _amountText = string.Empty;
 
     public PurchaseViewModel(
         ILogger<PurchaseViewModel> logger,
@@ -209,8 +204,6 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                 {
                     LogLoadCryptosCancelled(_logger);
                 }
-
-                return;
             }
         }
         catch (Exception ex)
@@ -252,13 +245,13 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     {
         if (SelectedCrypto == null)
         {
-            await _dialog.ShowAlertAsync("Error", "Please select a cryptocurrency.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please select a cryptocurrency.");
             return;
         }
 
         if (Amount <= 0)
         {
-            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.");
             return;
         }
 
@@ -277,8 +270,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         var confirm = await _dialog.ShowConfirmAsync(
             "Confirm Purchase",
             confirmMessage,
-            "Purchase",
-            "Cancel");
+            "Purchase");
 
         if (!confirm)
         {
@@ -304,8 +296,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                 $"Fee: {transaction.FeeAmount:F8} {transaction.CryptoSymbol}";
             await _dialog.ShowAlertAsync(
                 "Purchase Complete",
-                successMessage,
-                "OK");
+                successMessage);
 
             // Clear form
             AmountText = string.Empty;
@@ -330,12 +321,12 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         catch (InvalidOperationException ex)
         {
             LogPurchaseFailed(_logger, ex, ex.Message);
-            await _dialog.ShowAlertAsync("Purchase Failed", ex.Message, "OK");
+            await _dialog.ShowAlertAsync("Purchase Failed", ex.Message);
         }
         catch (ArgumentException ex)
         {
             LogInvalidPurchaseParameters(_logger, ex);
-            await _dialog.ShowAlertAsync("Invalid Input", ex.Message, "OK");
+            await _dialog.ShowAlertAsync("Invalid Input", ex.Message);
         }
         catch (OperationCanceledException)
         {
@@ -346,8 +337,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             LogErrorProcessingPurchase(_logger, ex);
             await _dialog.ShowAlertAsync(
                 "Error",
-                "Failed to complete purchase. Please try again.",
-                "OK");
+                "Failed to complete purchase. Please try again.");
         }
         finally
         {

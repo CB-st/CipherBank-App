@@ -43,12 +43,12 @@ override CI Sonar: new issues on Persist code still fail the gate.
   `UserPrefs` so System.Text.Json can materialize the bag.
 - `SyncSchedulerOptions.MaxConcurrency` default `0` means unset.
   `Resolve()` is `Clamp(Ceiling(ProcessorCount / 2.0), 1, 8)`.
-  `SyncJobScheduler` is a deduping task factory: a `TaskFactory` bound to the
-  injected platform `TaskScheduler` executes job bodies, `PriorityQueue`
-  orders waiting work P1-before-P2, and the whole async job counts against
-  the concurrency cap. It does not inherit `TaskScheduler` because a
-  scheduler subclass caps only synchronous segments — an async job frees its
-  scheduler slot at the first await — and cannot express keyed completion.
+  `SyncJobScheduler` uses .NET 10's unbounded prioritized channel with a fixed
+  set of asynchronous consumers. The channel orders waiting work
+  P1-before-P2 and by submission sequence within a lane; each consumer awaits
+  the whole async job, so it remains counted against the concurrency cap
+  across awaits. It does not inherit `TaskScheduler`, whose contract schedules
+  synchronous task segments rather than logical async operations.
   Duplicate submissions share the accepted job's completion task. Caller and
   shutdown cancellation reach queued/running work; failures remain observable
   through `EnqueueAsync` and `DrainAsync`.

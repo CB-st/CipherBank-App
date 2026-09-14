@@ -2,13 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -32,46 +26,46 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     private bool _disposed;
 
     [ObservableProperty]
-    private ObservableCollection<Wallet> wallets = [];
+    private ObservableCollection<Wallet> _wallets = [];
 
     [ObservableProperty]
-    private ObservableCollection<Transaction> transactions = [];
+    private ObservableCollection<Transaction> _transactions = [];
 
     [ObservableProperty]
-    private Wallet? selectedWallet;
+    private Wallet? _selectedWallet;
 
     [ObservableProperty]
-    private ObservableCollection<WalletCardItem> walletCards = [];
+    private ObservableCollection<WalletCardItem> _walletCards = [];
 
     [ObservableProperty]
-    private WalletCardItem? focusedWalletCard;
+    private WalletCardItem? _focusedWalletCard;
 
     [ObservableProperty]
-    private decimal totalBalance;
+    private decimal _totalBalance;
 
     [ObservableProperty]
-    private decimal totalBalanceUsd;
+    private decimal _totalBalanceUsd;
 
     [ObservableProperty]
-    private bool isLoading;
+    private bool _isLoading;
 
     [ObservableProperty]
-    private bool isLoadingTransactions;
+    private bool _isLoadingTransactions;
 
     [ObservableProperty]
-    private string? errorMessage;
+    private string? _errorMessage;
 
     [ObservableProperty]
-    private string sendToAddress = string.Empty;
+    private string _sendToAddress = string.Empty;
 
     [ObservableProperty]
-    private decimal sendAmount;
+    private decimal _sendAmount;
 
     [ObservableProperty]
-    private bool isRefreshing;
+    private bool _isRefreshing;
 
     [ObservableProperty]
-    private bool isSending;
+    private bool _isSending;
 
     public WalletViewModel(
         ILogger<WalletViewModel> logger,
@@ -198,8 +192,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
                 {
                     LogLoadWalletsCancelled(_logger);
                 }
-
-                return;
             }
         }
         catch (Exception ex)
@@ -281,26 +273,26 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     {
         if (SelectedWallet == null)
         {
-            await _dialog.ShowAlertAsync("Error", "Please select a wallet first.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please select a wallet first.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(SendToAddress))
         {
-            await _dialog.ShowAlertAsync("Error", "Please enter a destination address.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please enter a destination address.");
             return;
         }
 
         if (SendAmount <= 0)
         {
-            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.", "OK");
+            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.");
             return;
         }
 
         if (SendAmount > SelectedWallet.Balance)
         {
             var insufficientMessage = $"Insufficient balance. Available: {SelectedWallet.FormattedBalance}";
-            await _dialog.ShowAlertAsync("Error", insufficientMessage, "OK");
+            await _dialog.ShowAlertAsync("Error", insufficientMessage);
             return;
         }
 
@@ -309,8 +301,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         var confirm = await _dialog.ShowConfirmAsync(
             "Confirm Send",
             confirmMessage,
-            "Send",
-            "Cancel");
+            "Send");
 
         if (!confirm)
         {
@@ -332,8 +323,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
             await _dialog.ShowAlertAsync(
                 "Success",
-                $"Transaction submitted!\nID: {transaction.Id}\nStatus: {transaction.Status}",
-                "OK");
+                $"Transaction submitted!\nID: {transaction.Id}\nStatus: {transaction.Status}");
 
             // Clear form and refresh
             SendToAddress = string.Empty;
@@ -346,20 +336,19 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         catch (InvalidOperationException ex)
         {
             LogSendFailed(_logger, ex, ex.Message);
-            await _dialog.ShowAlertAsync("Transaction Failed", ex.Message, "OK");
+            await _dialog.ShowAlertAsync("Transaction Failed", ex.Message);
         }
         catch (ArgumentException ex)
         {
             LogInvalidSendParameters(_logger, ex);
-            await _dialog.ShowAlertAsync("Invalid Input", ex.Message, "OK");
+            await _dialog.ShowAlertAsync("Invalid Input", ex.Message);
         }
         catch (Exception ex)
         {
             LogErrorSendingCrypto(_logger, ex);
             await _dialog.ShowAlertAsync(
                 "Error",
-                "Failed to send transaction. Please try again.",
-                "OK");
+                "Failed to send transaction. Please try again.");
         }
         finally
         {
@@ -388,23 +377,21 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
             await _dialog.ShowAlertAsync(
                 "Wallet Created",
-                $"New {wallet.CryptoName} wallet created!\nAddress: {wallet.Address}",
-                "OK");
+                $"New {wallet.CryptoName} wallet created!\nAddress: {wallet.Address}");
 
             LogCreatedWallet(_logger, wallet.Id, cryptoSymbol);
         }
         catch (InvalidOperationException ex)
         {
             LogCouldNotCreateWallet(_logger, ex, ex.Message);
-            await _dialog.ShowAlertAsync("Error", ex.Message, "OK");
+            await _dialog.ShowAlertAsync("Error", ex.Message);
         }
         catch (Exception ex)
         {
             LogErrorCreatingWallet(_logger, ex);
             await _dialog.ShowAlertAsync(
                 "Error",
-                "Failed to create wallet. Please try again.",
-                "OK");
+                "Failed to create wallet. Please try again.");
         }
     }
 

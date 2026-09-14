@@ -19,7 +19,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 {
     private const string CommandTextName = "CommandText";
 
-    private static readonly HashSet<string> RawSqlMethods = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> _rawSqlMethods = new(StringComparer.Ordinal)
     {
         "FromSqlRaw",
         "ExecuteSqlRaw",
@@ -79,7 +79,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
         InvocationExpressionSyntax invocation = (InvocationExpressionSyntax)context.Node;
         string? name = MethodName(invocation);
-        if (name is null || !RawSqlMethods.Contains(name))
+        if (name is null || !_rawSqlMethods.Contains(name))
         {
             return;
         }

@@ -41,7 +41,6 @@ public static class PersistenceFeatureExtensions
         services.AddSingleton(static provider => provider.GetRequiredService<IOptions<PersistenceOptions>>().Value);
         services.AddSingleton(static provider => provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value);
         services.AddSingleton<TimeProvider>(TimeProvider.System);
-        services.AddSingleton<TaskScheduler>(TaskScheduler.Default);
         services.AddSingleton<ILocalDb>(provider =>
         {
             PersistenceOptions options = provider.GetRequiredService<PersistenceOptions>();

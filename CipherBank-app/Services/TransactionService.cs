@@ -2,13 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -73,7 +68,7 @@ public sealed partial class TransactionService : ITransactionService
         ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
         if (amount <= 0)
         {
-            throw new ArgumentException("Amount must be positive", nameof(amount));
+            throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
         LogProcessingPurchase(_logger, amount, symbol);
@@ -119,14 +114,14 @@ public sealed partial class TransactionService : ITransactionService
         ArgumentException.ThrowIfNullOrWhiteSpace(toAddress);
         if (amount <= 0)
         {
-            throw new ArgumentException("Amount must be positive", nameof(amount));
+            throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
         // Basic address validation (additional validation done server-side)
         if (toAddress.Length < 20 || toAddress.Length > 100)
         {
             LogInvalidDestinationAddress(_logger, toAddress);
-            throw new ArgumentException("Invalid destination address format", nameof(toAddress));
+            throw new ArgumentException(@"Invalid destination address format", nameof(toAddress));
         }
 
         LogProcessingSend(_logger, fromWalletId, toAddress, amount);

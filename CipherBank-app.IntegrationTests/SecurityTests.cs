@@ -1,6 +1,12 @@
+// <copyright file="SecurityTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
+using WireMock.Matchers;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using Xunit;
@@ -28,7 +34,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
         // Arrange - Setup an endpoint that requires auth
         _fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/secure/resource")
-                .WithHeader("Authorization", "*", WireMock.Matchers.MatchBehaviour.RejectOnMatch)
+                .WithHeader("Authorization", "*", MatchBehaviour.RejectOnMatch)
                 .UsingGet())
             .RespondWith(Response.Create()
                 .WithStatusCode(HttpStatusCode.Unauthorized)
@@ -54,7 +60,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
                 .WithBody("{\"data\":\"secure_content\"}"));
 
         _client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "valid_token");
+            new AuthenticationHeaderValue("Bearer", "valid_token");
 
         // Act
         var response = await _client.GetAsync("/api/v1/secure/data");
@@ -79,7 +85,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
                 .WithBody("{\"error\":\"Token expired\"}"));
 
         _client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "expired_token");
+            new AuthenticationHeaderValue("Bearer", "expired_token");
 
         // Act
         var response = await _client.GetAsync("/api/v1/protected/endpoint");
@@ -203,7 +209,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
         {
             fromWalletId = "wallet_123",
             toAddress = "bc1qsensitiveaddress",
-            amount = 1.5m
+            amount = 1.5m,
         };
 
         // Act

@@ -30,8 +30,8 @@ public sealed partial class RateLimiter : IDisposable
     public RateLimiter(ILogger<RateLimiter>? logger, int maxRequests, TimeSpan windowDuration)
     {
         _logger = logger;
-        MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), "Must be positive");
-        WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), "Must be positive");
+        MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), @"Must be positive");
+        WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), @"Must be positive");
 
         if (_logger is not null)
         {

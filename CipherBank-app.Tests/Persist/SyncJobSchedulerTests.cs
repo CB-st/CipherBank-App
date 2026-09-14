@@ -14,12 +14,11 @@ public class SyncJobSchedulerTests
     [Fact]
     public async Task Enqueue_P2ThenP1_P1RunsBeforeWaitingP2_WhenConcurrencyAllows()
     {
-        SyncJobScheduler queue = new SyncJobScheduler(
-            TaskScheduler.Default,
+        using SyncJobScheduler queue = new(
             new SyncSchedulerOptions { MaxConcurrency = 2 });
-        List<string> order = new List<string>();
-        TaskCompletionSource gate1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource gate2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        List<string> order = new();
+        TaskCompletionSource gate1 = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource gate2 = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         _ = queue.EnqueueAsync("p2-a", SyncPriority.Background, async ct =>
         {
@@ -102,11 +101,44 @@ public class SyncJobSchedulerTests
     }
 
     [Fact]
+    public async Task Enqueue_SamePriority_PreservesFifoOrder()
+    {
+        using SyncJobScheduler queue = new(
+            new SyncSchedulerOptions { MaxConcurrency = 1 });
+        List<string> order = new();
+        TaskCompletionSource blockerStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseBlocker = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        _ = queue.EnqueueAsync("blocker", SyncPriority.Interactive, async ct =>
+        {
+            blockerStarted.SetResult();
+            await releaseBlocker.Task.WaitAsync(ct);
+        });
+        await blockerStarted.Task;
+
+        _ = queue.EnqueueAsync("first", SyncPriority.Background, _ =>
+        {
+            order.Add("first");
+            return Task.CompletedTask;
+        });
+        _ = queue.EnqueueAsync("second", SyncPriority.Background, _ =>
+        {
+            order.Add("second");
+            return Task.CompletedTask;
+        });
+
+        releaseBlocker.SetResult();
+        await queue.DrainAsync(default);
+
+        order.Should().Equal("first", "second");
+    }
+
+    [Fact]
     public async Task Enqueue_DuplicateKey_SkipsSecondWhileInFlight()
     {
-        SyncJobScheduler queue = new SyncJobScheduler();
+        using SyncJobScheduler queue = new();
         int runCount = 0;
-        TaskCompletionSource gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource gate = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         Task first = queue.EnqueueAsync("btc", SyncPriority.Interactive, async ct =>
         {
@@ -130,29 +162,37 @@ public class SyncJobSchedulerTests
     }
 
     [Fact]
-    public async Task Enqueue_DispatchesThroughInjectedTaskScheduler()
+    public async Task Enqueue_MaxConcurrencyCountsWholeAsyncOperation()
     {
-        RecordingTaskScheduler taskScheduler = new RecordingTaskScheduler();
-        SyncJobScheduler queue = new SyncJobScheduler(
-            taskScheduler,
+        using SyncJobScheduler queue = new(
             new SyncSchedulerOptions { MaxConcurrency = 1 });
-        int runs = 0;
+        TaskCompletionSource firstStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseFirst = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource secondStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        _ = queue.EnqueueAsync("btc", SyncPriority.Interactive, _ =>
+        Task first = queue.EnqueueAsync("first", SyncPriority.Interactive, async ct =>
         {
-            runs++;
+            firstStarted.SetResult();
+            await releaseFirst.Task.WaitAsync(ct);
+        });
+        await firstStarted.Task;
+
+        Task second = queue.EnqueueAsync("second", SyncPriority.Interactive, _ =>
+        {
+            secondStarted.SetResult();
             return Task.CompletedTask;
         });
-        await queue.DrainAsync(default);
 
-        runs.Should().Be(1);
-        taskScheduler.QueuedTasks.Should().BeGreaterThan(0);
+        secondStarted.Task.IsCompleted.Should().BeFalse();
+        releaseFirst.SetResult();
+        await Task.WhenAll(first, second);
+        secondStarted.Task.IsCompleted.Should().BeTrue();
     }
 
     [Fact]
     public async Task EnqueueAsync_FaultedWork_ExposesFailureAndAllowsReenqueue()
     {
-        SyncJobScheduler queue = new SyncJobScheduler();
+        using SyncJobScheduler queue = new();
 
         Task failed = queue.EnqueueAsync(
             "btc",
@@ -169,12 +209,11 @@ public class SyncJobSchedulerTests
     [Fact]
     public async Task EnqueueAsync_CallerCancellation_ReachesQueuedWork()
     {
-        SyncJobScheduler queue = new SyncJobScheduler(
-            TaskScheduler.Default,
+        using SyncJobScheduler queue = new(
             new SyncSchedulerOptions { MaxConcurrency = 1 });
-        TaskCompletionSource blocker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource blocker = new(TaskCreationOptions.RunContinuationsAsynchronously);
         _ = queue.EnqueueAsync("blocker", SyncPriority.Interactive, ct => blocker.Task.WaitAsync(ct));
-        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        using CancellationTokenSource cancellation = new();
         Task canceled = queue.EnqueueAsync(
             "queued",
             SyncPriority.Background,
@@ -191,11 +230,17 @@ public class SyncJobSchedulerTests
     [Fact]
     public async Task Dispose_CancelsRunningWork()
     {
-        SyncJobScheduler queue = new SyncJobScheduler();
+        using SyncJobScheduler queue = new();
+        TaskCompletionSource startedSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
         Task started = queue.EnqueueAsync(
             "running",
             SyncPriority.Interactive,
-            async ct => await Task.Delay(Timeout.InfiniteTimeSpan, ct));
+            async ct =>
+            {
+                startedSignal.SetResult();
+                await Task.Delay(Timeout.InfiniteTimeSpan, ct);
+            });
+        await startedSignal.Task;
 
         queue.Dispose();
 
@@ -206,15 +251,20 @@ public class SyncJobSchedulerTests
     [Fact]
     public async Task Dispose_QueuedJob_IsCanceledAndNeverStarts()
     {
-        SyncJobScheduler queue = new SyncJobScheduler(
-            TaskScheduler.Default,
+        using SyncJobScheduler queue = new(
             new SyncSchedulerOptions { MaxConcurrency = 1 });
-        TaskCompletionSource blocker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource runningStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource blocker = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int queuedRuns = 0;
 
         // Occupies the single slot and ignores its cancellation token so it can
         // finish after Dispose, exercising the completion-time dispatch path.
-        Task running = queue.EnqueueAsync("running", SyncPriority.Interactive, _ => blocker.Task);
+        Task running = queue.EnqueueAsync("running", SyncPriority.Interactive, async _ =>
+        {
+            runningStarted.SetResult();
+            await blocker.Task;
+        });
+        await runningStarted.Task;
         Task queued = queue.EnqueueAsync("queued", SyncPriority.Background, _ =>
         {
             Interlocked.Increment(ref queuedRuns);
@@ -237,7 +287,7 @@ public class SyncJobSchedulerTests
     [Fact]
     public void Enqueue_AfterDispose_Throws()
     {
-        SyncJobScheduler queue = new SyncJobScheduler();
+        using SyncJobScheduler queue = new();
         queue.Dispose();
 
         Action enqueue = () => queue.EnqueueAsync("late", SyncPriority.Interactive, _ => Task.CompletedTask);
@@ -247,7 +297,7 @@ public class SyncJobSchedulerTests
     [Fact]
     public void Unset_max_concurrency_resolves_to_half_processor_count()
     {
-        SyncSchedulerOptions options = new SyncSchedulerOptions();
+        SyncSchedulerOptions options = new();
         options.MaxConcurrency.Should().Be(0);
         options.Resolve().Should().Be(
             Math.Clamp(
@@ -268,20 +318,5 @@ public class SyncJobSchedulerTests
 
             await Task.Delay(10);
         }
-    }
-
-    private sealed class RecordingTaskScheduler : TaskScheduler
-    {
-        public int QueuedTasks { get; private set; }
-
-        protected override IEnumerable<Task>? GetScheduledTasks() => Array.Empty<Task>();
-
-        protected override void QueueTask(Task task)
-        {
-            QueuedTasks++;
-            TryExecuteTask(task).Should().BeTrue();
-        }
-
-        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
     }
 }

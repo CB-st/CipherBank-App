@@ -10,7 +10,7 @@ using Xunit;
 
 namespace CipherBank_app.Tests.Services;
 
-public class CryptoAPIServiceTests
+public class CryptoApiServiceTests
 {
     [Fact]
     public async Task GetCryptoPricesAsync_ReturnsListOfCryptos()

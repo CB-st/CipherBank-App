@@ -36,7 +36,7 @@ public sealed class PersistOptionsBindingTests
     [InlineData("/tmp/cipherbank.db")]
     public void PersistenceOptions_InvalidDatabaseName_FailsValidation(string databaseName)
     {
-        PersistenceOptions options = new PersistenceOptions { DatabaseName = databaseName };
+        PersistenceOptions options = new() { DatabaseName = databaseName };
 
         options.IsValid().Should().BeFalse();
     }

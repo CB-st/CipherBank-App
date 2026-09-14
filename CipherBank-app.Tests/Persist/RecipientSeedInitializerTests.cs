@@ -15,15 +15,15 @@ public sealed class RecipientSeedInitializerTests
     public async Task InitializeAsync_UsesConfiguredStableIds()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-seed-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
-        RecipientSeedInitializer initializer = new RecipientSeedInitializer(
+        LocalDb db = new(new FileInfo(path));
+        RecipientSeedInitializer initializer = new(
             db,
             EmbeddedAppSettings.BindPersistence("Development"),
             TimeProvider.System);
 
         await initializer.InitializeAsync(default);
 
-        RecipientRepository repository = new RecipientRepository(db);
+        RecipientRepository repository = new(db);
         IReadOnlyList<AchRecipientRow> rows = await repository.ListAsync();
         rows.Select(row => row.Id).Should().BeEquivalentTo(
             "seed:rent-4th-st",
@@ -34,20 +34,20 @@ public sealed class RecipientSeedInitializerTests
     public async Task InitializeAsync_SeparateConnections_CreateOneConfiguredSet()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-seed-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb firstDb = new LocalDb(new FileInfo(path));
-        LocalDb secondDb = new LocalDb(new FileInfo(path));
-        RecipientSeedInitializer first = new RecipientSeedInitializer(
+        LocalDb firstDb = new(new FileInfo(path));
+        LocalDb secondDb = new(new FileInfo(path));
+        RecipientSeedInitializer first = new(
             firstDb,
             EmbeddedAppSettings.BindPersistence("Development"),
             TimeProvider.System);
-        RecipientSeedInitializer second = new RecipientSeedInitializer(
+        RecipientSeedInitializer second = new(
             secondDb,
             EmbeddedAppSettings.BindPersistence("Development"),
             TimeProvider.System);
 
         await Task.WhenAll(first.InitializeAsync(default), second.InitializeAsync(default));
 
-        RecipientRepository repository = new RecipientRepository(firstDb);
+        RecipientRepository repository = new(firstDb);
         IReadOnlyList<AchRecipientRow> rows = await repository.ListAsync();
         rows.Should().HaveCount(2);
         rows.Select(row => row.Id).Should().OnlyHaveUniqueItems();

@@ -23,7 +23,7 @@ public static class MauiProgram
     public static MauiApp CreateMauiApp()
     {
 #if DEBUG
-        const bool IsDevelopment = true;
+        const bool isDevelopment = true;
 #else
         const bool IsDevelopment = false;
 #endif
@@ -31,7 +31,7 @@ public static class MauiProgram
         // Runtime platform check selects the appsettings.Windows.json overlay; no preprocessor fork.
         MauiAppBuilder builder = MauiApp.CreateBuilder();
         builder.Configuration.AddConfiguration(CipherBankDefaultsConfiguration.BuildForHost(
-            IsDevelopment,
+            isDevelopment,
             OperatingSystem.IsWindows()));
 
         return builder
@@ -138,7 +138,7 @@ public static class MauiProgram
 
         // Register mock services (always available for testing/development)
         mauiAppBuilder.Services.AddSingleton<MockAuthService>();
-        mauiAppBuilder.Services.AddSingleton<MockCryptoAPIService>();
+        mauiAppBuilder.Services.AddSingleton<MockCryptoApiService>();
         mauiAppBuilder.Services.AddSingleton<MockWalletService>();
         mauiAppBuilder.Services.AddSingleton<MockTransactionService>();
 
@@ -154,18 +154,16 @@ public static class MauiProgram
                 Log.Debug("Using MockAuthService (based on settings)");
                 return sp.GetRequiredService<MockAuthService>();
             }
-            else
-            {
-                Log.Debug("Using AuthService (real API)");
-                return sp.GetRequiredService<AuthService>();
-            }
+
+            Log.Debug("Using AuthService (real API)");
+            return sp.GetRequiredService<AuthService>();
         });
 #else
         mauiAppBuilder.Services.AddTransient<IAuthService>(sp => sp.GetRequiredService<AuthService>());
 #endif
 
         // Crypto API Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<CryptoAPIService>();
+        mauiAppBuilder.Services.AddCipherBankHttpClient<CryptoApiService>();
 
 #if DEBUG
         mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp =>
@@ -174,13 +172,11 @@ public static class MauiProgram
             if (settings.UseMockServices)
             {
                 Log.Debug("Using MockCryptoAPIService (based on settings)");
-                return sp.GetRequiredService<MockCryptoAPIService>();
+                return sp.GetRequiredService<MockCryptoApiService>();
             }
-            else
-            {
-                Log.Debug("Using CryptoAPIService (real API)");
-                return sp.GetRequiredService<CryptoAPIService>();
-            }
+
+            Log.Debug("Using CryptoAPIService (real API)");
+            return sp.GetRequiredService<CryptoApiService>();
         });
 #else
         mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<CryptoAPIService>());
@@ -198,11 +194,9 @@ public static class MauiProgram
                 Log.Debug("Using MockWalletService (based on settings)");
                 return sp.GetRequiredService<MockWalletService>();
             }
-            else
-            {
-                Log.Debug("Using WalletService (real API)");
-                return sp.GetRequiredService<WalletService>();
-            }
+
+            Log.Debug("Using WalletService (real API)");
+            return sp.GetRequiredService<WalletService>();
         });
 #else
         mauiAppBuilder.Services.AddTransient<IWalletService>(sp => sp.GetRequiredService<WalletService>());
@@ -220,11 +214,9 @@ public static class MauiProgram
                 Log.Debug("Using MockTransactionService (based on settings)");
                 return sp.GetRequiredService<MockTransactionService>();
             }
-            else
-            {
-                Log.Debug("Using TransactionService (real API)");
-                return sp.GetRequiredService<TransactionService>();
-            }
+
+            Log.Debug("Using TransactionService (real API)");
+            return sp.GetRequiredService<TransactionService>();
         });
 #else
         mauiAppBuilder.Services.AddTransient<ITransactionService>(sp => sp.GetRequiredService<TransactionService>());

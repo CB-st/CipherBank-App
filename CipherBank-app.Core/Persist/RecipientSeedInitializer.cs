@@ -26,7 +26,7 @@ public sealed class RecipientSeedInitializer : IRecipientSeedInitializer
         ArgumentNullException.ThrowIfNull(timeProvider);
         if (!options.IsValid())
         {
-            throw new ArgumentException("Persistence options are invalid.", nameof(options));
+            throw new ArgumentException(@"Persistence options are invalid.", nameof(options));
         }
 
         _db = db;

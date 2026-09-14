@@ -77,7 +77,7 @@ public sealed class MarketRateHydrator
         }
 
         long nowMs = now.ToUnixTimeMilliseconds();
-        List<RateRow> refreshedRows = new List<RateRow>(requestedSymbols.Length);
+        List<RateRow> refreshedRows = new(requestedSymbols.Length);
         foreach (string symbol in requestedSymbols)
         {
             PublicQuote quote = await _publicQuotes

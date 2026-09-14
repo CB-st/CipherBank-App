@@ -4,6 +4,7 @@
 
 using CipherBank_app.E2ETests.PageObjects;
 using FluentAssertions;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Android;
 using OpenQA.Selenium.Appium.iOS;
@@ -158,7 +159,7 @@ public class CriticalUserJourneyTests : IDisposable
         resultLoginPage.WaitForPageLoad();
 
         // Assert - Should be back at login
-        resultLoginPage.IsElementDisplayed(OpenQA.Selenium.By.Id("LoginButton")).Should().BeTrue();
+        resultLoginPage.IsElementDisplayed(By.Id("LoginButton")).Should().BeTrue();
     }
 
     /// <summary>
@@ -170,19 +171,19 @@ public class CriticalUserJourneyTests : IDisposable
         // Step 1: Login
         var loginPage = new LoginPage(_driver);
         loginPage.WaitForPageLoad();
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
         dashboardPage.IsLoggedIn().Should().BeTrue("User should be logged in");
 
         // Step 2: Make a purchase
-        var purchasePage = dashboardPage.GoToPurchase();
+        PurchasePage purchasePage = dashboardPage.GoToPurchase();
         purchasePage.WaitForPageLoad();
         purchasePage.CompletePurchase("ETH", 50.00m);
         purchasePage.IsPurchaseSuccessful().Should().BeTrue("Purchase should succeed");
 
         // Step 3: Verify in wallet
         dashboardPage = purchasePage.GoBack();
-        var walletPage = dashboardPage.GoToWallet();
+        WalletPage walletPage = dashboardPage.GoToWallet();
         walletPage.WaitForPageLoad();
         walletPage.HasTransactionHistory().Should().BeTrue("Transaction should appear in history");
 
@@ -192,13 +193,13 @@ public class CriticalUserJourneyTests : IDisposable
         resultLoginPage.WaitForPageLoad();
 
         // Final assertion
-        resultLoginPage.IsElementDisplayed(OpenQA.Selenium.By.Id("LoginButton")).Should().BeTrue("Should be back at login");
+        resultLoginPage.IsElementDisplayed(By.Id("LoginButton")).Should().BeTrue("Should be back at login");
     }
 
     public void Dispose()
     {
-        _driver?.Quit();
-        _driver?.Dispose();
+        _driver.Quit();
+        _driver.Dispose();
         GC.SuppressFinalize(this);
     }
 }

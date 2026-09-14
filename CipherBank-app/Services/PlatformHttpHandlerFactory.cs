@@ -2,7 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Net.Http;
+using CipherBank_app.Platforms.Android;
 
 namespace CipherBank_app.Services;
 
@@ -19,7 +19,7 @@ public static class PlatformHttpHandlerFactory
     {
 #if ANDROID
         // Android: Use AndroidClientHandler which respects NetworkSecurityConfig.xml
-        return new CipherBank_app.Platforms.Android.AndroidCertificatePinningHandler();
+        return new AndroidCertificatePinningHandler();
 #elif IOS
         // iOS: Use custom NSUrlSessionHandler with certificate pinning
         return new CipherBank_app.Platforms.iOS.IosCertificatePinningHandler();

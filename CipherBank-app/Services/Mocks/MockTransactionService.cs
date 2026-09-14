@@ -2,12 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -66,7 +61,7 @@ public sealed partial class MockTransactionService : ITransactionService
         ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
         if (amount <= 0)
         {
-            throw new ArgumentException("Amount must be positive", nameof(amount));
+            throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
         LogProcessingPurchase(_logger, amount, symbol);
@@ -115,7 +110,7 @@ public sealed partial class MockTransactionService : ITransactionService
         ArgumentException.ThrowIfNullOrWhiteSpace(toAddress);
         if (amount <= 0)
         {
-            throw new ArgumentException("Amount must be positive", nameof(amount));
+            throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
         LogProcessingSend(_logger, amount, fromWalletId, toAddress);
@@ -137,7 +132,7 @@ public sealed partial class MockTransactionService : ITransactionService
         if (!IsValidAddress(toAddress, wallet.CryptoSymbol))
         {
             LogInvalidAddress(_logger, toAddress);
-            throw new ArgumentException($"Invalid {wallet.CryptoSymbol} address format", nameof(toAddress));
+            throw new ArgumentException($@"Invalid {wallet.CryptoSymbol} address format", nameof(toAddress));
         }
 
         // Deduct from wallet
