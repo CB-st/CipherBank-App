@@ -7,6 +7,11 @@ using CipherBank_app.Configuration;
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
+/// <remarks>
+/// Rebase note: retain M2's awaited typed-key facade. Replace this class's
+/// <c>void Enqueue</c>, P1/P2 queue, and TaskScheduler composition with the
+/// injected single-flight factory and prioritized dispatcher.
+/// </remarks>
 public sealed class SyncJobScheduler : ISyncJobScheduler
 {
     private readonly object _gate = new();

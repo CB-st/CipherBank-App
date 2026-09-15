@@ -18,7 +18,11 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace CipherBank_app.ViewModels;
 
-/// <summary>Home portfolio shell — F2 section prefs + hide balances.</summary>
+/// <summary>
+/// Home portfolio shell — F2 section prefs + hide balances.
+/// Rebase note: await the typed scheduler API; use <c>PersistOhlcJobKey</c> and
+/// <c>RefreshRatesJobKey</c> instead of string labels and P1/P2 arguments.
+/// </summary>
 public partial class HomeViewModel : ObservableObject
 {
     private readonly IProductClient _api;
