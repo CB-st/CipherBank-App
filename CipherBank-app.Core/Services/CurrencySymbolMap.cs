@@ -6,6 +6,8 @@ namespace CipherBank_app.Services;
 
 /// <summary>
 /// Maps app ticker symbols to CipherBank public API currency codes and back.
+/// Rebase note: consume <c>AssetSymbol</c> on the app side after the typed-symbol
+/// M2 change, but keep provider currency-code mapping separate from normalization.
 /// </summary>
 public static class CurrencySymbolMap
 {
