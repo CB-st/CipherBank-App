@@ -27,6 +27,8 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ICoraLineProvider, CoraLineProvider>();
         services.AddSingleton<IEmvExchangeSimulator, EmvExchangeSimulator>();
+        // Rebase note: replace the TaskScheduler-based registration with the DI-provided
+        // single-flight factory, prioritized dispatcher, and SyncJobScheduler facade.
         services.AddSingleton<ISyncJobScheduler>(static provider => new SyncJobScheduler(
             TaskScheduler.Default,
             provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value));
