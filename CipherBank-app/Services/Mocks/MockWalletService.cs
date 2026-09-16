@@ -64,7 +64,7 @@ public sealed partial class MockWalletService : IWalletService
         LogInitialized(_logger, _wallets.Count);
     }
 
-    public async Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken)
     {
         LogGettingAllWallets(_logger);
         await SimulateNetworkDelayAsync(cancellationToken);
@@ -73,7 +73,7 @@ public sealed partial class MockWalletService : IWalletService
         return _wallets.ToList();
     }
 
-    public async Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
@@ -91,7 +91,7 @@ public sealed partial class MockWalletService : IWalletService
         return wallet;
     }
 
-    public async Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
@@ -102,7 +102,7 @@ public sealed partial class MockWalletService : IWalletService
         return wallet.Balance;
     }
 
-    public async Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken = default)
+    public async Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(cryptoSymbol);
 

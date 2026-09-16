@@ -28,7 +28,7 @@ public sealed partial class TransactionService : ITransactionService
         _http = http;
     }
 
-    public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken = default)
+    public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(walletId);
 
@@ -63,7 +63,7 @@ public sealed partial class TransactionService : ITransactionService
         }
     }
 
-    public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(symbol);
         if (amount <= 0)
@@ -108,7 +108,7 @@ public sealed partial class TransactionService : ITransactionService
         }
     }
 
-    public async Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fromWalletId);
         ArgumentException.ThrowIfNullOrWhiteSpace(toAddress);
@@ -166,7 +166,7 @@ public sealed partial class TransactionService : ITransactionService
         }
     }
 
-    public async Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken = default)
+    public async Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(transactionId);
 

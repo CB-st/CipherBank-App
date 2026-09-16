@@ -100,7 +100,7 @@ public sealed class RatesCache : IRatesCache, IDisposable
                     context.Entry(entity!).CurrentValues.SetValues(new
                     {
                         row.Usd,
-                        Change24H = row.Change24H,
+                        row.Change24H,
                         row.UpdatedAtMs,
                     });
                 }

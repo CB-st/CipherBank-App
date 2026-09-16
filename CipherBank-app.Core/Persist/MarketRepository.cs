@@ -86,13 +86,20 @@ public sealed class MarketRepository : IMarketRepository
         }
     }
 
-    private async Task<IReadOnlyList<(long T, double V)>> GetOhlcCoreAsync(
+    private Task<IReadOnlyList<(long T, double V)>> GetOhlcCoreAsync(
         AssetSymbol symbol,
         long? fromT,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(symbol);
-        string normalizedSymbol = symbol.Value;
+        return GetOhlcFromDatabaseAsync(symbol.Value, fromT, ct);
+    }
+
+    private async Task<IReadOnlyList<(long T, double V)>> GetOhlcFromDatabaseAsync(
+        string normalizedSymbol,
+        long? fromT,
+        CancellationToken ct)
+    {
         CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {

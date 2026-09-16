@@ -37,7 +37,7 @@ public sealed partial class MockTransactionService : ITransactionService
         LogInitialized(_logger, _transactions.Count);
     }
 
-    public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken = default)
+    public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(walletId);
 
@@ -56,7 +56,7 @@ public sealed partial class MockTransactionService : ITransactionService
         return transactions;
     }
 
-    public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(symbol);
         if (amount <= 0)
@@ -103,7 +103,7 @@ public sealed partial class MockTransactionService : ITransactionService
         return transaction;
     }
 
-    public async Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fromWalletId);
         ArgumentException.ThrowIfNullOrWhiteSpace(toAddress);
@@ -171,7 +171,7 @@ public sealed partial class MockTransactionService : ITransactionService
         return transaction;
     }
 
-    public async Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken = default)
+    public async Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(transactionId);
 
