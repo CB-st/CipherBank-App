@@ -29,7 +29,7 @@ public sealed partial class CryptoApiService : ICryptoApiService
         _http = http;
     }
 
-    public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken)
     {
         LogFetchingAllPrices(_logger);
 
@@ -56,7 +56,7 @@ public sealed partial class CryptoApiService : ICryptoApiService
         }
     }
 
-    public async Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken = default)
+    public async Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(symbol);
 
@@ -91,7 +91,7 @@ public sealed partial class CryptoApiService : ICryptoApiService
         }
     }
 
-    public async Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken = default)
+    public async Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(symbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(period);
@@ -127,7 +127,7 @@ public sealed partial class CryptoApiService : ICryptoApiService
         }
     }
 
-    public async Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
 

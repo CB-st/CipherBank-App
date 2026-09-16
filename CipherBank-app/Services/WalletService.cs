@@ -26,7 +26,7 @@ public sealed partial class WalletService : IWalletService
         _http = http;
     }
 
-    public async Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken)
     {
         LogFetchingAllWallets(_logger);
 
@@ -53,7 +53,7 @@ public sealed partial class WalletService : IWalletService
         }
     }
 
-    public async Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
@@ -88,7 +88,7 @@ public sealed partial class WalletService : IWalletService
         }
     }
 
-    public async Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
@@ -123,7 +123,7 @@ public sealed partial class WalletService : IWalletService
         }
     }
 
-    public async Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken = default)
+    public async Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(cryptoSymbol);
 

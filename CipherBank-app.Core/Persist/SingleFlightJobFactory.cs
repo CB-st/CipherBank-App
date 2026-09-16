@@ -9,7 +9,7 @@ namespace CipherBank_app.Persist;
 /// <inheritdoc cref="ISingleFlightJobFactory" />
 public sealed class SingleFlightJobFactory : ISingleFlightJobFactory
 {
-    private readonly ConcurrentDictionary<SyncJobKey, Entry> _jobs = new();
+    private readonly ConcurrentDictionary<SyncJobKey, Lazy<Task>> _jobs = new();
 
     /// <inheritdoc />
     public Task GetOrCreateAsync(SyncJobKey key, Func<Task> create)
@@ -17,13 +17,16 @@ public sealed class SingleFlightJobFactory : ISingleFlightJobFactory
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(create);
 
-        Entry candidate = new(this, key, create);
-        return _jobs.GetOrAdd(key, candidate).Task;
+        Lazy<Task> candidate = null!;
+        candidate = new Lazy<Task>(
+            () => RunAndReleaseAsync(key, candidate, create),
+            LazyThreadSafetyMode.ExecutionAndPublication);
+        return _jobs.GetOrAdd(key, candidate).Value;
     }
 
     private async Task RunAndReleaseAsync(
         SyncJobKey key,
-        Entry entry,
+        Lazy<Task> entry,
         Func<Task> create)
     {
         try
@@ -32,24 +35,7 @@ public sealed class SingleFlightJobFactory : ISingleFlightJobFactory
         }
         finally
         {
-            _jobs.TryRemove(new KeyValuePair<SyncJobKey, Entry>(key, entry));
+            _jobs.TryRemove(new KeyValuePair<SyncJobKey, Lazy<Task>>(key, entry));
         }
-    }
-
-    private sealed class Entry
-    {
-        private readonly Lazy<Task> _task;
-
-        internal Entry(
-            SingleFlightJobFactory owner,
-            SyncJobKey key,
-            Func<Task> create)
-        {
-            _task = new Lazy<Task>(
-                () => owner.RunAndReleaseAsync(key, this, create),
-                LazyThreadSafetyMode.ExecutionAndPublication);
-        }
-
-        internal Task Task => _task.Value;
     }
 }

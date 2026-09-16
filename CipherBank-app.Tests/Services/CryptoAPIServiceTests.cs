@@ -16,7 +16,7 @@ public class CryptoApiServiceTests
     public async Task GetCryptoPricesAsync_ReturnsListOfCryptos()
     {
         // Arrange
-        var mockService = new Mock<ICryptoApiService>();
+        var mockService = new Mock<ICryptoApiService> { CallBase = true };
         var expectedCryptos = new List<CryptoCurrency>
         {
             new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url1"),
@@ -40,7 +40,7 @@ public class CryptoApiServiceTests
     public async Task GetCryptoPriceAsync_WithValidSymbol_ReturnsCrypto()
     {
         // Arrange
-        var mockService = new Mock<ICryptoApiService>();
+        var mockService = new Mock<ICryptoApiService> { CallBase = true };
         var expectedCrypto = new CryptoCurrency(
             "BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url");
 
@@ -61,7 +61,7 @@ public class CryptoApiServiceTests
     public async Task GetCryptoPriceAsync_WithInvalidSymbol_ThrowsKeyNotFoundException()
     {
         // Arrange
-        var mockService = new Mock<ICryptoApiService>();
+        var mockService = new Mock<ICryptoApiService> { CallBase = true };
         mockService
             .Setup(x => x.GetCryptoPriceAsync("INVALID", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new KeyNotFoundException("Cryptocurrency 'INVALID' not found"));
@@ -77,7 +77,7 @@ public class CryptoApiServiceTests
     public async Task GetPriceHistoryAsync_ReturnsHistoricalData()
     {
         // Arrange
-        var mockService = new Mock<ICryptoApiService>();
+        var mockService = new Mock<ICryptoApiService> { CallBase = true };
         var pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddDays(-1), 49000m),
@@ -106,7 +106,7 @@ public class CryptoApiServiceTests
     public async Task SearchCryptoAsync_WithMatchingQuery_ReturnsResults()
     {
         // Arrange
-        var mockService = new Mock<ICryptoApiService>();
+        var mockService = new Mock<ICryptoApiService> { CallBase = true };
         var expectedResults = new List<CryptoCurrency>
         {
             new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url"),
@@ -128,7 +128,7 @@ public class CryptoApiServiceTests
     public async Task SearchCryptoAsync_WithNoMatches_ReturnsEmptyList()
     {
         // Arrange
-        var mockService = new Mock<ICryptoApiService>();
+        var mockService = new Mock<ICryptoApiService> { CallBase = true };
         mockService
             .Setup(x => x.SearchCryptoAsync("xyz123", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<CryptoCurrency>());

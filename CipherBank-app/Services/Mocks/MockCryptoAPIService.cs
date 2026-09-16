@@ -40,7 +40,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         LogInitialized(_logger, _mockCryptos.Count);
     }
 
-    public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken)
     {
         LogGettingAllPrices(_logger);
         await SimulateNetworkDelayAsync(cancellationToken);
@@ -52,7 +52,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         return cryptos;
     }
 
-    public async Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken = default)
+    public async Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(symbol);
 
@@ -72,7 +72,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         return result;
     }
 
-    public async Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken = default)
+    public async Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(symbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(period);
@@ -92,7 +92,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         return history;
     }
 
-    public async Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
 
