@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Persist.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,13 +34,11 @@ public sealed class RatesCache : IRatesCache, IDisposable
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<RateRow>> GetAsync(
-        IEnumerable<string>? symbols,
+        IEnumerable<AssetSymbol>? symbols,
         CancellationToken ct)
     {
-        string[] requestedSymbols = symbols?
-            .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
-            .Select(RateRow.NormalizeSymbol)
-            .Distinct(StringComparer.Ordinal)
+        AssetSymbol[] requestedSymbols = symbols?
+            .Distinct()
             .ToArray() ?? [];
 
         CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
@@ -48,7 +47,8 @@ public sealed class RatesCache : IRatesCache, IDisposable
             IQueryable<RateSnapshotEntity> query = context.RateSnapshots.AsNoTracking();
             if (requestedSymbols.Length > 0)
             {
-                query = query.Where(entity => requestedSymbols.Contains(entity.Symbol));
+                string[] requestedValues = requestedSymbols.Select(symbol => symbol.Value).ToArray();
+                query = query.Where(entity => requestedValues.Contains(entity.Symbol));
             }
 
             return await query
@@ -62,7 +62,7 @@ public sealed class RatesCache : IRatesCache, IDisposable
     private async Task UpsertCoreAsync(IEnumerable<RateRow> rows, CancellationToken ct)
     {
         RateRow[] normalized = rows
-            .GroupBy(row => row.Symbol, StringComparer.Ordinal)
+            .GroupBy(row => row.Symbol)
             .Select(group => group.MaxBy(row => row.UpdatedAtMs)!)
             .ToArray();
         if (normalized is [])
@@ -76,7 +76,7 @@ public sealed class RatesCache : IRatesCache, IDisposable
             CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
             await using (context)
             {
-                string[] symbols = normalized.Select(row => row.Symbol).ToArray();
+                string[] symbols = normalized.Select(row => row.Symbol.Value).ToArray();
                 Dictionary<string, RateSnapshotEntity> existing = await context.RateSnapshots
                     .Where(entity => symbols.Contains(entity.Symbol))
                     .ToDictionaryAsync(entity => entity.Symbol, StringComparer.Ordinal, ct)
@@ -84,7 +84,7 @@ public sealed class RatesCache : IRatesCache, IDisposable
 
                 foreach (RateRow row in normalized)
                 {
-                    bool found = existing.TryGetValue(row.Symbol, out RateSnapshotEntity? entity);
+                    bool found = existing.TryGetValue(row.Symbol.Value, out RateSnapshotEntity? entity);
                     if (found && row.UpdatedAtMs < entity!.UpdatedAtMs)
                     {
                         continue;
@@ -92,7 +92,7 @@ public sealed class RatesCache : IRatesCache, IDisposable
 
                     if (!found)
                     {
-                        entity = new RateSnapshotEntity { Symbol = row.Symbol };
+                        entity = new RateSnapshotEntity { Symbol = row.Symbol.Value };
                         context.RateSnapshots.Add(entity);
                     }
 

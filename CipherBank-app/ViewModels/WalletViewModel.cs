@@ -169,7 +169,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
                         }
                         catch (Exception ex)
                         {
-                            LogCouldNotGetPrice(_logger, ex, wallet.CryptoSymbol);
+                            LogCouldNotGetPrice(_logger, ex, wallet.CryptoSymbol.Value);
                             card = WalletCardItem.WithoutPrice(wallet);
                         }
 
@@ -316,7 +316,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
         try
         {
-            LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol, SendToAddress);
+            LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol.Value, SendToAddress);
 
             var transaction = await _transactionService.SendCryptoAsync(
                 SelectedWallet.Id, SendToAddress, SendAmount, _cts.Token);

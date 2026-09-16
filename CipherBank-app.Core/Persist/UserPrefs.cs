@@ -4,6 +4,7 @@
 
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
+using CipherBank_app.Models;
 
 namespace CipherBank_app.Persist;
 
@@ -182,7 +183,7 @@ public sealed class UserPrefs : IUserPrefs
 
         List<string> normalized = EnabledCurrencies
             .Where(s => !string.IsNullOrWhiteSpace(s))
-            .Select(s => s.Trim().ToUpperInvariant())
+            .Select(s => AssetSymbol.Parse(s).Value)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         ReplaceEnabledCurrencies(normalized.Count == 0 ? DefaultEnabledCurrencies : normalized);

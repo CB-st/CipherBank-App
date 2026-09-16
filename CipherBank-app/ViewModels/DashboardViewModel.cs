@@ -184,7 +184,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol);
+        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol.Value);
         await _navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
     }
 
@@ -204,7 +204,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ViewCryptoDetailsAsync(CryptoCurrency crypto)
     {
-        LogViewingDetails(_logger, crypto.Symbol);
+        LogViewingDetails(_logger, crypto.Symbol.Value);
         SelectedCrypto = crypto;
 
         // Could navigate to a details page here

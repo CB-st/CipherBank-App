@@ -9,7 +9,7 @@ namespace CipherBank_app.Models;
 /// </summary>
 public record Wallet(
     string Id,
-    string CryptoSymbol,
+    AssetSymbol CryptoSymbol,
     string CryptoName,
     decimal Balance,
     string Address,

@@ -41,17 +41,18 @@ override CI Sonar: new issues on Persist code still fail the gate.
   remain CRUD-only. Do not generate GUID seed ids.
 - `IUserPrefs` is the read shape for UI/sync. `IPrefsStore` still returns
   `UserPrefs` so System.Text.Json can materialize the bag.
+- `AssetSymbol` is the open-set application ticker value. It owns trim and
+  invariant-uppercase normalization; EF entities, V1 DTOs, prefs JSON, and
+  HTTP payloads remain strings at their boundaries. Do not replace listed
+  assets with an enum or duplicate symbol normalization in adapters.
 - `SyncSchedulerOptions.MaxConcurrency` default `0` means unset.
   `Resolve()` is `Clamp(Ceiling(ProcessorCount / 2.0), 1, 8)`.
-  `SyncJobScheduler` uses .NET 10's unbounded prioritized channel with a fixed
-  set of asynchronous consumers. The channel orders waiting work
-  P1-before-P2 and by submission sequence within a lane; each consumer awaits
-  the whole async job, so it remains counted against the concurrency cap
-  across awaits. It does not inherit `TaskScheduler`, whose contract schedules
-  synchronous task segments rather than logical async operations.
-  Duplicate submissions share the accepted job's completion task. Caller and
-  shutdown cancellation reach queued/running work; failures remain observable
-  through `EnqueueAsync` and `DrainAsync`.
+  `SyncJobScheduler` composes `SingleFlightJobFactory` and
+  `PrioritizedJobDispatcher`. Typed record keys provide value identity and
+  derive queue priority from the closed `SyncJobKind` vocabulary. The factory
+  coalesces an active key; the dispatcher uses .NET 10's prioritized channel
+  and fixed asynchronous consumers, each of which awaits the whole operation.
+  Caller and shutdown cancellation, failures, and drain remain observable.
 - Public ACH bounds are static read-only properties so consuming assemblies do
   not inline validation policy. Public names stay PascalCase.
 - Design-time `IDesignTimeDbContextFactory.CreateDbContext(string[] args)`

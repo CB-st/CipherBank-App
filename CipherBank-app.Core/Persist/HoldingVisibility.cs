@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.V1;
 
 namespace CipherBank_app.Persist;
@@ -14,21 +15,22 @@ public static class HoldingVisibility
         IEnumerable<HoldingDto> holdings,
         IEnumerable<string>? enabledCurrencies)
     {
-        HashSet<string> enabled = (enabledCurrencies ?? Array.Empty<string>())
+        HashSet<AssetSymbol> enabled = (enabledCurrencies ?? Array.Empty<string>())
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
-            .Select(symbol => symbol.Trim())
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            .Select(AssetSymbol.Parse)
+            .ToHashSet();
 
         if (enabled.Count == 0)
         {
-            enabled.UnionWith(UserPrefs.DefaultEnabledCurrencies);
+            enabled.UnionWith(UserPrefs.DefaultEnabledCurrencies.Select(AssetSymbol.Parse));
         }
 
         List<HoldingDto> visible = [];
         List<HoldingDto> other = [];
         foreach (HoldingDto holding in holdings)
         {
-            if (enabled.Contains(holding.Symbol))
+            if (AssetSymbol.TryParse(holding.Symbol, out AssetSymbol? symbol)
+                && enabled.Contains(symbol))
             {
                 visible.Add(holding);
             }

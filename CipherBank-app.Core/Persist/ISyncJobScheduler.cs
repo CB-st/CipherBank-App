@@ -18,14 +18,12 @@ public interface ISyncJobScheduler
     /// Use: High (Home market refresh). Scope: process-wide sync scheduler.
     /// </summary>
     Task EnqueueAsync(
-        string key,
-        SyncPriority priority,
+        SyncJobKey key,
         Func<CancellationToken, Task> work)
-        => EnqueueAsync(key, priority, work, CancellationToken.None);
+        => EnqueueAsync(key, work, CancellationToken.None);
 
     Task EnqueueAsync(
-        string key,
-        SyncPriority priority,
+        SyncJobKey key,
         Func<CancellationToken, Task> work,
         CancellationToken ct);
 

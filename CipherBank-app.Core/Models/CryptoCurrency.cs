@@ -10,7 +10,7 @@ namespace CipherBank_app.Models;
 /// Represents a cryptocurrency with its current market data.
 /// </summary>
 public record CryptoCurrency(
-    string Symbol,
+    AssetSymbol Symbol,
     string Name,
     decimal CurrentPrice,
     decimal PriceChange24H,

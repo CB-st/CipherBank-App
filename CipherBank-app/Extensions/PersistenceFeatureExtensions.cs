@@ -52,6 +52,8 @@ public static class PersistenceFeatureExtensions
         services.AddSingleton<IRecipientSeedInitializer, RecipientSeedInitializer>();
         services.AddSingleton<IRatesCache, RatesCache>();
         services.AddSingleton<IMarketRepository, MarketRepository>();
+        services.AddSingleton<ISingleFlightJobFactory, SingleFlightJobFactory>();
+        services.AddSingleton<IPrioritizedJobDispatcher, PrioritizedJobDispatcher>();
         services.AddSingleton<ISyncJobScheduler, SyncJobScheduler>();
         services.AddSingleton<MarketRateHydrator>();
         return services;

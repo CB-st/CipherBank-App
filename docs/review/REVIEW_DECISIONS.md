@@ -47,7 +47,8 @@ the durable rationale so future rounds do not relitigate settled questions.
   [TaskScheduler.QueueTask](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler.queuetask),
   [Channel.CreateUnboundedPrioritized](https://learn.microsoft.com/en-us/dotnet/api/system.threading.channels.channel.createunboundedprioritized).
 - **Forward guidance:** keep whole-operation throttling in the fixed channel
-  consumers and keyed deduplication in `SyncJobScheduler`; use a
+  consumers owned by `PrioritizedJobDispatcher`; keep keyed deduplication in
+  `SingleFlightJobFactory` and compose both through `SyncJobScheduler`. Use a
   `TaskScheduler` subclass only for synchronous task-segment scheduling.
 
 ## 3. `PersistenceOptions` bounds: `static readonly` instead of `const`
@@ -158,3 +159,15 @@ the durable rationale so future rounds do not relitigate settled questions.
   [Unbound generic types in nameof (C# 14)](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-14.0/unbound-generic-types-in-nameof).
 - **Forward guidance:** `nameof` for compile-time symbol names;
   `typeof(T).Name` when the name depends on the runtime type argument.
+
+## 10. Represent listed assets with an enum
+
+- **Ask:** use an enum to centralize ticker identity and normalization.
+- **Decision:** declined. Listed assets are supplied by APIs, wallets,
+  preferences, and future userdata catalogs, so the set is not closed.
+  `AssetSymbol` provides normalized value identity without requiring a product
+  release for each newly listed asset. In contrast, `SyncJobKind` is an enum
+  because application job kinds are a closed, code-owned set.
+- **Forward guidance:** use `AssetSymbol` for app ticker values and convert to
+  strings only at JSON, HTTP, navigation, preferences, and EF boundaries.
+  Keep provider-specific currency-code mapping separate from normalization.

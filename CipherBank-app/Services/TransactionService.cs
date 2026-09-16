@@ -63,19 +63,19 @@ public sealed partial class TransactionService : ITransactionService
         }
     }
 
-    public async Task<Transaction> PurchaseCryptoAsync(string symbol, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         if (amount <= 0)
         {
             throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
-        LogProcessingPurchase(_logger, amount, symbol);
+        LogProcessingPurchase(_logger, amount, symbol.Value);
 
         try
         {
-            var request = new PurchaseRequest(symbol.ToUpperInvariant(), amount);
+            var request = new PurchaseRequest(symbol.Value, amount);
             var response = await _http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -83,27 +83,27 @@ public sealed partial class TransactionService : ITransactionService
 
             if (transaction == null)
             {
-                LogNullResponseForPurchase(_logger, amount, symbol);
+                LogNullResponseForPurchase(_logger, amount, symbol.Value);
                 throw new InvalidOperationException($"Failed to complete purchase of {amount} {symbol}");
             }
 
-            LogPurchaseCompleted(_logger, transaction.Amount, transaction.CryptoSymbol, transaction.FeeAmount, transaction.Id);
+            LogPurchaseCompleted(_logger, transaction.Amount, transaction.CryptoSymbol.Value, transaction.FeeAmount, transaction.Id);
 
             return transaction;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
         {
-            LogInvalidPurchaseRequest(_logger, amount, symbol);
+            LogInvalidPurchaseRequest(_logger, amount, symbol.Value);
             throw new ArgumentException("Invalid purchase request", ex);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.PaymentRequired)
         {
-            LogInsufficientFundsForPurchase(_logger, amount, symbol);
+            LogInsufficientFundsForPurchase(_logger, amount, symbol.Value);
             throw new InvalidOperationException("Insufficient funds for purchase", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorProcessingPurchase(_logger, ex, amount, symbol, ex.StatusCode);
+            LogHttpErrorProcessingPurchase(_logger, ex, amount, symbol.Value, ex.StatusCode);
             throw new InvalidOperationException("Failed to process purchase from server", ex);
         }
     }
@@ -140,7 +140,7 @@ public sealed partial class TransactionService : ITransactionService
                 throw new InvalidOperationException("Failed to complete send transaction");
             }
 
-            LogSendInitiated(_logger, transaction.Amount, transaction.CryptoSymbol, toAddress, transaction.FeeAmount, transaction.Id);
+            LogSendInitiated(_logger, transaction.Amount, transaction.CryptoSymbol.Value, toAddress, transaction.FeeAmount, transaction.Id);
 
             return transaction;
         }

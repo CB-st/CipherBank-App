@@ -13,9 +13,9 @@ public interface ICryptoApiService
 {
     Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken = default);
 
-    Task<CryptoCurrency> GetCryptoPriceAsync(string symbol, CancellationToken cancellationToken = default);
+    Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken = default);
 
-    Task<PriceHistory> GetPriceHistoryAsync(string symbol, string period, CancellationToken cancellationToken = default);
+    Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken = default);
 
     Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken = default);
 }

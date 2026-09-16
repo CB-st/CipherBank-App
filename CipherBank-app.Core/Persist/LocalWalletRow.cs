@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Persist.Entities;
 
 namespace CipherBank_app.Persist;
@@ -9,7 +10,7 @@ namespace CipherBank_app.Persist;
 /// <summary>Local wallet index row.</summary>
 public sealed record LocalWalletRow(
     string Id,
-    string Symbol,
+    AssetSymbol Symbol,
     string? Label,
     string? Address,
     string? Path,
@@ -24,7 +25,7 @@ public sealed record LocalWalletRow(
     public LocalWalletRow(WalletEntity entity)
         : this(
             entity.Id,
-            entity.Symbol,
+            AssetSymbol.Parse(entity.Symbol),
             entity.Label,
             entity.Address,
             entity.Path,

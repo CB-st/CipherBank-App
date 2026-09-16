@@ -95,7 +95,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 
         var crypto = await response.Content.ReadFromJsonAsync<CryptoCurrency>();
         crypto.Should().NotBeNull();
-        crypto!.Symbol.Should().Be("BTC");
+        crypto!.Symbol.Value.Should().Be("BTC");
         crypto.Name.Should().Be("Bitcoin");
         crypto.CurrentPrice.Should().BeGreaterThan(0);
     }
@@ -143,7 +143,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 
         var wallet = await response.Content.ReadFromJsonAsync<Wallet>();
         wallet.Should().NotBeNull();
-        wallet!.CryptoSymbol.Should().Be("SOL");
+        wallet!.CryptoSymbol.Value.Should().Be("SOL");
         wallet.Balance.Should().Be(0m);
         wallet.Address.Should().NotBeNullOrEmpty();
     }
@@ -177,7 +177,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
         var transaction = await response.Content.ReadFromJsonAsync<Transaction>();
         transaction.Should().NotBeNull();
         transaction!.Type.Should().Be(TransactionType.Purchase);
-        transaction.CryptoSymbol.Should().Be("BTC");
+        transaction.CryptoSymbol.Value.Should().Be("BTC");
     }
 
     [Fact]

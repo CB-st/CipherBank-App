@@ -53,7 +53,7 @@ public class WalletServiceTests
 
         // Assert
         result.Id.Should().Be("wallet1");
-        result.CryptoSymbol.Should().Be("BTC");
+        result.CryptoSymbol.Value.Should().Be("BTC");
         result.Balance.Should().Be(0.5m);
     }
 
@@ -105,7 +105,7 @@ public class WalletServiceTests
         var result = await mockService.Object.CreateWalletAsync("SOL");
 
         // Assert
-        result.CryptoSymbol.Should().Be("SOL");
+        result.CryptoSymbol.Value.Should().Be("SOL");
         result.Balance.Should().Be(0m);
         result.Address.Should().NotBeNullOrEmpty();
     }

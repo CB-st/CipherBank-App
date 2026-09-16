@@ -11,7 +11,7 @@ namespace CipherBank_app.Models;
 /// </summary>
 public record WalletCardItem(Wallet Wallet, decimal UsdValue, decimal PercentChange24H)
 {
-    public string Symbol => Wallet.CryptoSymbol;
+    public AssetSymbol Symbol => Wallet.CryptoSymbol;
 
     public string Name => Wallet.CryptoName;
 

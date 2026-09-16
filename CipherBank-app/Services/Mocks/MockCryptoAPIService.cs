@@ -52,45 +52,43 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         return cryptos;
     }
 
-    public async Task<CryptoCurrency> GetCryptoPriceAsync(string symbol, CancellationToken cancellationToken = default)
+    public async Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
 
-        LogGettingPriceForSymbol(_logger, symbol);
+        LogGettingPriceForSymbol(_logger, symbol.Value);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var crypto = _mockCryptos.FirstOrDefault(c =>
-            c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+        var crypto = _mockCryptos.FirstOrDefault(c => c.Symbol == symbol);
 
         if (crypto == null)
         {
-            LogSymbolNotFound(_logger, symbol);
+            LogSymbolNotFound(_logger, symbol.Value);
             throw new KeyNotFoundException($"Cryptocurrency with symbol '{symbol}' not found");
         }
 
         var result = AddPriceVariation(crypto);
-        LogReturnedPriceForSymbol(_logger, result.Symbol, result.CurrentPrice);
+        LogReturnedPriceForSymbol(_logger, result.Symbol.Value, result.CurrentPrice);
         return result;
     }
 
-    public async Task<PriceHistory> GetPriceHistoryAsync(string symbol, string period, CancellationToken cancellationToken = default)
+    public async Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(period);
 
-        LogGettingPriceHistory(_logger, symbol, period);
+        LogGettingPriceHistory(_logger, symbol.Value, period);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var crypto = _mockCryptos.FirstOrDefault(c =>
-            c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase))
+        var crypto = _mockCryptos.FirstOrDefault(c => c.Symbol == symbol)
             ?? throw new KeyNotFoundException($"Cryptocurrency with symbol '{symbol}' not found");
 
         var (points, startDate) = GeneratePriceHistory(crypto.CurrentPrice, period);
         var endDate = DateTimeOffset.UtcNow;
 
-        var history = new PriceHistory(symbol.ToUpperInvariant(), points, startDate, endDate);
+        var history = new PriceHistory(symbol, points, startDate, endDate);
 
-        LogGeneratedPriceHistory(_logger, points.Count, symbol, period);
+        LogGeneratedPriceHistory(_logger, points.Count, symbol.Value, period);
         return history;
     }
 
@@ -102,7 +100,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         await SimulateNetworkDelayAsync(cancellationToken);
 
         var results = _mockCryptos
-            .Where(c => c.Symbol.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+            .Where(c => c.Symbol.Value.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                        c.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
             .Select(AddPriceVariation)
             .ToList();

@@ -48,7 +48,7 @@ public sealed partial class MockTransactionService : ITransactionService
         var wallet = await _walletService.GetWalletAsync(walletId, cancellationToken);
 
         var transactions = _transactions
-            .Where(t => t.CryptoSymbol.Equals(wallet.CryptoSymbol, StringComparison.OrdinalIgnoreCase))
+            .Where(t => t.CryptoSymbol == wallet.CryptoSymbol)
             .OrderByDescending(t => t.Timestamp)
             .ToList();
 
@@ -56,28 +56,27 @@ public sealed partial class MockTransactionService : ITransactionService
         return transactions;
     }
 
-    public async Task<Transaction> PurchaseCryptoAsync(string symbol, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         if (amount <= 0)
         {
             throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
-        LogProcessingPurchase(_logger, amount, symbol);
+        LogProcessingPurchase(_logger, amount, symbol.Value);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var normalizedSymbol = symbol.ToUpperInvariant();
         var fee = amount * PurchaseFeePercent;
 
         // Find or create wallet
-        var wallet = _walletService.GetWalletBySymbol(normalizedSymbol);
+        var wallet = _walletService.GetWalletBySymbol(symbol);
         string toAddress;
 
         if (wallet == null)
         {
             // Create wallet automatically for purchase
-            wallet = await _walletService.CreateWalletAsync(normalizedSymbol, cancellationToken);
+            wallet = await _walletService.CreateWalletAsync(symbol, cancellationToken);
         }
 
         toAddress = wallet.Address;
@@ -90,7 +89,7 @@ public sealed partial class MockTransactionService : ITransactionService
             GenerateTransactionId(),
             TransactionType.Purchase,
             amount,
-            normalizedSymbol,
+            symbol,
             null, // No from address for purchases
             toAddress,
             DateTimeOffset.UtcNow,
@@ -99,7 +98,7 @@ public sealed partial class MockTransactionService : ITransactionService
 
         _transactions.Add(transaction);
 
-        LogPurchaseCompleted(_logger, amount, normalizedSymbol, fee, transaction.Id);
+        LogPurchaseCompleted(_logger, amount, symbol.Value, fee, transaction.Id);
 
         return transaction;
     }
@@ -167,7 +166,7 @@ public sealed partial class MockTransactionService : ITransactionService
             },
             CancellationToken.None);
 
-        LogSendInitiated(_logger, amount, wallet.CryptoSymbol, toAddress, fee, transaction.Id);
+        LogSendInitiated(_logger, amount, wallet.CryptoSymbol.Value, toAddress, fee, transaction.Id);
 
         return transaction;
     }
@@ -328,7 +327,7 @@ public sealed partial class MockTransactionService : ITransactionService
             .Select(_ => hexChars[RandomNumberGenerator.GetInt32(hexChars.Length)]).ToArray());
     }
 
-    private static bool IsValidAddress(string address, string symbol) => symbol.ToUpperInvariant() switch
+    private static bool IsValidAddress(string address, AssetSymbol symbol) => symbol.Value switch
     {
         "BTC" => address.StartsWith("bc1", StringComparison.Ordinal) || address.StartsWith('1') || address.StartsWith('3'),
         "ETH" => address.StartsWith("0x", StringComparison.Ordinal) && address.Length == 42,
