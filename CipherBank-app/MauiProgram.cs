@@ -25,7 +25,7 @@ public static class MauiProgram
 #if DEBUG
         const bool isDevelopment = true;
 #else
-        const bool IsDevelopment = false;
+        const bool isDevelopment = false;
 #endif
 
         // Runtime platform check selects the appsettings.Windows.json overlay; no preprocessor fork.
