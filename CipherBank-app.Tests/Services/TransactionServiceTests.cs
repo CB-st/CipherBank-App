@@ -80,7 +80,7 @@ public class TransactionServiceTests
         // Assert
         result.Type.Should().Be(TransactionType.Purchase);
         result.Amount.Should().Be(0.5m);
-        result.CryptoSymbol.Should().Be("ETH");
+        result.CryptoSymbol.Value.Should().Be("ETH");
         result.Status.Should().Be(TransactionStatus.Confirmed);
     }
 

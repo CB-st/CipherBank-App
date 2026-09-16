@@ -77,7 +77,7 @@ public sealed class WalletRepository : IWalletRepository
             // Copies the matching mutable columns in one call; Id and CreatedAt stay insert-owned.
             context.Entry(entity).CurrentValues.SetValues(new
             {
-                row.Symbol,
+                Symbol = row.Symbol.Value,
                 row.Label,
                 row.Address,
                 row.Path,

@@ -15,11 +15,11 @@ public sealed class MarketRateHydratorTests
     [Fact]
     public void FromQuote_MapsInverseQuoteRateAndTimestamp()
     {
-        PublicQuote quote = new("btc", 1m, "USD", 67_123.45m);
+        PublicQuote quote = new(new AssetSymbol("btc"), 1m, new AssetSymbol("USD"), 67_123.45m);
 
         RateRow row = RateRow.FromQuote(quote, updatedAtMs: 1_000);
 
-        row.Should().Be(new RateRow("BTC", 67_123.45m, 0m, 1_000));
+        row.Should().Be(new RateRow(new AssetSymbol("BTC"), 67_123.45m, 0m, 1_000));
     }
 
     [Fact]
@@ -28,14 +28,14 @@ public sealed class MarketRateHydratorTests
         DateTimeOffset now = new(2026, 8, 18, 12, 0, 0, TimeSpan.Zero);
         long nowMs = now.ToUnixTimeMilliseconds();
         MemoryRatesCache cache = new();
-        cache.Seed(new RateRow("BTC", 1m, 0m, nowMs + (long)TimeSpan.FromHours(1).TotalMilliseconds));
+        cache.Seed(new RateRow(new AssetSymbol("BTC"), 1m, 0m, nowMs + (long)TimeSpan.FromHours(1).TotalMilliseconds));
         CountingQuoteService quotes = new();
         MarketRateHydrator hydrator = new(
             cache,
             quotes,
             new FixedTimeProvider(now));
 
-        await hydrator.HydrateAndRefreshAsync([" btc "], CancellationToken.None);
+        await hydrator.HydrateAndRefreshAsync([new AssetSymbol(" btc ")], CancellationToken.None);
 
         quotes.InverseQuoteCalls.Should().Be(1);
         cache.UpsertCalls.Should().Be(1);
@@ -48,14 +48,14 @@ public sealed class MarketRateHydratorTests
         DateTimeOffset now = new(2026, 8, 18, 12, 0, 0, TimeSpan.Zero);
         long nowMs = now.ToUnixTimeMilliseconds();
         MemoryRatesCache cache = new();
-        cache.Seed(new RateRow("BTC", 1m, 0m, nowMs - (long)TimeSpan.FromMinutes(1).TotalMilliseconds));
+        cache.Seed(new RateRow(new AssetSymbol("BTC"), 1m, 0m, nowMs - (long)TimeSpan.FromMinutes(1).TotalMilliseconds));
         CountingQuoteService quotes = new();
         MarketRateHydrator hydrator = new(
             cache,
             quotes,
             new FixedTimeProvider(now));
 
-        await hydrator.HydrateAndRefreshAsync(["BTC"], CancellationToken.None);
+        await hydrator.HydrateAndRefreshAsync([new AssetSymbol("BTC")], CancellationToken.None);
 
         quotes.InverseQuoteCalls.Should().Be(0);
         cache.UpsertCalls.Should().Be(0);
@@ -79,20 +79,20 @@ public sealed class MarketRateHydratorTests
 
         public int UpsertCalls { get; private set; }
 
-        public void Seed(RateRow row) => Rows[row.Symbol] = row;
+        public void Seed(RateRow row) => Rows[row.Symbol.Value] = row;
 
         public Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct)
         {
             UpsertCalls++;
             foreach (RateRow row in rows)
             {
-                Rows[row.Symbol] = row;
+                Rows[row.Symbol.Value] = row;
             }
 
             return Task.CompletedTask;
         }
 
-        public Task<IReadOnlyList<RateRow>> GetAsync(IEnumerable<string>? symbols, CancellationToken ct)
+        public Task<IReadOnlyList<RateRow>> GetAsync(IEnumerable<AssetSymbol>? symbols, CancellationToken ct)
         {
             if (symbols is null)
             {
@@ -100,9 +100,9 @@ public sealed class MarketRateHydratorTests
             }
 
             List<RateRow> matched = new();
-            foreach (string symbol in symbols)
+            foreach (AssetSymbol symbol in symbols)
             {
-                if (Rows.TryGetValue(symbol, out RateRow? row))
+                if (Rows.TryGetValue(symbol.Value, out RateRow? row))
                 {
                     matched.Add(row);
                 }
@@ -119,13 +119,13 @@ public sealed class MarketRateHydratorTests
         public Task<bool> TestConnectionAsync(CancellationToken cancellationToken)
             => Task.FromResult(true);
 
-        public Task<IReadOnlyList<string>> GetCurrenciesAsync(CancellationToken cancellationToken)
-            => Task.FromResult<IReadOnlyList<string>>(["BTC"]);
+        public Task<IReadOnlyList<AssetSymbol>> GetCurrenciesAsync(CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<AssetSymbol>>([new AssetSymbol("BTC")]);
 
         public Task<PublicQuote> GetInverseQuoteAsync(
-            string inputSymbol,
+            AssetSymbol inputSymbol,
             decimal inputAmount,
-            string outputSymbol,
+            AssetSymbol outputSymbol,
             CancellationToken cancellationToken)
         {
             InverseQuoteCalls++;
@@ -133,9 +133,9 @@ public sealed class MarketRateHydratorTests
         }
 
         public Task<PublicQuote> GetQuoteAsync(
-            string inputSymbol,
+            AssetSymbol inputSymbol,
             decimal outputAmount,
-            string outputSymbol,
+            AssetSymbol outputSymbol,
             CancellationToken cancellationToken)
             => Task.FromResult(new PublicQuote(inputSymbol, 1m, outputSymbol, outputAmount));
     }

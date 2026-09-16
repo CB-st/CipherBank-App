@@ -35,7 +35,7 @@ public sealed class MarketRateHydrator
     /// Use: High (home rates). Scope: process-wide market data.
     /// </summary>
     public Task HydrateAndRefreshAsync(
-        IEnumerable<string> symbols,
+        IEnumerable<AssetSymbol> symbols,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(symbols);
@@ -53,14 +53,13 @@ public sealed class MarketRateHydrator
     /// Use: High (home rates). Scope: process-wide market data.
     /// </summary>
     private async Task HydrateAndRefreshCoreAsync(
-        IEnumerable<string> symbols,
+        IEnumerable<AssetSymbol> symbols,
         CancellationToken ct)
     {
         DateTimeOffset now = _timeProvider.GetUtcNow();
-        string[] requestedSymbols = symbols
-            .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
-            .Select(RateRow.NormalizeSymbol)
-            .Distinct(StringComparer.Ordinal)
+        AssetSymbol[] requestedSymbols = symbols
+            .Where(symbol => symbol is not null)
+            .Distinct()
             .ToArray();
         if (requestedSymbols.Length == 0)
         {
@@ -78,10 +77,11 @@ public sealed class MarketRateHydrator
 
         long nowMs = now.ToUnixTimeMilliseconds();
         List<RateRow> refreshedRows = new(requestedSymbols.Length);
-        foreach (string symbol in requestedSymbols)
+        AssetSymbol usd = new("USD");
+        foreach (AssetSymbol symbol in requestedSymbols)
         {
             PublicQuote quote = await _publicQuotes
-                .GetInverseQuoteAsync(symbol, 1m, "USD", ct)
+                .GetInverseQuoteAsync(symbol, 1m, usd, ct)
                 .ConfigureAwait(false);
             refreshedRows.Add(RateRow.FromQuote(quote, nowMs));
         }

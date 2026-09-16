@@ -13,7 +13,7 @@ public interface ITransactionService
 {
     Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken = default);
 
-    Task<Transaction> PurchaseCryptoAsync(string symbol, decimal amount, CancellationToken cancellationToken = default);
+    Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken = default);
 
     Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken = default);
 

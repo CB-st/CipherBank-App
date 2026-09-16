@@ -141,14 +141,17 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     private async Task SelectCryptoBySymbolAsync(string symbol)
     {
         await LoadAvailableCryptosAsync();
+        if (!AssetSymbol.TryParse(symbol, out AssetSymbol? parsedSymbol))
+        {
+            return;
+        }
 
-        var crypto = AvailableCryptos.FirstOrDefault(c =>
-            c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+        var crypto = AvailableCryptos.FirstOrDefault(c => c.Symbol == parsedSymbol);
 
         if (crypto != null)
         {
             SelectedCrypto = crypto;
-            LogPreSelectedSymbol(_logger, symbol);
+            LogPreSelectedSymbol(_logger, parsedSymbol.Value);
         }
     }
 
@@ -234,7 +237,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         Fee = subtotal * FeePercentage;
         TotalCost = subtotal + Fee;
 
-        LogCalculatedPurchase(_logger, Amount, SelectedCrypto.Symbol, subtotal, Fee, TotalCost);
+        LogCalculatedPurchase(_logger, Amount, SelectedCrypto.Symbol.Value, subtotal, Fee, TotalCost);
     }
 
     /// <summary>
@@ -285,7 +288,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
         try
         {
-            LogPurchasing(_logger, Amount, SelectedCrypto.Symbol);
+            LogPurchasing(_logger, Amount, SelectedCrypto.Symbol.Value);
 
             var transaction = await _transactionService.PurchaseCryptoAsync(
                 SelectedCrypto.Symbol, Amount, _cts.Token);
@@ -360,7 +363,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         AmountText = Amount.ToString("F8", CultureInfo.CurrentCulture);
         CalculateTotalCost();
 
-        LogSetPresetAmount(_logger, usdAmount, Amount, SelectedCrypto.Symbol);
+        LogSetPresetAmount(_logger, usdAmount, Amount, SelectedCrypto.Symbol.Value);
     }
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators

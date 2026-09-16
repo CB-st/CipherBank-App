@@ -73,7 +73,7 @@ public sealed partial class WalletService : IWalletService
                 throw new KeyNotFoundException($"Wallet '{id}' not found");
             }
 
-            LogRetrievedWallet(_logger, wallet.Id, wallet.Balance, wallet.CryptoSymbol);
+            LogRetrievedWallet(_logger, wallet.Id, wallet.Balance, wallet.CryptoSymbol.Value);
             return wallet;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
@@ -123,15 +123,15 @@ public sealed partial class WalletService : IWalletService
         }
     }
 
-    public async Task<Wallet> CreateWalletAsync(string cryptoSymbol, CancellationToken cancellationToken = default)
+    public async Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(cryptoSymbol);
+        ArgumentNullException.ThrowIfNull(cryptoSymbol);
 
-        LogCreatingWallet(_logger, cryptoSymbol);
+        LogCreatingWallet(_logger, cryptoSymbol.Value);
 
         try
         {
-            var request = new CreateWalletRequest(cryptoSymbol.ToUpperInvariant());
+            var request = new CreateWalletRequest(cryptoSymbol.Value);
             var response = await _http.PostAsJsonAsync(WalletsEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -139,21 +139,21 @@ public sealed partial class WalletService : IWalletService
 
             if (wallet == null)
             {
-                LogNullResponseForCreateWallet(_logger, cryptoSymbol);
+                LogNullResponseForCreateWallet(_logger, cryptoSymbol.Value);
                 throw new InvalidOperationException($"Failed to create wallet for {cryptoSymbol}");
             }
 
-            LogWalletCreated(_logger, wallet.Id, wallet.CryptoSymbol, wallet.Address);
+            LogWalletCreated(_logger, wallet.Id, wallet.CryptoSymbol.Value, wallet.Address);
             return wallet;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
         {
-            LogWalletAlreadyExists(_logger, cryptoSymbol);
+            LogWalletAlreadyExists(_logger, cryptoSymbol.Value);
             throw new InvalidOperationException($"Wallet for {cryptoSymbol} already exists", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorCreatingWallet(_logger, ex, cryptoSymbol, ex.StatusCode);
+            LogHttpErrorCreatingWallet(_logger, ex, cryptoSymbol.Value, ex.StatusCode);
             throw new InvalidOperationException("Failed to create wallet from server", ex);
         }
     }

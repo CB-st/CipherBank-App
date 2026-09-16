@@ -88,15 +88,17 @@ Route constants are defined in `Constants/Routes.cs`:
 
 ## Persistence Work Scheduling
 
-`SyncJobScheduler` accepts keyed interactive and background persist jobs used by
-the downstream M7 market-data flows. A .NET 10 unbounded prioritized channel
-orders waiting jobs by application priority and submission sequence. A fixed
-number of asynchronous consumers each await an entire job before reading the
-next, enforcing whole-operation concurrency across `await` boundaries.
+`SyncJobScheduler` is a façade over two singleton policies.
+`SingleFlightJobFactory` coalesces equivalent typed `SyncJobKey` values while
+an operation is active. `PrioritizedJobDispatcher` owns the .NET 10 prioritized
+channel, submission sequence, fixed asynchronous consumers, cancellation,
+drain, and disposal. Each consumer awaits an entire operation before reading
+another, enforcing whole-operation concurrency across `await` boundaries.
 
-The scheduler adds only policy the channel does not provide: keyed in-flight
-deduplication, linked caller/shutdown cancellation, observable completion,
-drain, and deterministic disposal. `SyncPriority` remains queue vocabulary;
+Job kind is a closed application enum and determines queue priority. Dynamic
+asset scope uses `AssetSymbol`, an immutable open-set value that normalizes
+ticker text. JSON, navigation, HTTP, preferences, and SQLite continue using
+plain strings at their boundaries; listed assets are deliberately not an enum.
 OS `ThreadPriority` and `TaskScheduler` govern different scheduling concerns.
 
 ## Security

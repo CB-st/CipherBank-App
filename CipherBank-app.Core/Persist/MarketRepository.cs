@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Persist.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,34 +20,34 @@ public sealed class MarketRepository : IMarketRepository
 
     /// <inheritdoc />
     public Task UpsertOhlcAsync(
-        string symbol,
+        AssetSymbol symbol,
         IEnumerable<(long T, double V)> points,
         CancellationToken ct)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         ArgumentNullException.ThrowIfNull(points);
         return UpsertOhlcCoreAsync(symbol, points, ct);
     }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
-        string symbol,
+        AssetSymbol symbol,
         CancellationToken ct)
         => GetOhlcCoreAsync(symbol, null, ct);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
-        string symbol,
+        AssetSymbol symbol,
         long fromT,
         CancellationToken ct)
         => GetOhlcCoreAsync(symbol, fromT, ct);
 
     private async Task UpsertOhlcCoreAsync(
-        string symbol,
+        AssetSymbol symbol,
         IEnumerable<(long T, double V)> points,
         CancellationToken ct)
     {
-        string normalizedSymbol = symbol.ToUpperInvariant();
+        string normalizedSymbol = symbol.Value;
         (long T, double V)[] snapshot = points.ToArray();
         if (snapshot is [])
         {
@@ -86,12 +87,12 @@ public sealed class MarketRepository : IMarketRepository
     }
 
     private async Task<IReadOnlyList<(long T, double V)>> GetOhlcCoreAsync(
-        string symbol,
+        AssetSymbol symbol,
         long? fromT,
         CancellationToken ct)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
-        string normalizedSymbol = symbol.ToUpperInvariant();
+        ArgumentNullException.ThrowIfNull(symbol);
+        string normalizedSymbol = symbol.Value;
         CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {

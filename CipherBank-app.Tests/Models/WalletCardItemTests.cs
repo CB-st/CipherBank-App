@@ -18,7 +18,7 @@ public class WalletCardItemTests
         card.UsdValue.Should().Be(100000m);
         card.PercentChange24H.Should().Be(3.5m);
         card.IsPriceUp.Should().BeTrue();
-        card.Symbol.Should().Be("BTC");
+        card.Symbol.Value.Should().Be("BTC");
         card.FormattedBalance.Should().Be("2.00000000 BTC");
         card.Name.Should().Be("Bitcoin");
         card.FormattedUsdValue.Should().Be("$100,000.00");

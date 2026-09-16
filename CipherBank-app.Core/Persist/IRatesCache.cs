@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Persist;
 
 /// <summary>Stores the latest USD market rates.</summary>
@@ -18,6 +20,6 @@ public interface IRatesCache
     /// Use: High (quote hydrate / home rates). Scope: IRatesCache consumers.
     /// </summary>
     Task<IReadOnlyList<RateRow>> GetAsync(
-        IEnumerable<string>? symbols,
+        IEnumerable<AssetSymbol>? symbols,
         CancellationToken ct);
 }

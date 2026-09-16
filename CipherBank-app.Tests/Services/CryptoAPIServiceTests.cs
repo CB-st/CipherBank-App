@@ -52,7 +52,7 @@ public class CryptoApiServiceTests
         var result = await mockService.Object.GetCryptoPriceAsync("BTC");
 
         // Assert
-        result.Symbol.Should().Be("BTC");
+        result.Symbol.Value.Should().Be("BTC");
         result.Name.Should().Be("Bitcoin");
         result.CurrentPrice.Should().Be(50000m);
     }
@@ -97,7 +97,7 @@ public class CryptoApiServiceTests
         var result = await mockService.Object.GetPriceHistoryAsync("BTC", "1d");
 
         // Assert
-        result.Symbol.Should().Be("BTC");
+        result.Symbol.Value.Should().Be("BTC");
         result.PricePoints.Should().HaveCount(2);
         result.PriceChange.Should().Be(1000m);
     }

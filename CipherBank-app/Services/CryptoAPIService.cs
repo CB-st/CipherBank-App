@@ -56,15 +56,15 @@ public sealed partial class CryptoApiService : ICryptoApiService
         }
     }
 
-    public async Task<CryptoCurrency> GetCryptoPriceAsync(string symbol, CancellationToken cancellationToken = default)
+    public async Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
 
-        LogFetchingPriceForSymbol(_logger, symbol);
+        LogFetchingPriceForSymbol(_logger, symbol.Value);
 
         try
         {
-            var endpoint = $"{PriceEndpoint}/{Uri.EscapeDataString(symbol.ToUpperInvariant())}";
+            var endpoint = $"{PriceEndpoint}/{Uri.EscapeDataString(symbol.Value)}";
             var response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -72,35 +72,35 @@ public sealed partial class CryptoApiService : ICryptoApiService
 
             if (crypto == null)
             {
-                LogNullResponseForSymbol(_logger, symbol);
+                LogNullResponseForSymbol(_logger, symbol.Value);
                 throw new KeyNotFoundException($"Cryptocurrency '{symbol}' not found");
             }
 
-            LogRetrievedPriceForSymbol(_logger, symbol, crypto.CurrentPrice);
+            LogRetrievedPriceForSymbol(_logger, symbol.Value, crypto.CurrentPrice);
             return crypto;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogSymbolNotFound(_logger, symbol);
+            LogSymbolNotFound(_logger, symbol.Value);
             throw new KeyNotFoundException($"Cryptocurrency '{symbol}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingSymbolPrice(_logger, ex, symbol, ex.StatusCode);
+            LogHttpErrorFetchingSymbolPrice(_logger, ex, symbol.Value, ex.StatusCode);
             throw new InvalidOperationException($"Failed to retrieve price for {symbol} from server", ex);
         }
     }
 
-    public async Task<PriceHistory> GetPriceHistoryAsync(string symbol, string period, CancellationToken cancellationToken = default)
+    public async Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(period);
 
-        LogFetchingHistory(_logger, symbol, period);
+        LogFetchingHistory(_logger, symbol.Value, period);
 
         try
         {
-            var endpoint = $"{HistoryEndpoint}/{Uri.EscapeDataString(symbol.ToUpperInvariant())}?period={Uri.EscapeDataString(period)}";
+            var endpoint = $"{HistoryEndpoint}/{Uri.EscapeDataString(symbol.Value)}?period={Uri.EscapeDataString(period)}";
             var response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -108,21 +108,21 @@ public sealed partial class CryptoApiService : ICryptoApiService
 
             if (history == null)
             {
-                LogNullResponseForHistory(_logger, symbol);
+                LogNullResponseForHistory(_logger, symbol.Value);
                 throw new KeyNotFoundException($"Price history for '{symbol}' not found");
             }
 
-            LogRetrievedHistory(_logger, history.PricePoints.Count, symbol, period);
+            LogRetrievedHistory(_logger, history.PricePoints.Count, symbol.Value, period);
             return history;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogHistoryNotFound(_logger, symbol);
+            LogHistoryNotFound(_logger, symbol.Value);
             throw new KeyNotFoundException($"Price history for '{symbol}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingHistory(_logger, ex, symbol, ex.StatusCode);
+            LogHttpErrorFetchingHistory(_logger, ex, symbol.Value, ex.StatusCode);
             throw new InvalidOperationException($"Failed to retrieve price history for {symbol} from server", ex);
         }
     }

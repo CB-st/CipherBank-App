@@ -17,5 +17,5 @@ public interface IWalletService
 
     Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken = default);
 
-    Task<Wallet> CreateWalletAsync(string cryptoSymbol, CancellationToken cancellationToken = default);
+    Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken = default);
 }

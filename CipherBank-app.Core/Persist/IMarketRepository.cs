@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Persist;
 
 /// <summary>Stores market history points.</summary>
@@ -12,7 +14,7 @@ public interface IMarketRepository
     /// Use: High (chart persist). Scope: IMarketRepository consumers.
     /// </summary>
     Task UpsertOhlcAsync(
-        string symbol,
+        AssetSymbol symbol,
         IEnumerable<(long T, double V)> points,
         CancellationToken ct);
 
@@ -21,7 +23,7 @@ public interface IMarketRepository
     /// Use: High (chart load). Scope: IMarketRepository consumers.
     /// </summary>
     Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
-        string symbol,
+        AssetSymbol symbol,
         CancellationToken ct);
 
     /// <summary>
@@ -29,7 +31,7 @@ public interface IMarketRepository
     /// Use: Medium (chart window). Scope: IMarketRepository consumers.
     /// </summary>
     Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
-        string symbol,
+        AssetSymbol symbol,
         long fromT,
         CancellationToken ct);
 }

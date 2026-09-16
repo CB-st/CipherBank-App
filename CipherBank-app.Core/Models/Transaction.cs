@@ -14,7 +14,7 @@ public record Transaction(
     [property: JsonConverter(typeof(JsonStringEnumConverter))]
     TransactionType Type,
     decimal Amount,
-    string CryptoSymbol,
+    AssetSymbol CryptoSymbol,
     string? FromAddress,
     string? ToAddress,
     DateTimeOffset Timestamp,
