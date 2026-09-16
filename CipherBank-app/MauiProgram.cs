@@ -171,15 +171,15 @@ public static class MauiProgram
             var settings = sp.GetRequiredService<ISettingsService>();
             if (settings.UseMockServices)
             {
-                Log.Debug("Using MockCryptoAPIService (based on settings)");
+                Log.Debug("Using MockCryptoApiService (based on settings)");
                 return sp.GetRequiredService<MockCryptoApiService>();
             }
 
-            Log.Debug("Using CryptoAPIService (real API)");
+            Log.Debug("Using CryptoApiService (real API)");
             return sp.GetRequiredService<CryptoApiService>();
         });
 #else
-        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<CryptoAPIService>());
+        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<CryptoApiService>());
 #endif
 
         // Wallet Service
