@@ -82,6 +82,86 @@ public sealed class PersistOptionsBindingTests
         options.HomeOrder.Should().Contain("holdings");
     }
 
+    [Theory]
+    [InlineData("stacked")]
+    [InlineData("")]
+    public void UserPreferenceDefaultsOptions_InvalidLayout_FailsValidation(string layout)
+    {
+        UserPreferenceDefaultsOptions options = CreateValidUserPreferenceDefaults();
+        options.AssetsLayout = layout;
+
+        options.IsValid().Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("wire")]
+    [InlineData("")]
+    public void UserPreferenceDefaultsOptions_InvalidSendSpeed_FailsValidation(string speed)
+    {
+        UserPreferenceDefaultsOptions options = CreateValidUserPreferenceDefaults();
+        options.DefaultSendSpeed = speed;
+
+        options.IsValid().Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("high-contrast")]
+    [InlineData("")]
+    public void UserPreferenceDefaultsOptions_InvalidAppearance_FailsValidation(string appearance)
+    {
+        UserPreferenceDefaultsOptions options = CreateValidUserPreferenceDefaults();
+        options.Appearance = appearance;
+
+        options.IsValid().Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void UserPreferenceDefaultsOptions_BlankBaseCurrency_FailsValidation(string baseCurrency)
+    {
+        UserPreferenceDefaultsOptions options = CreateValidUserPreferenceDefaults();
+        options.BaseCurrency = baseCurrency;
+
+        options.IsValid().Should().BeFalse();
+    }
+
+    [Fact]
+    public void UserPreferenceDefaultsOptions_NegativeLockIdle_FailsValidation()
+    {
+        UserPreferenceDefaultsOptions options = CreateValidUserPreferenceDefaults();
+        options.LockIdleSeconds = -1;
+
+        options.IsValid().Should().BeFalse();
+    }
+
+    [Fact]
+    public void UserPreferenceDefaultsOptions_EmptyHomeOrder_FailsValidation()
+    {
+        UserPreferenceDefaultsOptions options = CreateValidUserPreferenceDefaults();
+        options.HomeOrder.Clear();
+
+        options.IsValid().Should().BeFalse();
+    }
+
+    [Fact]
+    public void UserPreferenceDefaultsOptions_BlankHomeOrderEntry_FailsValidation()
+    {
+        UserPreferenceDefaultsOptions options = CreateValidUserPreferenceDefaults();
+        options.HomeOrder[0] = " ";
+
+        options.IsValid().Should().BeFalse();
+    }
+
+    [Fact]
+    public void UserPreferenceDefaultsOptions_EmptyEnabledCurrencies_FailsValidation()
+    {
+        UserPreferenceDefaultsOptions options = CreateValidUserPreferenceDefaults();
+        options.EnabledCurrencies.Clear();
+
+        options.IsValid().Should().BeFalse();
+    }
+
     [Fact]
     public void AddRequiredOptions_MissingClassNamedSectionThrows()
     {
@@ -91,5 +171,20 @@ public sealed class PersistOptionsBindingTests
         Action bind = () => services.AddRequiredOptions(configuration, new PersistenceOptions());
 
         bind.Should().Throw<InvalidOperationException>();
+    }
+
+    private static UserPreferenceDefaultsOptions CreateValidUserPreferenceDefaults()
+    {
+        UserPreferenceDefaultsOptions options = new()
+        {
+            AssetsLayout = "separate",
+            DefaultSendSpeed = "instant",
+            Appearance = "dark",
+            BaseCurrency = "USD",
+            LockIdleSeconds = 120,
+        };
+        options.HomeOrder.Add("holdings");
+        options.EnabledCurrencies.Add("USD");
+        return options;
     }
 }

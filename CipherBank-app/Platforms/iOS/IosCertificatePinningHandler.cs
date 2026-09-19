@@ -90,26 +90,20 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
                 return false;
             }
 
-            // Extract public key data
-            var publicKey = leafCertificate.GetPublicKey();
-            if (publicKey == null)
+            NSData? certificateData = leafCertificate.GetData();
+            if (certificateData == null)
             {
-                Serilog.Log.Debug("[Certificate Pinning] Failed to get public key");
+                Serilog.Log.Debug("[Certificate Pinning] Failed to get certificate data");
                 return false;
             }
 
-            // Get public key data
-            var publicKeyData = publicKey.GetExternalRepresentation();
-            if (publicKeyData == null)
+            if (!CertificatePinPolicy.TryComputeSpkiSha256PinFromCertificateDer(
+                    certificateData.ToArray(),
+                    out string? pin))
             {
-                Serilog.Log.Debug("[Certificate Pinning] Failed to get public key data");
+                Serilog.Log.Debug("[Certificate Pinning] Failed to compute SPKI pin");
                 return false;
             }
-
-            // Calculate SHA256 hash of public key
-            byte[] hash = System.Security.Cryptography.SHA256.HashData(publicKeyData.ToArray());
-            var base64Hash = Convert.ToBase64String(hash);
-            var pin = $"sha256/{base64Hash}";
 
             if (CertificatePinPolicy.Matches(hostname, pin))
             {
