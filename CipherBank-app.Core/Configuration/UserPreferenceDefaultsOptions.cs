@@ -27,21 +27,18 @@ public sealed class UserPreferenceDefaultsOptions
 
     public int LockIdleSeconds { get; set; }
 
-    public bool IsValid() => this switch
+    public bool IsValid() => this is
     {
-        {
-            AssetsLayout: "separate" or "combined",
-            DefaultSendSpeed: "instant" or "ach",
-            Appearance: "system" or "light" or "dark",
-            LockIdleSeconds: >= 0,
-        }
+        AssetsLayout: "separate" or "combined",
+        DefaultSendSpeed: "instant" or "ach",
+        Appearance: "system" or "light" or "dark",
+        LockIdleSeconds: >= 0,
+    }
 
-        when HasNonblankListsAndBaseCurrency() => true,
-        _ => false,
-    };
+    && HasNonblankListsAndBaseCurrency();
 
     private static bool HasNonblankValues(ICollection<string> values) =>
-        values.Count > 0 && values.All(static value => !string.IsNullOrWhiteSpace(value));
+        values.Count != 0 && !values.Any(static value => string.IsNullOrWhiteSpace(value));
 
     private bool HasNonblankListsAndBaseCurrency() =>
         HasNonblankValues(HomeOrder)
