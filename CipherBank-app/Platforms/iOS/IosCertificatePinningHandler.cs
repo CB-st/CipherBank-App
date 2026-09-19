@@ -4,6 +4,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using CipherBank_app.Security;
+using Foundation;
 using Security;
 
 namespace CipherBank_app.Platforms.Ios;
@@ -90,16 +91,10 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
                 return false;
             }
 
-            NSData? certificateData = leafCertificate.GetData();
-            if (certificateData == null)
-            {
-                Serilog.Log.Debug("[Certificate Pinning] Failed to get certificate data");
-                return false;
-            }
-
             if (!CertificatePinPolicy.TryComputeSpkiSha256PinFromCertificateDer(
-                    certificateData.ToArray(),
-                    out string? pin))
+                    leafCertificate.DerData.ToArray(),
+                    out string? pin)
+                || pin is null)
             {
                 Serilog.Log.Debug("[Certificate Pinning] Failed to compute SPKI pin");
                 return false;
