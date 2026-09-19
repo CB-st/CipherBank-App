@@ -4,6 +4,8 @@ name: Sonar and AI Review
 # dispatch gated on context, Sonar, and generated-migration integrity.
 # Preserve its parallel Android/iOS/Mac Catalyst/Windows build/test matrix too;
 # AI review waits for every platform result.
+# Keep the scan job successful on a red gate so AI receives Sonar context;
+# SonarQube Code Analysis is the separate merge-blocking check.
 
 on:
   push:
