@@ -87,6 +87,22 @@ jobs:
         shell: bash
         run: dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c "${{ matrix.configuration }}" -p:CollectCoverage=false
 
+      - name: Restore platform app
+        shell: bash
+        run: |
+          runtime_args=()
+          if [[ -n "${{ matrix.runtime }}" ]]; then
+            runtime_args=(-r "${{ matrix.runtime }}")
+          fi
+          dotnet restore CipherBank-app/CipherBank-app.csproj \
+            -p:TargetFrameworks="${{ matrix.framework }}" \
+            "${runtime_args[@]}" \
+            ${{ matrix.build_args }}
+          # TargetFrameworks is a global MSBuild property and reaches project
+          # references; restore their native targets again before --no-restore.
+          dotnet restore CipherBank-app.Analyzers/CipherBank-app.Analyzers.csproj
+          dotnet restore CipherBank-app.Core/CipherBank-app.Core.csproj
+
       - name: Build platform app
         shell: bash
         run: |
@@ -94,13 +110,11 @@ jobs:
           if [[ -n "${{ matrix.runtime }}" ]]; then
             runtime_args=(-r "${{ matrix.runtime }}")
           fi
-          # -f selects this matrix TFM. Do not pass TargetFrameworks or
-          # --no-restore: the global property leaks into Analyzers/Core, and
-          # Windows Release still needs the win-x64 runtime pack on restore.
           dotnet build CipherBank-app/CipherBank-app.csproj \
             -c "${{ matrix.configuration }}" \
             -f "${{ matrix.framework }}" \
             "${runtime_args[@]}" \
+            --no-restore \
             ${{ matrix.build_args }}
 
   generated-migrations:
