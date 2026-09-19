@@ -79,10 +79,10 @@ the durable rationale so future rounds do not relitigate settled questions.
 - **Forward guidance:** materialized collection → `is []`; `IQueryable` →
   LINQ operators, never client-side properties.
 
-## 5. Replace SQLite market cache with `IMemoryCache`/`HybridCache`
+## 5. Replace SQLite rate snapshot store with `IMemoryCache`/`HybridCache`
 
 - **Ask:** use the framework caching abstractions for rates/OHLC data.
-- **Decision:** declined. The market store is durable offline state — rates
+- **Decision:** declined. `SqliteRateSnapshotStore` is durable offline state — rates
   must survive process restarts for cold-start rendering. `IMemoryCache` is
   in-process and lost on restart; `HybridCache` gains durability only from a
   distributed `IDistributedCache` backend (Redis/SQL Server), which has no
@@ -96,29 +96,29 @@ the durable rationale so future rounds do not relitigate settled questions.
 - **Forward guidance:** in-memory caching may layer on top of the SQLite store
   later; it cannot replace it.
 
-## 6. `BaseCurrency` default from configuration
+## 6. First-run user preference defaults from configuration
 
 - **Ask:** move the `UserPrefs.BaseCurrency` default ("USD") into appsettings.
-- **Decision:** declined. Configuration is for values that vary by environment
-  or deployment; the base-currency default is a stable domain fallback for a
-  user-owned persisted preference, and splitting it between config and the
-  prefs store would create two sources of truth for one user setting.
+- **Decision:** accepted for first-run/missing values. Validated
+  `UserPreferenceDefaultsOptions` produces immutable defaults; stored explicit
+  user choices always win and remain mutable device state.
 - **Evidence:**
   [.NET configuration](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/),
   [Options pattern](https://learn.microsoft.com/en-us/dotnet/core/extensions/options)
   (options model environment-varying settings bound at startup, not per-user
   mutable state).
-- **Forward guidance:** user-mutable values live in `UserPrefs`; deployment
-  knobs live in `config/appsettings*.json`.
+- **Forward guidance:** current values live in `UserPrefs`; class-named
+  `.jsonc` sections own validated defaults only.
 
 ## 7. Boolean-flag helper for the mask pair
 
 - **Ask:** consolidate `MaskAccount`/`MaskRouting` behind one helper selected
   by a boolean flag.
-- **Decision:** consolidated, but with data parameters instead of a boolean.
+- **Decision:** consolidated with data parameters instead of a boolean.
   The two masks differ in two independent dimensions (preprocessing and
   short-input fallback); a single flag would force branch pairs inside the
-  helper. Sonar S2301 discourages boolean selectors because call sites cannot
+  helper. One shared glyph/prefix constant removes presentation duplication.
+  Sonar S2301 discourages boolean selectors because call sites cannot
   read them — the private `MaskTrailing(source, shortResult)` core keeps both
   call sites self-describing.
 - **Evidence:**
@@ -128,23 +128,20 @@ the durable rationale so future rounds do not relitigate settled questions.
 - **Forward guidance:** when consolidating near-duplicates, pass the differing
   behavior as data; reserve boolean parameters for true on/off semantics.
 
-## 8. EF migrations: separate SQL files / FluentMigrator, and `#nullable disable`
+## 8. EF migrations are generator-owned
 
 - **Ask:** keep migrations as up/down `.sql` files or FluentMigrator; later,
   keep the scaffolder's `#nullable disable`.
-- **Decision:** EF Core migrations only (CB1003 bans raw SQL in Core), and the
-  scaffolder's `#nullable disable` is stripped: migrations are reviewed
-  first-class code that compiles clean under the full nullable context, and EF
-  guidance expects generated migration code to be reviewed and edited. A
-  live-tree analyzer fact (`LiveMigrations_HaveNoNullableDisableDirective`)
-  keeps future scaffolds honest.
+- **Decision:** EF Core migrations only (CB1003 bans raw SQL in Core), with
+  scaffolded migration/designer/snapshot artifacts committed unchanged.
+  Migration-integrity CI regenerates one migration per PR and compares output;
+  generator-owned nullable directives remain generator-owned.
 - **Evidence:**
   [Managing migrations — customize migration code](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/managing)
   ("you should always review the code and make sure it corresponds to the
   desired change").
-- **Forward guidance:** after `dotnet ef migrations add`, strip the directive
-  and fix any warnings in code, never by suppression (see
-  `CipherBank-app.Core/Persist/AGENTS.md`).
+- **Forward guidance:** never hand-edit migration artifacts; change the model,
+  remove an unmerged migration, and scaffold it again.
 
 ## 9. `nameof(T)` for open generic helpers
 

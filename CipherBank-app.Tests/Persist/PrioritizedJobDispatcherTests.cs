@@ -5,6 +5,7 @@
 using CipherBank_app.Configuration;
 using CipherBank_app.Persist;
 using FluentAssertions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CipherBank_app.Tests.Persist;
@@ -203,5 +204,5 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     private static PrioritizedJobDispatcher CreateDispatcher() =>
-        new(new SyncSchedulerOptions { MaxConcurrency = 1 });
+        new(Options.Create(new SyncSchedulerOptions { MaxConcurrency = 1 }));
 }

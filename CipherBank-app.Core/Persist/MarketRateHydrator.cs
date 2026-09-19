@@ -13,12 +13,12 @@ public sealed class MarketRateHydrator
     /// <summary>Maximum age of a cached rate before it is refreshed.</summary>
     public static readonly TimeSpan MaxRateAge = TimeSpan.FromMinutes(15);
 
-    private readonly IRatesCache _cache;
+    private readonly IRateSnapshotStore _cache;
     private readonly IPublicQuoteService _publicQuotes;
     private readonly TimeProvider _timeProvider;
 
     public MarketRateHydrator(
-        IRatesCache cache,
+        IRateSnapshotStore cache,
         IPublicQuoteService publicQuotes,
         TimeProvider timeProvider)
     {

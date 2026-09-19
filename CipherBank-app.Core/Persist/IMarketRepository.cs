@@ -15,14 +15,14 @@ public interface IMarketRepository
     /// </summary>
     Task UpsertOhlcAsync(
         AssetSymbol symbol,
-        IEnumerable<(long T, double V)> points,
+        IEnumerable<PricePoint> points,
         CancellationToken ct);
 
     /// <summary>
     /// Returns the full stored series for <paramref name="symbol"/>, oldest first.
     /// Use: High (chart load). Scope: IMarketRepository consumers.
     /// </summary>
-    Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
+    Task<IReadOnlyList<PricePoint>> GetOhlcAsync(
         AssetSymbol symbol,
         CancellationToken ct);
 
@@ -30,7 +30,7 @@ public interface IMarketRepository
     /// Returns stored series points at or after <paramref name="fromT"/> for <paramref name="symbol"/>.
     /// Use: Medium (chart window). Scope: IMarketRepository consumers.
     /// </summary>
-    Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
+    Task<IReadOnlyList<PricePoint>> GetOhlcAsync(
         AssetSymbol symbol,
         long fromT,
         CancellationToken ct);

@@ -13,8 +13,10 @@ public static class HoldingVisibility
     /// <summary>Splits holdings into enabled and other assets, using defaults when no symbols are configured.</summary>
     public static HoldingVisibilityResult Split(
         IEnumerable<HoldingDto> holdings,
-        IEnumerable<string>? enabledCurrencies)
+        IEnumerable<string>? enabledCurrencies,
+        UserPreferenceDefaults defaults)
     {
+        ArgumentNullException.ThrowIfNull(defaults);
         HashSet<AssetSymbol> enabled = (enabledCurrencies ?? Array.Empty<string>())
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
             .Select(AssetSymbol.Parse)
@@ -22,7 +24,7 @@ public static class HoldingVisibility
 
         if (enabled.Count == 0)
         {
-            enabled.UnionWith(UserPrefs.DefaultEnabledCurrencies.Select(AssetSymbol.Parse));
+            enabled.UnionWith(defaults.EnabledCurrencies);
         }
 
         List<HoldingDto> visible = [];

@@ -10,7 +10,7 @@ namespace CipherBank_app.Resources;
 /// <summary>
 /// Strongly-typed access to Core user-facing, localizable product copy (S4055
 /// ResourceManager). Owns user-facing strings only: startup validation diagnostics are
-/// configuration-owned and live in <c>ConfigurationValidationMessages</c>.
+/// configuration-owned and live in <c>OptionsValidationMessages</c>.
 /// </summary>
 public static class UserFacingStrings
 {

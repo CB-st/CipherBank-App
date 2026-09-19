@@ -3,16 +3,49 @@
 // </copyright>
 
 using System.Globalization;
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Xunit;
 
 namespace CipherBank_app.Tests.Persist;
 
 public class LocalDbMigrationTests
 {
+    [Fact]
+    public async Task InitializeAsync_PreviousMigration_PreservesPriceAndAddsVolume()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-upgrade-" + Guid.NewGuid().ToString("N") + ".db");
+        await using LocalDb db = new(new FileInfo(path));
+        CipherBankDbContext oldContext = await db.CreateContextAsync();
+        await using (oldContext)
+        {
+            IMigrator migrator = oldContext.GetService<IMigrator>();
+            await migrator.MigrateAsync("20260817134948_InitialCreate");
+        }
+
+        await using (SqliteConnection connection = new(
+                         new SqliteConnectionStringBuilder { DataSource = path }.ToString()))
+        {
+            await connection.OpenAsync();
+            await using SqliteCommand insert = connection.CreateCommand();
+            insert.CommandText = "INSERT INTO ohlc(symbol, t, v) VALUES ('BTC', 1000, 12.5)";
+            await insert.ExecuteNonQueryAsync();
+        }
+
+        await db.InitializeAsync();
+        MarketRepository repository = new(db);
+        IReadOnlyList<PricePoint> points = await repository.GetOhlcAsync("BTC", default);
+
+        points.Should().ContainSingle();
+        points[0].Price.Should().Be(12.5m);
+        points[0].Volume.Should().BeNull();
+    }
+
     [Fact]
     public async Task InitializeAsync_CleanDatabase_CreatesModelTablesAndMigrationHistory()
     {

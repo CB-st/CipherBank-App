@@ -2,10 +2,10 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Configuration;
 using CipherBank_app.ViewModels;
-#if DEBUG
+using Microsoft.Extensions.Options;
 using Microsoft.Maui.Controls.Shapes;
-#endif
 
 namespace CipherBank_app.Views;
 
@@ -16,15 +16,18 @@ public partial class SettingsPage
 {
     private readonly SettingsViewModel _viewModel;
 
-    public SettingsPage(SettingsViewModel viewModel)
+    public SettingsPage(
+        SettingsViewModel viewModel,
+        IOptions<HostBehaviorOptions> hostBehavior)
     {
         InitializeComponent();
         _viewModel = viewModel;
         BindingContext = viewModel;
 
-#if DEBUG
-        AddDeveloperControls();
-#endif
+        if (hostBehavior.Value.ShowDevelopmentIndicators)
+        {
+            AddDeveloperControls();
+        }
     }
 
     protected override void OnDisappearing()
@@ -33,7 +36,6 @@ public partial class SettingsPage
         _viewModel.OnDisappearing();
     }
 
-#if DEBUG
     private static Border BuildDeveloperCard()
     {
         var headerLabel = new Label
@@ -84,22 +86,6 @@ public partial class SettingsPage
             Children = { environmentLabel, environmentPicker },
         };
 
-        var mockLabel = new Label { Text = "Use Mock Services", VerticalOptions = LayoutOptions.Center };
-        Grid.SetColumn(mockLabel, 0);
-        var mockSwitch = new Switch();
-        mockSwitch.SetBinding(Switch.IsToggledProperty, new Binding(nameof(SettingsViewModel.UseMockServices), BindingMode.TwoWay));
-        Grid.SetColumn(mockSwitch, 1);
-
-        var mockGrid = new Grid
-        {
-            ColumnDefinitions =
-            {
-                new ColumnDefinition(GridLength.Star),
-                new ColumnDefinition(GridLength.Auto),
-            },
-            Children = { mockLabel, mockSwitch },
-        };
-
         var noteLabel = new Label
         {
             Text = "Note: Changing environment will clear your authentication",
@@ -117,7 +103,7 @@ public partial class SettingsPage
             Content = new VerticalStackLayout
             {
                 Spacing = 12,
-                Children = { headerGrid, environmentSection, mockGrid, noteLabel },
+                Children = { headerGrid, environmentSection, noteLabel },
             },
         };
         ApplyThemeColor(card, BackgroundColorProperty, "DevModeBackground", "DevModeBackgroundDark");
@@ -151,5 +137,4 @@ public partial class SettingsPage
         var insertIndex = SettingsLayout.Children.IndexOf(ApiSettingsCard) + 1;
         SettingsLayout.Children.Insert(insertIndex, BuildDeveloperCard());
     }
-#endif
 }

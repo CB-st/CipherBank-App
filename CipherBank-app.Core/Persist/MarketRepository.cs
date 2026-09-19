@@ -11,17 +11,17 @@ namespace CipherBank_app.Persist;
 /// <inheritdoc />
 public sealed class MarketRepository : IMarketRepository
 {
-    private readonly ILocalDb _db;
+    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
 
-    public MarketRepository(ILocalDb db)
+    public MarketRepository(IDbContextFactory<CipherBankDbContext> contexts)
     {
-        _db = db;
+        _contexts = contexts;
     }
 
     /// <inheritdoc />
     public Task UpsertOhlcAsync(
         AssetSymbol symbol,
-        IEnumerable<(long T, double V)> points,
+        IEnumerable<PricePoint> points,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(symbol);
@@ -30,13 +30,13 @@ public sealed class MarketRepository : IMarketRepository
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
+    public Task<IReadOnlyList<PricePoint>> GetOhlcAsync(
         AssetSymbol symbol,
         CancellationToken ct)
         => GetOhlcCoreAsync(symbol, null, ct);
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
+    public Task<IReadOnlyList<PricePoint>> GetOhlcAsync(
         AssetSymbol symbol,
         long fromT,
         CancellationToken ct)
@@ -44,21 +44,21 @@ public sealed class MarketRepository : IMarketRepository
 
     private async Task UpsertOhlcCoreAsync(
         AssetSymbol symbol,
-        IEnumerable<(long T, double V)> points,
+        IEnumerable<PricePoint> points,
         CancellationToken ct)
     {
         string normalizedSymbol = symbol.Value;
-        (long T, double V)[] snapshot = points.ToArray();
+        PricePoint[] snapshot = points.ToArray();
         if (snapshot is [])
         {
             return;
         }
 
-        Dictionary<long, double> latestByTimestamp = snapshot
-            .GroupBy(point => point.T)
-            .ToDictionary(group => group.Key, group => group.Last().V);
+        Dictionary<long, PricePoint> latestByTimestamp = snapshot
+            .GroupBy(point => point.Timestamp.ToUnixTimeMilliseconds())
+            .ToDictionary(group => group.Key, group => group.Last());
 
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             long[] timestamps = latestByTimestamp.Keys.ToArray();
@@ -67,7 +67,7 @@ public sealed class MarketRepository : IMarketRepository
                 .ToDictionaryAsync(entity => entity.Timestamp, ct)
                 .ConfigureAwait(false);
 
-            foreach (KeyValuePair<long, double> point in latestByTimestamp)
+            foreach (KeyValuePair<long, PricePoint> point in latestByTimestamp)
             {
                 if (!existing.TryGetValue(point.Key, out OhlcPointEntity? entity))
                 {
@@ -79,14 +79,15 @@ public sealed class MarketRepository : IMarketRepository
                     context.OhlcPoints.Add(entity);
                 }
 
-                entity.Value = point.Value;
+                entity.Price = point.Value.Price;
+                entity.Volume = point.Value.Volume;
             }
 
             await context.SaveChangesAsync(ct).ConfigureAwait(false);
         }
     }
 
-    private Task<IReadOnlyList<(long T, double V)>> GetOhlcCoreAsync(
+    private Task<IReadOnlyList<PricePoint>> GetOhlcCoreAsync(
         AssetSymbol symbol,
         long? fromT,
         CancellationToken ct)
@@ -95,12 +96,12 @@ public sealed class MarketRepository : IMarketRepository
         return GetOhlcFromDatabaseAsync(symbol.Value, fromT, ct);
     }
 
-    private async Task<IReadOnlyList<(long T, double V)>> GetOhlcFromDatabaseAsync(
+    private async Task<IReadOnlyList<PricePoint>> GetOhlcFromDatabaseAsync(
         string normalizedSymbol,
         long? fromT,
         CancellationToken ct)
     {
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             IQueryable<OhlcPointEntity> query = context.OhlcPoints
@@ -115,7 +116,10 @@ public sealed class MarketRepository : IMarketRepository
                 .OrderBy(entity => entity.Timestamp)
                 .ToListAsync(ct)
                 .ConfigureAwait(false);
-            return entities.Select(entity => (entity.Timestamp, entity.Value)).ToList();
+            return entities.Select(entity => new PricePoint(
+                DateTimeOffset.FromUnixTimeMilliseconds(entity.Timestamp),
+                entity.Price,
+                entity.Volume)).ToList();
         }
     }
 }

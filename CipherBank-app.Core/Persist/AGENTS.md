@@ -11,12 +11,9 @@ override CI Sonar: new issues on Persist code still fail the gate.
 - Schema changes require a new EF migration under `Persist/Migrations/`, a
   clean-database test, and an upgrade test from the previous migration.
   Generate with `dotnet ef migrations add` using Tests as the startup project
-  so desktop SQLite native libraries load. Do not hand-edit `*Designer.cs` or
-  `ModelSnapshot`. The `Up`/`Down` class may be edited to satisfy Sonar
-  (default arguments, method length, file-scoped namespace) without changing
-  the schema. Strip the scaffolder's `#nullable disable` directive from every
-  freshly generated migration file and fix any resulting warnings in code,
-  never by suppression (a live-tree analyzer fact enforces this).
+  so desktop SQLite native libraries load. All migration, designer, and
+  snapshot artifacts are generator-owned: never hand-edit them. One migration
+  per PR; migration-integrity CI regenerates and compares the artifact.
 - Prototype SQLite files without `__EFMigrationsHistory` are disposable and
   deleted on initialize. Do not add compatibility SQL to preserve lab leftovers.
 - Database entities and mappings use the on-device table/column names.
@@ -32,15 +29,14 @@ override CI Sonar: new issues on Persist code still fail the gate.
   Do not write `await using … = await` as a single expression.
 - SQLite has no datetime affinity. `CreatedAt` converters store ISO-8601 (`O`)
   and parse invariant. Do not change the converter to a different format.
-- `LocalDb` is constructed from `FileInfo`. `ILocalDb.Path` stays `string`
-  (`FullName` after `GetFullPath`) for SQLite `DataSource` and Shell; it is
-  the single identity member (`DatabaseFile` was removed as consumer-free).
+- `LocalDatabaseInitializer` owns prototype cleanup and migration at startup.
+  Repositories create short-lived contexts through `IDbContextFactory`.
 - Optional development payees bind from `PersistenceOptions.DefaultRecipients`
   (stable JSON ids such as `seed:rent-4th-st`). Production defaults seed
   nothing. `RecipientSeedInitializer` owns first-run bootstrap; repositories
   remain CRUD-only. Do not generate GUID seed ids.
-- `IUserPrefs` is the read shape for UI/sync. `IPrefsStore` still returns
-  `UserPrefs` so System.Text.Json can materialize the bag.
+- `IPrefsStore` returns the concrete mutable `UserPrefs` aggregate. Configured
+  defaults fill only absent wire fields and never overwrite stored choices.
 - `AssetSymbol` is the open-set application ticker value. It owns trim and
   invariant-uppercase normalization; EF entities, V1 DTOs, prefs JSON, and
   HTTP payloads remain strings at their boundaries. Do not replace listed

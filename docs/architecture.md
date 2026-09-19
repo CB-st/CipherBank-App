@@ -101,6 +101,15 @@ ticker text. JSON, navigation, HTTP, preferences, and SQLite continue using
 plain strings at their boundaries; listed assets are deliberately not an enum.
 OS `ThreadPriority` and `TaskScheduler` govern different scheduling concerns.
 
+## Local Persistence Lifecycle
+
+The startup gate awaits `LocalDatabaseInitializer` and recipient seeding before
+exposing `AppShell`. The initializer owns prototype cleanup and EF migration;
+routine repositories receive `IDbContextFactory<CipherBankDbContext>` and use
+one short-lived context per operation. `SqliteRateSnapshotStore` keeps one
+durable latest row per symbol for offline fallback, while configured preference
+defaults fill only fields absent from the user's stored JSON payload.
+
 ## Security
 
 ### Certificate Pinning

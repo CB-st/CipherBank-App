@@ -44,17 +44,10 @@ public interface ISettingsService
     /// </summary>
     string Environment { get; set; }
 
-#if DEBUG
     /// <summary>
     /// Gets or sets a value indicating whether developer mode is enabled.
     /// </summary>
     bool DeveloperModeEnabled { get; set; }
-
-    /// <summary>
-    /// Gets or sets a value indicating whether mock services are used instead of the real API.
-    /// </summary>
-    bool UseMockServices { get; set; }
-#endif
 
     /// <summary>
     /// Resets all settings to their default values.

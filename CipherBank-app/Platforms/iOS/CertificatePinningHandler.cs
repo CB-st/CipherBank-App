@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using CipherBank_app.Security;
 using Foundation;
 using Security;
 
@@ -11,40 +12,6 @@ namespace CipherBank_app.Platforms.iOS;
 /// </summary>
 public class IosCertificatePinningHandler : NSUrlSessionHandler
 {
-    // ===================================================================================
-    // TODO: REPLACE CERTIFICATE PINS BEFORE PRODUCTION DEPLOYMENT
-    // ===================================================================================
-    // These placeholder pins MUST be replaced with actual certificate pins before release.
-    // The app will fail to connect to the API with these placeholder values.
-    //
-    // To obtain production pins, run the following commands:
-    //
-    // For api.cipherbank.money (production):
-    //   openssl s_client -servername api.cipherbank.money -connect api.cipherbank.money:443 < /dev/null 2>/dev/null | \
-    //     openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
-    //     openssl dgst -sha256 -binary | openssl enc -base64
-    //
-    // For api.sandbox.cipherbank.money (sandbox):
-    //   openssl s_client -servername api.sandbox.cipherbank.money -connect api.sandbox.cipherbank.money:443 < /dev/null 2>/dev/null | \
-    //     openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
-    //     openssl dgst -sha256 -binary | openssl enc -base64
-    //
-    // IMPORTANT: Always include a backup pin for certificate rotation.
-    // See CERTIFICATE_PINNING_SETUP.md for detailed instructions.
-    // ===================================================================================
-    private static readonly string[] PinnedPublicKeys = new[]
-    {
-        "sha256/REPLACE_WITH_PRODUCTION_PIN=",  // Primary pin - MUST be replaced before production
-        "sha256/REPLACE_WITH_BACKUP_PIN=",      // Backup pin for certificate rotation
-    };
-
-    // Hostnames that require certificate pinning
-    private static readonly string[] PinnedHostnames = new[]
-    {
-        "api.cipherbank.money",
-        "api.sandbox.cipherbank.money"
-    };
-
     public IosCertificatePinningHandler()
     {
         // Configure TLS settings - require TLS 1.2 or higher
@@ -59,7 +26,7 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
             var hostname = uri.Host;
 
             // Check if this hostname requires pinning
-            if (!RequiresPinning(hostname))
+            if (!CertificatePinPolicy.RequiresPinning(hostname))
             {
                 // Not a pinned host, allow standard validation
                 return true;
@@ -73,9 +40,7 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
 
             if (!result)
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[Certificate Validation] Failed for {hostname}: {error?.LocalizedDescription}");
-#endif
+                Serilog.Log.Debug($"[Certificate Validation] Failed for {hostname}: {error?.LocalizedDescription}");
                 return false;
             }
 
@@ -84,24 +49,9 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
         }
         catch (Exception ex)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Error: {ex.Message}");
-#endif
+            Serilog.Log.Debug($"[Certificate Pinning] Error: {ex.Message}");
             return false;
         }
-    }
-
-    private static bool RequiresPinning(string hostname)
-    {
-        foreach (var pinnedHost in PinnedHostnames)
-        {
-            if (hostname.Equals(pinnedHost, StringComparison.OrdinalIgnoreCase) ||
-                hostname.EndsWith("." + pinnedHost, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     /// <summary>
@@ -115,18 +65,14 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
             var certificateCount = trust.Count;
             if (certificateCount == 0)
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine("[Certificate Pinning] No certificates in chain");
-#endif
+                Serilog.Log.Debug("[Certificate Pinning] No certificates in chain");
                 return false;
             }
 
             var leafCertificate = trust[0];
             if (leafCertificate == null)
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine("[Certificate Pinning] Leaf certificate is null");
-#endif
+                Serilog.Log.Debug("[Certificate Pinning] Leaf certificate is null");
                 return false;
             }
 
@@ -134,9 +80,7 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
             var publicKey = leafCertificate.GetPublicKey();
             if (publicKey == null)
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine("[Certificate Pinning] Failed to get public key");
-#endif
+                Serilog.Log.Debug("[Certificate Pinning] Failed to get public key");
                 return false;
             }
 
@@ -144,9 +88,7 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
             var publicKeyData = publicKey.GetExternalRepresentation();
             if (publicKeyData == null)
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine("[Certificate Pinning] Failed to get public key data");
-#endif
+                Serilog.Log.Debug("[Certificate Pinning] Failed to get public key data");
                 return false;
             }
 
@@ -155,29 +97,19 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
             var base64Hash = Convert.ToBase64String(hash);
             var pin = $"sha256/{base64Hash}";
 
-            // Check if pin matches any of our pinned keys
-            foreach (var pinnedKey in PinnedPublicKeys)
+            if (CertificatePinPolicy.Matches(hostname, pin))
             {
-                if (string.Equals(pin, pinnedKey, StringComparison.OrdinalIgnoreCase))
-                {
-#if DEBUG
-                    System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Success for {hostname}");
-#endif
-                    return true;
-                }
+                Serilog.Log.Debug($"[Certificate Pinning] Success for {hostname}");
+                return true;
             }
 
-#if DEBUG
             // Only log the actual pin value in debug builds to avoid information disclosure
-            System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Pin mismatch for {hostname}");
-#endif
+            Serilog.Log.Debug($"[Certificate Pinning] Pin mismatch for {hostname}");
             return false;
         }
         catch (Exception ex)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Error: {ex.Message}");
-#endif
+            Serilog.Log.Debug($"[Certificate Pinning] Error: {ex.Message}");
             return false;
         }
     }

@@ -17,7 +17,7 @@ public class PrefsStoreTests
         string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
         LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        PrefsStore store = new(db);
+        PrefsStore store = new(db, TestPreferenceDefaults.Options);
         UserPrefs prefs = await store.LoadAsync();
         prefs.LockIdleSeconds = 90;
         prefs.Appearance = "light";
@@ -47,10 +47,11 @@ public class PrefsStoreTests
             await context.SaveChangesAsync();
         }
 
-        PrefsStore store = new(db);
+        PrefsStore store = new(db, TestPreferenceDefaults.Options);
         UserPrefs prefs = await store.LoadAsync();
-        prefs.LockIdleSeconds.Should().Be(new UserPrefs().LockIdleSeconds);
-        prefs.EnabledCurrencies.Should().Equal(UserPrefs.DefaultEnabledCurrencies);
+        prefs.LockIdleSeconds.Should().Be(TestPreferenceDefaults.Value.LockIdleSeconds);
+        prefs.EnabledCurrencies.Should().Equal(
+            TestPreferenceDefaults.Value.EnabledCurrencies.Select(symbol => symbol.Value));
     }
 
     /// <summary>
@@ -61,7 +62,7 @@ public class PrefsStoreTests
     public async Task LoadAsync_CanceledToken_ThrowsOperationCanceledException()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
-        PrefsStore store = new(new LocalDb(new FileInfo(path)));
+        PrefsStore store = new(new LocalDb(new FileInfo(path)), TestPreferenceDefaults.Options);
         using CancellationTokenSource cancellation = new();
         await cancellation.CancelAsync();
 

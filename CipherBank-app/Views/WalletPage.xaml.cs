@@ -5,6 +5,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using CipherBank_app.Controls;
+using CipherBank_app.Services;
 using CipherBank_app.ViewModels;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -19,11 +20,14 @@ public partial class WalletPage
     private readonly WalletViewModel _viewModel;
     private bool _isCrossFading;
 
-    public WalletPage(WalletViewModel viewModel)
+    public WalletPage(
+        WalletViewModel viewModel,
+        IMotionPreference motionPreference)
     {
         InitializeComponent();
         _viewModel = viewModel;
         BindingContext = viewModel;
+        WalletDeck.ReduceMotion = motionPreference.IsReduceMotionEnabled;
 
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         _viewModel.WalletCards.CollectionChanged += OnWalletCardsChanged;

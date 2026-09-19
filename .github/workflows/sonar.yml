@@ -277,6 +277,11 @@ jobs:
           else
             extra_args+=("/d:sonar.branch.name=${SONAR_BRANCH_NAME}")
           fi
+          exclusions=config/sonar/exclusions.json
+          test -f "${exclusions}"
+          source_exclusions="$(jq -er '.source | select(length > 0) | join(\",\")' "${exclusions}")"
+          coverage_exclusions="$(jq -er '.coverage | select(length > 0) | join(\",\")' "${exclusions}")"
+          cpd_exclusions="$(jq -er '.cpd | select(length > 0) | join(\",\")' "${exclusions}")"
           # shellcheck disable=SC2086
           # Sources/tests come from MSBuild project graphs; pass exclusions and
           # optional coverage paths as begin properties (not a properties file).
@@ -294,9 +299,9 @@ jobs:
             /d:sonar.host.url="${SONAR_HOST_URL}" \
             /d:sonar.scanner.skipJreProvisioning=true \
             /d:sonar.sourceEncoding=UTF-8 \
-            /d:sonar.exclusions="**/bin/**,**/obj/**,**/Platforms/**,**/Resources/**,design_handoff_cipherbank/**,.cursor/**,reports/**" \
-            /d:sonar.coverage.exclusions="**/Platforms/**,**/Resources/**,**/*Tests*/**,scripts/**,design_handoff_cipherbank/**" \
-            /d:sonar.cpd.exclusions="**/IProductApi.cs,**/IWalletService.cs,**/IPublicQuoteService.cs,**/IMnemonicBackupService.cs,**/IPrefsSyncService.cs,**/IStepUpChallenges.cs,**/IChallengePass*.cs,**/IAccountKeySource.cs,**/ISessionChallengeClient.cs,**/IPq*.cs" \
+            /d:sonar.exclusions="${source_exclusions}" \
+            /d:sonar.coverage.exclusions="${coverage_exclusions}" \
+            /d:sonar.cpd.exclusions="${cpd_exclusions}" \
             /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,reports/analyzer.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
