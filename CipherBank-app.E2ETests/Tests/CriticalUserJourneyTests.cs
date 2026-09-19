@@ -69,7 +69,7 @@ public class CriticalUserJourneyTests : IDisposable
         loginPage.WaitForPageLoad();
 
         // Act
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
 
         // Assert
@@ -106,11 +106,11 @@ public class CriticalUserJourneyTests : IDisposable
         // Arrange - Login first
         var loginPage = new LoginPage(_driver);
         loginPage.WaitForPageLoad();
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
 
         // Act - Navigate to purchase and complete
-        var purchasePage = dashboardPage.GoToPurchase();
+        PurchasePage purchasePage = dashboardPage.GoToPurchase();
         purchasePage.WaitForPageLoad();
         purchasePage.CompletePurchase("BTC", 100.00m);
 
@@ -128,11 +128,11 @@ public class CriticalUserJourneyTests : IDisposable
         // Arrange - Login first
         var loginPage = new LoginPage(_driver);
         loginPage.WaitForPageLoad();
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
 
         // Act - Navigate to wallet and send
-        var walletPage = dashboardPage.GoToWallet();
+        WalletPage walletPage = dashboardPage.GoToWallet();
         walletPage.WaitForPageLoad();
 
         var recipientAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Example address
@@ -151,11 +151,11 @@ public class CriticalUserJourneyTests : IDisposable
         // Arrange - Login first
         var loginPage = new LoginPage(_driver);
         loginPage.WaitForPageLoad();
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
 
         // Act
-        var resultLoginPage = dashboardPage.Logout();
+        LoginPage resultLoginPage = dashboardPage.Logout();
         resultLoginPage.WaitForPageLoad();
 
         // Assert - Should be back at login
@@ -189,7 +189,7 @@ public class CriticalUserJourneyTests : IDisposable
 
         // Step 4: Logout
         dashboardPage = walletPage.GoBack();
-        var resultLoginPage = dashboardPage.Logout();
+        LoginPage resultLoginPage = dashboardPage.Logout();
         resultLoginPage.WaitForPageLoad();
 
         // Final assertion

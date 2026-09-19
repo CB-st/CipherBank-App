@@ -25,27 +25,6 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private string _username = string.Empty;
-
-    [ObservableProperty]
-    private string _password = string.Empty;
-
-    [ObservableProperty]
-    private bool _isBusy;
-
-    [ObservableProperty]
-    private string? _errorMessage;
-
-    [ObservableProperty]
-    private bool _isTestEnvironment;
-
-    [ObservableProperty]
-    private string? _environmentBadge;
-
-    [ObservableProperty]
-    private string? _statusMessage;
-
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
         IAuthService auth,
@@ -67,6 +46,34 @@ public partial class LoginViewModel : ObservableObject, IDisposable
             UpdateEnvironmentIndicator();
         }
     }
+
+    /// <summary>Gets or sets the login username.</summary>
+    [ObservableProperty]
+    public partial string Username { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the login password.</summary>
+    [ObservableProperty]
+    public partial string Password { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether a login is in progress.</summary>
+    [ObservableProperty]
+    public partial bool IsBusy { get; set; }
+
+    /// <summary>Gets or sets the login error message.</summary>
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the app is using the test environment.</summary>
+    [ObservableProperty]
+    public partial bool IsTestEnvironment { get; set; }
+
+    /// <summary>Gets or sets the environment badge text.</summary>
+    [ObservableProperty]
+    public partial string? EnvironmentBadge { get; set; }
+
+    /// <summary>Gets or sets the login status message.</summary>
+    [ObservableProperty]
+    public partial string? StatusMessage { get; set; }
 
     /// <summary>
     /// Cancels the current login operation.

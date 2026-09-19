@@ -250,7 +250,7 @@ public class ArcCardDeck : ContentView
         for (int i = 0; i < _cards.Count; i++)
         {
             double d = i - _position;
-            var card = _cards[i];
+            View card = _cards[i];
 
             bool visible = Math.Abs(d) <= WindowSize;
             card.IsVisible = visible;
@@ -259,7 +259,7 @@ public class ArcCardDeck : ContentView
                 continue;
             }
 
-            var t = CarouselMath.ComputeCardTransform(d, _config);
+            CardTransform t = CarouselMath.ComputeCardTransform(d, _config);
             card.TranslationX = t.TranslationX;
             card.TranslationY = t.TranslationY;
             card.RotationY = t.RotationY;
@@ -354,7 +354,7 @@ public class ArcCardDeck : ContentView
         _springTimer.Interval = TimeSpan.FromSeconds(FrameDt);
         _springTimer.Tick += (_, _) =>
         {
-            var state = CarouselMath.SpringStep(
+            SpringState state = CarouselMath.SpringStep(
                 _position, velocity, target, FrameDt, SnapDampingRatio, SnapAngularFrequency);
             velocity = state.Velocity;
             _position = Math.Clamp(state.Position, 0, max); // hard clamp = firm edges, mid-list overshoot survives

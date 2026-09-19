@@ -32,10 +32,10 @@ public sealed partial class WalletService : IWalletService
 
         try
         {
-            var response = await _http.GetAsync(WalletsEndpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(WalletsEndpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var wallets = await response.Content.ReadFromJsonAsync<List<Wallet>>(cancellationToken: cancellationToken);
+            List<Wallet>? wallets = await response.Content.ReadFromJsonAsync<List<Wallet>>(cancellationToken: cancellationToken);
 
             if (wallets == null)
             {
@@ -62,10 +62,10 @@ public sealed partial class WalletService : IWalletService
         try
         {
             var endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var wallet = await response.Content.ReadFromJsonAsync<Wallet>(cancellationToken: cancellationToken);
+            Wallet? wallet = await response.Content.ReadFromJsonAsync<Wallet>(cancellationToken: cancellationToken);
 
             if (wallet == null)
             {
@@ -97,10 +97,10 @@ public sealed partial class WalletService : IWalletService
         try
         {
             var endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}/balance";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var result = await response.Content.ReadFromJsonAsync<BalanceResponse>(cancellationToken: cancellationToken);
+            BalanceResponse? result = await response.Content.ReadFromJsonAsync<BalanceResponse>(cancellationToken: cancellationToken);
 
             if (result == null)
             {
@@ -132,10 +132,10 @@ public sealed partial class WalletService : IWalletService
         try
         {
             var request = new CreateWalletRequest(cryptoSymbol.Value);
-            var response = await _http.PostAsJsonAsync(WalletsEndpoint, request, cancellationToken);
+            HttpResponseMessage response = await _http.PostAsJsonAsync(WalletsEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var wallet = await response.Content.ReadFromJsonAsync<Wallet>(cancellationToken: cancellationToken);
+            Wallet? wallet = await response.Content.ReadFromJsonAsync<Wallet>(cancellationToken: cancellationToken);
 
             if (wallet == null)
             {

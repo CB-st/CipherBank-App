@@ -80,7 +80,7 @@ public sealed partial class MockWalletService : IWalletService
         LogGettingWallet(_logger, id);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var wallet = _wallets.FirstOrDefault(w => w.Id == id);
+        Wallet? wallet = _wallets.FirstOrDefault(w => w.Id == id);
         if (wallet == null)
         {
             LogWalletNotFound(_logger, id);
@@ -96,7 +96,7 @@ public sealed partial class MockWalletService : IWalletService
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         LogGettingBalance(_logger, id);
-        var wallet = await GetWalletAsync(id, cancellationToken);
+        Wallet wallet = await GetWalletAsync(id, cancellationToken);
 
         LogWalletBalance(_logger, id, wallet.Balance, wallet.CryptoSymbol.Value);
         return wallet.Balance;

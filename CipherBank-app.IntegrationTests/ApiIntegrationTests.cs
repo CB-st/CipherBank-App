@@ -27,7 +27,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
     public async Task HealthCheck_ReturnsOk()
     {
         // Act
-        var response = await _client.GetAsync("/health");
+        HttpResponseMessage response = await _client.GetAsync("/health");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -40,12 +40,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
         var loginRequest = new { user = "testuser", password = "password123" };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/auth/login", loginRequest);
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/auth/login", loginRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var token = await response.Content.ReadFromJsonAsync<AuthToken>();
+        AuthToken? token = await response.Content.ReadFromJsonAsync<AuthToken>();
         token.Should().NotBeNull();
         token!.AccessToken.Should().NotBeNullOrEmpty();
         token.RefreshToken.Should().NotBeNullOrEmpty();
@@ -59,12 +59,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
         var refreshRequest = new { refreshToken = "old_refresh_token" };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/auth/refresh", refreshRequest);
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/auth/refresh", refreshRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var token = await response.Content.ReadFromJsonAsync<AuthToken>();
+        AuthToken? token = await response.Content.ReadFromJsonAsync<AuthToken>();
         token.Should().NotBeNull();
         token!.AccessToken.Should().Contain("refreshed");
     }
@@ -73,12 +73,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
     public async Task GetCryptoPrices_ReturnsListOfCryptos()
     {
         // Act
-        var response = await _client.GetAsync("/api/v1/crypto/prices");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/crypto/prices");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var cryptos = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>();
+        List<CryptoCurrency>? cryptos = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>();
         cryptos.Should().NotBeNull();
         cryptos.Should().HaveCountGreaterThan(0);
         cryptos.Should().Contain(c => c.Symbol == "BTC");
@@ -88,12 +88,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
     public async Task GetCryptoPrice_WithValidSymbol_ReturnsCrypto()
     {
         // Act
-        var response = await _client.GetAsync("/api/v1/crypto/price/BTC");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/crypto/price/BTC");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var crypto = await response.Content.ReadFromJsonAsync<CryptoCurrency>();
+        CryptoCurrency? crypto = await response.Content.ReadFromJsonAsync<CryptoCurrency>();
         crypto.Should().NotBeNull();
         crypto!.Symbol.Value.Should().Be("BTC");
         crypto.Name.Should().Be("Bitcoin");
@@ -104,12 +104,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
     public async Task SearchCrypto_WithQuery_ReturnsResults()
     {
         // Act
-        var response = await _client.GetAsync("/api/v1/crypto/search?q=bit");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/crypto/search?q=bit");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var cryptos = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>();
+        List<CryptoCurrency>? cryptos = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>();
         cryptos.Should().NotBeNull();
         cryptos.Should().HaveCountGreaterThan(0);
     }
@@ -118,12 +118,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
     public async Task GetWallets_ReturnsUserWallets()
     {
         // Act
-        var response = await _client.GetAsync("/api/v1/wallets");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/wallets");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var wallets = await response.Content.ReadFromJsonAsync<List<Wallet>>();
+        List<Wallet>? wallets = await response.Content.ReadFromJsonAsync<List<Wallet>>();
         wallets.Should().NotBeNull();
         wallets.Should().HaveCountGreaterThan(0);
         wallets.Should().Contain(w => w.CryptoSymbol == "BTC");
@@ -136,12 +136,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
         var createRequest = new { cryptoSymbol = "SOL" };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/v1/wallets", createRequest);
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/v1/wallets", createRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var wallet = await response.Content.ReadFromJsonAsync<Wallet>();
+        Wallet? wallet = await response.Content.ReadFromJsonAsync<Wallet>();
         wallet.Should().NotBeNull();
         wallet!.CryptoSymbol.Value.Should().Be("SOL");
         wallet.Balance.Should().Be(0m);
@@ -152,12 +152,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
     public async Task GetTransactionHistory_ReturnsTransactions()
     {
         // Act
-        var response = await _client.GetAsync("/api/v1/transactions?walletId=wallet_btc_001");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/transactions?walletId=wallet_btc_001");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var transactions = await response.Content.ReadFromJsonAsync<List<Transaction>>();
+        List<Transaction>? transactions = await response.Content.ReadFromJsonAsync<List<Transaction>>();
         transactions.Should().NotBeNull();
         transactions.Should().HaveCountGreaterThan(0);
     }
@@ -169,12 +169,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
         var purchaseRequest = new { symbol = "BTC", amount = 0.1m };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/v1/transactions/purchase", purchaseRequest);
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/v1/transactions/purchase", purchaseRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var transaction = await response.Content.ReadFromJsonAsync<Transaction>();
+        Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>();
         transaction.Should().NotBeNull();
         transaction!.Type.Should().Be(TransactionType.Purchase);
         transaction.CryptoSymbol.Value.Should().Be("BTC");
@@ -187,12 +187,12 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
         var sendRequest = new { fromWalletId = "wallet_btc_001", toAddress = "bc1qrecipient", amount = 0.05m };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/v1/transactions/send", sendRequest);
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/v1/transactions/send", sendRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var transaction = await response.Content.ReadFromJsonAsync<Transaction>();
+        Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>();
         transaction.Should().NotBeNull();
         transaction!.Type.Should().Be(TransactionType.Send);
         transaction.Status.Should().Be(TransactionStatus.Pending);

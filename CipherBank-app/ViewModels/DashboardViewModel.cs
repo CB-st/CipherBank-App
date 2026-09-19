@@ -25,24 +25,6 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private ObservableCollection<CryptoCurrency> _cryptocurrencies = [];
-
-    [ObservableProperty]
-    private CryptoCurrency? _selectedCrypto;
-
-    [ObservableProperty]
-    private bool _isLoading;
-
-    [ObservableProperty]
-    private bool _isRefreshing;
-
-    [ObservableProperty]
-    private string? _errorMessage;
-
-    [ObservableProperty]
-    private decimal _totalPortfolioValue;
-
     public DashboardViewModel(
         ILogger<DashboardViewModel> logger,
         ICryptoApiService cryptoService,
@@ -56,6 +38,30 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _navigation = navigation;
         _dialog = dialog;
     }
+
+    /// <summary>Gets or sets the cryptocurrencies shown on the dashboard.</summary>
+    [ObservableProperty]
+    public partial ObservableCollection<CryptoCurrency> Cryptocurrencies { get; set; } = [];
+
+    /// <summary>Gets or sets the selected cryptocurrency.</summary>
+    [ObservableProperty]
+    public partial CryptoCurrency? SelectedCrypto { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether prices are loading.</summary>
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether a refresh is in progress.</summary>
+    [ObservableProperty]
+    public partial bool IsRefreshing { get; set; }
+
+    /// <summary>Gets or sets the dashboard error message.</summary>
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+    /// <summary>Gets or sets the total portfolio value.</summary>
+    [ObservableProperty]
+    public partial decimal TotalPortfolioValue { get; set; }
 
     /// <summary>
     /// Cancels any ongoing operations when leaving the page.
@@ -120,9 +126,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             var success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                    List<CryptoCurrency> cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
                     Cryptocurrencies.Clear();
-                    foreach (var crypto in cryptos)
+                    foreach (CryptoCurrency crypto in cryptos)
                     {
                         Cryptocurrencies.Add(crypto);
                     }

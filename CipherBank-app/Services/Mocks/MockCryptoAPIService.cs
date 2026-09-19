@@ -59,7 +59,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         LogGettingPriceForSymbol(_logger, symbol.Value);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var crypto = _mockCryptos.FirstOrDefault(c => c.Symbol == symbol);
+        CryptoCurrency? crypto = _mockCryptos.FirstOrDefault(c => c.Symbol == symbol);
 
         if (crypto == null)
         {
@@ -67,7 +67,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
             throw new KeyNotFoundException($"Cryptocurrency with symbol '{symbol}' not found");
         }
 
-        var result = AddPriceVariation(crypto);
+        CryptoCurrency result = AddPriceVariation(crypto);
         LogReturnedPriceForSymbol(_logger, result.Symbol.Value, result.CurrentPrice);
         return result;
     }
@@ -80,11 +80,11 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         LogGettingPriceHistory(_logger, symbol.Value, period);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var crypto = _mockCryptos.FirstOrDefault(c => c.Symbol == symbol)
+        CryptoCurrency crypto = _mockCryptos.FirstOrDefault(c => c.Symbol == symbol)
             ?? throw new KeyNotFoundException($"Cryptocurrency with symbol '{symbol}' not found");
 
-        var (points, startDate) = GeneratePriceHistory(crypto.CurrentPrice, period);
-        var endDate = DateTimeOffset.UtcNow;
+        (List<PricePoint>? points, DateTimeOffset startDate) = GeneratePriceHistory(crypto.CurrentPrice, period);
+        DateTimeOffset endDate = DateTimeOffset.UtcNow;
 
         var history = new PriceHistory(symbol, points, startDate, endDate);
 
@@ -127,10 +127,10 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
 
     private static (List<PricePoint> Points, DateTimeOffset StartDate) GeneratePriceHistory(decimal basePrice, string period)
     {
-        var now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
         var points = new List<PricePoint>();
 
-        var (intervalMinutes, totalPoints) = period.ToLowerInvariant() switch
+        (int intervalMinutes, int totalPoints) = period.ToLowerInvariant() switch
         {
             "1h" => (1, 60),
             "1d" => (15, 96),
@@ -140,12 +140,12 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
             _ => (60, 168), // Default to 7 days
         };
 
-        var startDate = now.AddMinutes(-intervalMinutes * totalPoints);
+        DateTimeOffset startDate = now.AddMinutes(-intervalMinutes * totalPoints);
         var currentPrice = basePrice * 0.95m; // Start 5% lower
 
         for (int i = 0; i < totalPoints; i++)
         {
-            var timestamp = startDate.AddMinutes(intervalMinutes * i);
+            DateTimeOffset timestamp = startDate.AddMinutes(intervalMinutes * i);
             var variation = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 0.02) - 0.01); // +/- 1%
             currentPrice *= 1 + variation;
 

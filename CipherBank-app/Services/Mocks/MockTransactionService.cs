@@ -45,7 +45,7 @@ public sealed partial class MockTransactionService : ITransactionService
         await SimulateNetworkDelayAsync(cancellationToken);
 
         // Get wallet to verify it exists
-        var wallet = await _walletService.GetWalletAsync(walletId, cancellationToken);
+        Wallet wallet = await _walletService.GetWalletAsync(walletId, cancellationToken);
 
         var transactions = _transactions
             .Where(t => t.CryptoSymbol == wallet.CryptoSymbol)
@@ -70,7 +70,7 @@ public sealed partial class MockTransactionService : ITransactionService
         var fee = amount * PurchaseFeePercent;
 
         // Find or create wallet
-        var wallet = _walletService.GetWalletBySymbol(symbol);
+        Wallet? wallet = _walletService.GetWalletBySymbol(symbol);
         string toAddress;
 
         if (wallet == null)
@@ -116,7 +116,7 @@ public sealed partial class MockTransactionService : ITransactionService
         await SimulateNetworkDelayAsync(cancellationToken);
 
         // Validate source wallet and balance
-        var wallet = await _walletService.GetWalletAsync(fromWalletId, cancellationToken);
+        Wallet wallet = await _walletService.GetWalletAsync(fromWalletId, cancellationToken);
         var fee = amount * SendFeePercent;
         var totalAmount = amount + fee;
 
@@ -178,7 +178,7 @@ public sealed partial class MockTransactionService : ITransactionService
         LogGettingTransactionStatus(_logger, transactionId);
         await Task.Delay(50, cancellationToken); // Minimal delay for status check
 
-        var transaction = _transactions.FirstOrDefault(t => t.Id == transactionId);
+        Transaction? transaction = _transactions.FirstOrDefault(t => t.Id == transactionId);
         if (transaction == null)
         {
             LogTransactionNotFound(_logger, transactionId);
@@ -192,7 +192,7 @@ public sealed partial class MockTransactionService : ITransactionService
     private static List<Transaction> GenerateMockTransactionHistory()
     {
         var transactions = new List<Transaction>();
-        var now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
 
         // Bitcoin transactions
         transactions.Add(new Transaction(

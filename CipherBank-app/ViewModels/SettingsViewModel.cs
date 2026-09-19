@@ -25,45 +25,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private string _apiEndpoint = string.Empty;
-
-    [ObservableProperty]
-    private string _themeMode = "System";
-
-    [ObservableProperty]
-    private bool _notificationsEnabled;
-
-    [ObservableProperty]
-    private bool _biometricEnabled;
-
-    [ObservableProperty]
-    private int _autoLockTimeout;
-
-    [ObservableProperty]
-    private string _defaultCurrency = "USD";
-
-    [ObservableProperty]
-    private bool _isTesting;
-
-    [ObservableProperty]
-    private bool _isSaving;
-
-    [ObservableProperty]
-    private string? _statusMessage;
-
-    [ObservableProperty]
-    private bool _isStatusSuccess;
-
-    [ObservableProperty]
-    private string _selectedEnvironment = "Sandbox";
-
-    [ObservableProperty]
-    private bool _developerModeEnabled;
-
-    [ObservableProperty]
-    private int _developerModeTapCount;
-
     public SettingsViewModel(
         ILogger<SettingsViewModel> logger,
         ISettingsService settings,
@@ -84,6 +45,58 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         // Load current settings
         LoadSettings();
     }
+
+    /// <summary>Gets or sets the API endpoint.</summary>
+    [ObservableProperty]
+    public partial string ApiEndpoint { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the theme mode.</summary>
+    [ObservableProperty]
+    public partial string ThemeMode { get; set; } = "System";
+
+    /// <summary>Gets or sets a value indicating whether notifications are enabled.</summary>
+    [ObservableProperty]
+    public partial bool NotificationsEnabled { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether biometric unlock is enabled.</summary>
+    [ObservableProperty]
+    public partial bool BiometricEnabled { get; set; }
+
+    /// <summary>Gets or sets the auto-lock timeout in seconds.</summary>
+    [ObservableProperty]
+    public partial int AutoLockTimeout { get; set; }
+
+    /// <summary>Gets or sets the default currency.</summary>
+    [ObservableProperty]
+    public partial string DefaultCurrency { get; set; } = "USD";
+
+    /// <summary>Gets or sets a value indicating whether a connection test is running.</summary>
+    [ObservableProperty]
+    public partial bool IsTesting { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether settings are being saved.</summary>
+    [ObservableProperty]
+    public partial bool IsSaving { get; set; }
+
+    /// <summary>Gets or sets the settings status message.</summary>
+    [ObservableProperty]
+    public partial string? StatusMessage { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the status message represents success.</summary>
+    [ObservableProperty]
+    public partial bool IsStatusSuccess { get; set; }
+
+    /// <summary>Gets or sets the selected environment name.</summary>
+    [ObservableProperty]
+    public partial string SelectedEnvironment { get; set; } = "Sandbox";
+
+    /// <summary>Gets or sets a value indicating whether developer mode is enabled.</summary>
+    [ObservableProperty]
+    public partial bool DeveloperModeEnabled { get; set; }
+
+    /// <summary>Gets or sets the developer-mode tap count.</summary>
+    [ObservableProperty]
+    public partial int DeveloperModeTapCount { get; set; }
 
     /// <summary>
     /// Gets available theme modes.

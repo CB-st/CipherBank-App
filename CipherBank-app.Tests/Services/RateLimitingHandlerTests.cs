@@ -92,7 +92,7 @@ public class RateLimitingHandlerTests
 
         // Act
         await rateLimiter.TryAcquireAsync();
-        var waitTime = await rateLimiter.GetWaitTimeAsync();
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync();
 
         // Assert - Wait time should be close to window duration
         waitTime.Should().BeGreaterThan(TimeSpan.Zero);

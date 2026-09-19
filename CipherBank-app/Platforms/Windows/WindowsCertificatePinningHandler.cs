@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace CipherBank_app.Platforms.Windows;
 
 /// <summary>Windows HTTP handler enforcing the shared SPKI pin policy.</summary>
-public sealed class WindowsCertificatePinningHandler : HttpClientHandler
+public sealed partial class WindowsCertificatePinningHandler : HttpClientHandler
 {
     private readonly ILogger<WindowsCertificatePinningHandler> _logger;
 
@@ -35,10 +35,7 @@ public sealed class WindowsCertificatePinningHandler : HttpClientHandler
 
         if (sslPolicyErrors != SslPolicyErrors.None || certificate is null)
         {
-            _logger.LogWarning(
-                "Certificate validation failed for pinned host {Hostname}: {Errors}",
-                hostname,
-                sslPolicyErrors);
+            LogCertificateValidationFailed(_logger, hostname, sslPolicyErrors);
             return false;
         }
 
@@ -53,22 +50,33 @@ public sealed class WindowsCertificatePinningHandler : HttpClientHandler
                 ?? certificate.GetECDsaPublicKey()?.ExportSubjectPublicKeyInfo();
             if (spki is null)
             {
-                _logger.LogWarning("Unsupported certificate key type for {Hostname}", hostname);
+                LogUnsupportedCertificateKeyType(_logger, hostname);
                 return false;
             }
 
             string pin = CertificatePinPolicy.ComputeSpkiSha256Pin(spki);
             bool matched = CertificatePinPolicy.Matches(hostname, pin);
-            _logger.LogDebug(
-                "Certificate pin validation for {Hostname}: {Matched}",
-                hostname,
-                matched);
+            LogCertificatePinValidation(_logger, hostname, matched);
             return matched;
         }
-        catch (Exception exception)
+        catch (Exception ex)
         {
-            _logger.LogError(exception, "Certificate pin validation failed for {Hostname}", hostname);
+            LogCertificatePinValidationFailed(_logger, ex, hostname);
             return false;
         }
     }
+
+#pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Certificate validation failed for pinned host {Hostname}: {Errors}")]
+    private static partial void LogCertificateValidationFailed(ILogger logger, string hostname, SslPolicyErrors errors);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Unsupported certificate key type for {Hostname}")]
+    private static partial void LogUnsupportedCertificateKeyType(ILogger logger, string hostname);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Certificate pin validation for {Hostname}: {Matched}")]
+    private static partial void LogCertificatePinValidation(ILogger logger, string hostname, bool matched);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Certificate pin validation failed for {Hostname}")]
+    private static partial void LogCertificatePinValidationFailed(ILogger logger, Exception ex, string hostname);
+#pragma warning restore SA1204 // Static members should appear before non-static members
 }

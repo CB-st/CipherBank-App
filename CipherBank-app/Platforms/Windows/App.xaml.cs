@@ -2,8 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using Microsoft.UI.Xaml;
-
 namespace CipherBank_app.WinUI;
 
 /// <summary>
@@ -12,12 +10,11 @@ namespace CipherBank_app.WinUI;
 public partial class App : MauiWinUIApplication
 {
     /// <summary>
-    /// Initializes the singleton application object.  This is the first line of authored code
-    /// executed, and as such is the logical equivalent of main() or WinMain().
+    /// Initializes a new instance of the <see cref="App"/> class.
     /// </summary>
     public App()
     {
-        this.InitializeComponent();
+        InitializeComponent();
     }
 
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
