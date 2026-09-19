@@ -47,12 +47,12 @@ jobs:
             os: macos-26
             workload: maui-ios
             framework: net10.0-ios
-            build_args: "-p:RuntimeIdentifier=iossimulator-arm64 -p:CodesignKey= -p:CodesignProvision="
+            build_args: "-p:RuntimeIdentifier=iossimulator-arm64 -p:CodesignKey= -p:CodesignProvision= -p:PublishTrimmed=false -p:RunAOTCompilation=false -p:MtouchLink=None"
           - name: Mac Catalyst
             os: macos-26
             workload: maui-maccatalyst
             framework: net10.0-maccatalyst
-            build_args: "-p:RuntimeIdentifier=maccatalyst-arm64 -p:CodesignKey= -p:CodesignProvision="
+            build_args: "-p:RuntimeIdentifier=maccatalyst-arm64 -p:CodesignKey= -p:CodesignProvision= -p:PublishTrimmed=false -p:RunAOTCompilation=false -p:MtouchLink=None"
           - name: Windows
             os: windows-2022
             workload: maui-windows
