@@ -279,9 +279,9 @@ jobs:
           fi
           exclusions=config/sonar/exclusions.json
           test -f "${exclusions}"
-          source_exclusions="$(jq -er '.source | select(length > 0) | join(\",\")' "${exclusions}")"
-          coverage_exclusions="$(jq -er '.coverage | select(length > 0) | join(\",\")' "${exclusions}")"
-          cpd_exclusions="$(jq -er '.cpd | select(length > 0) | join(\",\")' "${exclusions}")"
+          source_exclusions="$(jq -er '.source | select(length > 0) | join(",")' "${exclusions}")"
+          coverage_exclusions="$(jq -er '.coverage | select(length > 0) | join(",")' "${exclusions}")"
+          cpd_exclusions="$(jq -er '.cpd | select(length > 0) | join(",")' "${exclusions}")"
           # shellcheck disable=SC2086
           # Sources/tests come from MSBuild project graphs; pass exclusions and
           # optional coverage paths as begin properties (not a properties file).
