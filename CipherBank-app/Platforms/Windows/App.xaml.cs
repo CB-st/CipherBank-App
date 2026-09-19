@@ -1,7 +1,8 @@
-﻿using Microsoft.UI.Xaml;
+﻿// <copyright file="App.xaml.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
 
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using Microsoft.UI.Xaml;
 
 namespace CipherBank_app.WinUI;
 

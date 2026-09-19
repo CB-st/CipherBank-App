@@ -6,6 +6,9 @@ using UIKit;
 
 namespace CipherBank_app;
 
+/// <summary>
+/// iOS application entry point.
+/// </summary>
 public static class Program
 {
     // This is the main entry point of the application.
