@@ -35,10 +35,10 @@ public sealed partial class CryptoApiService : ICryptoApiService
 
         try
         {
-            var response = await _http.GetAsync(PricesEndpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(PricesEndpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var cryptos = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>(cancellationToken: cancellationToken);
+            List<CryptoCurrency>? cryptos = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>(cancellationToken: cancellationToken);
 
             if (cryptos == null)
             {
@@ -65,10 +65,10 @@ public sealed partial class CryptoApiService : ICryptoApiService
         try
         {
             var endpoint = $"{PriceEndpoint}/{Uri.EscapeDataString(symbol.Value)}";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var crypto = await response.Content.ReadFromJsonAsync<CryptoCurrency>(cancellationToken: cancellationToken);
+            CryptoCurrency? crypto = await response.Content.ReadFromJsonAsync<CryptoCurrency>(cancellationToken: cancellationToken);
 
             if (crypto == null)
             {
@@ -101,10 +101,10 @@ public sealed partial class CryptoApiService : ICryptoApiService
         try
         {
             var endpoint = $"{HistoryEndpoint}/{Uri.EscapeDataString(symbol.Value)}?period={Uri.EscapeDataString(period)}";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var history = await response.Content.ReadFromJsonAsync<PriceHistory>(cancellationToken: cancellationToken);
+            PriceHistory? history = await response.Content.ReadFromJsonAsync<PriceHistory>(cancellationToken: cancellationToken);
 
             if (history == null)
             {
@@ -136,10 +136,10 @@ public sealed partial class CryptoApiService : ICryptoApiService
         try
         {
             var endpoint = $"{SearchEndpoint}?q={Uri.EscapeDataString(query)}";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var results = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>(cancellationToken: cancellationToken);
+            List<CryptoCurrency>? results = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>(cancellationToken: cancellationToken);
 
             if (results == null)
             {

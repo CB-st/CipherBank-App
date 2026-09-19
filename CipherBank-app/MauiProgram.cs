@@ -12,6 +12,7 @@ using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
 using Microsoft.Extensions.Configuration;
 using Serilog;
+using Serilog.Core;
 using Serilog.Events;
 
 namespace CipherBank_app;
@@ -71,7 +72,7 @@ public static class MauiProgram
 
         var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
 
-        var config = new LoggerConfiguration()
+        LoggerConfiguration config = new LoggerConfiguration()
             .MinimumLevel.Is(minimumLevel)
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("System", LogEventLevel.Warning)
@@ -87,7 +88,7 @@ public static class MauiProgram
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
         }
 
-        var logger = config.CreateLogger();
+        Logger logger = config.CreateLogger();
 
         mauiAppBuilder.Services.AddSerilog(logger);
 

@@ -41,7 +41,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
                 .WithBody("{\"error\":\"Authentication required\"}"));
 
         // Act
-        var response = await _client.GetAsync("/api/v1/secure/resource");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/secure/resource");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -63,7 +63,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
             new AuthenticationHeaderValue("Bearer", "valid_token");
 
         // Act
-        var response = await _client.GetAsync("/api/v1/secure/data");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/secure/data");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -88,7 +88,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
             new AuthenticationHeaderValue("Bearer", "expired_token");
 
         // Act
-        var response = await _client.GetAsync("/api/v1/protected/endpoint");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/protected/endpoint");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -111,7 +111,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
         var invalidLogin = new { user = "wrong", password = "incorrect" };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/auth/login/invalid", invalidLogin);
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/auth/login/invalid", invalidLogin);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -130,7 +130,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
                 .WithBody("{\"error\":\"Rate limit exceeded\"}"));
 
         // Act
-        var response = await _client.GetAsync("/api/v1/rate-limited");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/rate-limited");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
@@ -150,7 +150,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
                 .WithBody("{\"error\":\"Invalid input\"}"));
 
         // Act
-        var response = await _client.GetAsync("/api/v1/crypto/search?q=<script>alert('xss')</script>");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/crypto/search?q=<script>alert('xss')</script>");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -168,7 +168,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
                 .WithBody("{\"error\":\"Invalid wallet ID\"}"));
 
         // Act
-        var response = await _client.GetAsync("/api/v1/wallets/'; DROP TABLE wallets;--");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/wallets/'; DROP TABLE wallets;--");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -190,7 +190,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
                 .WithBody("{\"secure\":true}"));
 
         // Act
-        var response = await _client.GetAsync("/api/v1/secure-headers");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/secure-headers");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -213,7 +213,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/v1/transactions/send", sensitiveRequest);
+        HttpResponseMessage response = await _client.PostAsJsonAsync("/api/v1/transactions/send", sensitiveRequest);
 
         // Assert - Verify the endpoint works (actual log verification is manual)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -232,7 +232,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
                 .WithBody("{\"error\":\"Request timeout\"}"));
 
         // Act
-        var response = await _client.GetAsync("/api/v1/slow-endpoint");
+        HttpResponseMessage response = await _client.GetAsync("/api/v1/slow-endpoint");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.GatewayTimeout);

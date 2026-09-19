@@ -42,7 +42,7 @@ public sealed partial class RateLimitingHandler : DelegatingHandler
         }
 
         // Get wait time and check if it's acceptable
-        var waitTime = await _rateLimiter.GetWaitTimeAsync(cancellationToken);
+        TimeSpan waitTime = await _rateLimiter.GetWaitTimeAsync(cancellationToken);
 
         if (waitTime > _maxWaitTime)
         {

@@ -66,7 +66,7 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 10, TimeSpan.FromMinutes(1));
 
         // Act
-        var waitTime = await rateLimiter.GetWaitTimeAsync();
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync();
 
         // Assert
         waitTime.Should().Be(TimeSpan.Zero);
@@ -80,7 +80,7 @@ public class RateLimiterTests
 
         // Act
         await rateLimiter.TryAcquireAsync(); // Use up the limit
-        var waitTime = await rateLimiter.GetWaitTimeAsync();
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync();
 
         // Assert
         waitTime.Should().BeGreaterThan(TimeSpan.Zero);

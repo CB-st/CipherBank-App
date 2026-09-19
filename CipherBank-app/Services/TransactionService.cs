@@ -37,10 +37,10 @@ public sealed partial class TransactionService : ITransactionService
         try
         {
             var endpoint = $"{TransactionsEndpoint}?walletId={Uri.EscapeDataString(walletId)}";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var transactions = await response.Content.ReadFromJsonAsync<List<Transaction>>(cancellationToken: cancellationToken);
+            List<Transaction>? transactions = await response.Content.ReadFromJsonAsync<List<Transaction>>(cancellationToken: cancellationToken);
 
             if (transactions == null)
             {
@@ -76,10 +76,10 @@ public sealed partial class TransactionService : ITransactionService
         try
         {
             var request = new PurchaseRequest(symbol.Value, amount);
-            var response = await _http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
+            HttpResponseMessage response = await _http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
+            Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
 
             if (transaction == null)
             {
@@ -129,10 +129,10 @@ public sealed partial class TransactionService : ITransactionService
         try
         {
             var request = new SendRequest(fromWalletId, toAddress, amount);
-            var response = await _http.PostAsJsonAsync(SendEndpoint, request, cancellationToken);
+            HttpResponseMessage response = await _http.PostAsJsonAsync(SendEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
+            Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
 
             if (transaction == null)
             {
@@ -175,10 +175,10 @@ public sealed partial class TransactionService : ITransactionService
         try
         {
             var endpoint = $"{TransactionsEndpoint}/{Uri.EscapeDataString(transactionId)}/status";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var result = await response.Content.ReadFromJsonAsync<StatusResponse>(cancellationToken: cancellationToken);
+            StatusResponse? result = await response.Content.ReadFromJsonAsync<StatusResponse>(cancellationToken: cancellationToken);
 
             if (result == null)
             {

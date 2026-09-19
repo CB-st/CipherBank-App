@@ -28,7 +28,7 @@ public class CryptoApiServiceTests
             .ReturnsAsync(expectedCryptos);
 
         // Act
-        var result = await mockService.Object.GetCryptoPricesAsync();
+        List<CryptoCurrency> result = await mockService.Object.GetCryptoPricesAsync();
 
         // Assert
         result.Should().HaveCount(2);
@@ -49,7 +49,7 @@ public class CryptoApiServiceTests
             .ReturnsAsync(expectedCrypto);
 
         // Act
-        var result = await mockService.Object.GetCryptoPriceAsync("BTC");
+        CryptoCurrency result = await mockService.Object.GetCryptoPriceAsync("BTC");
 
         // Assert
         result.Symbol.Value.Should().Be("BTC");
@@ -67,7 +67,7 @@ public class CryptoApiServiceTests
             .ThrowsAsync(new KeyNotFoundException("Cryptocurrency 'INVALID' not found"));
 
         // Act
-        var act = async () => await mockService.Object.GetCryptoPriceAsync("INVALID");
+        Func<Task<CryptoCurrency>> act = async () => await mockService.Object.GetCryptoPriceAsync("INVALID");
 
         // Assert
         await act.Should().ThrowAsync<KeyNotFoundException>();
@@ -94,7 +94,7 @@ public class CryptoApiServiceTests
             .ReturnsAsync(expectedHistory);
 
         // Act
-        var result = await mockService.Object.GetPriceHistoryAsync("BTC", "1d");
+        PriceHistory result = await mockService.Object.GetPriceHistoryAsync("BTC", "1d");
 
         // Assert
         result.Symbol.Value.Should().Be("BTC");
@@ -117,7 +117,7 @@ public class CryptoApiServiceTests
             .ReturnsAsync(expectedResults);
 
         // Act
-        var result = await mockService.Object.SearchCryptoAsync("bit");
+        List<CryptoCurrency> result = await mockService.Object.SearchCryptoAsync("bit");
 
         // Assert
         result.Should().HaveCount(1);
@@ -134,7 +134,7 @@ public class CryptoApiServiceTests
             .ReturnsAsync(new List<CryptoCurrency>());
 
         // Act
-        var result = await mockService.Object.SearchCryptoAsync("xyz123");
+        List<CryptoCurrency> result = await mockService.Object.SearchCryptoAsync("xyz123");
 
         // Assert
         result.Should().BeEmpty();

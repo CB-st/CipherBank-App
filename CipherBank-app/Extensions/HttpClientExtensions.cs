@@ -30,9 +30,9 @@ public static class HttpClientExtensions
     {
         var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
 
-        var builder = services.AddHttpClient<TClient>((sp, http) =>
+        IHttpClientBuilder builder = services.AddHttpClient<TClient>((sp, http) =>
         {
-            var settings = sp.GetRequiredService<ISettingsService>();
+            ISettingsService settings = sp.GetRequiredService<ISettingsService>();
             http.BaseAddress = new Uri(settings.CipherBankEndpointBase);
             http.Timeout = TimeSpan.FromSeconds(30);
             http.DefaultRequestHeaders.Add("Accept", "application/json");

@@ -21,9 +21,9 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task<AuthToken> LoginAsync(string user, string password, CancellationToken cancellationToken = default)
     {
-        var resp = await http.PostAsJsonAsync("auth/login", new { user, password }, cancellationToken);
+        HttpResponseMessage resp = await http.PostAsJsonAsync("auth/login", new { user, password }, cancellationToken);
         resp.EnsureSuccessStatusCode();
-        var token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
+        AuthToken? token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
         if (token == null)
         {
             LogDeserializeAuthTokenFailed(logger);
@@ -41,9 +41,9 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task<AuthToken> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        var resp = await http.PostAsJsonAsync("auth/refresh", new { refreshToken }, cancellationToken);
+        HttpResponseMessage resp = await http.PostAsJsonAsync("auth/refresh", new { refreshToken }, cancellationToken);
         resp.EnsureSuccessStatusCode();
-        var token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
+        AuthToken? token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
         if (token == null)
         {
             LogDeserializeRefreshTokenFailed(logger);
@@ -72,7 +72,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
                 return null;
             }
 
-            if (!DateTimeOffset.TryParse(expiresUtcString, out var expiresUtc))
+            if (!DateTimeOffset.TryParse(expiresUtcString, out DateTimeOffset expiresUtc))
             {
                 return null;
             }
@@ -88,7 +88,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task<bool> IsTokenExpiredAsync()
     {
-        var token = await GetStoredTokenAsync();
+        AuthToken? token = await GetStoredTokenAsync();
         if (token == null)
         {
             return true;
@@ -120,14 +120,14 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
     {
         try
         {
-            var token = await GetStoredTokenAsync();
+            AuthToken? token = await GetStoredTokenAsync();
             if (token == null)
             {
                 LogNoTokenToRevoke(logger);
                 return true;
             }
 
-            var resp = await http.PostAsJsonAsync("auth/revoke", new { token.RefreshToken }, cancellationToken);
+            HttpResponseMessage resp = await http.PostAsJsonAsync("auth/revoke", new { token.RefreshToken }, cancellationToken);
 
             if (resp.IsSuccessStatusCode)
             {
