@@ -79,13 +79,24 @@ jobs:
         shell: bash
         run: dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release -p:CollectCoverage=false
 
+      - name: Restore platform app
+        shell: bash
+        run: |
+          dotnet restore CipherBank-app/CipherBank-app.csproj \
+            -p:TargetFrameworks="${{ matrix.framework }}" \
+            ${{ matrix.build_args }}
+          # TargetFrameworks is a global MSBuild property and reaches project
+          # references; restore their native targets again before --no-restore.
+          dotnet restore CipherBank-app.Analyzers/CipherBank-app.Analyzers.csproj
+          dotnet restore CipherBank-app.Core/CipherBank-app.Core.csproj
+
       - name: Build platform app
         shell: bash
         run: >-
           dotnet build CipherBank-app/CipherBank-app.csproj
           -c Release
           -f "${{ matrix.framework }}"
-          -p:TargetFrameworks="${{ matrix.framework }}"
+          --no-restore
           ${{ matrix.build_args }}
 
   generated-migrations:
