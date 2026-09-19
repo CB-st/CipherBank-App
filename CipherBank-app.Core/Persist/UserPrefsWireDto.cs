@@ -7,9 +7,9 @@ namespace CipherBank_app.Persist;
 /// <summary>Nullable local JSON wire shape used to merge configured defaults safely.</summary>
 public sealed class UserPrefsWireDto
 {
-    public List<string>? HomeOrder { get; init; }
+    public IList<string>? HomeOrder { get; init; }
 
-    public Dictionary<string, bool>? HomeVisible { get; init; }
+    public IReadOnlyDictionary<string, bool>? HomeVisible { get; init; }
 
     public string? AssetsLayout { get; init; }
 
@@ -23,7 +23,7 @@ public sealed class UserPrefsWireDto
 
     public string? BaseCurrency { get; init; }
 
-    public List<string>? EnabledCurrencies { get; init; }
+    public IList<string>? EnabledCurrencies { get; init; }
 
     public int? LockIdleSeconds { get; init; }
 

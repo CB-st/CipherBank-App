@@ -14,22 +14,39 @@ namespace CipherBank_app.Services;
 public sealed partial class RateLimiter : IDisposable
 {
     private readonly ILogger<RateLimiter>? _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly ConcurrentQueue<DateTimeOffset> _requestTimestamps = new();
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     public RateLimiter()
-        : this(null, 60, TimeSpan.FromMinutes(1))
+        : this(null, TimeProvider.System)
     {
     }
 
     public RateLimiter(ILogger<RateLimiter>? logger)
-        : this(logger, 60, TimeSpan.FromMinutes(1))
+        : this(logger, TimeProvider.System)
     {
     }
 
     public RateLimiter(ILogger<RateLimiter>? logger, int maxRequests, TimeSpan windowDuration)
+        : this(logger, TimeProvider.System, maxRequests, windowDuration)
     {
+    }
+
+    public RateLimiter(ILogger<RateLimiter>? logger, TimeProvider timeProvider)
+        : this(logger, timeProvider, 60, TimeSpan.FromMinutes(1))
+    {
+    }
+
+    public RateLimiter(
+        ILogger<RateLimiter>? logger,
+        TimeProvider timeProvider,
+        int maxRequests,
+        TimeSpan windowDuration)
+    {
+        ArgumentNullException.ThrowIfNull(timeProvider);
         _logger = logger;
+        _timeProvider = timeProvider;
         MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), @"Must be positive");
         WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), @"Must be positive");
 
@@ -63,7 +80,7 @@ public sealed partial class RateLimiter : IDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset now = _timeProvider.GetUtcNow();
             DateTimeOffset windowStart = now - WindowDuration;
 
             // Remove expired timestamps
@@ -102,7 +119,7 @@ public sealed partial class RateLimiter : IDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset now = _timeProvider.GetUtcNow();
             DateTimeOffset windowStart = now - WindowDuration;
 
             // Remove expired timestamps
