@@ -1,4 +1,7 @@
-﻿using ObjCRuntime;
+﻿// <copyright file="Program.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using UIKit;
 
 namespace CipherBank_app;
@@ -6,7 +9,7 @@ namespace CipherBank_app;
 public class Program
 {
     // This is the main entry point of the application.
-    static void Main(string[] args)
+    public static void Main(string[] args)
     {
         // if you want to use a different Application Delegate class from "AppDelegate"
         // you can specify it here.

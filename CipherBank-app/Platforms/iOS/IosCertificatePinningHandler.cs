@@ -1,15 +1,22 @@
-using System;
-using System.Net.Http;
+// <copyright file="IosCertificatePinningHandler.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
+using System.Diagnostics.CodeAnalysis;
 using CipherBank_app.Security;
 using Foundation;
 using Security;
 
-namespace CipherBank_app.Platforms.iOS;
+namespace CipherBank_app.Platforms.Ios;
 
 /// <summary>
 /// iOS-specific certificate pinning handler using NSUrlSessionHandler.
 /// Validates server certificates against pinned public key hashes.
 /// </summary>
+[SuppressMessage(
+    "StyleCop.CSharp.OrderingRules",
+    "SA1204:Static elements should appear before instance elements",
+    Justification = "Trust callback flow is kept before its static pin-validation helper.")]
 public class IosCertificatePinningHandler : NSUrlSessionHandler
 {
     public IosCertificatePinningHandler()
@@ -57,6 +64,14 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
     /// <summary>
     /// Validates that the server certificate matches one of the pinned public keys.
     /// </summary>
+    [SuppressMessage(
+        "Interoperability",
+        "CA1416:Validate platform compatibility",
+        Justification = "The handler is compiled only for the iOS target.")]
+    [SuppressMessage(
+        "Interoperability",
+        "CA1422:Validate platform compatibility",
+        Justification = "The current Apple trust binding is isolated to this platform adapter.")]
     private static bool ValidateCertificatePinning(SecTrust trust, string hostname)
     {
         try
@@ -93,7 +108,7 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
             }
 
             // Calculate SHA256 hash of public key
-            var hash = ComputeSha256Hash(publicKeyData.ToArray());
+            byte[] hash = System.Security.Cryptography.SHA256.HashData(publicKeyData.ToArray());
             var base64Hash = Convert.ToBase64String(hash);
             var pin = $"sha256/{base64Hash}";
 
@@ -114,12 +129,4 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
         }
     }
 
-    /// <summary>
-    /// Computes SHA256 hash of the provided data.
-    /// </summary>
-    private static byte[] ComputeSha256Hash(byte[] data)
-    {
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        return sha256.ComputeHash(data);
-    }
 }
