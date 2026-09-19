@@ -29,6 +29,69 @@ concurrency:
 # check so an untrusted branch owner still cannot reach secrets.
 
 jobs:
+  platform-builds:
+    if: >-
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft)
+      || github.event_name == 'push'
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Android
+            os: ubuntu-22.04
+            workload: maui-android
+            framework: net10.0-android
+            build_args: ""
+          - name: iOS
+            os: macos-15
+            workload: maui-ios
+            framework: net10.0-ios
+            build_args: "-p:RuntimeIdentifier=iossimulator-x64 -p:CodesignKey= -p:CodesignProvision="
+          - name: Mac Catalyst
+            os: macos-15
+            workload: maui-maccatalyst
+            framework: net10.0-maccatalyst
+            build_args: "-p:RuntimeIdentifier=maccatalyst-x64 -p:CodesignKey= -p:CodesignProvision="
+          - name: Windows
+            os: windows-2022
+            workload: maui-windows
+            framework: net10.0-windows10.0.19041.0
+            build_args: ""
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9
+        with:
+          dotnet-version: 10.0.109
+
+      - name: Install MAUI workload
+        shell: bash
+        run: dotnet workload install "${{ matrix.workload }}" --skip-manifest-update
+
+      - name: Run unit tests
+        shell: bash
+        run: dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release /p:CollectCoverage=false
+
+      - name: Restore platform app
+        shell: bash
+        run: dotnet restore CipherBank-app/CipherBank-app.csproj -p:TargetFramework="${{ matrix.framework }}"
+
+      - name: Build platform app
+        shell: bash
+        run: >-
+          dotnet build CipherBank-app/CipherBank-app.csproj
+          -c Release
+          -f "${{ matrix.framework }}"
+          --no-restore
+          ${{ matrix.build_args }}
+
   generated-migrations:
     if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
     runs-on: ubuntu-22.04
@@ -550,13 +613,14 @@ jobs:
           esac
 
   review:
-    needs: [context, sonar, generated-migrations]
-    # Require context, Sonar, and generated migration integrity before AI review.
+    needs: [context, sonar, generated-migrations, platform-builds]
+    # Require context and every quality/build gate before AI review.
     if: >-
       ${{ always()
           && needs.context.result == 'success'
           && needs.sonar.result == 'success'
-          && needs.generated-migrations.result == 'success' }}
+          && needs.generated-migrations.result == 'success'
+          && needs.platform-builds.result == 'success' }}
     runs-on: ubuntu-22.04
     steps:
     - name: Mint CipherBank.AI dispatch token
