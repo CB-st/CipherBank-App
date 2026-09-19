@@ -42,22 +42,30 @@ jobs:
             os: ubuntu-22.04
             workload: maui-android
             framework: net10.0-android
+            configuration: Release
+            runtime: ""
             build_args: ""
           - name: iOS
             os: macos-26
             workload: maui-ios
             framework: net10.0-ios
-            build_args: "-p:RuntimeIdentifier=iossimulator-arm64 -p:CodesignKey= -p:CodesignProvision= -p:MtouchLink=None"
+            configuration: Debug
+            runtime: iossimulator-arm64
+            build_args: "-p:CodesignKey= -p:CodesignProvision="
           - name: Mac Catalyst
             os: macos-26
             workload: maui-maccatalyst
             framework: net10.0-maccatalyst
-            build_args: "-p:RuntimeIdentifier=maccatalyst-arm64 -p:CodesignKey= -p:CodesignProvision= -p:MtouchLink=None"
+            configuration: Debug
+            runtime: maccatalyst-arm64
+            build_args: "-p:CodesignKey= -p:CodesignProvision="
           - name: Windows
             os: windows-2022
             workload: maui-windows
             framework: net10.0-windows10.0.19041.0
-            build_args: "-p:RuntimeIdentifier=win-x64"
+            configuration: Release
+            runtime: win-x64
+            build_args: ""
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     permissions:
@@ -77,13 +85,18 @@ jobs:
 
       - name: Run unit tests
         shell: bash
-        run: dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release -p:CollectCoverage=false
+        run: dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c "${{ matrix.configuration }}" -p:CollectCoverage=false
 
       - name: Restore platform app
         shell: bash
         run: |
+          runtime_args=()
+          if [[ -n "${{ matrix.runtime }}" ]]; then
+            runtime_args=(-r "${{ matrix.runtime }}")
+          fi
           dotnet restore CipherBank-app/CipherBank-app.csproj \
             -p:TargetFrameworks="${{ matrix.framework }}" \
+            "${runtime_args[@]}" \
             ${{ matrix.build_args }}
           # TargetFrameworks is a global MSBuild property and reaches project
           # references; restore their native targets again before --no-restore.
@@ -94,8 +107,9 @@ jobs:
         shell: bash
         run: >-
           dotnet build CipherBank-app/CipherBank-app.csproj
-          -c Release
+          -c "${{ matrix.configuration }}"
           -f "${{ matrix.framework }}"
+          ${{ matrix.runtime && format('-r \"{0}\"', matrix.runtime) || '' }}
           --no-restore
           ${{ matrix.build_args }}
 
