@@ -10,7 +10,7 @@ second rulebook that drifts from the live gate.
 
 ## CI's role: wait, then fail closed
 
-`.github/workflows/sonar.yml` runs the scanner, polls
+`.github/workflows/quality-gates-and-ai-review.yml` runs the scanner, polls
 `api/ce/task` + `api/qualitygates/project_status`, and fails the `sonar`
 job when the gate status is `ERROR`. Merge blocking is that job plus
 Sonar's own PR check (decoration).

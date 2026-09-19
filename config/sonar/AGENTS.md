@@ -35,7 +35,7 @@ evaluated by Sonar.
 - Add characterization tests before changing legacy behavior.
 - Test every meaningful branch, guard, expected failure, and security
   rejection introduced or changed.
-- Run `.github/workflows/sonar.yml` and verify the PR quality gate.
+- Run `.github/workflows/quality-gates-and-ai-review.yml` and verify the PR quality gate.
 - Do not claim a pass from a local IDE result or coverage generation alone.
   SonarQube for IDE Connected Mode is fast local feedback, not a substitute
   for the server gate.

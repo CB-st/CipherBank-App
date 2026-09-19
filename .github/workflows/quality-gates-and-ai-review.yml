@@ -1,4 +1,4 @@
-name: Sonar and AI Review
+name: Quality Gates and AI Review
 
 on:
   push:
