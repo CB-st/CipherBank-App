@@ -115,6 +115,7 @@ public static class MauiProgram
                 new HostBehaviorOptions())
             .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
             .ValidateOnStart();
+        mauiAppBuilder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
         mauiAppBuilder.Services.AddPersistenceFeature(
             mauiAppBuilder.Configuration,
             new DirectoryInfo(FileSystem.Current.AppDataDirectory));
