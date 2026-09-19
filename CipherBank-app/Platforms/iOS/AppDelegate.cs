@@ -6,8 +6,11 @@ using Foundation;
 
 namespace CipherBank_app;
 
+/// <summary>
+/// iOS application delegate.
+/// </summary>
 [Register("AppDelegate")]
-public sealed class AppDelegate : MauiUIApplicationDelegate
+public class AppDelegate : MauiUIApplicationDelegate
 {
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 }

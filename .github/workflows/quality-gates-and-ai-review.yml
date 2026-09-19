@@ -64,7 +64,7 @@ jobs:
             workload: maui-windows
             framework: net10.0-windows10.0.19041.0
             configuration: Release
-            runtime: win-x64
+            runtime: ""
             build_args: ""
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
@@ -105,13 +105,17 @@ jobs:
 
       - name: Build platform app
         shell: bash
-        run: >-
-          dotnet build CipherBank-app/CipherBank-app.csproj
-          -c "${{ matrix.configuration }}"
-          -f "${{ matrix.framework }}"
-          ${{ matrix.runtime && format('-r \"{0}\"', matrix.runtime) || '' }}
-          --no-restore
-          ${{ matrix.build_args }}
+        run: |
+          runtime_args=()
+          if [[ -n "${{ matrix.runtime }}" ]]; then
+            runtime_args=(-r "${{ matrix.runtime }}")
+          fi
+          dotnet build CipherBank-app/CipherBank-app.csproj \
+            -c "${{ matrix.configuration }}" \
+            -f "${{ matrix.framework }}" \
+            "${runtime_args[@]}" \
+            --no-restore \
+            ${{ matrix.build_args }}
 
   generated-migrations:
     if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
