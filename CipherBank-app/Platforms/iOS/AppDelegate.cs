@@ -7,7 +7,7 @@ using Foundation;
 namespace CipherBank_app;
 
 [Register("AppDelegate")]
-public class AppDelegate : MauiUIApplicationDelegate
+public sealed class AppDelegate : MauiUIApplicationDelegate
 {
     protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 }

@@ -6,7 +6,7 @@ using UIKit;
 
 namespace CipherBank_app;
 
-public class Program
+public static class Program
 {
     // This is the main entry point of the application.
     public static void Main(string[] args)
