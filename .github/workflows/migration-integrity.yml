@@ -21,7 +21,9 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore migration tooling
-        run: dotnet restore CipherBank-app.Tests/CipherBank-app.Tests.csproj
+        run: |
+          dotnet tool restore
+          dotnet restore CipherBank-app.Tests/CipherBank-app.Tests.csproj
 
       - name: Verify generated migration integrity
         run: ./scripts/verify-generated-migrations.sh "origin/${{ github.base_ref }}"
