@@ -585,7 +585,7 @@ jobs:
           retention-days: 14
           overwrite: true
 
-      ### 9. Fail closed on quality-gate ERROR ###################################
+      ### 9. Report gate; SonarQube check owns merge failure ####################
       - name: Report quality gate outcome
         if: steps.poll.outputs.gate_status != ''
         env:
@@ -599,8 +599,7 @@ jobs:
               echo "::notice::Quality gate: WARN -- legacy status from some CE builds; see job summary + sonar-context artifact."
               ;;
             ERROR)
-              echo "::error::Quality gate: ERROR -- see job summary + sonar-context artifact." >&2
-              exit 1
+              echo "::notice::Quality gate: ERROR -- SonarQube's own PR check is the merge gate; see job summary + sonar-context artifact."
               ;;
             *)
               echo "::error::Unknown quality gate status '$GATE'; fail closed until the poll script recognises this value." >&2
