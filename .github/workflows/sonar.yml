@@ -2,6 +2,8 @@ name: Sonar and AI Review
 
 # Rebase note: M2 renames this to quality-gates-and-ai-review.yml, moves
 # generated-migration integrity into this workflow, and gates AI review on it.
+# It also runs parallel Android/iOS/Mac Catalyst/Windows Release builds and
+# unit tests; AI review waits for the entire platform matrix.
 
 on:
   push:
