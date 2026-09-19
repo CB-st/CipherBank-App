@@ -20,7 +20,7 @@ internal static class EmbeddedAppSettings
     {
         IConfigurationRoot config = Load(environment);
         ServiceCollection services = new();
-        services.AddRequiredOptions<T>(config);
+        services.AddRequiredOptions(config, Activator.CreateInstance<T>());
         using ServiceProvider provider = services.BuildServiceProvider();
         return provider.GetRequiredService<IOptions<T>>().Value;
     }

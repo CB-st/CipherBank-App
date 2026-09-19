@@ -88,7 +88,7 @@ public sealed class PersistOptionsBindingTests
         ServiceCollection services = new();
         ConfigurationManager configuration = new();
 
-        Action bind = () => services.AddRequiredOptions<PersistenceOptions>(configuration);
+        Action bind = () => services.AddRequiredOptions(configuration, new PersistenceOptions());
 
         bind.Should().Throw<InvalidOperationException>();
     }

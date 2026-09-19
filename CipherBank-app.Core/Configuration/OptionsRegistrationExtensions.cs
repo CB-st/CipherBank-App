@@ -15,12 +15,15 @@ public static class OptionsRegistrationExtensions
     /// <typeparam name="TOptions">Options class whose name is the required section key.</typeparam>
     public static OptionsBuilder<TOptions> AddRequiredOptions<TOptions>(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        TOptions optionsMarker)
         where TOptions : class
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
-        IConfigurationSection section = configuration.GetRequiredSection(typeof(TOptions).Name);
+        ArgumentNullException.ThrowIfNull(optionsMarker);
+        IConfigurationSection section =
+            configuration.GetRequiredSection(optionsMarker.GetType().Name);
         return services.AddOptions<TOptions>().Bind(section);
     }
 }

@@ -5,7 +5,7 @@
 namespace CipherBank_app.Persist;
 
 /// <summary>Nullable local JSON wire shape used to merge configured defaults safely.</summary>
-internal sealed class UserPrefsWireDto
+public sealed class UserPrefsWireDto
 {
     public List<string>? HomeOrder { get; set; }
 
@@ -44,16 +44,15 @@ internal sealed class UserPrefsWireDto
 
     internal UserPrefs ToPrefs(UserPreferenceDefaults defaults)
     {
-        UserPrefs prefs = new(defaults)
-        {
-            AssetsLayout = AssetsLayout ?? defaults.AssetsLayout,
-            ValuesHiddenOnLaunch = ValuesHiddenOnLaunch ?? defaults.ValuesHiddenOnLaunch,
-            CoraEnabled = CoraEnabled ?? defaults.CoraEnabled,
-            DefaultSendSpeed = DefaultSendSpeed ?? defaults.DefaultSendSpeed,
-            Appearance = Appearance ?? defaults.Appearance,
-            BaseCurrency = BaseCurrency ?? defaults.BaseCurrency.Value,
-            LockIdleSeconds = LockIdleSeconds ?? defaults.LockIdleSeconds,
-        };
+        UserPrefs prefs = new(defaults);
+        ApplyScalarValues(prefs);
+        ApplyCollectionValues(prefs);
+        prefs.NormalizeHomeSections();
+        return prefs;
+    }
+
+    private void ApplyCollectionValues(UserPrefs prefs)
+    {
         if (HomeOrder is not null)
         {
             prefs.ReplaceHomeOrder(HomeOrder);
@@ -68,8 +67,16 @@ internal sealed class UserPrefsWireDto
         {
             prefs.ReplaceEnabledCurrencies(EnabledCurrencies);
         }
+    }
 
-        prefs.NormalizeHomeSections();
-        return prefs;
+    private void ApplyScalarValues(UserPrefs prefs)
+    {
+        prefs.AssetsLayout = AssetsLayout ?? prefs.AssetsLayout;
+        prefs.ValuesHiddenOnLaunch = ValuesHiddenOnLaunch ?? prefs.ValuesHiddenOnLaunch;
+        prefs.CoraEnabled = CoraEnabled ?? prefs.CoraEnabled;
+        prefs.DefaultSendSpeed = DefaultSendSpeed ?? prefs.DefaultSendSpeed;
+        prefs.Appearance = Appearance ?? prefs.Appearance;
+        prefs.BaseCurrency = BaseCurrency ?? prefs.BaseCurrency;
+        prefs.LockIdleSeconds = LockIdleSeconds ?? prefs.LockIdleSeconds;
     }
 }

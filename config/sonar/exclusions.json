@@ -4,6 +4,7 @@
     "**/obj/**",
     "**/Platforms/**",
     "**/Resources/**",
+    "**/Persist/Migrations/**",
     "design_handoff_cipherbank/**",
     ".cursor/**",
     "reports/**"

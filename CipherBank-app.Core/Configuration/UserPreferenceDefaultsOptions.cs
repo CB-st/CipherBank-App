@@ -28,13 +28,20 @@ public sealed class UserPreferenceDefaultsOptions
     public int LockIdleSeconds { get; set; }
 
     public bool IsValid() =>
-        HomeOrder.Count > 0
-        && HomeOrder.All(static value => !string.IsNullOrWhiteSpace(value))
-        && EnabledCurrencies.Count > 0
-        && EnabledCurrencies.All(static value => !string.IsNullOrWhiteSpace(value))
-        && AssetsLayout is "separate" or "combined"
-        && DefaultSendSpeed is "instant" or "ach"
-        && Appearance is "system" or "light" or "dark"
+        HasNonblankValues(HomeOrder)
+        && HasNonblankValues(EnabledCurrencies)
+        && IsLayoutValid()
+        && IsSendSpeedValid()
+        && IsAppearanceValid()
         && !string.IsNullOrWhiteSpace(BaseCurrency)
         && LockIdleSeconds >= 0;
+
+    private static bool HasNonblankValues(ICollection<string> values) =>
+        values.Count > 0 && values.All(static value => !string.IsNullOrWhiteSpace(value));
+
+    private bool IsLayoutValid() => AssetsLayout is "separate" or "combined";
+
+    private bool IsSendSpeedValid() => DefaultSendSpeed is "instant" or "ach";
+
+    private bool IsAppearanceValid() => Appearance is "system" or "light" or "dark";
 }

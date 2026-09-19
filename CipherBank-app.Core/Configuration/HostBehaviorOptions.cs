@@ -7,6 +7,9 @@ namespace CipherBank_app.Configuration;
 /// <summary>Runtime host policy selected by build/environment overlays.</summary>
 public sealed class HostBehaviorOptions
 {
+    private static readonly HashSet<string> ValidLogLevels =
+        ["Verbose", "Debug", "Information", "Warning", "Error", "Fatal"];
+
     public bool UseMockServices { get; set; }
 
     public bool IncludeDiagnosticHeaders { get; set; }
@@ -17,6 +20,5 @@ public sealed class HostBehaviorOptions
 
     public bool EnableFileLogging { get; set; } = true;
 
-    public bool IsValid() =>
-        MinimumLogLevel is "Verbose" or "Debug" or "Information" or "Warning" or "Error" or "Fatal";
+    public bool IsValid() => ValidLogLevels.Contains(MinimumLogLevel);
 }
