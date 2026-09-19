@@ -15,6 +15,9 @@ namespace CipherBank_app.Configuration;
 /// <summary>Registers platform-neutral Core service implementations.</summary>
 internal static class CipherBankCoreServiceRegistration
 {
+    // Rebase note: M2 now gates AppShell on LocalDatabaseInitializer then recipient
+    // seeding, uses IDbContextFactory per operation, class-named .jsonc options,
+    // generated-only migrations, and typed wallet/PricePoint/rate-store contracts.
     /// <summary>
     /// Registers crypto, persistence, sync dispatch, Cora copy, and EMV simulation services.
     /// Use: Low (host startup). Scope: Core DI.
