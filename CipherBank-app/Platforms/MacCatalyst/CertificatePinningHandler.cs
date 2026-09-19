@@ -3,7 +3,6 @@
 // </copyright>
 
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
 using CipherBank_app.Security;
 using Security;
 
@@ -26,7 +25,10 @@ public class MacCatalystCertificatePinningHandler : NSUrlSessionHandler
     /// <summary>
     /// Validates that the server certificate matches one of the pinned public keys.
     /// </summary>
-    [SuppressMessage("Interoperability", "CA1422:Validate platform compatibility", Justification = "SecTrust.GetPublicKey() is the available API on MacCatalyst for extracting public keys from trust evaluations")]
+    [SuppressMessage(
+        "Interoperability",
+        "CA1422:Validate platform compatibility",
+        Justification = "SecTrust leaf certificate export is the available API on Mac Catalyst for SPKI extraction.")]
     private static bool ValidateCertificatePinning(SecTrust trust, string hostname)
     {
         try
@@ -39,26 +41,27 @@ public class MacCatalystCertificatePinningHandler : NSUrlSessionHandler
                 return false;
             }
 
-            // Extract public key from the trust evaluation (works on MacCatalyst)
-            var publicKey = trust.GetPublicKey();
-            if (publicKey == null)
+            var leafCertificate = trust[0];
+            if (leafCertificate == null)
             {
-                Serilog.Log.Debug("[Certificate Pinning] Failed to get public key");
+                Serilog.Log.Debug("[Certificate Pinning] Leaf certificate is null");
                 return false;
             }
 
-            // Get public key data
-            var publicKeyData = publicKey.GetExternalRepresentation();
-            if (publicKeyData == null)
+            NSData? certificateData = leafCertificate.GetData();
+            if (certificateData == null)
             {
-                Serilog.Log.Debug("[Certificate Pinning] Failed to get public key data");
+                Serilog.Log.Debug("[Certificate Pinning] Failed to get certificate data");
                 return false;
             }
 
-            // Calculate SHA256 hash of public key
-            var hash = SHA256.HashData(publicKeyData.ToArray());
-            var base64Hash = Convert.ToBase64String(hash);
-            var pin = $"sha256/{base64Hash}";
+            if (!CertificatePinPolicy.TryComputeSpkiSha256PinFromCertificateDer(
+                    certificateData.ToArray(),
+                    out string? pin))
+            {
+                Serilog.Log.Debug("[Certificate Pinning] Failed to compute SPKI pin");
+                return false;
+            }
 
             if (CertificatePinPolicy.Matches(hostname, pin))
             {

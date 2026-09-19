@@ -46,15 +46,12 @@ public sealed partial class WindowsCertificatePinningHandler : HttpClientHandler
     {
         try
         {
-            byte[]? spki = certificate.GetRSAPublicKey()?.ExportSubjectPublicKeyInfo()
-                ?? certificate.GetECDsaPublicKey()?.ExportSubjectPublicKeyInfo();
-            if (spki is null)
+            if (!CertificatePinPolicy.TryComputeSpkiSha256Pin(certificate, out string? pin))
             {
                 LogUnsupportedCertificateKeyType(_logger, hostname);
                 return false;
             }
 
-            string pin = CertificatePinPolicy.ComputeSpkiSha256Pin(spki);
             bool matched = CertificatePinPolicy.Matches(hostname, pin);
             LogCertificatePinValidation(_logger, hostname, matched);
             return matched;

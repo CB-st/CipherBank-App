@@ -7,25 +7,25 @@ namespace CipherBank_app.Persist;
 /// <summary>Nullable local JSON wire shape used to merge configured defaults safely.</summary>
 public sealed class UserPrefsWireDto
 {
-    public List<string>? HomeOrder { get; set; }
+    public List<string>? HomeOrder { get; init; }
 
-    public Dictionary<string, bool>? HomeVisible { get; set; }
+    public Dictionary<string, bool>? HomeVisible { get; init; }
 
-    public string? AssetsLayout { get; set; }
+    public string? AssetsLayout { get; init; }
 
-    public bool? ValuesHiddenOnLaunch { get; set; }
+    public bool? ValuesHiddenOnLaunch { get; init; }
 
-    public bool? CoraEnabled { get; set; }
+    public bool? CoraEnabled { get; init; }
 
-    public string? DefaultSendSpeed { get; set; }
+    public string? DefaultSendSpeed { get; init; }
 
-    public string? Appearance { get; set; }
+    public string? Appearance { get; init; }
 
-    public string? BaseCurrency { get; set; }
+    public string? BaseCurrency { get; init; }
 
-    public List<string>? EnabledCurrencies { get; set; }
+    public List<string>? EnabledCurrencies { get; init; }
 
-    public int? LockIdleSeconds { get; set; }
+    public int? LockIdleSeconds { get; init; }
 
     internal static UserPrefsWireDto FromPrefs(UserPrefs prefs) =>
         new()

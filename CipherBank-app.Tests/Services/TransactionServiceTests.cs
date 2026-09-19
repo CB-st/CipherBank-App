@@ -16,9 +16,10 @@ public class TransactionServiceTests
     public async Task GetTransactionHistoryAsync_ReturnsTransactions()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService> { CallBase = true };
-        var expectedTransactions = new List<Transaction>
-        {
+        Mock<ITransactionService> mockService = new() { CallBase = true };
+        List<Transaction> expectedTransactions =
+        [
+
             new(
                 "tx1",
                 TransactionType.Purchase,
@@ -29,6 +30,7 @@ public class TransactionServiceTests
                 DateTimeOffset.UtcNow,
                 TransactionStatus.Confirmed,
                 0.001m),
+
             new(
                 "tx2",
                 TransactionType.Send,
@@ -38,8 +40,8 @@ public class TransactionServiceTests
                 "addr2",
                 DateTimeOffset.UtcNow,
                 TransactionStatus.Confirmed,
-                0.0001m),
-        };
+                0.0001m)
+        ];
 
         mockService
             .Setup(x => x.GetTransactionHistoryAsync("wallet1", It.IsAny<CancellationToken>()))
@@ -58,8 +60,8 @@ public class TransactionServiceTests
     public async Task PurchaseCryptoAsync_WithValidAmount_ReturnsTransaction()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService> { CallBase = true };
-        var expectedTransaction = new Transaction(
+        Mock<ITransactionService> mockService = new() { CallBase = true };
+        Transaction expectedTransaction = new(
             "tx_purchase",
             TransactionType.Purchase,
             0.5m,
@@ -88,7 +90,7 @@ public class TransactionServiceTests
     public async Task PurchaseCryptoAsync_WithZeroAmount_ThrowsArgumentException()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService> { CallBase = true };
+        Mock<ITransactionService> mockService = new() { CallBase = true };
         mockService
             .Setup(x => x.PurchaseCryptoAsync("BTC", 0m, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ArgumentException("Amount must be positive"));
@@ -105,8 +107,8 @@ public class TransactionServiceTests
     public async Task SendCryptoAsync_WithValidParameters_ReturnsTransaction()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService> { CallBase = true };
-        var expectedTransaction = new Transaction(
+        Mock<ITransactionService> mockService = new() { CallBase = true };
+        Transaction expectedTransaction = new(
             "tx_send",
             TransactionType.Send,
             0.1m,
@@ -134,7 +136,7 @@ public class TransactionServiceTests
     public async Task SendCryptoAsync_WithInsufficientBalance_ThrowsInvalidOperationException()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService> { CallBase = true };
+        Mock<ITransactionService> mockService = new() { CallBase = true };
         mockService
             .Setup(x => x.SendCryptoAsync("wallet1", "bc1qto", 100m, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Insufficient balance"));
@@ -151,7 +153,7 @@ public class TransactionServiceTests
     public async Task GetTransactionStatusAsync_ReturnsCorrectStatus()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService> { CallBase = true };
+        Mock<ITransactionService> mockService = new() { CallBase = true };
         mockService
             .Setup(x => x.GetTransactionStatusAsync("tx123", It.IsAny<CancellationToken>()))
             .ReturnsAsync(TransactionStatus.Confirmed);
@@ -167,7 +169,7 @@ public class TransactionServiceTests
     public async Task GetTransactionStatusAsync_WithInvalidId_ThrowsKeyNotFoundException()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService> { CallBase = true };
+        Mock<ITransactionService> mockService = new() { CallBase = true };
         mockService
             .Setup(x => x.GetTransactionStatusAsync("invalid", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new KeyNotFoundException("Transaction 'invalid' not found"));
