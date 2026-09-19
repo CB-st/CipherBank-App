@@ -9,11 +9,11 @@ migrations='CipherBank-app.Core/Persist/Migrations'
 snapshot="${migrations}/CipherBankDbContextModelSnapshot.cs"
 mapfile -t added < <(
   git diff --name-status "${base_ref}...HEAD" -- "${migrations}" |
-    awk '$1 == "A" && $2 ~ /[0-9]{14}_.+\\.cs$/ && $2 !~ /Designer\\.cs$/ { print $2 }'
+    awk '$1 == "A" && $2 ~ /[0-9]{14}_.+\.cs$/ && $2 !~ /Designer\.cs$/ { print $2 }'
 )
 mapfile -t modified < <(
   git diff --name-status "${base_ref}...HEAD" -- "${migrations}" |
-    awk '$1 == "M" && $2 != "'"${snapshot}"'" && $2 !~ /20260817134948_InitialCreate\\.cs$/ { print $2 }'
+    awk '$1 == "M" && $2 != "'"${snapshot}"'" && $2 !~ /20260817134948_InitialCreate(\.Designer)?\.cs$/ { print $2 }'
 )
 
 if ((${#modified[@]} > 0)); then
