@@ -185,6 +185,7 @@ public class LocalDbMigrationTests
 
     private static void DeleteSqliteFiles(string path)
     {
+        SqliteConnection.ClearAllPools();
         foreach (string candidate in new[] { path, path + "-wal", path + "-shm" })
         {
             if (File.Exists(candidate))

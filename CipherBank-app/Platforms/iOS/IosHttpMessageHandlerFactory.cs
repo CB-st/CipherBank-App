@@ -4,7 +4,7 @@
 
 using CipherBank_app.Services;
 
-namespace CipherBank_app.Platforms.iOS;
+namespace CipherBank_app.Platforms.Ios;
 
 /// <inheritdoc cref="IPlatformHttpMessageHandlerFactory" />
 public sealed class IosHttpMessageHandlerFactory : IPlatformHttpMessageHandlerFactory

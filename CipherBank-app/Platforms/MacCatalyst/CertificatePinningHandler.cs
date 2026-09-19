@@ -2,12 +2,10 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using CipherBank_app.Security;
 using Foundation;
-using Security;
 
 namespace CipherBank_app.Platforms.MacCatalyst;
 

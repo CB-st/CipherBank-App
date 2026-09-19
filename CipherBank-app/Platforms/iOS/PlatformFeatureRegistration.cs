@@ -4,7 +4,7 @@
 
 using CipherBank_app.Controls;
 using CipherBank_app.Handlers;
-using CipherBank_app.Platforms.iOS;
+using CipherBank_app.Platforms.Ios;
 using CipherBank_app.Services;
 
 namespace CipherBank_app.Extensions;
