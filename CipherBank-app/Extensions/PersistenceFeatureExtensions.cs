@@ -41,7 +41,6 @@ public static class PersistenceFeatureExtensions
             .Validate(static options => options.IsValid(), "User preference defaults are invalid.")
             .ValidateOnStart();
 
-        services.AddSingleton<TimeProvider>(TimeProvider.System);
         services.AddSingleton(provider => new FileInfo(Path.Combine(
             databaseDirectory.FullName,
             provider.GetRequiredService<IOptions<PersistenceOptions>>().Value.DatabaseName)));
