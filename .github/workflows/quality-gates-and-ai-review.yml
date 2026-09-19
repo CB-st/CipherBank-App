@@ -77,11 +77,7 @@ jobs:
 
       - name: Run unit tests
         shell: bash
-        run: dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release /p:CollectCoverage=false
-
-      - name: Restore platform app
-        shell: bash
-        run: dotnet restore CipherBank-app/CipherBank-app.csproj -p:TargetFramework="${{ matrix.framework }}"
+        run: dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c Release -p:CollectCoverage=false
 
       - name: Build platform app
         shell: bash
@@ -89,7 +85,6 @@ jobs:
           dotnet build CipherBank-app/CipherBank-app.csproj
           -c Release
           -f "${{ matrix.framework }}"
-          --no-restore
           ${{ matrix.build_args }}
 
   generated-migrations:
@@ -375,9 +370,10 @@ jobs:
           # CPD exclusions: intentional zero-token DIM overload pairs on Core/ChallengePass
           # interfaces (S4136-adjacent duplicates that are not real copy-paste debt).
           # Do NOT exclude PrefsWireDto / RateLimiter / MockProductApi.
-          # Do NOT exclude CipherBank-app.Core/Persist/Migrations (EF migrate path is in scope).
-          # These two exclusion lists below are the single source of truth (policy in
-          # config/sonar/README.md). sonar.coverage.exclusions is FROZEN: do not add
+          # Generated EF artifacts are regeneration-gated and omitted from Sonar;
+          # product SQL policy remains enforced by the build analyzer.
+          # config/sonar/exclusions.json is the single executable source.
+          # sonar.coverage.exclusions is FROZEN: do not add
           # entries; cover product code instead. Shrink only with an explicit policy change.
           dotnet sonarscanner begin \
             /k:"${SONAR_PROJECT_KEY}" \

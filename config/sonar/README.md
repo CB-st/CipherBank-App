@@ -26,7 +26,8 @@ OpenCover file leaves `new_coverage` at 0% and reds the gate.
 Scanner source, coverage, and CPD exclusion lists live in
 `config/sonar/exclusions.json`. The workflow reads that file directly and
 contains no mirrored values.
-Do not add `Persist/Migrations` or other product Core paths. Do not grow
+Generator-owned `Persist/Migrations` artifacts are omitted from Sonar and
+verified by migration-integrity CI plus architecture/build tests. Do not grow
 `sonar.coverage.exclusions`; cover product code instead. Shrink only with an
 explicit policy change.
 

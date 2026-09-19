@@ -108,7 +108,9 @@ public static class MauiProgram
             .GetRequiredSection(nameof(HostBehaviorOptions))
             .Get<HostBehaviorOptions>()
             ?? throw new InvalidOperationException("Host behavior configuration is missing.");
-        mauiAppBuilder.Services.AddRequiredOptions<HostBehaviorOptions>(mauiAppBuilder.Configuration)
+        mauiAppBuilder.Services.AddRequiredOptions(
+                mauiAppBuilder.Configuration,
+                new HostBehaviorOptions())
             .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
             .ValidateOnStart();
         mauiAppBuilder.Services.AddPersistenceFeature(
