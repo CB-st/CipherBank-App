@@ -122,7 +122,10 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
 
         // Rate Limiter (singleton)
-        mauiAppBuilder.Services.AddSingleton<RateLimiter>();
+        mauiAppBuilder.Services.AddSingleton<RateLimiter>(static sp =>
+            new RateLimiter(
+                sp.GetService<ILogger<RateLimiter>>(),
+                sp.GetRequiredService<TimeProvider>()));
 
         // Navigation and dialogs
         mauiAppBuilder.Services.AddSingleton<INavigationService, ShellNavigationService>();
