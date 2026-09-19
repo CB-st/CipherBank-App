@@ -85,6 +85,7 @@ jobs:
           dotnet build CipherBank-app/CipherBank-app.csproj
           -c Release
           -f "${{ matrix.framework }}"
+          -p:TargetFrameworks="${{ matrix.framework }}"
           ${{ matrix.build_args }}
 
   generated-migrations:
