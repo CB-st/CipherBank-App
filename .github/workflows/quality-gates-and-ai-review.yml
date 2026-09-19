@@ -44,15 +44,15 @@ jobs:
             framework: net10.0-android
             build_args: ""
           - name: iOS
-            os: macos-15
+            os: macos-26
             workload: maui-ios
             framework: net10.0-ios
-            build_args: "-p:RuntimeIdentifier=iossimulator-x64 -p:CodesignKey= -p:CodesignProvision="
+            build_args: "-p:RuntimeIdentifier=iossimulator-arm64 -p:CodesignKey= -p:CodesignProvision="
           - name: Mac Catalyst
-            os: macos-15
+            os: macos-26
             workload: maui-maccatalyst
             framework: net10.0-maccatalyst
-            build_args: "-p:RuntimeIdentifier=maccatalyst-x64 -p:CodesignKey= -p:CodesignProvision="
+            build_args: "-p:RuntimeIdentifier=maccatalyst-arm64 -p:CodesignKey= -p:CodesignProvision="
           - name: Windows
             os: windows-2022
             workload: maui-windows
