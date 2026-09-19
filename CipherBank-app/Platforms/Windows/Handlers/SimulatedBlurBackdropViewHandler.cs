@@ -4,13 +4,13 @@
 
 using CipherBank_app.Controls;
 using Microsoft.Maui.Handlers;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using PlatformGrid = Microsoft.UI.Xaml.Controls.Grid;
 
 namespace CipherBank_app.Handlers;
 
 /// <summary>Renders the non-native glass fallback on Windows.</summary>
-public sealed class SimulatedBlurBackdropViewHandler : ViewHandler<BlurBackdropView, Grid>
+public sealed class SimulatedBlurBackdropViewHandler : ViewHandler<BlurBackdropView, PlatformGrid>
 {
     public static readonly IPropertyMapper<BlurBackdropView, SimulatedBlurBackdropViewHandler> Mapper =
         new PropertyMapper<BlurBackdropView, SimulatedBlurBackdropViewHandler>(ViewMapper)
@@ -23,7 +23,7 @@ public sealed class SimulatedBlurBackdropViewHandler : ViewHandler<BlurBackdropV
     {
     }
 
-    protected override Grid CreatePlatformView() => new();
+    protected override PlatformGrid CreatePlatformView() => new();
 
     private static void MapMaterial(
         SimulatedBlurBackdropViewHandler handler,
