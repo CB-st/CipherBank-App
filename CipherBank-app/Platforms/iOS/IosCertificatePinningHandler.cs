@@ -4,7 +4,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using CipherBank_app.Security;
-using Foundation;
 using Security;
 
 namespace CipherBank_app.Platforms.Ios;
@@ -128,5 +127,4 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
             return false;
         }
     }
-
 }
