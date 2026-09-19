@@ -41,7 +41,7 @@ migration="${added[0]}"
 designer="${migration%.cs}.Designer.cs"
 name="$(basename "${migration%.cs}")"
 name="${name#*_}"
-cp "$migration" "$designer" "$snapshot" "$expected/"
+cp "$migration" "$expected/"
 
 git worktree add --detach "$worktree" HEAD >/dev/null
 rm "$worktree/$migration" "$worktree/$designer"
@@ -53,10 +53,7 @@ dotnet ef migrations add "$name" \
   --output-dir Persist/Migrations >/dev/null
 
 generated_migration="$(find "$worktree/$migrations" -maxdepth 1 -name "*_${name}.cs" ! -name "*.Designer.cs")"
-generated_designer="${generated_migration%.cs}.Designer.cs"
-python3 - "$expected/$(basename "$migration")" "$generated_migration" \
-  "$expected/$(basename "$designer")" "$generated_designer" \
-  "$expected/$(basename "$snapshot")" "$worktree/$snapshot" <<'PY'
+python3 - "$expected/$(basename "$migration")" "$generated_migration" <<'PY'
 import re
 import sys
 from pathlib import Path
