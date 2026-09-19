@@ -4,7 +4,7 @@
 
 using CipherBank_app.Controls;
 using Microsoft.Maui.Handlers;
-using Microsoft.UI.Xaml.Media;
+using PlatformBrush = Microsoft.UI.Xaml.Media.SolidColorBrush;
 using PlatformGrid = Microsoft.UI.Xaml.Controls.Grid;
 
 namespace CipherBank_app.Handlers;
@@ -30,7 +30,7 @@ public sealed class SimulatedBlurBackdropViewHandler : ViewHandler<BlurBackdropV
         BlurBackdropView view)
     {
         byte alpha = view.UseDarkMaterial ? (byte)204 : (byte)235;
-        handler.PlatformView.Background = new SolidColorBrush(
+        handler.PlatformView.Background = new PlatformBrush(
             Windows.UI.Color.FromArgb(alpha, 24, 24, 30));
     }
 }
