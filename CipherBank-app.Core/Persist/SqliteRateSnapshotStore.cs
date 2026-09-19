@@ -1,4 +1,4 @@
-// <copyright file="RatesCache.cs" company="CipherBank">
+// <copyright file="SqliteRateSnapshotStore.cs" company="CipherBank">
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
@@ -8,20 +8,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CipherBank_app.Persist;
 
-/// <inheritdoc cref="IRatesCache" />
-public sealed class RatesCache : IRatesCache, IDisposable
+/// <inheritdoc cref="IRateSnapshotStore" />
+public sealed class SqliteRateSnapshotStore : IRateSnapshotStore, IDisposable
 {
-    private readonly ILocalDb _db;
+    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
     private readonly SemaphoreSlim _writeGate = new(1, 1);
 
-    public RatesCache(ILocalDb db)
+    public SqliteRateSnapshotStore(IDbContextFactory<CipherBankDbContext> contexts)
     {
-        _db = db;
+        _contexts = contexts;
     }
 
     /// <summary>
     /// Releases the write-serialization gate.
-    /// Use: Low (container shutdown). Scope: RatesCache instance.
+    /// Use: Low (container shutdown). Scope: SqliteRateSnapshotStore instance.
     /// </summary>
     public void Dispose() => _writeGate.Dispose();
 
@@ -41,7 +41,7 @@ public sealed class RatesCache : IRatesCache, IDisposable
             .Distinct()
             .ToArray() ?? [];
 
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             IQueryable<RateSnapshotEntity> query = context.RateSnapshots.AsNoTracking();
@@ -73,7 +73,7 @@ public sealed class RatesCache : IRatesCache, IDisposable
         await _writeGate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+            CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
             await using (context)
             {
                 string[] symbols = normalized.Select(row => row.Symbol.Value).ToArray();

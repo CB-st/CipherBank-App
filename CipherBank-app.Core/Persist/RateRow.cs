@@ -12,7 +12,7 @@ public sealed record RateRow(AssetSymbol Symbol, decimal Usd, decimal Change24H,
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="RateRow"/> class from a persisted snapshot
-    /// entity. Use: High (every rates read). Scope: RatesCache projections.
+    /// entity. Use: High (every rates read). Scope: SqliteRateSnapshotStore projections.
     /// </summary>
     public RateRow(RateSnapshotEntity entity)
         : this(AssetSymbol.Parse(entity.Symbol), entity.Usd, entity.Change24H, entity.UpdatedAtMs)

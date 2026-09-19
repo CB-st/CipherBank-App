@@ -6,31 +6,32 @@ using System.Data;
 using CipherBank_app.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
 public sealed class RecipientSeedInitializer : IRecipientSeedInitializer
 {
-    private readonly ILocalDb _db;
+    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
     private readonly PersistenceOptions _options;
     private readonly TimeProvider _timeProvider;
 
     public RecipientSeedInitializer(
-        ILocalDb db,
-        PersistenceOptions options,
+        IDbContextFactory<CipherBankDbContext> contexts,
+        IOptions<PersistenceOptions> options,
         TimeProvider timeProvider)
     {
-        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(contexts);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(timeProvider);
-        if (!options.IsValid())
+        if (!options.Value.IsValid())
         {
             throw new ArgumentException(@"Persistence options are invalid.", nameof(options));
         }
 
-        _db = db;
-        _options = options;
+        _contexts = contexts;
+        _options = options.Value;
         _timeProvider = timeProvider;
     }
 
@@ -45,7 +46,7 @@ public sealed class RecipientSeedInitializer : IRecipientSeedInitializer
             return;
         }
 
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             IDbContextTransaction transaction = await context.Database

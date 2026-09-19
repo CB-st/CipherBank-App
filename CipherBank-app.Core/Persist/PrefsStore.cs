@@ -3,8 +3,10 @@
 // </copyright>
 
 using System.Text.Json;
+using CipherBank_app.Configuration;
 using CipherBank_app.Persist.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Persist;
 
@@ -12,11 +14,15 @@ namespace CipherBank_app.Persist;
 public sealed class PrefsStore : IPrefsStore
 {
     private const string Key = "user_prefs";
-    private readonly ILocalDb _db;
+    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
+    private readonly UserPreferenceDefaults _defaults;
 
-    public PrefsStore(ILocalDb db)
+    public PrefsStore(
+        IDbContextFactory<CipherBankDbContext> contexts,
+        IOptions<UserPreferenceDefaultsOptions> defaults)
     {
-        _db = db;
+        _contexts = contexts;
+        _defaults = UserPreferenceDefaults.FromOptions(defaults.Value);
     }
 
     /// <inheritdoc />
@@ -24,7 +30,7 @@ public sealed class PrefsStore : IPrefsStore
 
     public async Task<UserPrefs> LoadAsync(CancellationToken ct)
     {
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             string? json = await context.Preferences
@@ -33,24 +39,23 @@ public sealed class PrefsStore : IPrefsStore
                 .Select(entity => entity.Value)
                 .SingleOrDefaultAsync(ct)
                 .ConfigureAwait(false);
-            UserPrefs prefs = DeserializePrefs(json);
-            prefs.NormalizeHomeSections();
-            return prefs;
+            return DeserializePrefs(json);
         }
 
-        static UserPrefs DeserializePrefs(string? payload)
+        UserPrefs DeserializePrefs(string? payload)
         {
             try
             {
                 // Missing, blank, or malformed stored payloads converge on normalized defaults
                 // (blank input throws JsonException); repository I/O and cancellation propagate.
                 return payload is null
-                    ? new()
-                    : JsonSerializer.Deserialize<UserPrefs>(payload) ?? new();
+                    ? new UserPrefs(_defaults)
+                    : (JsonSerializer.Deserialize<UserPrefsWireDto>(payload)?.ToPrefs(_defaults)
+                        ?? new UserPrefs(_defaults));
             }
             catch (JsonException)
             {
-                return new();
+                return new UserPrefs(_defaults);
             }
         }
     }
@@ -67,8 +72,8 @@ public sealed class PrefsStore : IPrefsStore
 
     private async Task SaveCoreAsync(UserPrefs prefs, CancellationToken ct)
     {
-        string json = JsonSerializer.Serialize(prefs);
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        string json = JsonSerializer.Serialize(UserPrefsWireDto.FromPrefs(prefs));
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             PreferenceEntity? entity = await context.Preferences.FindAsync([Key], ct).ConfigureAwait(false);

@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using FluentAssertions;
 using Xunit;
@@ -24,14 +25,14 @@ public sealed class WalletRepositoryTests
 
         DateTimeOffset earlier = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         DateTimeOffset later = new(2026, 1, 2, 0, 0, 0, TimeSpan.Zero);
-        LocalWalletRow first = HdWallet("w1", "BTC", "Primary", "bc1qexample", "m/84'/0'/0'/0/0", earlier);
-        LocalWalletRow second = HdWallet("w2", "ETH", "Secondary", "0xabc", "m/44'/60'/0'/0/0", later);
+        LocalWalletDescriptor first = HdWallet("w1", "BTC", "Primary", "bc1qexample", "m/84'/0'/0'/0/0", earlier);
+        LocalWalletDescriptor second = HdWallet("w2", "ETH", "Secondary", "0xabc", "m/44'/60'/0'/0/0", later);
 
         await repo.UpsertAsync(first);
         await repo.UpsertAsync(second);
         await repo.UpsertAsync(first with { Label = "Primary renamed" });
 
-        IReadOnlyList<LocalWalletRow> listed = await repo.ListAsync();
+        IReadOnlyList<LocalWalletDescriptor> listed = await repo.ListAsync();
         listed.Should().HaveCount(2);
         listed[0].Id.Should().Be("w1");
         listed[0].Label.Should().Be("Primary renamed");
@@ -60,7 +61,7 @@ public sealed class WalletRepositoryTests
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
-    private static LocalWalletRow HdWallet(
+    private static LocalWalletDescriptor HdWallet(
         string id,
         string symbol,
         string label,

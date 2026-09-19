@@ -56,9 +56,14 @@
                         <DataTemplate x:DataType="models1:CryptoCurrency">
                             <Border Margin="0,6" Style="{StaticResource CardBorder}">
                                 <Border.GestureRecognizers>
-                                    <TapGestureRecognizer
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DashboardViewModel}}, Path=ViewCryptoDetailsCommand}"
-                                        CommandParameter="{Binding .}" />
+                                    <TapGestureRecognizer CommandParameter="{Binding .}">
+                                        <TapGestureRecognizer.Command>
+                                            <Binding
+                                                Path="ViewCryptoDetailsCommand"
+                                                Source="{RelativeSource AncestorType={x:Type viewmodels:DashboardViewModel}}"
+                                                x:DataType="viewmodels:DashboardViewModel" />
+                                        </TapGestureRecognizer.Command>
+                                    </TapGestureRecognizer>
                                 </Border.GestureRecognizers>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">

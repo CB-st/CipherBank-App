@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Services;
 using CipherBank_app.ViewModels;
 
 namespace CipherBank_app.Views;
@@ -14,11 +15,14 @@ public partial class PurchasePage
     private readonly PurchaseViewModel _viewModel;
     private bool _isOpeningPicker;
 
-    public PurchasePage(PurchaseViewModel viewModel)
+    public PurchasePage(
+        PurchaseViewModel viewModel,
+        IMotionPreference motionPreference)
     {
         InitializeComponent();
         _viewModel = viewModel;
         BindingContext = viewModel;
+        CoinDeck.ReduceMotion = motionPreference.IsReduceMotionEnabled;
     }
 
     protected override async void OnAppearing()

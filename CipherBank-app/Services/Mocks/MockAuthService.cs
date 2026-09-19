@@ -4,8 +4,10 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using CipherBank_app.Configuration;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Services.Mocks;
 
@@ -19,19 +21,20 @@ public sealed partial class MockAuthService : IAuthService
     private const int MinLatencyMs = 200;
     private const int MaxLatencyMs = 600;
 
-#if DEBUG
-    // Test credentials - only available in DEBUG builds
     private const string TestUsername = "testuser";
     private const string TestPassword = "password123";
-#endif
 
     private readonly ILogger<MockAuthService> _logger;
+    private readonly bool _enabled;
 
     private AuthToken? _currentToken;
 
-    public MockAuthService(ILogger<MockAuthService> logger)
+    public MockAuthService(
+        ILogger<MockAuthService> logger,
+        IOptions<HostBehaviorOptions> hostBehavior)
     {
         _logger = logger;
+        _enabled = hostBehavior.Value.UseMockServices;
         LogMockAuthServiceInitialized(_logger);
     }
 
@@ -43,16 +46,13 @@ public sealed partial class MockAuthService : IAuthService
         LogAttemptingLogin(_logger);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-#if DEBUG
-        // Validate credentials - only accept test credentials in DEBUG builds
-        var isValidCredentials = user.Equals(TestUsername, StringComparison.OrdinalIgnoreCase) &&
-                                 password == TestPassword;
-#else
-        // In RELEASE builds, MockAuthService should not be used
-        // Always reject authentication to prevent accidental production use
-        var isValidCredentials = false;
-        LogMockAuthServiceInProduction(_logger);
-#endif
+        bool isValidCredentials = _enabled
+            && user.Equals(TestUsername, StringComparison.OrdinalIgnoreCase)
+            && password == TestPassword;
+        if (!_enabled)
+        {
+            LogMockAuthServiceInProduction(_logger);
+        }
 
         if (!isValidCredentials)
         {

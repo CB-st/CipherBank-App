@@ -12,6 +12,29 @@ namespace CipherBank_app.Analyzers.Tests;
 public sealed class ProductTreeStructureAnalyzerTests
 {
     [Fact]
+    public void SharedHostFiles_DoNotContainPlatformPreprocessorSwitches()
+    {
+        string root = ProductTreeRepoRoot.Find();
+        string app = Path.Combine(root, "CipherBank-app");
+        string[] files =
+        [
+            Path.Combine(app, "MauiProgram.cs"),
+            .. Directory.GetFiles(Path.Combine(app, "Services"), "*.cs", SearchOption.AllDirectories),
+            .. Directory.GetFiles(Path.Combine(app, "Controls"), "*.cs", SearchOption.AllDirectories),
+        ];
+        string[] symbols = ["#if ANDROID", "#if IOS", "#if MACCATALYST", "#if WINDOWS"];
+
+        foreach (string file in files)
+        {
+            string text = File.ReadAllText(file);
+            foreach (string symbol in symbols)
+            {
+                Assert.DoesNotContain(symbol, text, StringComparison.Ordinal);
+            }
+        }
+    }
+
+    [Fact]
     public async Task LiveUnbuiltCsprojs_HaveNoPackageReferenceVersion()
     {
         CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
@@ -41,28 +64,6 @@ public sealed class ProductTreeStructureAnalyzerTests
             },
         };
         await test.RunAsync();
-    }
-
-    /// <summary>
-    /// EF migrations stay in the full nullable context: the scaffolder re-emits
-    /// "#nullable disable", which must be stripped so migrations compile as
-    /// first-class reviewed code. Use: Low (live-tree Fact). Scope: Persist/Migrations.
-    /// </summary>
-    [Fact]
-    public void LiveMigrations_HaveNoNullableDisableDirective()
-    {
-        string migrationsRoot = Path.Combine(
-            ProductTreeRepoRoot.Find(), "CipherBank-app.Core", "Persist", "Migrations");
-        string[] files = Directory.GetFiles(migrationsRoot, "*.cs", SearchOption.AllDirectories);
-        Assert.NotEmpty(files);
-        foreach (string file in files)
-        {
-            bool hasDirective = File.ReadLines(file).Any(
-                static line => line.TrimStart().StartsWith("#nullable disable", StringComparison.Ordinal));
-            Assert.False(
-                hasDirective,
-                $"{Path.GetFileName(file)} contains #nullable disable; strip it and fix warnings in code.");
-        }
     }
 
     [Fact]

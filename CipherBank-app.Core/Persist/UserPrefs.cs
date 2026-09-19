@@ -3,20 +3,31 @@
 // </copyright>
 
 using System.Collections.ObjectModel;
-using System.Text.Json.Serialization;
 using CipherBank_app.Models;
 
 namespace CipherBank_app.Persist;
 
-/// <summary>User preference model (Cora prefs). Implements <see cref="IUserPrefs"/> as the JSON-backed bag.</summary>
-public sealed class UserPrefs : IUserPrefs
+/// <summary>Mutable per-user device preferences initialized from configured defaults.</summary>
+public sealed class UserPrefs
 {
-    public static readonly string[] DefaultHomeOrder =
-    {
-        "cora", "balance", "quickActions", "performance", "holdings", "localWallets",
-    };
+    private readonly UserPreferenceDefaults _defaults;
 
-    public static readonly string[] DefaultEnabledCurrencies = { "BTC", "XMR", "USD" };
+    public UserPrefs(UserPreferenceDefaults defaults)
+    {
+        ArgumentNullException.ThrowIfNull(defaults);
+        _defaults = defaults;
+        HomeOrder = new Collection<string>(defaults.HomeOrder.ToList());
+        HomeVisible = new Dictionary<string, bool>(defaults.HomeVisible, StringComparer.Ordinal);
+        EnabledCurrencies = new Collection<string>(
+            defaults.EnabledCurrencies.Select(symbol => symbol.Value).ToList());
+        AssetsLayout = defaults.AssetsLayout;
+        ValuesHiddenOnLaunch = defaults.ValuesHiddenOnLaunch;
+        CoraEnabled = defaults.CoraEnabled;
+        DefaultSendSpeed = defaults.DefaultSendSpeed;
+        Appearance = defaults.Appearance;
+        BaseCurrency = defaults.BaseCurrency.Value;
+        LockIdleSeconds = defaults.LockIdleSeconds;
+    }
 
     public static string SectionHoldings { get; } = "holdings";
 
@@ -24,38 +35,27 @@ public sealed class UserPrefs : IUserPrefs
 
     public static string SectionLegacyAssets { get; } = "assets";
 
-    [JsonInclude]
-    public Collection<string> HomeOrder { get; private set; } = new(DefaultHomeOrder.ToList());
+    public Collection<string> HomeOrder { get; private set; }
 
-    [JsonInclude]
-    public Dictionary<string, bool> HomeVisible { get; private set; } = new()
-    {
-        ["cora"] = true,
-        ["balance"] = true,
-        ["quickActions"] = true,
-        ["performance"] = true,
-        [SectionHoldings] = true,
-        [SectionLocalWallets] = true,
-    };
+    public Dictionary<string, bool> HomeVisible { get; private set; }
 
     /// <summary>separate (default) = two tables; combined = one table with green/gold row accents.</summary>
-    public string AssetsLayout { get; set; } = "separate";
+    public string AssetsLayout { get; set; }
 
     public bool ValuesHiddenOnLaunch { get; set; }
 
-    public bool CoraEnabled { get; set; } = true;
+    public bool CoraEnabled { get; set; }
 
-    public string DefaultSendSpeed { get; set; } = "instant";
+    public string DefaultSendSpeed { get; set; }
 
-    public string Appearance { get; set; } = "dark";
+    public string Appearance { get; set; }
 
-    public string BaseCurrency { get; set; } = "USD";
+    public string BaseCurrency { get; set; }
 
     /// <summary>Symbols visible on Home selectors / charts (uppercase tickers).</summary>
-    [JsonInclude]
-    public Collection<string> EnabledCurrencies { get; private set; } = new(DefaultEnabledCurrencies.ToList());
+    public Collection<string> EnabledCurrencies { get; private set; }
 
-    public int LockIdleSeconds { get; set; } = 120;
+    public int LockIdleSeconds { get; set; }
 
     /// <summary>
     /// Replaces <see cref="HomeOrder"/> contents (JSON/wire apply and tests).
@@ -129,7 +129,7 @@ public sealed class UserPrefs : IUserPrefs
 
     private void EnsureHomeSectionKeys()
     {
-        foreach (string key in DefaultHomeOrder)
+        foreach (string key in _defaults.HomeOrder)
         {
             if (!HomeOrder.Contains(key))
             {
@@ -153,7 +153,7 @@ public sealed class UserPrefs : IUserPrefs
     {
         if (key != SectionHoldings && key != SectionLocalWallets)
         {
-            return true;
+            return _defaults.HomeVisible.GetValueOrDefault(key, true);
         }
 
         if (!HomeVisible.ContainsKey(SectionLegacyAssets))
@@ -177,7 +177,7 @@ public sealed class UserPrefs : IUserPrefs
     {
         if (EnabledCurrencies.Count == 0)
         {
-            ReplaceEnabledCurrencies(DefaultEnabledCurrencies);
+            ReplaceEnabledCurrencies(_defaults.EnabledCurrencies.Select(symbol => symbol.Value));
             return;
         }
 
@@ -186,7 +186,10 @@ public sealed class UserPrefs : IUserPrefs
             .Select(s => AssetSymbol.Parse(s).Value)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        ReplaceEnabledCurrencies(normalized.Count == 0 ? DefaultEnabledCurrencies : normalized);
+        ReplaceEnabledCurrencies(
+            normalized.Count == 0
+                ? _defaults.EnabledCurrencies.Select(symbol => symbol.Value)
+                : normalized);
     }
 
     private void NormalizeDefaultSendSpeed()

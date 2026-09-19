@@ -42,6 +42,12 @@ public class ArcCardDeck : ContentView
         typeof(ArcCardDeck),
         0.0);
 
+    public static readonly BindableProperty ReduceMotionProperty = BindableProperty.Create(
+        nameof(ReduceMotion),
+        typeof(bool),
+        typeof(ArcCardDeck),
+        false);
+
     public static readonly BindableProperty StrideProperty = BindableProperty.Create(
         nameof(Stride),
         typeof(double),
@@ -118,6 +124,12 @@ public class ArcCardDeck : ContentView
     {
         get => (double)GetValue(DragFractionProperty);
         private set => SetValue(DragFractionProperty, value);
+    }
+
+    public bool ReduceMotion
+    {
+        get => (bool)GetValue(ReduceMotionProperty);
+        set => SetValue(ReduceMotionProperty, value);
     }
 
     public double Stride
@@ -327,7 +339,7 @@ public class ArcCardDeck : ContentView
     {
         AbortSpring();
 
-        if (MotionSettings.ReduceMotion)
+        if (ReduceMotion)
         {
             _position = target;
             ApplyLayout();

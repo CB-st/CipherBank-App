@@ -73,7 +73,7 @@ public sealed class MarketRateHydratorTests
         public override DateTimeOffset GetUtcNow() => _utcNow;
     }
 
-    private sealed class MemoryRatesCache : IRatesCache
+    private sealed class MemoryRatesCache : IRateSnapshotStore
     {
         public Dictionary<string, RateRow> Rows { get; } = new Dictionary<string, RateRow>(StringComparer.Ordinal);
 

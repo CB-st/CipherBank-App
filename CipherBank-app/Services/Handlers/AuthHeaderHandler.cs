@@ -52,12 +52,10 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
                 if (token.ExpiresUtc > DateTimeOffset.UtcNow.AddMinutes(5))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-#if DEBUG
                     if (_logger != null)
                     {
                         LogAddedBearerToken(_logger, request.RequestUri);
                     }
-#endif
                 }
                 else
                 {

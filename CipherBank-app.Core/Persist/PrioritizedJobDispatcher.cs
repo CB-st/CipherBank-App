@@ -4,6 +4,7 @@
 
 using System.Threading.Channels;
 using CipherBank_app.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Persist;
 
@@ -26,10 +27,10 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
 
     /// <summary>Initializes a new instance of the <see cref="PrioritizedJobDispatcher"/> class.</summary>
     /// <param name="options">Validated queue concurrency options.</param>
-    public PrioritizedJobDispatcher(SyncSchedulerOptions options)
+    public PrioritizedJobDispatcher(IOptions<SyncSchedulerOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        int maxConcurrency = options.Resolve();
+        int maxConcurrency = options.Value.Resolve();
         _channel = Channel.CreateUnboundedPrioritized(
             new UnboundedPrioritizedChannelOptions<QueuedWork>
             {

@@ -5,6 +5,7 @@
 using CipherBank_app.Persist;
 using CipherBank_app.Tests.Configuration;
 using FluentAssertions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CipherBank_app.Tests.Persist;
@@ -18,9 +19,10 @@ public sealed class RecipientSeedInitializerTests
         LocalDb db = new(new FileInfo(path));
         RecipientSeedInitializer initializer = new(
             db,
-            EmbeddedAppSettings.BindPersistence("Development"),
+            Options.Create(EmbeddedAppSettings.BindPersistence("Development")),
             TimeProvider.System);
 
+        await db.InitializeAsync();
         await initializer.InitializeAsync(default);
 
         RecipientRepository repository = new(db);
@@ -38,13 +40,14 @@ public sealed class RecipientSeedInitializerTests
         LocalDb secondDb = new(new FileInfo(path));
         RecipientSeedInitializer first = new(
             firstDb,
-            EmbeddedAppSettings.BindPersistence("Development"),
+            Options.Create(EmbeddedAppSettings.BindPersistence("Development")),
             TimeProvider.System);
         RecipientSeedInitializer second = new(
             secondDb,
-            EmbeddedAppSettings.BindPersistence("Development"),
+            Options.Create(EmbeddedAppSettings.BindPersistence("Development")),
             TimeProvider.System);
 
+        await firstDb.InitializeAsync();
         await Task.WhenAll(first.InitializeAsync(default), second.InitializeAsync(default));
 
         RecipientRepository repository = new(firstDb);
