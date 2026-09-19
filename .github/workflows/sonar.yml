@@ -2,6 +2,8 @@ name: Sonar and AI Review
 
 # Rebase note: preserve M2's quality-gates-and-ai-review.yml name and keep AI
 # dispatch gated on context, Sonar, and generated-migration integrity.
+# Preserve its parallel Android/iOS/Mac Catalyst/Windows build/test matrix too;
+# AI review waits for every platform result.
 
 on:
   push:
