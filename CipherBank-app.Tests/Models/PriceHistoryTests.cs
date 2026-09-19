@@ -14,13 +14,13 @@ public class PriceHistoryTests
     public void HighPrice_ReturnsMaximumPrice()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
             new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
         };
-        var history = CreatePriceHistory(pricePoints);
+        PriceHistory history = CreatePriceHistory(pricePoints);
 
         // Act & Assert
         history.HighPrice.Should().Be(150m);
@@ -30,13 +30,13 @@ public class PriceHistoryTests
     public void LowPrice_ReturnsMinimumPrice()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
             new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
         };
-        var history = CreatePriceHistory(pricePoints);
+        PriceHistory history = CreatePriceHistory(pricePoints);
 
         // Act & Assert
         history.LowPrice.Should().Be(100m);
@@ -46,13 +46,13 @@ public class PriceHistoryTests
     public void AveragePrice_ReturnsCorrectAverage()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
             new(DateTimeOffset.UtcNow.AddHours(-1), 200m),
         };
-        var history = CreatePriceHistory(pricePoints);
+        PriceHistory history = CreatePriceHistory(pricePoints);
 
         // Act & Assert
         history.AveragePrice.Should().Be(150m);
@@ -62,13 +62,13 @@ public class PriceHistoryTests
     public void PriceChange_ReturnsLastMinusFirst()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
             new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
         };
-        var history = CreatePriceHistory(pricePoints);
+        PriceHistory history = CreatePriceHistory(pricePoints);
 
         // Act & Assert
         history.PriceChange.Should().Be(20m); // 120 - 100
@@ -78,12 +78,12 @@ public class PriceHistoryTests
     public void PercentChange_ReturnsCorrectPercentage()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-2), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
         };
-        var history = CreatePriceHistory(pricePoints);
+        PriceHistory history = CreatePriceHistory(pricePoints);
 
         // Act & Assert
         history.PercentChange.Should().Be(20m); // (20 / 100) * 100
@@ -93,7 +93,7 @@ public class PriceHistoryTests
     public void EmptyPricePoints_ReturnsZeroForAllCalculations()
     {
         // Arrange
-        var history = CreatePriceHistory([]);
+        PriceHistory history = CreatePriceHistory([]);
 
         // Act & Assert
         history.HighPrice.Should().Be(0);
@@ -107,11 +107,11 @@ public class PriceHistoryTests
     public void SinglePricePoint_ReturnsZeroForChange()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow, 100m),
         };
-        var history = CreatePriceHistory(pricePoints);
+        PriceHistory history = CreatePriceHistory(pricePoints);
 
         // Act & Assert
         history.HighPrice.Should().Be(100m);

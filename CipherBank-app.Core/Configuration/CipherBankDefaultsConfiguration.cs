@@ -34,9 +34,11 @@ public static class CipherBankDefaultsConfiguration
     public static IConfigurationRoot Build(bool windowsOverlay) => Build(null, windowsOverlay);
 
     /// <summary>
-    /// Builds base defaults and then applies optional environment and Windows overlays.
-    /// Use: High (host startup and composition tests). Scope: process configuration.
+    /// Builds the default configuration, then optionally merges environment and Windows overlays.
+    /// Use: High. Scope: host and test composition of embedded options.
     /// </summary>
+    /// <param name="environment">Host environment name; unknown overlays are ignored.</param>
+    /// <param name="windowsOverlay">Whether to merge Windows defaults after the environment.</param>
     /// <returns>A configuration root owned by the caller.</returns>
     public static IConfigurationRoot Build(
         string? environment,

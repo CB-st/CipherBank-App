@@ -16,8 +16,8 @@ public class TransactionServiceTests
     public async Task GetTransactionHistoryAsync_ReturnsTransactions()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService>();
-        var expectedTransactions = new List<Transaction>
+        Mock<ITransactionService> mockService = new Mock<ITransactionService>();
+        List<Transaction> expectedTransactions = new List<Transaction>
         {
             new(
                 "tx1",
@@ -46,7 +46,7 @@ public class TransactionServiceTests
             .ReturnsAsync(expectedTransactions);
 
         // Act
-        var result = await mockService.Object.GetTransactionHistoryAsync("wallet1");
+        List<Transaction> result = await mockService.Object.GetTransactionHistoryAsync("wallet1", default);
 
         // Assert
         result.Should().HaveCount(2);
@@ -58,8 +58,8 @@ public class TransactionServiceTests
     public async Task PurchaseCryptoAsync_WithValidAmount_ReturnsTransaction()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService>();
-        var expectedTransaction = new Transaction(
+        Mock<ITransactionService> mockService = new Mock<ITransactionService>();
+        Transaction expectedTransaction = new Transaction(
             "tx_purchase",
             TransactionType.Purchase,
             0.5m,
@@ -75,7 +75,7 @@ public class TransactionServiceTests
             .ReturnsAsync(expectedTransaction);
 
         // Act
-        var result = await mockService.Object.PurchaseCryptoAsync("ETH", 0.5m);
+        Transaction result = await mockService.Object.PurchaseCryptoAsync("ETH", 0.5m, default);
 
         // Assert
         result.Type.Should().Be(TransactionType.Purchase);
@@ -88,13 +88,13 @@ public class TransactionServiceTests
     public async Task PurchaseCryptoAsync_WithZeroAmount_ThrowsArgumentException()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService>();
+        Mock<ITransactionService> mockService = new Mock<ITransactionService>();
         mockService
             .Setup(x => x.PurchaseCryptoAsync("BTC", 0m, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ArgumentException("Amount must be positive"));
 
         // Act
-        var act = async () => await mockService.Object.PurchaseCryptoAsync("BTC", 0m);
+        Func<Task<Transaction>> act = async () => await mockService.Object.PurchaseCryptoAsync("BTC", 0m, default);
 
         // Assert
         await act.Should().ThrowAsync<ArgumentException>()
@@ -105,8 +105,8 @@ public class TransactionServiceTests
     public async Task SendCryptoAsync_WithValidParameters_ReturnsTransaction()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService>();
-        var expectedTransaction = new Transaction(
+        Mock<ITransactionService> mockService = new Mock<ITransactionService>();
+        Transaction expectedTransaction = new Transaction(
             "tx_send",
             TransactionType.Send,
             0.1m,
@@ -122,7 +122,7 @@ public class TransactionServiceTests
             .ReturnsAsync(expectedTransaction);
 
         // Act
-        var result = await mockService.Object.SendCryptoAsync("wallet1", "bc1qto", 0.1m);
+        Transaction result = await mockService.Object.SendCryptoAsync("wallet1", "bc1qto", 0.1m, default);
 
         // Assert
         result.Type.Should().Be(TransactionType.Send);
@@ -134,13 +134,13 @@ public class TransactionServiceTests
     public async Task SendCryptoAsync_WithInsufficientBalance_ThrowsInvalidOperationException()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService>();
+        Mock<ITransactionService> mockService = new Mock<ITransactionService>();
         mockService
             .Setup(x => x.SendCryptoAsync("wallet1", "bc1qto", 100m, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Insufficient balance"));
 
         // Act
-        var act = async () => await mockService.Object.SendCryptoAsync("wallet1", "bc1qto", 100m);
+        Func<Task<Transaction>> act = async () => await mockService.Object.SendCryptoAsync("wallet1", "bc1qto", 100m, default);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
@@ -151,13 +151,13 @@ public class TransactionServiceTests
     public async Task GetTransactionStatusAsync_ReturnsCorrectStatus()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService>();
+        Mock<ITransactionService> mockService = new Mock<ITransactionService>();
         mockService
             .Setup(x => x.GetTransactionStatusAsync("tx123", It.IsAny<CancellationToken>()))
             .ReturnsAsync(TransactionStatus.Confirmed);
 
         // Act
-        var result = await mockService.Object.GetTransactionStatusAsync("tx123");
+        TransactionStatus result = await mockService.Object.GetTransactionStatusAsync("tx123", default);
 
         // Assert
         result.Should().Be(TransactionStatus.Confirmed);
@@ -167,13 +167,13 @@ public class TransactionServiceTests
     public async Task GetTransactionStatusAsync_WithInvalidId_ThrowsKeyNotFoundException()
     {
         // Arrange
-        var mockService = new Mock<ITransactionService>();
+        Mock<ITransactionService> mockService = new Mock<ITransactionService>();
         mockService
             .Setup(x => x.GetTransactionStatusAsync("invalid", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new KeyNotFoundException("Transaction 'invalid' not found"));
 
         // Act
-        var act = async () => await mockService.Object.GetTransactionStatusAsync("invalid");
+        Func<Task<TransactionStatus>> act = async () => await mockService.Object.GetTransactionStatusAsync("invalid", default);
 
         // Assert
         await act.Should().ThrowAsync<KeyNotFoundException>();

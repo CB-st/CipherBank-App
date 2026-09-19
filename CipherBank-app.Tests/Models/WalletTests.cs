@@ -14,7 +14,7 @@ public class WalletTests
     public void HasBalance_WhenPositiveBalance_ReturnsTrue()
     {
         // Arrange
-        var wallet = new Wallet(
+        Wallet wallet = new Wallet(
             "wallet123",
             "BTC",
             "Bitcoin",
@@ -30,7 +30,7 @@ public class WalletTests
     public void HasBalance_WhenZeroBalance_ReturnsFalse()
     {
         // Arrange
-        var wallet = new Wallet(
+        Wallet wallet = new Wallet(
             "wallet123",
             "BTC",
             "Bitcoin",
@@ -46,7 +46,7 @@ public class WalletTests
     public void FormattedBalance_ReturnsCorrectFormat()
     {
         // Arrange
-        var wallet = new Wallet(
+        Wallet wallet = new Wallet(
             "wallet123",
             "BTC",
             "Bitcoin",
@@ -55,7 +55,7 @@ public class WalletTests
             DateTimeOffset.UtcNow);
 
         // Act
-        var result = wallet.FormattedBalance;
+        string result = wallet.FormattedBalance;
 
         // Assert
         result.Should().Be("0.12345678 BTC");
@@ -65,7 +65,7 @@ public class WalletTests
     public void FormattedBalance_HandlesLargeNumbers()
     {
         // Arrange
-        var wallet = new Wallet(
+        Wallet wallet = new Wallet(
             "wallet123",
             "DOGE",
             "Dogecoin",
@@ -74,7 +74,7 @@ public class WalletTests
             DateTimeOffset.UtcNow);
 
         // Act
-        var result = wallet.FormattedBalance;
+        string result = wallet.FormattedBalance;
 
         // Assert
         result.Should().Be("10000.00000000 DOGE");
