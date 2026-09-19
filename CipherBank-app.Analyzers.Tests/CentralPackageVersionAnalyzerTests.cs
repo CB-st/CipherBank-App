@@ -34,7 +34,7 @@ public sealed class CentralPackageVersionAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsVersionWhenAttributeFollowsNewline()
+    public async Task ReportsVersionWhenAttributeFollowsNewlineAsync()
     {
         CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
         {
@@ -52,7 +52,7 @@ public sealed class CentralPackageVersionAnalyzerTests
     }
 
     [Fact]
-    public async Task IgnoresDirectoryPackagesProps()
+    public async Task IgnoresDirectoryPackagesPropsAsync()
     {
         var test = new CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier>
         {
@@ -82,7 +82,7 @@ public sealed class CentralPackageVersionAnalyzerTests
     }
 
     [Fact]
-    public async Task IgnoresUnclosedPackageReferenceTag()
+    public async Task IgnoresUnclosedPackageReferenceTagAsync()
     {
         CSharpAnalyzerTest<CentralPackageVersionAnalyzer, DefaultVerifier> test = new()
         {

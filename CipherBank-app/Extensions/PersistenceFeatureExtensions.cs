@@ -4,6 +4,8 @@
 
 using CipherBank_app.Configuration;
 using CipherBank_app.Persist;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -25,34 +27,42 @@ public static class PersistenceFeatureExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(databaseDirectory);
 
-        services.AddOptions<PersistenceOptions>()
-            .Bind(configuration.GetSection(PersistenceOptions.SectionName))
+        services.AddRequiredOptions(configuration, new PersistenceOptions())
             .Validate(static options => options.IsValid(), "Persistence options are invalid.")
             .ValidateOnStart();
-        services.AddOptions<SyncSchedulerOptions>()
-            .Bind(configuration.GetSection(SyncSchedulerOptions.SectionName))
+        services.AddRequiredOptions(configuration, new SyncSchedulerOptions())
             .Validate(
                 static options => options.MaxConcurrency == 0
                     || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
                         && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency),
                 "SyncScheduler options are invalid.")
             .ValidateOnStart();
+        services.AddRequiredOptions(configuration, new UserPreferenceDefaultsOptions())
+            .Validate(static options => options.IsValid(), "User preference defaults are invalid.")
+            .ValidateOnStart();
 
-        services.AddSingleton(static provider => provider.GetRequiredService<IOptions<PersistenceOptions>>().Value);
-        services.AddSingleton(static provider => provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value);
         services.AddSingleton<TimeProvider>(TimeProvider.System);
-        services.AddSingleton<TaskScheduler>(TaskScheduler.Default);
-        services.AddSingleton<ILocalDb>(provider =>
+        services.AddSingleton(provider => new FileInfo(Path.Combine(
+            databaseDirectory.FullName,
+            provider.GetRequiredService<IOptions<PersistenceOptions>>().Value.DatabaseName)));
+        services.AddDbContextFactory<CipherBankDbContext>((provider, options) =>
         {
-            PersistenceOptions options = provider.GetRequiredService<PersistenceOptions>();
-            return new LocalDb(new FileInfo(Path.Combine(databaseDirectory.FullName, options.DatabaseName)));
+            string connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = provider.GetRequiredService<FileInfo>().FullName,
+            }.ToString();
+            options.UseSqlite(connectionString);
         });
+        services.AddSingleton<ILocalDatabaseInitializer, LocalDatabaseInitializer>();
         services.AddSingleton<IPrefsStore, PrefsStore>();
         services.AddSingleton<IWalletRepository, WalletRepository>();
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
         services.AddSingleton<IRecipientSeedInitializer, RecipientSeedInitializer>();
-        services.AddSingleton<IRatesCache, RatesCache>();
+        services.AddSingleton<AppStartupCoordinator>();
+        services.AddSingleton<IRateSnapshotStore, SqliteRateSnapshotStore>();
         services.AddSingleton<IMarketRepository, MarketRepository>();
+        services.AddSingleton<ISingleFlightJobFactory, SingleFlightJobFactory>();
+        services.AddSingleton<IPrioritizedJobDispatcher, PrioritizedJobDispatcher>();
         services.AddSingleton<ISyncJobScheduler, SyncJobScheduler>();
         services.AddSingleton<MarketRateHydrator>();
         return services;

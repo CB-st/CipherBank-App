@@ -2,12 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -17,13 +12,13 @@ namespace CipherBank_app.Services.Mocks;
 /// Mock implementation of ICryptoAPIService for development and testing.
 /// Provides realistic cryptocurrency market data without making actual API calls.
 /// </summary>
-public sealed partial class MockCryptoAPIService : ICryptoApiService
+public sealed partial class MockCryptoApiService : ICryptoApiService
 {
     // Simulated latency range in milliseconds
     private const int MinLatencyMs = 100;
     private const int MaxLatencyMs = 500;
 
-    private static readonly List<CryptoCurrency> MockCryptos =
+    private static readonly List<CryptoCurrency> _mockCryptos =
     [
         new("BTC", "Bitcoin", 97500.00m, 1250.50m, 1.30m, 1920000000000m, 45000000000m, "https://assets.coingecko.com/coins/images/1/large/bitcoin.png"),
         new("ETH", "Ethereum", 3450.00m, -45.25m, -1.29m, 415000000000m, 18000000000m, "https://assets.coingecko.com/coins/images/279/large/ethereum.png"),
@@ -37,77 +32,75 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
         new("LINK", "Chainlink", 25.30m, 0.95m, 3.90m, 15800000000m, 680000000m, "https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png"),
     ];
 
-    private readonly ILogger<MockCryptoAPIService> _logger;
+    private readonly ILogger<MockCryptoApiService> _logger;
 
-    public MockCryptoAPIService(ILogger<MockCryptoAPIService> logger)
+    public MockCryptoApiService(ILogger<MockCryptoApiService> logger)
     {
         _logger = logger;
-        LogInitialized(_logger, MockCryptos.Count);
+        LogInitialized(_logger, _mockCryptos.Count);
     }
 
-    public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken)
     {
         LogGettingAllPrices(_logger);
         await SimulateNetworkDelayAsync(cancellationToken);
 
         // Add slight price variations to simulate real-time data
-        var cryptos = MockCryptos.Select(c => AddPriceVariation(c)).ToList();
+        var cryptos = _mockCryptos.Select(c => AddPriceVariation(c)).ToList();
 
         LogReturnedPrices(_logger, cryptos.Count);
         return cryptos;
     }
 
-    public async Task<CryptoCurrency> GetCryptoPriceAsync(string symbol, CancellationToken cancellationToken = default)
+    public async Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
 
-        LogGettingPriceForSymbol(_logger, symbol);
+        LogGettingPriceForSymbol(_logger, symbol.Value);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var crypto = MockCryptos.FirstOrDefault(c =>
-            c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+        CryptoCurrency? crypto = _mockCryptos.FirstOrDefault(c => c.Symbol == symbol);
 
         if (crypto == null)
         {
-            LogSymbolNotFound(_logger, symbol);
+            LogSymbolNotFound(_logger, symbol.Value);
             throw new KeyNotFoundException($"Cryptocurrency with symbol '{symbol}' not found");
         }
 
-        var result = AddPriceVariation(crypto);
-        LogReturnedPriceForSymbol(_logger, result.Symbol, result.CurrentPrice);
+        CryptoCurrency result = AddPriceVariation(crypto);
+        LogReturnedPriceForSymbol(_logger, result.Symbol.Value, result.CurrentPrice);
         return result;
     }
 
-    public async Task<PriceHistory> GetPriceHistoryAsync(string symbol, string period, CancellationToken cancellationToken = default)
+    public async Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(period);
 
-        LogGettingPriceHistory(_logger, symbol, period);
+        LogGettingPriceHistory(_logger, symbol.Value, period);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var crypto = MockCryptos.FirstOrDefault(c =>
-            c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase))
+        CryptoCurrency crypto = _mockCryptos.FirstOrDefault(c => c.Symbol == symbol)
             ?? throw new KeyNotFoundException($"Cryptocurrency with symbol '{symbol}' not found");
 
-        var (points, startDate) = GeneratePriceHistory(crypto.CurrentPrice, period);
-        var endDate = DateTimeOffset.UtcNow;
+        (List<PricePoint>? points, DateTimeOffset startDate) = GeneratePriceHistory(crypto.CurrentPrice, period);
+        DateTimeOffset endDate = DateTimeOffset.UtcNow;
 
-        var history = new PriceHistory(symbol.ToUpperInvariant(), points, startDate, endDate);
+        var history = new PriceHistory(symbol, points, startDate, endDate);
 
-        LogGeneratedPriceHistory(_logger, points.Count, symbol, period);
+        LogGeneratedPriceHistory(_logger, points.Count, symbol.Value, period);
         return history;
     }
 
-    public async Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
 
         LogSearchingCrypto(_logger, query);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var results = MockCryptos
-            .Where(c => c.Symbol.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+        var results = _mockCryptos
+            .Where(c => c.Symbol.Value.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                        c.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
             .Select(AddPriceVariation)
             .ToList();
@@ -121,23 +114,23 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
         // Add up to +/- 0.5% price variation to simulate real-time updates
         var variation = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 0.01) - 0.005);
         var newPrice = crypto.CurrentPrice * (1 + variation);
-        var newChange = crypto.PriceChange24h + (crypto.CurrentPrice * variation);
-        var newPercent = crypto.PercentChange24h + (variation * 100);
+        var newChange = crypto.PriceChange24H + (crypto.CurrentPrice * variation);
+        var newPercent = crypto.PercentChange24H + (variation * 100);
 
         return crypto with
         {
             CurrentPrice = Math.Round(newPrice, crypto.CurrentPrice < 1 ? 6 : 2),
-            PriceChange24h = Math.Round(newChange, crypto.CurrentPrice < 1 ? 6 : 2),
-            PercentChange24h = Math.Round(newPercent, 2),
+            PriceChange24H = Math.Round(newChange, crypto.CurrentPrice < 1 ? 6 : 2),
+            PercentChange24H = Math.Round(newPercent, 2),
         };
     }
 
     private static (List<PricePoint> Points, DateTimeOffset StartDate) GeneratePriceHistory(decimal basePrice, string period)
     {
-        var now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
         var points = new List<PricePoint>();
 
-        var (intervalMinutes, totalPoints) = period.ToLowerInvariant() switch
+        (int intervalMinutes, int totalPoints) = period.ToLowerInvariant() switch
         {
             "1h" => (1, 60),
             "1d" => (15, 96),
@@ -147,12 +140,12 @@ public sealed partial class MockCryptoAPIService : ICryptoApiService
             _ => (60, 168), // Default to 7 days
         };
 
-        var startDate = now.AddMinutes(-intervalMinutes * totalPoints);
+        DateTimeOffset startDate = now.AddMinutes(-intervalMinutes * totalPoints);
         var currentPrice = basePrice * 0.95m; // Start 5% lower
 
         for (int i = 0; i < totalPoints; i++)
         {
-            var timestamp = startDate.AddMinutes(intervalMinutes * i);
+            DateTimeOffset timestamp = startDate.AddMinutes(intervalMinutes * i);
             var variation = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 0.02) - 0.01); // +/- 1%
             currentPrice *= 1 + variation;
 

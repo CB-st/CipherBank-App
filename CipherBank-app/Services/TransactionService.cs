@@ -2,13 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +28,7 @@ public sealed partial class TransactionService : ITransactionService
         _http = http;
     }
 
-    public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken = default)
+    public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(walletId);
 
@@ -42,10 +37,10 @@ public sealed partial class TransactionService : ITransactionService
         try
         {
             var endpoint = $"{TransactionsEndpoint}?walletId={Uri.EscapeDataString(walletId)}";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var transactions = await response.Content.ReadFromJsonAsync<List<Transaction>>(cancellationToken: cancellationToken);
+            List<Transaction>? transactions = await response.Content.ReadFromJsonAsync<List<Transaction>>(cancellationToken: cancellationToken);
 
             if (transactions == null)
             {
@@ -68,65 +63,65 @@ public sealed partial class TransactionService : ITransactionService
         }
     }
 
-    public async Task<Transaction> PurchaseCryptoAsync(string symbol, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         if (amount <= 0)
         {
-            throw new ArgumentException("Amount must be positive", nameof(amount));
+            throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
-        LogProcessingPurchase(_logger, amount, symbol);
+        LogProcessingPurchase(_logger, amount, symbol.Value);
 
         try
         {
-            var request = new PurchaseRequest(symbol.ToUpperInvariant(), amount);
-            var response = await _http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
+            var request = new PurchaseRequest(symbol.Value, amount);
+            HttpResponseMessage response = await _http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
+            Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
 
             if (transaction == null)
             {
-                LogNullResponseForPurchase(_logger, amount, symbol);
+                LogNullResponseForPurchase(_logger, amount, symbol.Value);
                 throw new InvalidOperationException($"Failed to complete purchase of {amount} {symbol}");
             }
 
-            LogPurchaseCompleted(_logger, transaction.Amount, transaction.CryptoSymbol, transaction.FeeAmount, transaction.Id);
+            LogPurchaseCompleted(_logger, transaction.Amount, transaction.CryptoSymbol.Value, transaction.FeeAmount, transaction.Id);
 
             return transaction;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
         {
-            LogInvalidPurchaseRequest(_logger, amount, symbol);
+            LogInvalidPurchaseRequest(_logger, amount, symbol.Value);
             throw new ArgumentException("Invalid purchase request", ex);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.PaymentRequired)
         {
-            LogInsufficientFundsForPurchase(_logger, amount, symbol);
+            LogInsufficientFundsForPurchase(_logger, amount, symbol.Value);
             throw new InvalidOperationException("Insufficient funds for purchase", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorProcessingPurchase(_logger, ex, amount, symbol, ex.StatusCode);
+            LogHttpErrorProcessingPurchase(_logger, ex, amount, symbol.Value, ex.StatusCode);
             throw new InvalidOperationException("Failed to process purchase from server", ex);
         }
     }
 
-    public async Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fromWalletId);
         ArgumentException.ThrowIfNullOrWhiteSpace(toAddress);
         if (amount <= 0)
         {
-            throw new ArgumentException("Amount must be positive", nameof(amount));
+            throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
         // Basic address validation (additional validation done server-side)
         if (toAddress.Length < 20 || toAddress.Length > 100)
         {
             LogInvalidDestinationAddress(_logger, toAddress);
-            throw new ArgumentException("Invalid destination address format", nameof(toAddress));
+            throw new ArgumentException(@"Invalid destination address format", nameof(toAddress));
         }
 
         LogProcessingSend(_logger, fromWalletId, toAddress, amount);
@@ -134,10 +129,10 @@ public sealed partial class TransactionService : ITransactionService
         try
         {
             var request = new SendRequest(fromWalletId, toAddress, amount);
-            var response = await _http.PostAsJsonAsync(SendEndpoint, request, cancellationToken);
+            HttpResponseMessage response = await _http.PostAsJsonAsync(SendEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
+            Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
 
             if (transaction == null)
             {
@@ -145,7 +140,7 @@ public sealed partial class TransactionService : ITransactionService
                 throw new InvalidOperationException("Failed to complete send transaction");
             }
 
-            LogSendInitiated(_logger, transaction.Amount, transaction.CryptoSymbol, toAddress, transaction.FeeAmount, transaction.Id);
+            LogSendInitiated(_logger, transaction.Amount, transaction.CryptoSymbol.Value, toAddress, transaction.FeeAmount, transaction.Id);
 
             return transaction;
         }
@@ -171,7 +166,7 @@ public sealed partial class TransactionService : ITransactionService
         }
     }
 
-    public async Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken = default)
+    public async Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(transactionId);
 
@@ -180,10 +175,10 @@ public sealed partial class TransactionService : ITransactionService
         try
         {
             var endpoint = $"{TransactionsEndpoint}/{Uri.EscapeDataString(transactionId)}/status";
-            var response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var result = await response.Content.ReadFromJsonAsync<StatusResponse>(cancellationToken: cancellationToken);
+            StatusResponse? result = await response.Content.ReadFromJsonAsync<StatusResponse>(cancellationToken: cancellationToken);
 
             if (result == null)
             {

@@ -18,7 +18,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     [InlineData("{|CB1005:Application.Current|}.UserAppTheme = 1;")]
     [InlineData("_ = {|CB1005:MainThread.IsMainThread|};")]
     [InlineData("_ = {|CB1005:SecureStorage.Default|};")]
-    public async Task ReportsPlatformGlobalFromViewModel(string statement)
+    public async Task ReportsPlatformGlobalFromViewModelAsync(string statement)
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
         {
@@ -44,7 +44,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     }
 
     [Fact]
-    public async Task IgnoresPlatformUseOutsideViewModels()
+    public async Task IgnoresPlatformUseOutsideViewModelsAsync()
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
         {
@@ -67,7 +67,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     }
 
     [Fact]
-    public async Task IgnoresCancellableTaskDelayFromViewModel()
+    public async Task IgnoresCancellableTaskDelayFromViewModelAsync()
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
         {
@@ -91,7 +91,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsPlatformGlobalFromViewModelAdditionalFile()
+    public async Task ReportsPlatformGlobalFromViewModelAdditionalFileAsync()
     {
         // CI structure builds compile only Core/Tests/Analyzers; the MAUI host
         // arrives as AdditionalFiles, so CB1005 must also scan that surface.
@@ -126,7 +126,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     }
 
     [Fact]
-    public async Task DoesNotDoubleReportWhenAdditionalFileIsCompilationTree()
+    public async Task DoesNotDoubleReportWhenAdditionalFileIsCompilationTreeAsync()
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
         {

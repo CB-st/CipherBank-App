@@ -5,6 +5,7 @@
 using CipherBank_app.Configuration;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace CipherBank_app.Tests.Configuration;
@@ -36,7 +37,7 @@ public sealed class PersistOptionsBindingTests
     [InlineData("/tmp/cipherbank.db")]
     public void PersistenceOptions_InvalidDatabaseName_FailsValidation(string databaseName)
     {
-        PersistenceOptions options = new PersistenceOptions { DatabaseName = databaseName };
+        PersistenceOptions options = new() { DatabaseName = databaseName };
 
         options.IsValid().Should().BeFalse();
     }
@@ -48,7 +49,7 @@ public sealed class PersistOptionsBindingTests
             isDevelopment: true,
             isWindows: false);
 
-        configuration.GetSection("Persistence:DefaultRecipients").GetChildren().Should().HaveCount(2);
+        configuration.GetSection("PersistenceOptions:DefaultRecipients").GetChildren().Should().HaveCount(2);
     }
 
     /// <summary>
@@ -68,5 +69,27 @@ public sealed class PersistOptionsBindingTests
         options.Resolve().Should().BeInRange(
             SyncSchedulerOptions.MinConcurrency,
             SyncSchedulerOptions.MaxAllowedConcurrency);
+    }
+
+    [Fact]
+    public void EmbeddedAppSettings_BindsValidUserPreferenceDefaults()
+    {
+        UserPreferenceDefaultsOptions options =
+            EmbeddedAppSettings.BindOptions<UserPreferenceDefaultsOptions>();
+
+        options.IsValid().Should().BeTrue();
+        options.BaseCurrency.Should().Be("USD");
+        options.HomeOrder.Should().Contain("holdings");
+    }
+
+    [Fact]
+    public void AddRequiredOptions_MissingClassNamedSectionThrows()
+    {
+        ServiceCollection services = new();
+        ConfigurationManager configuration = new();
+
+        Action bind = () => services.AddRequiredOptions(configuration, new PersistenceOptions());
+
+        bind.Should().Throw<InvalidOperationException>();
     }
 }

@@ -16,7 +16,7 @@ public class WalletServiceTests
     public async Task GetWalletsAsync_ReturnsUserWallets()
     {
         // Arrange
-        var mockService = new Mock<IWalletService>();
+        var mockService = new Mock<IWalletService> { CallBase = true };
         var expectedWallets = new List<Wallet>
         {
             new("wallet1", "BTC", "Bitcoin", 0.5m, "bc1qtest1", DateTimeOffset.UtcNow),
@@ -28,7 +28,7 @@ public class WalletServiceTests
             .ReturnsAsync(expectedWallets);
 
         // Act
-        var result = await mockService.Object.GetWalletsAsync();
+        List<Wallet> result = await mockService.Object.GetWalletsAsync();
 
         // Assert
         result.Should().HaveCount(2);
@@ -40,7 +40,7 @@ public class WalletServiceTests
     public async Task GetWalletAsync_WithValidId_ReturnsWallet()
     {
         // Arrange
-        var mockService = new Mock<IWalletService>();
+        var mockService = new Mock<IWalletService> { CallBase = true };
         var expectedWallet = new Wallet(
             "wallet1", "BTC", "Bitcoin", 0.5m, "bc1qtest", DateTimeOffset.UtcNow);
 
@@ -49,11 +49,11 @@ public class WalletServiceTests
             .ReturnsAsync(expectedWallet);
 
         // Act
-        var result = await mockService.Object.GetWalletAsync("wallet1");
+        Wallet result = await mockService.Object.GetWalletAsync("wallet1");
 
         // Assert
         result.Id.Should().Be("wallet1");
-        result.CryptoSymbol.Should().Be("BTC");
+        result.CryptoSymbol.Value.Should().Be("BTC");
         result.Balance.Should().Be(0.5m);
     }
 
@@ -61,13 +61,13 @@ public class WalletServiceTests
     public async Task GetWalletAsync_WithInvalidId_ThrowsKeyNotFoundException()
     {
         // Arrange
-        var mockService = new Mock<IWalletService>();
+        var mockService = new Mock<IWalletService> { CallBase = true };
         mockService
             .Setup(x => x.GetWalletAsync("invalid", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new KeyNotFoundException("Wallet 'invalid' not found"));
 
         // Act
-        var act = async () => await mockService.Object.GetWalletAsync("invalid");
+        Func<Task<Wallet>> act = async () => await mockService.Object.GetWalletAsync("invalid");
 
         // Assert
         await act.Should().ThrowAsync<KeyNotFoundException>();
@@ -77,7 +77,7 @@ public class WalletServiceTests
     public async Task GetWalletBalanceAsync_ReturnsCorrectBalance()
     {
         // Arrange
-        var mockService = new Mock<IWalletService>();
+        var mockService = new Mock<IWalletService> { CallBase = true };
         mockService
             .Setup(x => x.GetWalletBalanceAsync("wallet1", It.IsAny<CancellationToken>()))
             .ReturnsAsync(1.5m);
@@ -93,7 +93,7 @@ public class WalletServiceTests
     public async Task CreateWalletAsync_WithValidSymbol_ReturnsNewWallet()
     {
         // Arrange
-        var mockService = new Mock<IWalletService>();
+        var mockService = new Mock<IWalletService> { CallBase = true };
         var newWallet = new Wallet(
             "newWallet", "SOL", "Solana", 0m, "solAddress", DateTimeOffset.UtcNow);
 
@@ -102,10 +102,10 @@ public class WalletServiceTests
             .ReturnsAsync(newWallet);
 
         // Act
-        var result = await mockService.Object.CreateWalletAsync("SOL");
+        Wallet result = await mockService.Object.CreateWalletAsync("SOL");
 
         // Assert
-        result.CryptoSymbol.Should().Be("SOL");
+        result.CryptoSymbol.Value.Should().Be("SOL");
         result.Balance.Should().Be(0m);
         result.Address.Should().NotBeNullOrEmpty();
     }
@@ -114,13 +114,13 @@ public class WalletServiceTests
     public async Task CreateWalletAsync_WhenWalletExists_ThrowsInvalidOperationException()
     {
         // Arrange
-        var mockService = new Mock<IWalletService>();
+        var mockService = new Mock<IWalletService> { CallBase = true };
         mockService
             .Setup(x => x.CreateWalletAsync("BTC", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Wallet for BTC already exists"));
 
         // Act
-        var act = async () => await mockService.Object.CreateWalletAsync("BTC");
+        Func<Task<Wallet>> act = async () => await mockService.Object.CreateWalletAsync("BTC");
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()

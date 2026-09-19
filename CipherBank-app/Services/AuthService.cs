@@ -2,13 +2,10 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Net.Http;
+using System.Net;
 using System.Net.Http.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Storage;
 
 namespace CipherBank_app.Services;
 
@@ -24,9 +21,9 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task<AuthToken> LoginAsync(string user, string password, CancellationToken cancellationToken = default)
     {
-        var resp = await http.PostAsJsonAsync("auth/login", new { user, password }, cancellationToken);
+        HttpResponseMessage resp = await http.PostAsJsonAsync("auth/login", new { user, password }, cancellationToken);
         resp.EnsureSuccessStatusCode();
-        var token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
+        AuthToken? token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
         if (token == null)
         {
             LogDeserializeAuthTokenFailed(logger);
@@ -44,9 +41,9 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task<AuthToken> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        var resp = await http.PostAsJsonAsync("auth/refresh", new { refreshToken }, cancellationToken);
+        HttpResponseMessage resp = await http.PostAsJsonAsync("auth/refresh", new { refreshToken }, cancellationToken);
         resp.EnsureSuccessStatusCode();
-        var token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
+        AuthToken? token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
         if (token == null)
         {
             LogDeserializeRefreshTokenFailed(logger);
@@ -75,7 +72,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
                 return null;
             }
 
-            if (!DateTimeOffset.TryParse(expiresUtcString, out var expiresUtc))
+            if (!DateTimeOffset.TryParse(expiresUtcString, out DateTimeOffset expiresUtc))
             {
                 return null;
             }
@@ -91,7 +88,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task<bool> IsTokenExpiredAsync()
     {
-        var token = await GetStoredTokenAsync();
+        AuthToken? token = await GetStoredTokenAsync();
         if (token == null)
         {
             return true;
@@ -123,14 +120,14 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
     {
         try
         {
-            var token = await GetStoredTokenAsync();
+            AuthToken? token = await GetStoredTokenAsync();
             if (token == null)
             {
                 LogNoTokenToRevoke(logger);
                 return true;
             }
 
-            var resp = await http.PostAsJsonAsync("auth/revoke", new { token.RefreshToken }, cancellationToken);
+            HttpResponseMessage resp = await http.PostAsJsonAsync("auth/revoke", new { token.RefreshToken }, cancellationToken);
 
             if (resp.IsSuccessStatusCode)
             {
@@ -181,7 +178,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
     private static partial void LogTokenRevoked(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Token revocation failed with status {StatusCode}")]
-    private static partial void LogTokenRevocationFailed(ILogger logger, System.Net.HttpStatusCode statusCode);
+    private static partial void LogTokenRevocationFailed(ILogger logger, HttpStatusCode statusCode);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "HTTP error during token revocation")]
     private static partial void LogHttpErrorDuringRevocation(ILogger logger, Exception ex);

@@ -5,10 +5,10 @@
 namespace CipherBank_app.Persist;
 
 /// <summary>
-/// Queue-ordering lane for sync jobs: the value is the <c>PriorityQueue</c> key, and the
-/// lower value dequeues first (FIFO within a lane). This is deliberately not
+/// Queue-ordering lane for sync jobs: the prioritized channel dequeues the lower value first,
+/// with a sequence number preserving FIFO within a lane. This is deliberately not
 /// <see cref="ThreadPriority"/> — that enum's contract is OS thread scheduling, its values
-/// ascend with urgency (inverted relative to this queue), and no job here touches thread
+/// ascend with urgency (inverted relative to this channel), and no job here touches thread
 /// priorities. Precedent: WPF's DispatcherPriority and Win32's TP_CALLBACK_PRIORITY also
 /// define their own work-ordering vocabularies instead of reusing the thread enum.
 /// </summary>

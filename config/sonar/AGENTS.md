@@ -35,7 +35,7 @@ evaluated by Sonar.
 - Add characterization tests before changing legacy behavior.
 - Test every meaningful branch, guard, expected failure, and security
   rejection introduced or changed.
-- Run `.github/workflows/sonar.yml` and verify the PR quality gate.
+- Run `.github/workflows/quality-gates-and-ai-review.yml` and verify the PR quality gate.
 - Do not claim a pass from a local IDE result or coverage generation alone.
   SonarQube for IDE Connected Mode is fast local feedback, not a substitute
   for the server gate.
@@ -46,7 +46,6 @@ Never add broad `NoWarn`, analysis exclusions, or disabled rules. A narrow
 suppression must state the rule key, safety rationale, evidence, owner, and
 revisit condition.
 
-Never grow the `sonar.coverage.exclusions` property in
-`.github/workflows/sonar.yml`. That list is frozen; cover product code instead.
-Shrink only with an explicit policy change. The workflow is the single source
-of truth for scanner exclusions — do not reintroduce a mirrored copy.
+Never grow the coverage list in `config/sonar/exclusions.json`; cover product
+code instead. Shrink only with an explicit policy change. That file is the
+single executable source consumed by the workflow; do not mirror its values.

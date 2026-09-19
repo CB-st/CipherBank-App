@@ -179,11 +179,11 @@ public class CryptoCurrencyTests
             "https://example.com/btc.png");
 
         // Act
-        var modified = crypto with { CurrentPrice = 55000m };
+        CryptoCurrency modified = crypto with { CurrentPrice = 55000m };
 
         // Assert
         modified.CurrentPrice.Should().Be(55000m);
-        modified.Symbol.Should().Be("BTC");
+        modified.Symbol.Value.Should().Be("BTC");
         crypto.CurrentPrice.Should().Be(50000m); // Original unchanged
     }
 }

@@ -30,8 +30,8 @@ public sealed partial class RateLimiter : IDisposable
     public RateLimiter(ILogger<RateLimiter>? logger, int maxRequests, TimeSpan windowDuration)
     {
         _logger = logger;
-        MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), "Must be positive");
-        WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), "Must be positive");
+        MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), @"Must be positive");
+        WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), @"Must be positive");
 
         if (_logger is not null)
         {
@@ -63,11 +63,11 @@ public sealed partial class RateLimiter : IDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            var now = DateTimeOffset.UtcNow;
-            var windowStart = now - WindowDuration;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset windowStart = now - WindowDuration;
 
             // Remove expired timestamps
-            while (_requestTimestamps.TryPeek(out var oldest) && oldest < windowStart)
+            while (_requestTimestamps.TryPeek(out DateTimeOffset oldest) && oldest < windowStart)
             {
                 _requestTimestamps.TryDequeue(out _);
             }
@@ -102,11 +102,11 @@ public sealed partial class RateLimiter : IDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            var now = DateTimeOffset.UtcNow;
-            var windowStart = now - WindowDuration;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset windowStart = now - WindowDuration;
 
             // Remove expired timestamps
-            while (_requestTimestamps.TryPeek(out var oldest) && oldest < windowStart)
+            while (_requestTimestamps.TryPeek(out DateTimeOffset oldest) && oldest < windowStart)
             {
                 _requestTimestamps.TryDequeue(out _);
             }
@@ -117,10 +117,10 @@ public sealed partial class RateLimiter : IDisposable
             }
 
             // Get the oldest timestamp that's still in the window
-            if (_requestTimestamps.TryPeek(out var oldestInWindow))
+            if (_requestTimestamps.TryPeek(out DateTimeOffset oldestInWindow))
             {
-                var waitUntil = oldestInWindow + WindowDuration;
-                var waitTime = waitUntil - now;
+                DateTimeOffset waitUntil = oldestInWindow + WindowDuration;
+                TimeSpan waitTime = waitUntil - now;
                 return waitTime > TimeSpan.Zero ? waitTime : TimeSpan.Zero;
             }
 

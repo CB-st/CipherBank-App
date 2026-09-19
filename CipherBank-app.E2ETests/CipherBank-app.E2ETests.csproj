@@ -34,8 +34,4 @@
     <PackageReference Include="Selenium.WebDriver" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
-  </ItemGroup>
-
 </Project>

@@ -3,6 +3,7 @@
 // </copyright>
 
 using CipherBank_app.Persist;
+using CipherBank_app.Views;
 using Serilog;
 
 namespace CipherBank_app;
@@ -10,37 +11,38 @@ namespace CipherBank_app;
 /// <summary>
 /// The main application class.
 /// </summary>
-public partial class App : Application
+public partial class App
 {
-    public App(IRecipientSeedInitializer recipientSeeds)
+    private readonly AppStartupCoordinator _startup;
+
+    public App(AppStartupCoordinator startup)
     {
         InitializeComponent();
-
-        // MAUI has no async build hook (IMauiInitializeService is synchronous), so the
-        // App constructor is the defined async startup path: start the initialization
-        // task after the provider is built and surface failures through the log.
-        _ = SeedRecipientsAsync(recipientSeeds);
+        _startup = startup;
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        return new Window(new AppShell());
+        StartupPage page = new();
+        Window window = new(page);
+        _ = InitializeWindowAsync(window, page);
+        return window;
     }
 
     /// <summary>
-    /// Seeds configured default recipients into a new database at startup.
-    /// Failures are logged and never fatal; seeding is idempotent per configured ID.
-    /// Use: Low (once per cold start). Scope: app startup.
+    /// Awaits local startup before exposing the product shell.
     /// </summary>
-    private static async Task SeedRecipientsAsync(IRecipientSeedInitializer recipientSeeds)
+    private async Task InitializeWindowAsync(Window window, StartupPage page)
     {
         try
         {
-            await recipientSeeds.InitializeAsync().ConfigureAwait(false);
+            await _startup.InitializeAsync(CancellationToken.None);
+            window.Page = new AppShell();
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Recipient seed initialization failed");
+            Log.Error(ex, "Application startup failed");
+            page.SetRetry(() => InitializeWindowAsync(window, page));
         }
     }
 }

@@ -11,12 +11,9 @@ override CI Sonar: new issues on Persist code still fail the gate.
 - Schema changes require a new EF migration under `Persist/Migrations/`, a
   clean-database test, and an upgrade test from the previous migration.
   Generate with `dotnet ef migrations add` using Tests as the startup project
-  so desktop SQLite native libraries load. Do not hand-edit `*Designer.cs` or
-  `ModelSnapshot`. The `Up`/`Down` class may be edited to satisfy Sonar
-  (default arguments, method length, file-scoped namespace) without changing
-  the schema. Strip the scaffolder's `#nullable disable` directive from every
-  freshly generated migration file and fix any resulting warnings in code,
-  never by suppression (a live-tree analyzer fact enforces this).
+  so desktop SQLite native libraries load. All migration, designer, and
+  snapshot artifacts are generator-owned: never hand-edit them. One migration
+  per PR; migration-integrity CI regenerates and compares the artifact.
 - Prototype SQLite files without `__EFMigrationsHistory` are disposable and
   deleted on initialize. Do not add compatibility SQL to preserve lab leftovers.
 - Database entities and mappings use the on-device table/column names.
@@ -32,26 +29,26 @@ override CI Sonar: new issues on Persist code still fail the gate.
   Do not write `await using … = await` as a single expression.
 - SQLite has no datetime affinity. `CreatedAt` converters store ISO-8601 (`O`)
   and parse invariant. Do not change the converter to a different format.
-- `LocalDb` is constructed from `FileInfo`. `ILocalDb.Path` stays `string`
-  (`FullName` after `GetFullPath`) for SQLite `DataSource` and Shell; it is
-  the single identity member (`DatabaseFile` was removed as consumer-free).
+- `LocalDatabaseInitializer` owns prototype cleanup and migration at startup.
+  Repositories create short-lived contexts through `IDbContextFactory`.
 - Optional development payees bind from `PersistenceOptions.DefaultRecipients`
   (stable JSON ids such as `seed:rent-4th-st`). Production defaults seed
   nothing. `RecipientSeedInitializer` owns first-run bootstrap; repositories
   remain CRUD-only. Do not generate GUID seed ids.
-- `IUserPrefs` is the read shape for UI/sync. `IPrefsStore` still returns
-  `UserPrefs` so System.Text.Json can materialize the bag.
+- `IPrefsStore` returns the concrete mutable `UserPrefs` aggregate. Configured
+  defaults fill only absent wire fields and never overwrite stored choices.
+- `AssetSymbol` is the open-set application ticker value. It owns trim and
+  invariant-uppercase normalization; EF entities, V1 DTOs, prefs JSON, and
+  HTTP payloads remain strings at their boundaries. Do not replace listed
+  assets with an enum or duplicate symbol normalization in adapters.
 - `SyncSchedulerOptions.MaxConcurrency` default `0` means unset.
   `Resolve()` is `Clamp(Ceiling(ProcessorCount / 2.0), 1, 8)`.
-  `SyncJobScheduler` is a deduping task factory: a `TaskFactory` bound to the
-  injected platform `TaskScheduler` executes job bodies, `PriorityQueue`
-  orders waiting work P1-before-P2, and the whole async job counts against
-  the concurrency cap. It does not inherit `TaskScheduler` because a
-  scheduler subclass caps only synchronous segments — an async job frees its
-  scheduler slot at the first await — and cannot express keyed completion.
-  Duplicate submissions share the accepted job's completion task. Caller and
-  shutdown cancellation reach queued/running work; failures remain observable
-  through `EnqueueAsync` and `DrainAsync`.
+  `SyncJobScheduler` composes `SingleFlightJobFactory` and
+  `PrioritizedJobDispatcher`. Typed record keys provide value identity and
+  derive queue priority from the closed `SyncJobKind` vocabulary. The factory
+  coalesces an active key; the dispatcher uses .NET 10's prioritized channel
+  and fixed asynchronous consumers, each of which awaits the whole operation.
+  Caller and shutdown cancellation, failures, and drain remain observable.
 - Public ACH bounds are static read-only properties so consuming assemblies do
   not inline validation policy. Public names stay PascalCase.
 - Design-time `IDesignTimeDbContextFactory.CreateDbContext(string[] args)`
