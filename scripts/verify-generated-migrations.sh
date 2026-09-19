@@ -46,6 +46,7 @@ cp "$migration" "$designer" "$snapshot" "$expected/"
 git worktree add --detach "$worktree" HEAD >/dev/null
 rm "$worktree/$migration" "$worktree/$designer"
 git -C "$worktree" show "${base_ref}:${snapshot}" >"$worktree/$snapshot"
+dotnet restore "$worktree/CipherBank-app.Tests/CipherBank-app.Tests.csproj" >/dev/null
 dotnet ef migrations add "$name" \
   --project "$worktree/CipherBank-app.Core/CipherBank-app.Core.csproj" \
   --startup-project "$worktree/CipherBank-app.Tests/CipherBank-app.Tests.csproj" \
