@@ -8,7 +8,7 @@ CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. It provides cryp
 
 ## Prerequisites
 
-- **.NET 10 SDK** (10.0.101 or later)
+- **.NET 10 SDK** (10.0.401)
 - **MAUI workload** for your target platform(s)
 
 ## Build and Run

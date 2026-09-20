@@ -40,9 +40,10 @@ SDK version pinning:
 ```json
 {
   "sdk": {
-    "version": "10.0.101",
-    "rollForward": "latestMinor",
-    "allowPrerelease": false
+    "version": "10.0.401",
+    "rollForward": "latestPatch",
+    "allowPrerelease": false,
+    "workloadVersion": "10.0.401"
   }
 }
 ```
