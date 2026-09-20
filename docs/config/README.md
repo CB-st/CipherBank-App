@@ -48,6 +48,8 @@ SDK version pinning:
 }
 ```
 
+MAUI NuGet packages (`Microsoft.Maui.Controls`, `Microsoft.Maui.Essentials`, `Microsoft.Maui.Resizetizer`) are centrally pinned to **10.0.20** in `Directory.Packages.props` to match the SDK workload manifest. Re-upgrade MAUI packages only when a workload manifest **>= 10.0.101** is available for the pinned SDK.
+
 ---
 
 ## stylecop.json

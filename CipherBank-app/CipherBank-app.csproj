@@ -21,6 +21,7 @@
              no matching workload set has shipped yet. Remove once one has. -->
         <ValidateXcodeVersion>false</ValidateXcodeVersion>
         <UseMaui>true</UseMaui>
+        <MauiVersion>10.0.20</MauiVersion>
         <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
         <SingleProject>true</SingleProject>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -106,6 +107,7 @@
         <PackageReference Include="Microsoft.Extensions.Logging" />
         <PackageReference Include="Microsoft.Maui.Controls" />
         <PackageReference Include="Microsoft.Maui.Essentials" />
+        <PackageReference Include="Microsoft.Maui.Resizetizer" PrivateAssets="all" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
         <PackageReference Include="Serilog" />
         <PackageReference Include="Serilog.Extensions.Hosting" />
