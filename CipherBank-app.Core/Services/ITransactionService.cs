@@ -11,11 +11,11 @@ namespace CipherBank_app.Services;
 /// </summary>
 public interface ITransactionService
 {
-    Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken = default);
+    Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken);
 
-    Task<Transaction> PurchaseCryptoAsync(string symbol, decimal amount, CancellationToken cancellationToken = default);
+    Task<Transaction> PurchaseCryptoAsync(string symbol, decimal amount, CancellationToken cancellationToken);
 
-    Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken = default);
+    Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken);
 
-    Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken = default);
+    Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken);
 }

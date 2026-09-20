@@ -11,11 +11,11 @@ namespace CipherBank_app.Services;
 /// </summary>
 public interface ICryptoApiService
 {
-    Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken = default);
+    Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken);
 
-    Task<CryptoCurrency> GetCryptoPriceAsync(string symbol, CancellationToken cancellationToken = default);
+    Task<CryptoCurrency> GetCryptoPriceAsync(string symbol, CancellationToken cancellationToken);
 
-    Task<PriceHistory> GetPriceHistoryAsync(string symbol, string period, CancellationToken cancellationToken = default);
+    Task<PriceHistory> GetPriceHistoryAsync(string symbol, string period, CancellationToken cancellationToken);
 
-    Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken = default);
+    Task<List<CryptoCurrency>> SearchCryptoAsync(string query, CancellationToken cancellationToken);
 }

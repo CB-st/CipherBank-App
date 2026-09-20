@@ -1,5 +1,12 @@
 name: Sonar and AI Review
 
+# Rebase note: M2 renames this to quality-gates-and-ai-review.yml, moves
+# generated-migration integrity into this workflow, and gates AI review on it.
+# It also runs parallel Android/iOS/Mac Catalyst/Windows Release builds and
+# unit tests; AI review waits for the entire platform matrix.
+# Sonar scan/poll stays successful on a red gate so AI can consume its issues;
+# the separate SonarQube Code Analysis check remains the merge-blocking gate.
+
 on:
   push:
     branches: [main, release, sandbox]
