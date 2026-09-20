@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Required for IDE0005 (unused usings) during build. See roslyn#41640. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
@@ -16,6 +18,12 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
+
+  <!-- One repository-wide StyleCop configuration; do not add per-project stylecop.json copies. -->
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json"
+                     Link="stylecop.json" />
+  </ItemGroup>
 
   <!-- Shared package references for analyzers -->
   <ItemGroup>

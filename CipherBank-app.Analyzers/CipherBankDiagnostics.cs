@@ -44,8 +44,8 @@ public static class CipherBankDiagnostics
     /// </summary>
     public static readonly DiagnosticDescriptor ScatteredSql = new(
         "CB1003",
-        "Raw SQL belongs in LocalDbSql.cs",
-        "Raw SQL ('{0}') is owned only by CipherBank-app.Core/Persist/Sql/LocalDbSql.cs",
+        "Raw SQL is not allowed in Core",
+        "Raw SQL ('{0}') is not allowed in CipherBank-app.Core",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -58,6 +58,19 @@ public static class CipherBankDiagnostics
         "CB1004",
         "Retired API name",
         "Identifier '{0}' is retired (IProductApi, MockProductApi, AppSessionDeps)",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
+
+    /// <summary>
+    /// Describes CB1005.
+    /// Use: High (MAUI compilation). Scope: ViewModel C# trees.
+    /// </summary>
+    public static readonly DiagnosticDescriptor ViewModelPlatformGlobal = new(
+        "CB1005",
+        "ViewModels must use injected platform ports",
+        "Platform global '{0}' is not allowed in a ViewModel; inject a focused port",
         Category,
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

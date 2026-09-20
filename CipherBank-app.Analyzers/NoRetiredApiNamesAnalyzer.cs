@@ -19,7 +19,8 @@ public sealed class NoRetiredApiNamesAnalyzer : DiagnosticAnalyzer
 {
     private static readonly HashSet<string> RetiredNames = new(StringComparer.Ordinal)
     {
-        // TODO: If this list gets updated - change it to an ingestible config file.
+        // Decision: keep this list inline while it stays this small; move it to an
+        // ingestible config file if it grows beyond a handful of names.
         "IProductApi",
         "MockProductApi",
         "AppSessionDeps",

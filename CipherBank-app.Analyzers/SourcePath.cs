@@ -5,31 +5,30 @@
 namespace CipherBank_app.Analyzers;
 
 /// <summary>
-/// Host-native additional-file path. Segments come from <see cref="Path.GetFileName"/>,
-/// <see cref="Path.GetExtension"/>, and <see cref="Path.GetDirectoryName"/>.
-/// Do not call <see cref="Path.GetFullPath"/> or Combine on additional-file strings,
-/// and do not rewrite path separators.
+/// Predicates over the original Roslyn/MSBuild additional-file path string.
+/// Works on the string as supplied (no <see cref="Path.GetFullPath"/>, no filesystem access)
+/// so analyzer decisions stay deterministic across hosts.
 /// </summary>
-internal readonly struct SourcePath : IEquatable<SourcePath>
+internal sealed class SourcePath
 {
-    private readonly string _value;
+    private readonly string _path;
 
-    private SourcePath(string value) => _value = value;
-
-    /// <summary>Gets the host-native path string Roslyn supplied.</summary>
-    internal string Value => _value;
+    private SourcePath(string path)
+    {
+        _path = path;
+    }
 
     /// <summary>Gets the last segment via <see cref="Path.GetFileName"/>.</summary>
-    internal string FileName => Path.GetFileName(_value);
+    internal string FileName => Path.GetFileName(_path);
 
     /// <summary>Gets the extension via <see cref="Path.GetExtension"/>.</summary>
-    internal string Extension => Path.GetExtension(_value);
+    internal string Extension => Path.GetExtension(_path);
 
     /// <summary>Gets the parent path via <see cref="Path.GetDirectoryName"/>.</summary>
-    internal SourcePath Parent => From(Path.GetDirectoryName(_value));
+    internal SourcePath Parent => From(Path.GetDirectoryName(_path));
 
     /// <summary>Gets a value indicating whether this path has no segments left.</summary>
-    internal bool IsEmpty => string.IsNullOrEmpty(_value);
+    internal bool IsEmpty => string.IsNullOrEmpty(_path);
 
     /// <summary>Gets a value indicating whether the additional file is C# source.</summary>
     internal bool IsCSharpFile
@@ -57,12 +56,6 @@ internal readonly struct SourcePath : IEquatable<SourcePath>
         }
     }
 
-    /// <summary>Gets a value indicating whether the tree is Persist/Sql/LocalDbSql.cs (CB1003 owner).</summary>
-    internal bool IsSqlOwner
-        => string.Equals(FileName, "LocalDbSql.cs", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(Parent.FileName, "Sql", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(Parent.Parent.FileName, "Persist", StringComparison.OrdinalIgnoreCase);
-
     /// <summary>Gets a value indicating whether the additional file is Directory.Packages.props.</summary>
     internal bool IsCentralPackageFile
         => string.Equals(FileName, "Directory.Packages.props", StringComparison.OrdinalIgnoreCase);
@@ -73,18 +66,13 @@ internal readonly struct SourcePath : IEquatable<SourcePath>
             || string.Equals(Extension, ".props", StringComparison.OrdinalIgnoreCase)
             || string.Equals(Extension, ".targets", StringComparison.OrdinalIgnoreCase);
 
-    /// <inheritdoc />
-    public bool Equals(SourcePath other)
-        => string.Equals(_value, other._value, StringComparison.OrdinalIgnoreCase);
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj) => obj is SourcePath other && Equals(other);
-
-    /// <inheritdoc />
-    public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(_value);
-
-    /// <inheritdoc />
-    public override string ToString() => _value;
+    /// <summary>
+    /// Compares original additional-file strings, ignoring case. <see cref="FileInfo"/> equality is
+    /// reference-based and resolving <c>FullName</c> would call GetFullPath.
+    /// Use: High (compilation tree dedupe). Scope: analyzer additional files.
+    /// </summary>
+    internal static bool NamesEqual(SourcePath left, SourcePath right)
+        => string.Equals(left._path, right._path, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Wraps a Roslyn/MSBuild additional-file path.</summary>
     internal static SourcePath From(string? path) => new(path ?? string.Empty);

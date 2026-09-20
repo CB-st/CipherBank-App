@@ -2,15 +2,22 @@
 
 Repository-structure diagnostics. Not product behavior.
 
-- CB1001: `PackageReference Version=` outside `Directory.Packages.props`
+- CB1001: `PackageReference Version=` outside `Directory.Packages.props` (IDE fence; CPM already owns restore)
 - CB1002: `Properties/AssemblyInfo.cs`
-- CB1003: raw SQL in Core outside `Persist/Sql/LocalDbSql.cs`
+- CB1003: raw SQL anywhere in Core (`CommandText`, `FromSqlRaw`, `ExecuteSqlRaw` by identifier). Total ban — no `LocalDbSql` quarantine. Schema is EF `Migrate()` on M2.
 - CB1004: retired names `IProductApi`, `MockProductApi`, `AppSessionDeps`
-- `SourcePath`: host-native additional-file path value. Segments from `Path.GetFileName` / `GetExtension` / `GetDirectoryName` (no separator rewriting). Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo` / `LocalDbSql`. Do not use `Path.GetFullPath` or `Combine` on additional-file strings.
+- `SourcePath`: string predicates over the original Roslyn additional-file path (no `FileInfo`, no separator rewriting, no `GetFullPath`, no filesystem access). Segments come from `Path.GetFileName` / `GetExtension` / `GetDirectoryName`. Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo`. Compare paths with `SourcePath.NamesEqual` (ordinal-ignore-case; the BCL has no path-equality API).
 
 These run on every `dotnet build` via `Directory.Build.props`. `Directory.Build.targets`
 feeds every product `.csproj` and product C# file as additional files, so CB1001,
 CB1002, and CB1004 still fire for `CipherBank-app`, IntegrationTests, and E2ETests
-when CI cannot compile the MAUI host on Linux. Tests live in
+when a job builds only Analyzers/Core/Tests. Tests live in
 `CipherBank-app.Analyzers.Tests` and feed OpenCover into the coverage job.
 Do not add CodeFixProviders — these rules are not mechanically fixable.
+
+Note to agents and review bots: the Sonar exclusion lists live only on the
+`dotnet sonarscanner begin` step in `.github/workflows/sonar.yml` (policy in
+`config/sonar/README.md`). Do not grow those lists, do not add a mirrored
+copy, and do not add tests that assert workflow, README, or config file text —
+the guard-the-guard meta-tests were removed by review decision (PR #35).
+Analyzer tests verify analyzer diagnostics, nothing else.

@@ -2,8 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace CipherBank_app.Services.Validation;

@@ -16,7 +16,6 @@
     <CoverletOutput>./coverage/</CoverletOutput>
     <Threshold>0</Threshold>
     <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
-    <ExcludeByFile>**/Migrations/**/*</ExcludeByFile>
   </PropertyGroup>
 
   <ItemGroup>

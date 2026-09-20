@@ -1,3 +1,8 @@
+// <copyright file="PurchasePage.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
+using System.Globalization;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 
@@ -21,7 +26,8 @@ public class PurchasePage : BasePage
     private static readonly By FeeLabel = By.Id("FeeLabel");
     private static readonly By BackButton = By.Id("BackButton");
 
-    public PurchasePage(AppiumDriver driver) : base(driver)
+    public PurchasePage(AppiumDriver driver)
+        : base(driver)
     {
     }
 
@@ -41,7 +47,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public PurchasePage EnterAmount(decimal amount)
     {
-        EnterText(AmountField, amount.ToString("F2"));
+        EnterText(AmountField, amount.ToString("F2", CultureInfo.InvariantCulture));
         return this;
     }
 

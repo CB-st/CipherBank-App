@@ -1,3 +1,7 @@
+// <copyright file="LoginPage.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 
@@ -16,7 +20,8 @@ public class LoginPage : BasePage
     private static readonly By ErrorMessage = By.Id("ErrorLabel");
     private static readonly By BiometricButton = By.Id("BiometricLoginButton");
 
-    public LoginPage(AppiumDriver driver) : base(driver)
+    public LoginPage(AppiumDriver driver)
+        : base(driver)
     {
     }
 

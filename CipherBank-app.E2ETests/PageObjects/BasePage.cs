@@ -1,3 +1,7 @@
+// <copyright file="BasePage.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Support.UI;
@@ -10,9 +14,6 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// </summary>
 public abstract class BasePage
 {
-    protected readonly AppiumDriver Driver;
-    protected readonly WebDriverWait Wait;
-
     /// <summary>
     /// Default wait timeout for element visibility.
     /// </summary>
@@ -22,6 +23,40 @@ public abstract class BasePage
     {
         Driver = driver ?? throw new ArgumentNullException(nameof(driver));
         Wait = new WebDriverWait(driver, DefaultTimeout);
+    }
+
+    /// <summary>
+    /// Gets the Appium driver used by this page object.
+    /// </summary>
+    protected AppiumDriver Driver { get; }
+
+    /// <summary>
+    /// Gets the explicit wait helper for this page object.
+    /// </summary>
+    protected WebDriverWait Wait { get; }
+
+    /// <summary>
+    /// Checks if an element is displayed.
+    /// </summary>
+    public bool IsElementDisplayed(By locator)
+    {
+        try
+        {
+            return Driver.FindElement(locator).Displayed;
+        }
+        catch (NoSuchElementException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Waits for the page to be fully loaded.
+    /// Override in derived classes to add page-specific wait conditions.
+    /// </summary>
+    public virtual void WaitForPageLoad()
+    {
+        // Default implementation - can be overridden
     }
 
     /// <summary>
@@ -61,29 +96,5 @@ public abstract class BasePage
     protected string GetElementText(By locator)
     {
         return WaitForElement(locator).Text;
-    }
-
-    /// <summary>
-    /// Checks if an element is displayed.
-    /// </summary>
-    public bool IsElementDisplayed(By locator)
-    {
-        try
-        {
-            return Driver.FindElement(locator).Displayed;
-        }
-        catch (NoSuchElementException)
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Waits for the page to be fully loaded.
-    /// Override in derived classes to add page-specific wait conditions.
-    /// </summary>
-    public virtual void WaitForPageLoad()
-    {
-        // Default implementation - can be overridden
     }
 }

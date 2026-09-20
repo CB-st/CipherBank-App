@@ -1,3 +1,7 @@
+// <copyright file="DashboardPage.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 
@@ -19,7 +23,8 @@ public class DashboardPage : BasePage
     private static readonly By RefreshButton = By.Id("RefreshButton");
     private static readonly By TransactionsList = By.Id("RecentTransactionsList");
 
-    public DashboardPage(AppiumDriver driver) : base(driver)
+    public DashboardPage(AppiumDriver driver)
+        : base(driver)
     {
     }
 

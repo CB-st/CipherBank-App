@@ -111,14 +111,28 @@ dotnet_diagnostic.SA1101.severity = none   # Don't require 'this.' prefix — mo
 dotnet_diagnostic.SA1309.severity = none   # Allow _camelCase private fields — matches project naming rules above
 dotnet_diagnostic.SA1200.severity = none   # Allow usings outside namespace — required for file-scoped namespaces
 dotnet_diagnostic.SA0001.severity = none   # Don't require XML comment analysis on all files
+# GenerateDocumentationFile is on so IDE0005 runs (roslyn#41640). Member XML docs stay deferred.
+dotnet_diagnostic.CS1591.severity = none
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1602.severity = none
+dotnet_diagnostic.SA1611.severity = none
+dotnet_diagnostic.SA1615.severity = none
+dotnet_diagnostic.SA1623.severity = none
+dotnet_diagnostic.SA1629.severity = none
 dotnet_diagnostic.IDE0007.severity = none       # Conflicts with IDE0008 / Sonar gate
 dotnet_diagnostic.IDE0008.severity = suggestion # Promote to warning with Core mechanical pass
 dotnet_diagnostic.IDE0028.severity = none       # Collection expression burn-down deferred for tests
 dotnet_diagnostic.SA1515.severity = suggestion
 
-# Persist catalog/DDL SQL is schema text, not UI copy (SONAR_GATE deferred S4055 family).
-[CipherBank-app.Core/Persist/Sql/**.cs]
-dotnet_diagnostic.S4055.severity = none
+# Analyzer public API keeps XML comments (CS1591/SA16xx as warnings → errors).
+[CipherBank-app.Analyzers/**.cs]
+dotnet_diagnostic.CS1591.severity = warning
+dotnet_diagnostic.SA1600.severity = warning
+dotnet_diagnostic.SA1602.severity = warning
+dotnet_diagnostic.SA1611.severity = warning
+dotnet_diagnostic.SA1615.severity = warning
+dotnet_diagnostic.SA1623.severity = warning
+dotnet_diagnostic.SA1629.severity = warning
 
 # XML files
 [*.{xml,xaml,csproj,props,targets}]

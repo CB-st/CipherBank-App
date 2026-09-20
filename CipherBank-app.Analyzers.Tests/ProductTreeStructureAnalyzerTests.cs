@@ -2,10 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using CipherBank_app.Analyzers;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
@@ -45,6 +41,28 @@ public sealed class ProductTreeStructureAnalyzerTests
             },
         };
         await test.RunAsync();
+    }
+
+    /// <summary>
+    /// EF migrations stay in the full nullable context: the scaffolder re-emits
+    /// "#nullable disable", which must be stripped so migrations compile as
+    /// first-class reviewed code. Use: Low (live-tree Fact). Scope: Persist/Migrations.
+    /// </summary>
+    [Fact]
+    public void LiveMigrations_HaveNoNullableDisableDirective()
+    {
+        string migrationsRoot = Path.Combine(
+            ProductTreeRepoRoot.Find(), "CipherBank-app.Core", "Persist", "Migrations");
+        string[] files = Directory.GetFiles(migrationsRoot, "*.cs", SearchOption.AllDirectories);
+        Assert.NotEmpty(files);
+        foreach (string file in files)
+        {
+            bool hasDirective = File.ReadLines(file).Any(
+                static line => line.TrimStart().StartsWith("#nullable disable", StringComparison.Ordinal));
+            Assert.False(
+                hasDirective,
+                $"{Path.GetFileName(file)} contains #nullable disable; strip it and fix warnings in code.");
+        }
     }
 
     [Fact]
@@ -110,6 +128,41 @@ public sealed class ProductTreeStructureAnalyzerTests
             TestCode = "class Wallet { }",
         };
         AttachAll(test, ProductTreeRepoRoot.UnbuiltCsharpFiles());
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task LiveUnbuiltCsharpFiles_HaveNoViewModelPlatformGlobals()
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestCode = "class Wallet { }",
+        };
+        AttachAll(test, ProductTreeRepoRoot.UnbuiltCsharpFiles());
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReportsViewModelGlobalWhenInjectedIntoLiveTree()
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestCode = "class Wallet { }",
+        };
+        AttachAll(test, ProductTreeRepoRoot.UnbuiltCsharpFiles());
+        test.TestState.AdditionalFiles.Add((
+            "CipherBank-app/ViewModels/InjectedThemeViewModel.cs",
+            """
+            class InjectedThemeViewModel
+            {
+                void Apply()
+                {
+                    {|CB1005:Application.Current|}.UserAppTheme = 1;
+                }
+            }
+            """));
         await test.RunAsync();
     }
 

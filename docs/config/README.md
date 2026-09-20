@@ -15,7 +15,7 @@ Shared MSBuild properties and package references for all projects.
 | LangVersion | latest |
 | Nullable | enable |
 | ImplicitUsings | enable |
-| TreatWarningsAsErrors | false |
+| TreatWarningsAsErrors | true |
 | EnforceCodeStyleInBuild | true |
 | AnalysisLevel | latest |
 | AnalysisMode | Recommended |
@@ -51,9 +51,11 @@ SDK version pinning:
 
 ## stylecop.json
 
-**Location**: CipherBank-app/stylecop.json
+**Location**: repository root (`stylecop.json`)
 
-StyleCop Analyzers configuration. Referenced via `AdditionalFiles` in the app csproj.
+Single repository-wide StyleCop Analyzers configuration. `Directory.Build.props`
+injects it as an `AdditionalFiles` item into every project; do not add
+per-project `stylecop.json` copies.
 
 | Setting | Value |
 |---------|-------|

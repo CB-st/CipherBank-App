@@ -3,8 +3,8 @@
   <Import Project="$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.targets"
           Condition="Exists('$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.targets')" />
 
-  <!-- Structure analyzers see every product project even when CI cannot compile
-       the MAUI host on Linux. Analyzer tests are excluded so CB1004 fixtures
+  <!-- Structure analyzers see every product tree even when a job builds only
+       part of the solution. Analyzer tests are excluded so CB1004 fixtures
        do not fail sibling compilations. -->
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)Directory.Packages.props" />
