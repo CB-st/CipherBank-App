@@ -112,6 +112,11 @@ jobs:
           if [[ -n "${{ matrix.runtime }}" ]]; then
             runtime_args=(-r "${{ matrix.runtime }}")
           fi
+          dotnet clean CipherBank-app/CipherBank-app.csproj \
+            -c "${{ matrix.configuration }}" \
+            -f "${{ matrix.framework }}" \
+            "${runtime_args[@]}" \
+            ${{ matrix.build_args }}
           dotnet build CipherBank-app/CipherBank-app.csproj \
             -c "${{ matrix.configuration }}" \
             -f "${{ matrix.framework }}" \
