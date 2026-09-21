@@ -221,11 +221,20 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
 
         private void Complete(Exception? failure = null, bool canceled = false)
         {
-            bool completed = canceled
-                ? _completion.TrySetCanceled(_cancellation.Token)
-                : failure is not null
-                    ? _completion.TrySetException(failure)
-                    : _completion.TrySetResult();
+            bool completed;
+
+            if (canceled)
+            {
+                completed = _completion.TrySetCanceled(_cancellation.Token);
+            }
+            else if (failure is not null)
+            {
+                completed = _completion.TrySetException(failure);
+            }
+            else
+            {
+                completed = _completion.TrySetResult();
+            }
 
             if (completed)
             {
