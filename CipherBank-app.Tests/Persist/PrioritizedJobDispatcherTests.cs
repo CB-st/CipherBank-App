@@ -242,6 +242,100 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     [Fact]
+    public async Task DrainAsync_ReturnsPromptlyWhenEnqueuedWorkAlreadyCompleted()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        Task completed = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            _ => Task.CompletedTask,
+            CancellationToken.None);
+        await completed;
+
+        Task drain = dispatcher.DrainAsync(CancellationToken.None);
+        await drain.WaitAsync(TimeSpan.FromSeconds(1));
+
+        drain.IsCompleted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DrainAsync_WaitsForRemainingWorkWhenSomeJobsAlreadyCompleted()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher(maxConcurrency: 2);
+        TaskCompletionSource slowStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseSlow = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int slowCompletionOrder = 0;
+
+        Task fast = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            _ => Task.CompletedTask,
+            CancellationToken.None);
+        Task slow = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            async ct =>
+            {
+                slowStarted.SetResult();
+                await releaseSlow.Task.WaitAsync(ct).ConfigureAwait(false);
+                Interlocked.Exchange(ref slowCompletionOrder, 1);
+            },
+            CancellationToken.None);
+        await slowStarted.Task;
+        await fast;
+
+        Task drain = dispatcher.DrainAsync(CancellationToken.None);
+        drain.IsCompleted.Should().BeFalse();
+
+        releaseSlow.SetResult();
+        await drain.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Volatile.Read(ref slowCompletionOrder).Should().Be(1);
+        await slow;
+    }
+
+    [Fact]
+    public async Task DrainAsync_DoesNotHangWhenFaultedWorkRemainsRegistered()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        Task failed = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            _ => throw new InvalidOperationException("faulted before drain"),
+            CancellationToken.None);
+
+        Func<Task> observeFailure = () => failed;
+        await observeFailure.Should().ThrowAsync<InvalidOperationException>();
+
+        Task drain = dispatcher.DrainAsync(CancellationToken.None);
+        await drain.WaitAsync(TimeSpan.FromSeconds(1));
+
+        drain.IsCompleted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DrainAsync_DoesNotHangWhenJobCompletesDuringDrain()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        TaskCompletionSource workStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseWork = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Task work = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            async ct =>
+            {
+                workStarted.SetResult();
+                await releaseWork.Task.WaitAsync(ct).ConfigureAwait(false);
+            },
+            CancellationToken.None);
+        await workStarted.Task;
+
+        Task drain = dispatcher.DrainAsync(CancellationToken.None);
+        releaseWork.SetResult();
+
+        await drain.WaitAsync(TimeSpan.FromSeconds(1));
+        await work;
+
+        drain.IsCompleted.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task DrainAsync_AfterDisposeReturnsWithoutWaitingForRunningWork()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();

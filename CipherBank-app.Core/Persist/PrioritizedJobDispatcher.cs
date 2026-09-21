@@ -80,10 +80,13 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
         {
             lock (_gate)
             {
-                jobs = [.. _jobs?.Select(static job => job.Task) ?? []];
+                jobs = [.. _jobs?
+                    .Where(static job => !job.Task.IsCompleted)
+                    .Select(static job => job.Task) ?? []];
             }
 
-            await Task.WhenAll(jobs.Select(static job => AwaitQuietlyAsync(job)))
+            await Task.WhenAll(jobs.Select(static async job =>
+                    await job.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing)))
                 .WaitAsync(cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -111,17 +114,6 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
         }
 
         shutdown?.Dispose();
-    }
-
-    private static async Task AwaitQuietlyAsync(Task job)
-    {
-        try
-        {
-            await job.ConfigureAwait(false);
-        }
-        catch
-        {
-        }
     }
 
     private async Task ProcessQueueAsync()
