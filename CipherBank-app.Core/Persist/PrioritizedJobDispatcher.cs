@@ -11,19 +11,13 @@ namespace CipherBank_app.Persist;
 /// <inheritdoc cref="IPrioritizedJobDispatcher" />
 public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDisposable
 {
-    private static readonly IComparer<QueuedWork> WorkComparer = Comparer<QueuedWork>.Create(
-        static (left, right) =>
-        {
-            int priority = left.Priority.CompareTo(right.Priority);
-            return priority != 0 ? priority : left.Sequence.CompareTo(right.Sequence);
-        });
+    private static readonly IComparer<QueuedWork> _workComparer = QueuedWork.Comparer;
 
     private readonly Lock _gate = new();
     private readonly Channel<QueuedWork> _channel;
-    private readonly HashSet<QueuedWork> _jobs = [];
-    private readonly CancellationTokenSource _shutdown = new();
+    private CancellationTokenSource? _shutdown = new();
+    private HashSet<QueuedWork>? _jobs = [];
     private long _sequence;
-    private bool _disposed;
 
     /// <summary>Initializes a new instance of the <see cref="PrioritizedJobDispatcher"/> class.</summary>
     /// <param name="options">Validated queue concurrency options.</param>
@@ -34,7 +28,7 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
         _channel = Channel.CreateUnboundedPrioritized(
             new UnboundedPrioritizedChannelOptions<QueuedWork>
             {
-                Comparer = WorkComparer,
+                Comparer = _workComparer,
                 SingleReader = maxConcurrency == 1,
             });
 
@@ -54,7 +48,7 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
 
         lock (_gate)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            ObjectDisposedException.ThrowIf(_jobs is null || _shutdown is null, this);
             CancellationTokenSource linkedCancellation =
                 CancellationTokenSource.CreateLinkedTokenSource(
                     cancellationToken,
@@ -64,66 +58,57 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
                 ++_sequence,
                 work,
                 linkedCancellation);
+
             _jobs.Add(job);
-            if (!_channel.Writer.TryWrite(job))
+
+            if (_channel.Writer.TryWrite(job))
             {
-                _jobs.Remove(job);
-                linkedCancellation.Dispose();
-                throw new ObjectDisposedException(nameof(PrioritizedJobDispatcher));
+                return job.Task;
             }
 
-            return job.Completion.Task;
+            _jobs.Remove(job);
+            linkedCancellation.Dispose();
+            throw new ObjectDisposedException(nameof(PrioritizedJobDispatcher));
         }
     }
 
     /// <inheritdoc />
     public async Task DrainAsync(CancellationToken cancellationToken)
     {
-        while (true)
+        Task[] jobs;
+        do
         {
-            Task[] jobs;
             lock (_gate)
             {
-                if (_jobs.Count == 0)
-                {
-                    return;
-                }
-
-                jobs = _jobs.Select(job => job.Completion.Task).ToArray();
+                jobs = [.. _jobs?.Select(static job => job.Task) ?? []];
             }
 
             await Task.WhenAll(jobs).WaitAsync(cancellationToken).ConfigureAwait(false);
         }
+        while (jobs.Length > 0);
     }
 
     /// <summary>Cancels accepted work and completes the queue.</summary>
     public void Dispose()
     {
-        List<QueuedWork> abandoned = [];
+        List<QueuedWork> abandoned;
+        CancellationTokenSource? shutdown;
         lock (_gate)
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
+            abandoned = [.. _jobs?.Where(static job => !job.Started) ?? []];
+            _jobs = null;
             _channel.Writer.TryComplete();
-            abandoned.AddRange(_jobs.Where(static job => !job.Started));
-            foreach (QueuedWork job in abandoned)
-            {
-                _jobs.Remove(job);
-            }
+            shutdown = _shutdown;
+            _shutdown = null;
         }
 
-        _shutdown.Cancel();
+        shutdown?.Cancel();
         foreach (QueuedWork job in abandoned)
         {
-            job.Completion.TrySetCanceled(job.Cancellation.Token);
-            job.Cancellation.Dispose();
+            job.Cancel();
         }
 
-        _shutdown.Dispose();
+        shutdown?.Dispose();
     }
 
     private async Task ProcessQueueAsync()
@@ -136,101 +121,103 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
 
     private async Task ExecuteAsync(QueuedWork job)
     {
-        bool queueDisposed;
-        bool shouldRun;
+        bool run;
         lock (_gate)
         {
-            queueDisposed = _disposed;
-            shouldRun = !queueDisposed && !job.Cancellation.IsCancellationRequested;
-            if (shouldRun)
+            run = _jobs is not null && job.TryBeginExecution();
+        }
+
+        try
+        {
+            if (run)
             {
-                job.Started = true;
-            }
-            else if (!queueDisposed)
-            {
-                _jobs.Remove(job);
+                await job.RunAsync().ConfigureAwait(false);
             }
             else
             {
-                // Dispose owns completion and cancellation for dequeued work that never started.
+                job.Cancel();
             }
         }
-
-        if (!shouldRun)
+        finally
         {
-            if (queueDisposed)
+            lock (_gate)
             {
-                return;
+                _jobs?.Remove(job);
             }
-
-            job.Completion.TrySetCanceled(job.Cancellation.Token);
-            job.Cancellation.Dispose();
-            return;
         }
-
-        Exception? failure = null;
-        bool canceled = false;
-        try
-        {
-            await job.Work(job.Cancellation.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (job.Cancellation.IsCancellationRequested)
-        {
-            canceled = true;
-        }
-        catch (Exception exception)
-            when (exception is not OperationCanceledException
-                || !job.Cancellation.IsCancellationRequested)
-        {
-            failure = exception;
-        }
-
-        lock (_gate)
-        {
-            _jobs.Remove(job);
-        }
-
-        if (canceled)
-        {
-            job.Completion.TrySetCanceled(job.Cancellation.Token);
-        }
-        else if (failure is not null)
-        {
-            job.Completion.TrySetException(failure);
-        }
-        else
-        {
-            job.Completion.TrySetResult();
-        }
-
-        job.Cancellation.Dispose();
     }
 
     private sealed class QueuedWork
     {
+        internal static readonly IComparer<QueuedWork> Comparer = Comparer<QueuedWork>.Create(
+            static (left, right) =>
+            {
+                int priority = left._priority.CompareTo(right._priority);
+                return priority != 0 ? priority : left._sequence.CompareTo(right._sequence);
+            });
+
+        private readonly SyncPriority _priority;
+        private readonly long _sequence;
+        private readonly Func<CancellationToken, Task> _work;
+        private readonly CancellationTokenSource _cancellation;
+        private readonly TaskCompletionSource _completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         internal QueuedWork(
             SyncPriority priority,
             long sequence,
             Func<CancellationToken, Task> work,
             CancellationTokenSource cancellation)
         {
-            Priority = priority;
-            Sequence = sequence;
-            Work = work;
-            Cancellation = cancellation;
+            _priority = priority;
+            _sequence = sequence;
+            _work = work;
+            _cancellation = cancellation;
         }
 
-        internal SyncPriority Priority { get; }
+        internal Task Task => _completion.Task;
 
-        internal long Sequence { get; }
+        internal bool Started { get; private set; }
 
-        internal Func<CancellationToken, Task> Work { get; }
+        internal bool TryBeginExecution()
+        {
+            Started = !_cancellation.IsCancellationRequested;
+            return Started;
+        }
 
-        internal CancellationTokenSource Cancellation { get; }
+        internal async Task RunAsync()
+        {
+            try
+            {
+                await _work(_cancellation.Token).ConfigureAwait(false);
+                Complete();
+            }
+            catch (OperationCanceledException) when (_cancellation.IsCancellationRequested)
+            {
+                Complete(canceled: true);
+            }
+            catch (Exception exception)
+                when (exception is not OperationCanceledException
+                    || !_cancellation.IsCancellationRequested)
+            {
+                Complete(failure: exception);
+            }
+        }
 
-        internal bool Started { get; set; }
+        internal void Cancel() => Complete(canceled: true);
 
-        internal TaskCompletionSource Completion { get; } =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private void Complete(Exception? failure = null, bool canceled = false)
+        {
+            bool completed = canceled
+                ? _completion.TrySetCanceled(_cancellation.Token)
+                : failure is not null
+                    ? _completion.TrySetException(failure)
+                    : _completion.TrySetResult();
+
+            if (completed)
+            {
+                _cancellation.Dispose();
+            }
+        }
     }
 }
