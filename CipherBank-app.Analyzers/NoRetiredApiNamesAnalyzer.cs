@@ -17,7 +17,7 @@ namespace CipherBank_app.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class NoRetiredApiNamesAnalyzer : DiagnosticAnalyzer
 {
-    private static readonly HashSet<string> RetiredNames = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> _retiredNames = new(StringComparer.Ordinal)
     {
         // Decision: keep this list inline while it stays this small; move it to an
         // ingestible config file if it grows beyond a handful of names.
@@ -105,7 +105,7 @@ public sealed class NoRetiredApiNamesAnalyzer : DiagnosticAnalyzer
         SourceText text,
         SyntaxToken token)
     {
-        if (!token.IsKind(SyntaxKind.IdentifierToken) || !RetiredNames.Contains(token.ValueText))
+        if (!token.IsKind(SyntaxKind.IdentifierToken) || !_retiredNames.Contains(token.ValueText))
         {
             return;
         }
@@ -122,7 +122,7 @@ public sealed class NoRetiredApiNamesAnalyzer : DiagnosticAnalyzer
     /// </summary>
     private static void ReportIfRetired(Action<Diagnostic> report, SyntaxToken token)
     {
-        if (!token.IsKind(SyntaxKind.IdentifierToken) || !RetiredNames.Contains(token.ValueText))
+        if (!token.IsKind(SyntaxKind.IdentifierToken) || !_retiredNames.Contains(token.ValueText))
         {
             return;
         }

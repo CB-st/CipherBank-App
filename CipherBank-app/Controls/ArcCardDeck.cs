@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using CipherBank_app.Animations;
-using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Layouts;
 
 namespace CipherBank_app.Controls;
@@ -42,6 +41,12 @@ public class ArcCardDeck : ContentView
         typeof(double),
         typeof(ArcCardDeck),
         0.0);
+
+    public static readonly BindableProperty ReduceMotionProperty = BindableProperty.Create(
+        nameof(ReduceMotion),
+        typeof(bool),
+        typeof(ArcCardDeck),
+        false);
 
     public static readonly BindableProperty StrideProperty = BindableProperty.Create(
         nameof(Stride),
@@ -112,13 +117,19 @@ public class ArcCardDeck : ContentView
     }
 
     /// <summary>
-    /// 0 when a card is centered, rising toward 1 as the drag passes the midpoint between
+    /// Gets 0 when a card is centered, rising toward 1 as the drag passes the midpoint between
     /// cards. Pages observe this to dim dependent panels proportionally while dragging.
     /// </summary>
     public double DragFraction
     {
         get => (double)GetValue(DragFractionProperty);
         private set => SetValue(DragFractionProperty, value);
+    }
+
+    public bool ReduceMotion
+    {
+        get => (bool)GetValue(ReduceMotionProperty);
+        set => SetValue(ReduceMotionProperty, value);
     }
 
     public double Stride
@@ -239,7 +250,7 @@ public class ArcCardDeck : ContentView
         for (int i = 0; i < _cards.Count; i++)
         {
             double d = i - _position;
-            var card = _cards[i];
+            View card = _cards[i];
 
             bool visible = Math.Abs(d) <= WindowSize;
             card.IsVisible = visible;
@@ -248,7 +259,7 @@ public class ArcCardDeck : ContentView
                 continue;
             }
 
-            var t = CarouselMath.ComputeCardTransform(d, _config);
+            CardTransform t = CarouselMath.ComputeCardTransform(d, _config);
             card.TranslationX = t.TranslationX;
             card.TranslationY = t.TranslationY;
             card.RotationY = t.RotationY;
@@ -328,7 +339,7 @@ public class ArcCardDeck : ContentView
     {
         AbortSpring();
 
-        if (MotionSettings.ReduceMotion)
+        if (ReduceMotion)
         {
             _position = target;
             ApplyLayout();
@@ -343,7 +354,7 @@ public class ArcCardDeck : ContentView
         _springTimer.Interval = TimeSpan.FromSeconds(FrameDt);
         _springTimer.Tick += (_, _) =>
         {
-            var state = CarouselMath.SpringStep(
+            SpringState state = CarouselMath.SpringStep(
                 _position, velocity, target, FrameDt, SnapDampingRatio, SnapAngularFrequency);
             velocity = state.Velocity;
             _position = Math.Clamp(state.Position, 0, max); // hard clamp = firm edges, mid-list overshoot survives

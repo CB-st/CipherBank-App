@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Persist.Entities;
 
 public sealed record WalletEntity
@@ -21,4 +23,15 @@ public sealed record WalletEntity
     public string Kind { get; set; } = "derived";
 
     public DateTimeOffset CreatedAt { get; set; }
+
+    internal LocalWalletDescriptor ToDescriptor() =>
+        new(
+            Id,
+            AssetSymbol.Parse(Symbol),
+            Label,
+            Address,
+            Path,
+            AccountIndex,
+            Kind,
+            CreatedAt);
 }

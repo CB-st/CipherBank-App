@@ -11,7 +11,7 @@ the durable rationale so future rounds do not relitigate settled questions.
   vocabulary instead of a domain enum.
 - **Decision:** declined. `ThreadPriority` specifies OS thread scheduling
   priority (its values ascend with urgency, opposite to our lowest-first
-  `PriorityQueue` dequeue order) and does not describe work-item queue ordering.
+  prioritized-channel dequeue order) and does not describe work-item queue ordering.
   Framework precedent separates the two concepts: WPF's `DispatcherPriority` is
   its own enum for prioritized work items on one thread, and Win32 thread pools
   define a dedicated `TP_CALLBACK_PRIORITY` for callbacks. `SyncPriority`
@@ -23,8 +23,8 @@ the durable rationale so future rounds do not relitigate settled questions.
   [WPF threading model / DispatcherPriority](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/advanced/threading-model)
   ("the Dispatcher selects work items on a priority basis"),
   [TP_CALLBACK_PRIORITY](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ne-winnt-tp_callback_priority),
-  [PriorityQueue&lt;TElement,TPriority&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.priorityqueue-2)
-  (dequeues the lowest priority value first).
+  [Channel.CreateUnboundedPrioritized](https://learn.microsoft.com/en-us/dotnet/api/system.threading.channels.channel.createunboundedprioritized)
+  (creates an unbounded channel ordered by its configured comparer).
 - **Forward guidance:** new queue lanes extend `SyncPriority`; never repurpose
   OS scheduling enums for work-item ordering.
 
@@ -37,16 +37,19 @@ the durable rationale so future rounds do not relitigate settled questions.
   subclass caps only synchronous segments and cannot enforce a whole-job
   concurrency ceiling, named dedupe, rank ordering among waiting jobs, or a
   test drain. The docs example throttles synchronous work — a different
-  problem. `AGENTS.md` codifies the composed shape (injected `TaskScheduler` +
-  `PriorityQueue`).
+  problem. `SyncJobScheduler` instead uses .NET 10's prioritized channel with
+  a fixed number of consumers; each consumer awaits a whole logical operation
+  before reading another job.
 - **Evidence:**
   [TaskScheduler class + LimitedConcurrencyLevelTaskScheduler example](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler)
   (the example's queue holds `Task` bodies and counts running delegates, not
   logical async operations),
-  [TaskScheduler.QueueTask](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler.queuetask).
-- **Forward guidance:** keep the scheduler a deduping task factory over the
-  injected platform `TaskScheduler`; revisit only with an argument that defeats
-  the async-slot analysis.
+  [TaskScheduler.QueueTask](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler.queuetask),
+  [Channel.CreateUnboundedPrioritized](https://learn.microsoft.com/en-us/dotnet/api/system.threading.channels.channel.createunboundedprioritized).
+- **Forward guidance:** keep whole-operation throttling in the fixed channel
+  consumers owned by `PrioritizedJobDispatcher`; keep keyed deduplication in
+  `SingleFlightJobFactory` and compose both through `SyncJobScheduler`. Use a
+  `TaskScheduler` subclass only for synchronous task-segment scheduling.
 
 ## 3. `PersistenceOptions` bounds: `static readonly` instead of `const`
 
@@ -76,10 +79,10 @@ the durable rationale so future rounds do not relitigate settled questions.
 - **Forward guidance:** materialized collection → `is []`; `IQueryable` →
   LINQ operators, never client-side properties.
 
-## 5. Replace SQLite market cache with `IMemoryCache`/`HybridCache`
+## 5. Replace SQLite rate snapshot store with `IMemoryCache`/`HybridCache`
 
 - **Ask:** use the framework caching abstractions for rates/OHLC data.
-- **Decision:** declined. The market store is durable offline state — rates
+- **Decision:** declined. `SqliteRateSnapshotStore` is durable offline state — rates
   must survive process restarts for cold-start rendering. `IMemoryCache` is
   in-process and lost on restart; `HybridCache` gains durability only from a
   distributed `IDistributedCache` backend (Redis/SQL Server), which has no
@@ -93,29 +96,29 @@ the durable rationale so future rounds do not relitigate settled questions.
 - **Forward guidance:** in-memory caching may layer on top of the SQLite store
   later; it cannot replace it.
 
-## 6. `BaseCurrency` default from configuration
+## 6. First-run user preference defaults from configuration
 
 - **Ask:** move the `UserPrefs.BaseCurrency` default ("USD") into appsettings.
-- **Decision:** declined. Configuration is for values that vary by environment
-  or deployment; the base-currency default is a stable domain fallback for a
-  user-owned persisted preference, and splitting it between config and the
-  prefs store would create two sources of truth for one user setting.
+- **Decision:** accepted for first-run/missing values. Validated
+  `UserPreferenceDefaultsOptions` produces immutable defaults; stored explicit
+  user choices always win and remain mutable device state.
 - **Evidence:**
   [.NET configuration](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/),
   [Options pattern](https://learn.microsoft.com/en-us/dotnet/core/extensions/options)
   (options model environment-varying settings bound at startup, not per-user
   mutable state).
-- **Forward guidance:** user-mutable values live in `UserPrefs`; deployment
-  knobs live in `config/appsettings*.json`.
+- **Forward guidance:** current values live in `UserPrefs`; class-named
+  `.jsonc` sections own validated defaults only.
 
 ## 7. Boolean-flag helper for the mask pair
 
 - **Ask:** consolidate `MaskAccount`/`MaskRouting` behind one helper selected
   by a boolean flag.
-- **Decision:** consolidated, but with data parameters instead of a boolean.
+- **Decision:** consolidated with data parameters instead of a boolean.
   The two masks differ in two independent dimensions (preprocessing and
   short-input fallback); a single flag would force branch pairs inside the
-  helper. Sonar S2301 discourages boolean selectors because call sites cannot
+  helper. One shared glyph/prefix constant removes presentation duplication.
+  Sonar S2301 discourages boolean selectors because call sites cannot
   read them — the private `MaskTrailing(source, shortResult)` core keeps both
   call sites self-describing.
 - **Evidence:**
@@ -125,23 +128,20 @@ the durable rationale so future rounds do not relitigate settled questions.
 - **Forward guidance:** when consolidating near-duplicates, pass the differing
   behavior as data; reserve boolean parameters for true on/off semantics.
 
-## 8. EF migrations: separate SQL files / FluentMigrator, and `#nullable disable`
+## 8. EF migrations are generator-owned
 
 - **Ask:** keep migrations as up/down `.sql` files or FluentMigrator; later,
   keep the scaffolder's `#nullable disable`.
-- **Decision:** EF Core migrations only (CB1003 bans raw SQL in Core), and the
-  scaffolder's `#nullable disable` is stripped: migrations are reviewed
-  first-class code that compiles clean under the full nullable context, and EF
-  guidance expects generated migration code to be reviewed and edited. A
-  live-tree analyzer fact (`LiveMigrations_HaveNoNullableDisableDirective`)
-  keeps future scaffolds honest.
+- **Decision:** EF Core migrations only (CB1003 bans raw SQL in Core), with
+  scaffolded migration/designer/snapshot artifacts committed unchanged.
+  Migration-integrity CI regenerates one migration per PR and compares output;
+  generator-owned nullable directives remain generator-owned.
 - **Evidence:**
   [Managing migrations — customize migration code](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/managing)
   ("you should always review the code and make sure it corresponds to the
   desired change").
-- **Forward guidance:** after `dotnet ef migrations add`, strip the directive
-  and fix any warnings in code, never by suppression (see
-  `CipherBank-app.Core/Persist/AGENTS.md`).
+- **Forward guidance:** never hand-edit migration artifacts; change the model,
+  remove an unmerged migration, and scaffold it again.
 
 ## 9. `nameof(T)` for open generic helpers
 
@@ -156,3 +156,15 @@ the durable rationale so future rounds do not relitigate settled questions.
   [Unbound generic types in nameof (C# 14)](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/proposals/csharp-14.0/unbound-generic-types-in-nameof).
 - **Forward guidance:** `nameof` for compile-time symbol names;
   `typeof(T).Name` when the name depends on the runtime type argument.
+
+## 10. Represent listed assets with an enum
+
+- **Ask:** use an enum to centralize ticker identity and normalization.
+- **Decision:** declined. Listed assets are supplied by APIs, wallets,
+  preferences, and future userdata catalogs, so the set is not closed.
+  `AssetSymbol` provides normalized value identity without requiring a product
+  release for each newly listed asset. In contrast, `SyncJobKind` is an enum
+  because application job kinds are a closed, code-owned set.
+- **Forward guidance:** use `AssetSymbol` for app ticker values and convert to
+  strings only at JSON, HTTP, navigation, preferences, and EF boundaries.
+  Keep provider-specific currency-code mapping separate from normalization.

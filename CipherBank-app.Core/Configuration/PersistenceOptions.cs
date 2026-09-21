@@ -5,13 +5,11 @@
 namespace CipherBank_app.Configuration;
 
 /// <summary>Settings for the on-device EF Core database.</summary>
-public sealed class PersistenceOptions : IOptionsSection
+public sealed class PersistenceOptions
 {
     private const int AccountNumberMinLength = 4;
     private const int RoutingNumberLength = 9;
     private const int MemoMaxLength = 140;
-
-    public static string SectionName { get; } = "Persistence";
 
     public string DatabaseName { get; set; } = "cipherbank.db";
 
@@ -33,8 +31,8 @@ public sealed class PersistenceOptions : IOptionsSection
     /// </summary>
     public bool AreDefaultRecipientsValid()
     {
-        List<string> ids = new List<string>(DefaultRecipients.Count);
-        List<string> names = new List<string>(DefaultRecipients.Count);
+        List<string> ids = new(DefaultRecipients.Count);
+        List<string> names = new(DefaultRecipients.Count);
         foreach (DefaultRecipientOptions row in DefaultRecipients)
         {
             if (!IsRecipientValid(row))

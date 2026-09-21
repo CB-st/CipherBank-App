@@ -2,11 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Collections.ObjectModel;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
@@ -29,24 +25,6 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private ObservableCollection<CryptoCurrency> cryptocurrencies = [];
-
-    [ObservableProperty]
-    private CryptoCurrency? selectedCrypto;
-
-    [ObservableProperty]
-    private bool isLoading;
-
-    [ObservableProperty]
-    private bool isRefreshing;
-
-    [ObservableProperty]
-    private string? errorMessage;
-
-    [ObservableProperty]
-    private decimal totalPortfolioValue;
-
     public DashboardViewModel(
         ILogger<DashboardViewModel> logger,
         ICryptoApiService cryptoService,
@@ -60,6 +38,30 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _navigation = navigation;
         _dialog = dialog;
     }
+
+    /// <summary>Gets or sets the cryptocurrencies shown on the dashboard.</summary>
+    [ObservableProperty]
+    public partial ObservableCollection<CryptoCurrency> Cryptocurrencies { get; set; } = [];
+
+    /// <summary>Gets or sets the selected cryptocurrency.</summary>
+    [ObservableProperty]
+    public partial CryptoCurrency? SelectedCrypto { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether prices are loading.</summary>
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether a refresh is in progress.</summary>
+    [ObservableProperty]
+    public partial bool IsRefreshing { get; set; }
+
+    /// <summary>Gets or sets the dashboard error message.</summary>
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+    /// <summary>Gets or sets the total portfolio value.</summary>
+    [ObservableProperty]
+    public partial decimal TotalPortfolioValue { get; set; }
 
     /// <summary>
     /// Cancels any ongoing operations when leaving the page.
@@ -124,9 +126,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             var success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    var cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                    List<CryptoCurrency> cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
                     Cryptocurrencies.Clear();
-                    foreach (var crypto in cryptos)
+                    foreach (CryptoCurrency crypto in cryptos)
                     {
                         Cryptocurrencies.Add(crypto);
                     }
@@ -156,8 +158,6 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                         LogLoadPricesCancelled(_logger);
                     }
                 }
-
-                return;
             }
         }
         catch (Exception ex)
@@ -190,7 +190,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol);
+        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol.Value);
         await _navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
     }
 
@@ -210,20 +210,14 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ViewCryptoDetailsAsync(CryptoCurrency crypto)
     {
-        if (crypto == null)
-        {
-            return;
-        }
-
-        LogViewingDetails(_logger, crypto.Symbol);
+        LogViewingDetails(_logger, crypto.Symbol.Value);
         SelectedCrypto = crypto;
 
         // Could navigate to a details page here
         var detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
         await _dialog.ShowAlertAsync(
             crypto.Name,
-            detailMessage,
-            "OK");
+            detailMessage);
     }
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators

@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+#nullable disable
+
 namespace CipherBank_app.Persist.Migrations
 {
     [DbContext(typeof(CipherBankDbContext))]
@@ -24,9 +26,13 @@ namespace CipherBank_app.Persist.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("t");
 
-                    b.Property<double>("Value")
-                        .HasColumnType("REAL")
+                    b.Property<decimal>("Price")
+                        .HasColumnType("TEXT")
                         .HasColumnName("v");
+
+                    b.Property<decimal?>("Volume")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("volume");
 
                     b.HasKey("Symbol", "Timestamp");
 

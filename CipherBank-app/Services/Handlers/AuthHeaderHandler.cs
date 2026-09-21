@@ -2,12 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Services.Handlers;
@@ -39,7 +35,7 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
         try
         {
             // Get auth service - use GetService to avoid circular dependency issues during startup
-            var authService = _serviceProvider.GetService<IAuthService>();
+            IAuthService? authService = _serviceProvider.GetService<IAuthService>();
             if (authService == null)
             {
                 if (_logger != null)
@@ -50,19 +46,17 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
                 return await base.SendAsync(request, cancellationToken);
             }
 
-            var token = await authService.GetStoredTokenAsync();
+            AuthToken? token = await authService.GetStoredTokenAsync();
             if (token != null && !string.IsNullOrEmpty(token.AccessToken))
             {
                 // Check if token is expired (with 5-minute buffer)
                 if (token.ExpiresUtc > DateTimeOffset.UtcNow.AddMinutes(5))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-#if DEBUG
                     if (_logger != null)
                     {
                         LogAddedBearerToken(_logger, request.RequestUri);
                     }
-#endif
                 }
                 else
                 {
@@ -74,7 +68,7 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
 
                     try
                     {
-                        var newToken = await authService.RefreshAsync(token.RefreshToken, cancellationToken);
+                        AuthToken newToken = await authService.RefreshAsync(token.RefreshToken, cancellationToken);
                         if (newToken != null && !string.IsNullOrEmpty(newToken.AccessToken))
                         {
                             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newToken.AccessToken);

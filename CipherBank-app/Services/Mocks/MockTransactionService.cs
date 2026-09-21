@@ -2,12 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -42,7 +37,7 @@ public sealed partial class MockTransactionService : ITransactionService
         LogInitialized(_logger, _transactions.Count);
     }
 
-    public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken = default)
+    public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(walletId);
 
@@ -50,10 +45,10 @@ public sealed partial class MockTransactionService : ITransactionService
         await SimulateNetworkDelayAsync(cancellationToken);
 
         // Get wallet to verify it exists
-        var wallet = await _walletService.GetWalletAsync(walletId, cancellationToken);
+        Wallet wallet = await _walletService.GetWalletAsync(walletId, cancellationToken);
 
         var transactions = _transactions
-            .Where(t => t.CryptoSymbol.Equals(wallet.CryptoSymbol, StringComparison.OrdinalIgnoreCase))
+            .Where(t => t.CryptoSymbol == wallet.CryptoSymbol)
             .OrderByDescending(t => t.Timestamp)
             .ToList();
 
@@ -61,28 +56,27 @@ public sealed partial class MockTransactionService : ITransactionService
         return transactions;
     }
 
-    public async Task<Transaction> PurchaseCryptoAsync(string symbol, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         if (amount <= 0)
         {
-            throw new ArgumentException("Amount must be positive", nameof(amount));
+            throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
-        LogProcessingPurchase(_logger, amount, symbol);
+        LogProcessingPurchase(_logger, amount, symbol.Value);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var normalizedSymbol = symbol.ToUpperInvariant();
         var fee = amount * PurchaseFeePercent;
 
         // Find or create wallet
-        var wallet = _walletService.GetWalletBySymbol(normalizedSymbol);
+        Wallet? wallet = _walletService.GetWalletBySymbol(symbol);
         string toAddress;
 
         if (wallet == null)
         {
             // Create wallet automatically for purchase
-            wallet = await _walletService.CreateWalletAsync(normalizedSymbol, cancellationToken);
+            wallet = await _walletService.CreateWalletAsync(symbol, cancellationToken);
         }
 
         toAddress = wallet.Address;
@@ -95,7 +89,7 @@ public sealed partial class MockTransactionService : ITransactionService
             GenerateTransactionId(),
             TransactionType.Purchase,
             amount,
-            normalizedSymbol,
+            symbol,
             null, // No from address for purchases
             toAddress,
             DateTimeOffset.UtcNow,
@@ -104,25 +98,25 @@ public sealed partial class MockTransactionService : ITransactionService
 
         _transactions.Add(transaction);
 
-        LogPurchaseCompleted(_logger, amount, normalizedSymbol, fee, transaction.Id);
+        LogPurchaseCompleted(_logger, amount, symbol.Value, fee, transaction.Id);
 
         return transaction;
     }
 
-    public async Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken = default)
+    public async Task<Transaction> SendCryptoAsync(string fromWalletId, string toAddress, decimal amount, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fromWalletId);
         ArgumentException.ThrowIfNullOrWhiteSpace(toAddress);
         if (amount <= 0)
         {
-            throw new ArgumentException("Amount must be positive", nameof(amount));
+            throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
         LogProcessingSend(_logger, amount, fromWalletId, toAddress);
         await SimulateNetworkDelayAsync(cancellationToken);
 
         // Validate source wallet and balance
-        var wallet = await _walletService.GetWalletAsync(fromWalletId, cancellationToken);
+        Wallet wallet = await _walletService.GetWalletAsync(fromWalletId, cancellationToken);
         var fee = amount * SendFeePercent;
         var totalAmount = amount + fee;
 
@@ -137,7 +131,7 @@ public sealed partial class MockTransactionService : ITransactionService
         if (!IsValidAddress(toAddress, wallet.CryptoSymbol))
         {
             LogInvalidAddress(_logger, toAddress);
-            throw new ArgumentException($"Invalid {wallet.CryptoSymbol} address format", nameof(toAddress));
+            throw new ArgumentException($@"Invalid {wallet.CryptoSymbol} address format", nameof(toAddress));
         }
 
         // Deduct from wallet
@@ -172,19 +166,19 @@ public sealed partial class MockTransactionService : ITransactionService
             },
             CancellationToken.None);
 
-        LogSendInitiated(_logger, amount, wallet.CryptoSymbol, toAddress, fee, transaction.Id);
+        LogSendInitiated(_logger, amount, wallet.CryptoSymbol.Value, toAddress, fee, transaction.Id);
 
         return transaction;
     }
 
-    public async Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken = default)
+    public async Task<TransactionStatus> GetTransactionStatusAsync(string transactionId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(transactionId);
 
         LogGettingTransactionStatus(_logger, transactionId);
         await Task.Delay(50, cancellationToken); // Minimal delay for status check
 
-        var transaction = _transactions.FirstOrDefault(t => t.Id == transactionId);
+        Transaction? transaction = _transactions.FirstOrDefault(t => t.Id == transactionId);
         if (transaction == null)
         {
             LogTransactionNotFound(_logger, transactionId);
@@ -198,7 +192,7 @@ public sealed partial class MockTransactionService : ITransactionService
     private static List<Transaction> GenerateMockTransactionHistory()
     {
         var transactions = new List<Transaction>();
-        var now = DateTimeOffset.UtcNow;
+        DateTimeOffset now = DateTimeOffset.UtcNow;
 
         // Bitcoin transactions
         transactions.Add(new Transaction(
@@ -333,7 +327,7 @@ public sealed partial class MockTransactionService : ITransactionService
             .Select(_ => hexChars[RandomNumberGenerator.GetInt32(hexChars.Length)]).ToArray());
     }
 
-    private static bool IsValidAddress(string address, string symbol) => symbol.ToUpperInvariant() switch
+    private static bool IsValidAddress(string address, AssetSymbol symbol) => symbol.Value switch
     {
         "BTC" => address.StartsWith("bc1", StringComparison.Ordinal) || address.StartsWith('1') || address.StartsWith('3'),
         "ETH" => address.StartsWith("0x", StringComparison.Ordinal) && address.Length == 42,

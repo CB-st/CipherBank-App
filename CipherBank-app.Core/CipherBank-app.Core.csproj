@@ -28,10 +28,12 @@
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>all</ExcludeAssets>
+      <IncludeAssets>none</IncludeAssets>
     </PackageReference>
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3">
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>all</ExcludeAssets>
+      <IncludeAssets>none</IncludeAssets>
     </PackageReference>
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" />
     <PackageReference Include="Microsoft.Extensions.Http" />
@@ -57,15 +59,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\config\appsettings.json"
-                      Link="config\appsettings.json"
-                      LogicalName="CipherBank_app.Config.appsettings.json" />
-    <EmbeddedResource Include="..\config\appsettings.Development.json"
-                      Link="config\appsettings.Development.json"
-                      LogicalName="CipherBank_app.Config.appsettings.Development.json" />
-    <EmbeddedResource Include="..\config\appsettings.Windows.json"
-                      Link="config\appsettings.Windows.json"
-                      LogicalName="CipherBank_app.Config.appsettings.Windows.json" />
+    <EmbeddedResource Include="..\config\appsettings.jsonc"
+                      Link="config\appsettings.jsonc"
+                      LogicalName="CipherBank_app.Config.appsettings.jsonc" />
+    <EmbeddedResource Include="..\config\appsettings.Development.jsonc"
+                      Link="config\appsettings.Development.jsonc"
+                      LogicalName="CipherBank_app.Config.appsettings.Development.jsonc" />
+    <EmbeddedResource Include="..\config\appsettings.Windows.jsonc"
+                      Link="config\appsettings.Windows.jsonc"
+                      LogicalName="CipherBank_app.Config.appsettings.Windows.jsonc" />
   </ItemGroup>
 
 

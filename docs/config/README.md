@@ -40,12 +40,15 @@ SDK version pinning:
 ```json
 {
   "sdk": {
-    "version": "10.0.101",
-    "rollForward": "latestMinor",
-    "allowPrerelease": false
+    "version": "10.0.401",
+    "rollForward": "latestPatch",
+    "allowPrerelease": false,
+    "workloadVersion": "10.0.401"
   }
 }
 ```
+
+MAUI NuGet packages (`Microsoft.Maui.Controls`, `Microsoft.Maui.Essentials`, `Microsoft.Maui.Resizetizer`) are centrally pinned to **10.0.20** in `Directory.Packages.props` to match the SDK workload manifest. Re-upgrade MAUI packages only when a workload manifest **>= 10.0.101** is available for the pinned SDK.
 
 ---
 

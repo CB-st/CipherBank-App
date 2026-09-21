@@ -3,27 +3,15 @@
   <Import Project="$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.targets"
           Condition="Exists('$(MSBuildThisFileDirectory).compliance/msbuild/DotNet10.Compliance.targets')" />
 
-  <!-- Structure analyzers see every product tree even when a job builds only
-       part of the solution. Analyzer tests are excluded so CB1004 fixtures
-       do not fail sibling compilations. -->
+  <!-- Repository metadata consumed by the structure analyzers. Product C# files
+       remain compilation inputs in their owning projects rather than being
+       duplicated as AdditionalFiles across the entire solution. -->
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)Directory.Packages.props" />
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)Directory.Build.props" />
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)Directory.Build.targets" />
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)*/*.csproj" />
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)**/Properties/AssemblyInfo.cs" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)CipherBank-app/**/*.cs"
-                     Exclude="$(MSBuildThisFileDirectory)CipherBank-app/**/bin/**;$(MSBuildThisFileDirectory)CipherBank-app/**/obj/**" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)CipherBank-app.Core/**/*.cs"
-                     Exclude="$(MSBuildThisFileDirectory)CipherBank-app.Core/**/bin/**;$(MSBuildThisFileDirectory)CipherBank-app.Core/**/obj/**" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)CipherBank-app.Tests/**/*.cs"
-                     Exclude="$(MSBuildThisFileDirectory)CipherBank-app.Tests/**/bin/**;$(MSBuildThisFileDirectory)CipherBank-app.Tests/**/obj/**" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)CipherBank-app.IntegrationTests/**/*.cs"
-                     Exclude="$(MSBuildThisFileDirectory)CipherBank-app.IntegrationTests/**/bin/**;$(MSBuildThisFileDirectory)CipherBank-app.IntegrationTests/**/obj/**" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)CipherBank-app.E2ETests/**/*.cs"
-                     Exclude="$(MSBuildThisFileDirectory)CipherBank-app.E2ETests/**/bin/**;$(MSBuildThisFileDirectory)CipherBank-app.E2ETests/**/obj/**" />
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)CipherBank-app.ChallengePass/**/*.cs"
-                     Exclude="$(MSBuildThisFileDirectory)CipherBank-app.ChallengePass/**/bin/**;$(MSBuildThisFileDirectory)CipherBank-app.ChallengePass/**/obj/**" />
   </ItemGroup>
 
   <Target Name="CipherBankRequireCentralPackageManagement" BeforeTargets="CollectPackageReferences">

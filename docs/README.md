@@ -8,8 +8,8 @@ CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. It provides cryp
 
 ## Prerequisites
 
-- **.NET 10 SDK** (10.0.101 or later)
-- **MAUI workload** for your target platform(s)
+- **.NET 10 SDK** (10.0.401)
+- **MAUI workload** for your target platform(s); NuGet MAUI packages are pinned to **10.0.20** to match the installed workload manifest
 
 ## Build and Run
 
