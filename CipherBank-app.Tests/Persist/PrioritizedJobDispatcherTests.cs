@@ -108,6 +108,213 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     [Fact]
+    public async Task DrainAsync_AfterSynchronouslyObservedFaultDoesNotThrow()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        Task failed = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            _ => throw new NotSupportedException("quote failed"),
+            CancellationToken.None);
+
+        Task observation = failed.ContinueWith(
+            static _ => (object?)null,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+        await observation;
+        failed.IsFaulted.Should().BeTrue();
+
+        Func<Task> drain = () => dispatcher.DrainAsync(CancellationToken.None);
+        await drain.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task DrainAsync_DoesNotRethrowWhenFaultCompletesDuringDrain()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        TaskCompletionSource workStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseFault = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Task failed = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            async ct =>
+            {
+                workStarted.SetResult();
+                await releaseFault.Task.WaitAsync(ct).ConfigureAwait(false);
+                throw new NotSupportedException("quote failed");
+            },
+            CancellationToken.None);
+        await workStarted.Task;
+
+        Task drain = dispatcher.DrainAsync(CancellationToken.None);
+        releaseFault.SetResult();
+
+        Func<Task> observeFailure = () => failed;
+        await observeFailure.Should().ThrowAsync<NotSupportedException>();
+
+        Func<Task> observeDrain = () => drain;
+        await observeDrain.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task DrainAsync_WaitsForRunningWorkBeforeReturning()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        TaskCompletionSource runningStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseRunning = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int completionOrder = 0;
+
+        _ = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            async ct =>
+            {
+                runningStarted.SetResult();
+                await releaseRunning.Task.WaitAsync(ct).ConfigureAwait(false);
+                Interlocked.Exchange(ref completionOrder, 1);
+            },
+            CancellationToken.None);
+        await runningStarted.Task;
+
+        Task drain = dispatcher.DrainAsync(CancellationToken.None);
+        drain.IsCompleted.Should().BeFalse();
+
+        releaseRunning.SetResult();
+        await drain;
+
+        Volatile.Read(ref completionOrder).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task DrainAsync_IncludesWorkEnqueuedDuringDrain()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        TaskCompletionSource firstStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseFirst = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int secondRuns = 0;
+
+        _ = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            async ct =>
+            {
+                firstStarted.SetResult();
+                await releaseFirst.Task.WaitAsync(ct).ConfigureAwait(false);
+            },
+            CancellationToken.None);
+        await firstStarted.Task;
+
+        Task drain = dispatcher.DrainAsync(CancellationToken.None);
+        Task second = dispatcher.EnqueueAsync(
+            SyncPriority.Background,
+            _ =>
+            {
+                Interlocked.Increment(ref secondRuns);
+                return Task.CompletedTask;
+            },
+            CancellationToken.None);
+
+        releaseFirst.SetResult();
+        await drain;
+        await second;
+
+        Volatile.Read(ref secondRuns).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task DrainAsync_DoesNotRethrowMultipleObservedFaults()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher(maxConcurrency: 2);
+        Task first = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            _ => throw new InvalidOperationException("first"),
+            CancellationToken.None);
+        Task second = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            _ => throw new InvalidOperationException("second"),
+            CancellationToken.None);
+
+        Func<Task> observeFirst = () => first;
+        Func<Task> observeSecond = () => second;
+        await observeFirst.Should().ThrowAsync<InvalidOperationException>();
+        await observeSecond.Should().ThrowAsync<InvalidOperationException>();
+
+        Func<Task> drain = () => dispatcher.DrainAsync(CancellationToken.None);
+        await drain.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task DrainAsync_AfterDisposeReturnsWithoutWaitingForRunningWork()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        TaskCompletionSource runningStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseRunning = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task running = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            async _ =>
+            {
+                runningStarted.SetResult();
+                await releaseRunning.Task.ConfigureAwait(false);
+            },
+            CancellationToken.None);
+        await runningStarted.Task;
+
+        dispatcher.Dispose();
+
+        Func<Task> drain = () => dispatcher.DrainAsync(CancellationToken.None);
+        await drain.Should().NotThrowAsync();
+
+        releaseRunning.SetResult();
+        await running;
+    }
+
+    [Fact]
+    public void Dispose_CalledTwiceDoesNotThrow()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        dispatcher.Dispose();
+
+        Action secondDispose = () => dispatcher.Dispose();
+        secondDispose.Should().NotThrow();
+    }
+
+    [Fact]
+    public async Task Dispose_DoesNotHangWhenWorkerDrainsDequeuedUnstartedWork()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        TaskCompletionSource runningStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseRunning = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int queuedRuns = 0;
+
+        Task running = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            async _ =>
+            {
+                runningStarted.SetResult();
+                await releaseRunning.Task.ConfigureAwait(false);
+            },
+            CancellationToken.None);
+        await runningStarted.Task;
+
+        Task queued = dispatcher.EnqueueAsync(
+            SyncPriority.Background,
+            _ =>
+            {
+                Interlocked.Increment(ref queuedRuns);
+                return Task.CompletedTask;
+            },
+            CancellationToken.None);
+
+        dispatcher.Dispose();
+
+        queued.IsCanceled.Should().BeTrue();
+        releaseRunning.SetResult();
+
+        Func<Task> observeRunning = () => running.WaitAsync(TimeSpan.FromSeconds(1));
+        await observeRunning.Should().NotThrowAsync();
+
+        Volatile.Read(ref queuedRuns).Should().Be(0);
+    }
+
+    [Fact]
     public async Task EnqueueAsync_CallerCancellationReachesQueuedWork()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
@@ -203,6 +410,6 @@ public sealed class PrioritizedJobDispatcherTests
         enqueue.Should().Throw<ObjectDisposedException>();
     }
 
-    private static PrioritizedJobDispatcher CreateDispatcher() =>
-        new(Options.Create(new SyncSchedulerOptions { MaxConcurrency = 1 }));
+    private static PrioritizedJobDispatcher CreateDispatcher(int maxConcurrency = 1) =>
+        new(Options.Create(new SyncSchedulerOptions { MaxConcurrency = maxConcurrency }));
 }
