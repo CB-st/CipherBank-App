@@ -83,7 +83,9 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
                 jobs = [.. _jobs?.Select(static job => job.Task) ?? []];
             }
 
-            await Task.WhenAll(jobs).WaitAsync(cancellationToken).ConfigureAwait(false);
+            await Task.WhenAll(jobs.Select(static job => AwaitQuietlyAsync(job)))
+                .WaitAsync(cancellationToken)
+                .ConfigureAwait(false);
         }
         while (jobs.Length > 0);
     }
@@ -109,6 +111,17 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
         }
 
         shutdown?.Dispose();
+    }
+
+    private static async Task AwaitQuietlyAsync(Task job)
+    {
+        try
+        {
+            await job.ConfigureAwait(false);
+        }
+        catch
+        {
+        }
     }
 
     private async Task ProcessQueueAsync()
