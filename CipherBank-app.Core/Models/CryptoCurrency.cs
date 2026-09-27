@@ -17,7 +17,7 @@ public record CryptoCurrency(
     decimal PercentChange24H,
     decimal MarketCap,
     decimal Volume24H,
-    string IconUrl)
+    Uri? IconUrl)
 {
     public bool IsPriceUp => PercentChange24H >= 0;
 

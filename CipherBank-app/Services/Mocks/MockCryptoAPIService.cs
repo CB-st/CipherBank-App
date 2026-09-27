@@ -20,16 +20,16 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
 
     private static readonly List<CryptoCurrency> _mockCryptos =
     [
-        new("BTC", "Bitcoin", 97500.00m, 1250.50m, 1.30m, 1920000000000m, 45000000000m, "https://assets.coingecko.com/coins/images/1/large/bitcoin.png"),
-        new("ETH", "Ethereum", 3450.00m, -45.25m, -1.29m, 415000000000m, 18000000000m, "https://assets.coingecko.com/coins/images/279/large/ethereum.png"),
-        new("BNB", "BNB", 685.00m, 12.30m, 1.83m, 102000000000m, 2100000000m, "https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png"),
-        new("SOL", "Solana", 195.00m, 8.45m, 4.53m, 92000000000m, 5500000000m, "https://assets.coingecko.com/coins/images/4128/large/solana.png"),
-        new("XRP", "XRP", 2.85m, 0.15m, 5.56m, 162000000000m, 8900000000m, "https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png"),
-        new("ADA", "Cardano", 1.05m, -0.03m, -2.78m, 37000000000m, 1200000000m, "https://assets.coingecko.com/coins/images/975/large/cardano.png"),
-        new("AVAX", "Avalanche", 42.50m, 1.80m, 4.42m, 17500000000m, 890000000m, "https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png"),
-        new("DOGE", "Dogecoin", 0.385m, 0.025m, 6.94m, 57000000000m, 4200000000m, "https://assets.coingecko.com/coins/images/5/large/dogecoin.png"),
-        new("DOT", "Polkadot", 8.75m, -0.22m, -2.45m, 11500000000m, 420000000m, "https://assets.coingecko.com/coins/images/12171/large/polkadot.png"),
-        new("LINK", "Chainlink", 25.30m, 0.95m, 3.90m, 15800000000m, 680000000m, "https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png"),
+        new("BTC", "Bitcoin", 97500.00m, 1250.50m, 1.30m, 1920000000000m, 45000000000m, new Uri("https://assets.coingecko.com/coins/images/1/large/bitcoin.png")),
+        new("ETH", "Ethereum", 3450.00m, -45.25m, -1.29m, 415000000000m, 18000000000m, new Uri("https://assets.coingecko.com/coins/images/279/large/ethereum.png")),
+        new("BNB", "BNB", 685.00m, 12.30m, 1.83m, 102000000000m, 2100000000m, new Uri("https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png")),
+        new("SOL", "Solana", 195.00m, 8.45m, 4.53m, 92000000000m, 5500000000m, new Uri("https://assets.coingecko.com/coins/images/4128/large/solana.png")),
+        new("XRP", "XRP", 2.85m, 0.15m, 5.56m, 162000000000m, 8900000000m, new Uri("https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png")),
+        new("ADA", "Cardano", 1.05m, -0.03m, -2.78m, 37000000000m, 1200000000m, new Uri("https://assets.coingecko.com/coins/images/975/large/cardano.png")),
+        new("AVAX", "Avalanche", 42.50m, 1.80m, 4.42m, 17500000000m, 890000000m, new Uri("https://assets.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png")),
+        new("DOGE", "Dogecoin", 0.385m, 0.025m, 6.94m, 57000000000m, 4200000000m, new Uri("https://assets.coingecko.com/coins/images/5/large/dogecoin.png")),
+        new("DOT", "Polkadot", 8.75m, -0.22m, -2.45m, 11500000000m, 420000000m, new Uri("https://assets.coingecko.com/coins/images/12171/large/polkadot.png")),
+        new("LINK", "Chainlink", 25.30m, 0.95m, 3.90m, 15800000000m, 680000000m, new Uri("https://assets.coingecko.com/coins/images/877/large/chainlink-new-logo.png")),
     ];
 
     private readonly ILogger<MockCryptoApiService> _logger;

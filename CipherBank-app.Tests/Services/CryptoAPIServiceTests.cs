@@ -19,8 +19,8 @@ public class CryptoApiServiceTests
         Mock<ICryptoApiService> mockService = new() { CallBase = true };
         List<CryptoCurrency> expectedCryptos =
         [
-            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url1"),
-            new("ETH", "Ethereum", 3000m, 30m, 1.0m, 500000000m, 20000000m, "url2")
+            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, new Uri("https://example.com/btc.png")),
+            new("ETH", "Ethereum", 3000m, 30m, 1.0m, 500000000m, 20000000m, new Uri("https://example.com/eth.png"))
         ];
 
         mockService
@@ -42,7 +42,7 @@ public class CryptoApiServiceTests
         // Arrange
         Mock<ICryptoApiService> mockService = new() { CallBase = true };
         CryptoCurrency expectedCrypto = new(
-            "BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url");
+            "BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, new Uri("https://example.com/btc.png"));
 
         mockService
             .Setup(x => x.GetCryptoPriceAsync("BTC", It.IsAny<CancellationToken>()))
@@ -109,7 +109,7 @@ public class CryptoApiServiceTests
         Mock<ICryptoApiService> mockService = new() { CallBase = true };
         List<CryptoCurrency> expectedResults =
         [
-            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, "url")
+            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, new Uri("https://example.com/btc.png"))
         ];
 
         mockService
