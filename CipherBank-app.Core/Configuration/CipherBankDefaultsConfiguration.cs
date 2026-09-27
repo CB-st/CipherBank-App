@@ -10,8 +10,8 @@ namespace CipherBank_app.Configuration;
 /// <summary>Loads repository-owned default configuration embedded in Core.</summary>
 public static class CipherBankDefaultsConfiguration
 {
-    private const string BaseResourceName = "CipherBank_app.Config.appsettings.json";
-    private const string WindowsResourceName = "CipherBank_app.Config.appsettings.Windows.json";
+    private const string BaseResourceName = "CipherBank_app.Config.appsettings.jsonc";
+    private const string WindowsResourceName = "CipherBank_app.Config.appsettings.Windows.jsonc";
 
     /// <summary>
     /// Maps compile-time host facts to the repository overlay order.
@@ -43,14 +43,14 @@ public static class CipherBankDefaultsConfiguration
         bool windowsOverlay)
     {
         Assembly assembly = typeof(CipherBankDefaultsConfiguration).Assembly;
-        ConfigurationBuilder builder = new ConfigurationBuilder();
+        ConfigurationBuilder builder = new();
         builder.AddJsonStream(OpenRequiredResource(assembly, BaseResourceName));
         if (!string.IsNullOrWhiteSpace(environment))
         {
             TryAddOptionalResource(
                 builder,
                 assembly,
-                $"CipherBank_app.Config.appsettings.{environment}.json");
+                $"CipherBank_app.Config.appsettings.{environment}.jsonc");
         }
 
         if (windowsOverlay)

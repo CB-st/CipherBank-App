@@ -14,11 +14,11 @@ namespace CipherBank_app.E2ETests.PageObjects;
 public class LoginPage : BasePage
 {
     // Element locators
-    private static readonly By UsernameField = By.Id("UsernameEntry");
-    private static readonly By PasswordField = By.Id("PasswordEntry");
-    private static readonly By LoginButton = By.Id("LoginButton");
-    private static readonly By ErrorMessage = By.Id("ErrorLabel");
-    private static readonly By BiometricButton = By.Id("BiometricLoginButton");
+    private static readonly By _usernameField = By.Id("UsernameEntry");
+    private static readonly By _passwordField = By.Id("PasswordEntry");
+    private static readonly By _loginButton = By.Id("LoginButton");
+    private static readonly By _errorMessage = By.Id("ErrorLabel");
+    private static readonly By _biometricButton = By.Id("BiometricLoginButton");
 
     public LoginPage(AppiumDriver driver)
         : base(driver)
@@ -30,7 +30,7 @@ public class LoginPage : BasePage
     /// </summary>
     public LoginPage EnterUsername(string username)
     {
-        EnterText(UsernameField, username);
+        EnterText(_usernameField, username);
         return this;
     }
 
@@ -39,7 +39,7 @@ public class LoginPage : BasePage
     /// </summary>
     public LoginPage EnterPassword(string password)
     {
-        EnterText(PasswordField, password);
+        EnterText(_passwordField, password);
         return this;
     }
 
@@ -48,7 +48,7 @@ public class LoginPage : BasePage
     /// </summary>
     public void ClickLogin()
     {
-        ClickElement(LoginButton);
+        ClickElement(_loginButton);
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public class LoginPage : BasePage
     /// </summary>
     public bool IsErrorDisplayed()
     {
-        return IsElementDisplayed(ErrorMessage);
+        return IsElementDisplayed(_errorMessage);
     }
 
     /// <summary>
@@ -76,7 +76,7 @@ public class LoginPage : BasePage
     /// </summary>
     public string GetErrorMessage()
     {
-        return GetElementText(ErrorMessage);
+        return GetElementText(_errorMessage);
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public class LoginPage : BasePage
     /// </summary>
     public bool IsBiometricLoginAvailable()
     {
-        return IsElementDisplayed(BiometricButton);
+        return IsElementDisplayed(_biometricButton);
     }
 
     /// <summary>
@@ -92,12 +92,12 @@ public class LoginPage : BasePage
     /// </summary>
     public DashboardPage LoginWithBiometric()
     {
-        ClickElement(BiometricButton);
+        ClickElement(_biometricButton);
         return new DashboardPage(Driver);
     }
 
     public override void WaitForPageLoad()
     {
-        WaitForElement(LoginButton);
+        WaitForElement(_loginButton);
     }
 }

@@ -27,7 +27,7 @@ public class AuthServiceTests
             .ReturnsAsync(expectedToken);
 
         // Act
-        var result = await mockAuthService.Object.LoginAsync("testuser", "password");
+        AuthToken result = await mockAuthService.Object.LoginAsync("testuser", "password");
 
         // Assert
         result.Should().NotBeNull();
@@ -46,7 +46,7 @@ public class AuthServiceTests
             .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));
 
         // Act
-        var act = async () => await mockAuthService.Object.LoginAsync("invalid", "wrong");
+        Func<Task<AuthToken>> act = async () => await mockAuthService.Object.LoginAsync("invalid", "wrong");
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
@@ -68,7 +68,7 @@ public class AuthServiceTests
             .ReturnsAsync(newToken);
 
         // Act
-        var result = await mockAuthService.Object.RefreshAsync("old_refresh_token");
+        AuthToken result = await mockAuthService.Object.RefreshAsync("old_refresh_token");
 
         // Assert
         result.AccessToken.Should().Be("new_access_token");
@@ -100,7 +100,7 @@ public class AuthServiceTests
 
         // Act
         await mockAuthService.Object.LogoutAsync();
-        var storedToken = await mockAuthService.Object.GetStoredTokenAsync();
+        AuthToken? storedToken = await mockAuthService.Object.GetStoredTokenAsync();
 
         // Assert
         storedToken.Should().BeNull();

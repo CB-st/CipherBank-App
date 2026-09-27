@@ -9,7 +9,8 @@ namespace CipherBank_app.Persist;
 /// <summary>ACH recipient field validation (Cora RecipientPickerModal parity).</summary>
 public static class AchRecipientValidation
 {
-    private const string MaskPrefix = "•••• ";
+    private const string MaskGlyphs = "••••";
+    private const string MaskPrefix = MaskGlyphs + " ";
 
     public static int RoutingNumberDigitCount { get; } = 9;
 
@@ -99,7 +100,7 @@ public static class AchRecipientValidation
     public static string MaskAccount(string account)
     {
         string trimmed = account.Trim();
-        return MaskTrailing(trimmed, MaskPrefix + trimmed);
+        return MaskTrailing(trimmed, " " + trimmed);
     }
 
     /// <summary>
@@ -108,7 +109,7 @@ public static class AchRecipientValidation
     /// Use: High (recipient lists). Scope: Persist UI mapping.
     /// </summary>
     public static string MaskRouting(string routing)
-        => MaskTrailing(DigitsOnly(routing), "••••");
+        => MaskTrailing(DigitsOnly(routing), string.Empty);
 
     /// <summary>
     /// Requires a non-blank string; returns <paramref name="message"/> when empty.
@@ -179,13 +180,13 @@ public static class AchRecipientValidation
 
     /// <summary>
     /// Shared trailing-digit mask core: shows the last <see cref="MaskVisibleTrailingDigits"/>
-    /// characters of <paramref name="source"/>, or <paramref name="shortResult"/> when the
+    /// characters of <paramref name="source"/>, or appends <paramref name="shortSuffix"/> when the
     /// source is shorter. Callers own preprocessing (trim vs digits-only) and the short-input
     /// policy; those are named invariants, not incidental differences.
     /// Use: High (MaskAccount/MaskRouting). Scope: this helper.
     /// </summary>
-    private static string MaskTrailing(string source, string shortResult)
+    private static string MaskTrailing(string source, string shortSuffix)
         => source.Length < MaskVisibleTrailingDigits
-            ? shortResult
+            ? MaskGlyphs + shortSuffix
             : MaskPrefix + source[^MaskVisibleTrailingDigits..];
 }

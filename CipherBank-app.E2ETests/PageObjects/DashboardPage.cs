@@ -14,14 +14,14 @@ namespace CipherBank_app.E2ETests.PageObjects;
 public class DashboardPage : BasePage
 {
     // Element locators
-    private static readonly By WelcomeLabel = By.Id("WelcomeLabel");
-    private static readonly By TotalBalanceLabel = By.Id("TotalBalanceLabel");
-    private static readonly By WalletButton = By.Id("WalletButton");
-    private static readonly By PurchaseButton = By.Id("PurchaseButton");
-    private static readonly By SettingsButton = By.Id("SettingsButton");
-    private static readonly By LogoutButton = By.Id("LogoutButton");
-    private static readonly By RefreshButton = By.Id("RefreshButton");
-    private static readonly By TransactionsList = By.Id("RecentTransactionsList");
+    private static readonly By _welcomeLabel = By.Id("WelcomeLabel");
+    private static readonly By _totalBalanceLabel = By.Id("TotalBalanceLabel");
+    private static readonly By _walletButton = By.Id("WalletButton");
+    private static readonly By _purchaseButton = By.Id("PurchaseButton");
+    private static readonly By _settingsButton = By.Id("SettingsButton");
+    private static readonly By _logoutButton = By.Id("LogoutButton");
+    private static readonly By _refreshButton = By.Id("RefreshButton");
+    private static readonly By _transactionsList = By.Id("RecentTransactionsList");
 
     public DashboardPage(AppiumDriver driver)
         : base(driver)
@@ -33,7 +33,7 @@ public class DashboardPage : BasePage
     /// </summary>
     public string GetWelcomeMessage()
     {
-        return GetElementText(WelcomeLabel);
+        return GetElementText(_welcomeLabel);
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ public class DashboardPage : BasePage
     /// </summary>
     public string GetTotalBalance()
     {
-        return GetElementText(TotalBalanceLabel);
+        return GetElementText(_totalBalanceLabel);
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ public class DashboardPage : BasePage
     /// </summary>
     public WalletPage GoToWallet()
     {
-        ClickElement(WalletButton);
+        ClickElement(_walletButton);
         return new WalletPage(Driver);
     }
 
@@ -58,7 +58,7 @@ public class DashboardPage : BasePage
     /// </summary>
     public PurchasePage GoToPurchase()
     {
-        ClickElement(PurchaseButton);
+        ClickElement(_purchaseButton);
         return new PurchasePage(Driver);
     }
 
@@ -67,7 +67,7 @@ public class DashboardPage : BasePage
     /// </summary>
     public void GoToSettings()
     {
-        ClickElement(SettingsButton);
+        ClickElement(_settingsButton);
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ public class DashboardPage : BasePage
     /// </summary>
     public LoginPage Logout()
     {
-        ClickElement(LogoutButton);
+        ClickElement(_logoutButton);
         return new LoginPage(Driver);
     }
 
@@ -84,7 +84,7 @@ public class DashboardPage : BasePage
     /// </summary>
     public DashboardPage Refresh()
     {
-        ClickElement(RefreshButton);
+        ClickElement(_refreshButton);
         return this;
     }
 
@@ -93,7 +93,7 @@ public class DashboardPage : BasePage
     /// </summary>
     public bool IsLoggedIn()
     {
-        return IsElementDisplayed(WelcomeLabel) && IsElementDisplayed(TotalBalanceLabel);
+        return IsElementDisplayed(_welcomeLabel) && IsElementDisplayed(_totalBalanceLabel);
     }
 
     /// <summary>
@@ -101,12 +101,12 @@ public class DashboardPage : BasePage
     /// </summary>
     public bool HasRecentTransactions()
     {
-        return IsElementDisplayed(TransactionsList);
+        return IsElementDisplayed(_transactionsList);
     }
 
     public override void WaitForPageLoad()
     {
-        WaitForElement(WelcomeLabel);
-        WaitForElement(TotalBalanceLabel);
+        WaitForElement(_welcomeLabel);
+        WaitForElement(_totalBalanceLabel);
     }
 }

@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Globalization;
+using System.Reflection;
 using CipherBank_app.Configuration;
 using CipherBank_app.Extensions;
 using CipherBank_app.Services;
@@ -10,7 +11,9 @@ using CipherBank_app.Services.Mocks;
 using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Core;
 using Serilog.Events;
 
 namespace CipherBank_app;
@@ -22,16 +25,14 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
-#if DEBUG
-        const bool IsDevelopment = true;
-#else
-        const bool IsDevelopment = false;
-#endif
-
         // Runtime platform check selects the appsettings.Windows.json overlay; no preprocessor fork.
+        string configuration = typeof(MauiProgram).Assembly
+            .GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration
+            ?? "Release";
+        bool isDevelopment = string.Equals(configuration, "Debug", StringComparison.OrdinalIgnoreCase);
         MauiAppBuilder builder = MauiApp.CreateBuilder();
         builder.Configuration.AddConfiguration(CipherBankDefaultsConfiguration.BuildForHost(
-            IsDevelopment,
+            isDevelopment,
             OperatingSystem.IsWindows()));
 
         return builder
@@ -47,12 +48,7 @@ public static class MauiProgram
                 fonts.AddFont("Inter-Medium.ttf", "InterMedium");
                 fonts.AddFont("Inter-SemiBold.ttf", "InterSemiBold");
             })
-            .ConfigureMauiHandlers(handlers =>
-            {
-#if IOS || MACCATALYST
-                handlers.AddHandler<Controls.BlurBackdropView, Handlers.BlurBackdropViewHandler>();
-#endif
-            })
+            .ConfigureMauiHandlers(handlers => handlers.AddPlatformHandlers())
             .ConfigureLogging()
             .RegisterServices()
             .RegisterViewModels()
@@ -65,39 +61,35 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder ConfigureLogging(this MauiAppBuilder mauiAppBuilder)
     {
-#if DEBUG
-        var minimumLevel = LogEventLevel.Debug;
-        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
-#else
-        var minimumLevel = LogEventLevel.Information;
-        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
-#endif
+        HostBehaviorOptions behavior = mauiAppBuilder.Configuration
+            .GetRequiredSection(nameof(HostBehaviorOptions))
+            .Get<HostBehaviorOptions>()
+            ?? throw new InvalidOperationException("Host behavior configuration is missing.");
+        if (!behavior.IsValid()
+            || !Enum.TryParse(behavior.MinimumLogLevel, ignoreCase: false, out LogEventLevel minimumLevel))
+        {
+            throw new InvalidOperationException("Host behavior configuration is invalid.");
+        }
 
-        var config = new LoggerConfiguration()
+        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
+
+        LoggerConfiguration config = new LoggerConfiguration()
             .MinimumLevel.Is(minimumLevel)
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .Enrich.FromLogContext();
 
-#if DEBUG
-        config = config.WriteTo.File(
-            logPath,
-            rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: 7,
-            formatProvider: CultureInfo.InvariantCulture,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-#else
-        // In Release: file sink enabled for diagnostics; consider disabling for privacy
-        config = config.WriteTo.File(
-            logPath,
-            rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: 3,
-            restrictedToMinimumLevel: LogEventLevel.Warning,
-            formatProvider: CultureInfo.InvariantCulture,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-#endif
+        if (behavior.EnableFileLogging)
+        {
+            config = config.WriteTo.File(
+                logPath,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 7,
+                formatProvider: CultureInfo.InvariantCulture,
+                outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+        }
 
-        var logger = config.CreateLogger();
+        Logger logger = config.CreateLogger();
 
         mauiAppBuilder.Services.AddSerilog(logger);
 
@@ -113,6 +105,17 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder RegisterServices(this MauiAppBuilder mauiAppBuilder)
     {
+        mauiAppBuilder.Services.AddPlatformFeatures();
+        HostBehaviorOptions behavior = mauiAppBuilder.Configuration
+            .GetRequiredSection(nameof(HostBehaviorOptions))
+            .Get<HostBehaviorOptions>()
+            ?? throw new InvalidOperationException("Host behavior configuration is missing.");
+        mauiAppBuilder.Services.AddRequiredOptions(
+                mauiAppBuilder.Configuration,
+                new HostBehaviorOptions())
+            .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
+            .ValidateOnStart();
+        mauiAppBuilder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
         mauiAppBuilder.Services.AddPersistenceFeature(
             mauiAppBuilder.Configuration,
             new DirectoryInfo(FileSystem.Current.AppDataDirectory));
@@ -121,7 +124,10 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
 
         // Rate Limiter (singleton)
-        mauiAppBuilder.Services.AddSingleton<RateLimiter>();
+        mauiAppBuilder.Services.AddSingleton<RateLimiter>(static sp =>
+            new RateLimiter(
+                sp.GetService<ILogger<RateLimiter>>(),
+                sp.GetRequiredService<TimeProvider>()));
 
         // Navigation and dialogs
         mauiAppBuilder.Services.AddSingleton<INavigationService, ShellNavigationService>();
@@ -138,97 +144,69 @@ public static class MauiProgram
 
         // Register mock services (always available for testing/development)
         mauiAppBuilder.Services.AddSingleton<MockAuthService>();
-        mauiAppBuilder.Services.AddSingleton<MockCryptoAPIService>();
+        mauiAppBuilder.Services.AddSingleton<MockCryptoApiService>();
         mauiAppBuilder.Services.AddSingleton<MockWalletService>();
         mauiAppBuilder.Services.AddSingleton<MockTransactionService>();
 
         // Auth Service - Factory pattern for mock/real switching
         mauiAppBuilder.Services.AddCipherBankHttpClient<AuthService>();
 
-#if DEBUG
         mauiAppBuilder.Services.AddTransient<IAuthService>(sp =>
         {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
+            if (behavior.UseMockServices)
             {
                 Log.Debug("Using MockAuthService (based on settings)");
                 return sp.GetRequiredService<MockAuthService>();
             }
-            else
-            {
-                Log.Debug("Using AuthService (real API)");
-                return sp.GetRequiredService<AuthService>();
-            }
+
+            Log.Debug("Using AuthService (real API)");
+            return sp.GetRequiredService<AuthService>();
         });
-#else
-        mauiAppBuilder.Services.AddTransient<IAuthService>(sp => sp.GetRequiredService<AuthService>());
-#endif
 
         // Crypto API Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<CryptoAPIService>();
+        mauiAppBuilder.Services.AddCipherBankHttpClient<CryptoApiService>();
 
-#if DEBUG
         mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp =>
         {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
+            if (behavior.UseMockServices)
             {
-                Log.Debug("Using MockCryptoAPIService (based on settings)");
-                return sp.GetRequiredService<MockCryptoAPIService>();
+                Log.Debug("Using MockCryptoApiService (based on settings)");
+                return sp.GetRequiredService<MockCryptoApiService>();
             }
-            else
-            {
-                Log.Debug("Using CryptoAPIService (real API)");
-                return sp.GetRequiredService<CryptoAPIService>();
-            }
+
+            Log.Debug("Using CryptoApiService (real API)");
+            return sp.GetRequiredService<CryptoApiService>();
         });
-#else
-        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp => sp.GetRequiredService<CryptoAPIService>());
-#endif
 
         // Wallet Service
         mauiAppBuilder.Services.AddCipherBankHttpClient<WalletService>();
 
-#if DEBUG
         mauiAppBuilder.Services.AddTransient<IWalletService>(sp =>
         {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
+            if (behavior.UseMockServices)
             {
                 Log.Debug("Using MockWalletService (based on settings)");
                 return sp.GetRequiredService<MockWalletService>();
             }
-            else
-            {
-                Log.Debug("Using WalletService (real API)");
-                return sp.GetRequiredService<WalletService>();
-            }
+
+            Log.Debug("Using WalletService (real API)");
+            return sp.GetRequiredService<WalletService>();
         });
-#else
-        mauiAppBuilder.Services.AddTransient<IWalletService>(sp => sp.GetRequiredService<WalletService>());
-#endif
 
         // Transaction Service
         mauiAppBuilder.Services.AddCipherBankHttpClient<TransactionService>();
 
-#if DEBUG
         mauiAppBuilder.Services.AddTransient<ITransactionService>(sp =>
         {
-            var settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
+            if (behavior.UseMockServices)
             {
                 Log.Debug("Using MockTransactionService (based on settings)");
                 return sp.GetRequiredService<MockTransactionService>();
             }
-            else
-            {
-                Log.Debug("Using TransactionService (real API)");
-                return sp.GetRequiredService<TransactionService>();
-            }
+
+            Log.Debug("Using TransactionService (real API)");
+            return sp.GetRequiredService<TransactionService>();
         });
-#else
-        mauiAppBuilder.Services.AddTransient<ITransactionService>(sp => sp.GetRequiredService<TransactionService>());
-#endif
 
         Log.Information("Services registered successfully");
         return mauiAppBuilder;
