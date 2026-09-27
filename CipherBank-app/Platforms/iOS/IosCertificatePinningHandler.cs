@@ -31,26 +31,20 @@ public class IosCertificatePinningHandler : NSUrlSessionHandler
             var uri = new Uri(url);
             var hostname = uri.Host;
 
-            // Check if this hostname requires pinning
-            if (!CertificatePinPolicy.RequiresPinning(hostname))
-            {
-                // Not a pinned host, allow standard validation
-                return true;
-            }
-
-            // Validate certificate chain using SecTrust
             var policy = SecPolicy.CreateSslPolicy(true, hostname);
             trust.SetPolicy(policy);
 
-            var result = trust.Evaluate(out var error);
-
-            if (!result)
+            if (!trust.Evaluate(out var error))
             {
                 Serilog.Log.Debug($"[Certificate Validation] Failed for {hostname}: {error?.LocalizedDescription}");
                 return false;
             }
 
-            // Check certificate pinning
+            if (!CertificatePinPolicy.RequiresPinning(hostname))
+            {
+                return true;
+            }
+
             return ValidateCertificatePinning(trust, hostname);
         }
         catch (Exception ex)
