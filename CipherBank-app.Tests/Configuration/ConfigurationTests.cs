@@ -21,7 +21,7 @@ public sealed class ConfigurationTests
             .GetSection(CryptographyOptions.SectionName)
             .Get<CryptographyOptions>();
         SyncSchedulerOptions? scheduler = configuration
-            .GetSection(SyncSchedulerOptions.SectionName)
+            .GetSection(nameof(SyncSchedulerOptions))
             .Get<SyncSchedulerOptions>();
 
         cryptography.Should().NotBeNull();
@@ -48,15 +48,15 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]
-    public void Build_Development_OverridesDatabaseName()
+    public void Build_Development_KeepsDatabaseNameWhenOverlayOmitsIt()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Development");
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.dev.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]
@@ -64,15 +64,15 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Production");
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]
-    public void Build_WindowsOverlay_AppliesWindowsResource()
+    public void Build_WindowsOverlay_KeepsDatabaseNameWhenOverlayOmitsIt()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build(windowsOverlay: true);
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.win.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]

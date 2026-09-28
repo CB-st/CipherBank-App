@@ -26,7 +26,7 @@ internal static class CipherBankCoreOptionsRegistration
                 ConfigurationValidationMessages.CryptographyUnsafe)
             .ValidateOnStart();
         services.AddOptions<SyncSchedulerOptions>()
-            .Bind(configuration.GetSection(SyncSchedulerOptions.SectionName))
+            .Bind(configuration.GetSection(nameof(SyncSchedulerOptions)))
             .Validate(
                 static options => options.MaxConcurrency == 0
                     || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
@@ -34,7 +34,7 @@ internal static class CipherBankCoreOptionsRegistration
                 ConfigurationValidationMessages.SyncConcurrencyOutOfRange)
             .ValidateOnStart();
         services.AddOptions<PersistenceOptions>()
-            .Bind(configuration.GetSection(PersistenceOptions.SectionName))
+            .Bind(configuration.GetSection(nameof(PersistenceOptions)))
             .Validate(
                 static options => !string.IsNullOrWhiteSpace(options.DatabaseName),
                 ConfigurationValidationMessages.DatabaseNameRequired)
