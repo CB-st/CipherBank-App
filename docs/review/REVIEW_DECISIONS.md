@@ -37,16 +37,18 @@ the durable rationale so future rounds do not relitigate settled questions.
   subclass caps only synchronous segments and cannot enforce a whole-job
   concurrency ceiling, named dedupe, rank ordering among waiting jobs, or a
   test drain. The docs example throttles synchronous work — a different
-  problem. `AGENTS.md` codifies the composed shape (injected `TaskScheduler` +
-  `PriorityQueue`).
+  problem. `AGENTS.md` codifies `SingleFlightJobFactory` plus
+  `PrioritizedJobDispatcher` instead.
 - **Evidence:**
   [TaskScheduler class + LimitedConcurrencyLevelTaskScheduler example](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler)
   (the example's queue holds `Task` bodies and counts running delegates, not
   logical async operations),
   [TaskScheduler.QueueTask](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.taskscheduler.queuetask).
-- **Forward guidance:** keep the scheduler a deduping task factory over the
-  injected platform `TaskScheduler`; revisit only with an argument that defeats
-  the async-slot analysis.
+- **Forward guidance:** keep `SyncJobScheduler` a deduping task factory over
+  `SingleFlightJobFactory` and `PrioritizedJobDispatcher`. The dispatcher uses
+  a prioritized channel and fixed consumers that each await the whole
+  operation. Revisit inheritance only with an argument that defeats the
+  async-slot analysis.
 
 ## 3. `PersistenceOptions` bounds: `static readonly` instead of `const`
 

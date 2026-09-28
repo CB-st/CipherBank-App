@@ -19,7 +19,7 @@ public sealed class LocalDbInitializeTests
     public async Task InitializeAsync_CreatesEmptyModelTables()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-init-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
         db.Path.Should().Be(Path.GetFullPath(path));
 
@@ -43,7 +43,7 @@ public sealed class LocalDbInitializeTests
     public async Task DisposeAsync_DuringInitialize_DoesNotFaultActiveInitialization()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-init-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
 
         Task initialize = db.InitializeAsync();
         await db.DisposeAsync();

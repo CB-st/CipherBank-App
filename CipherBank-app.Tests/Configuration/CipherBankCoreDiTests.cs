@@ -33,9 +33,9 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<ICryptoBox>().Should().BeOfType<AesGcmCryptoBox>();
         provider.GetRequiredService<ICoraLineProvider>().Should().BeOfType<CoraLineProvider>();
         provider.GetRequiredService<IEmvExchangeSimulator>().Should().BeOfType<EmvExchangeSimulator>();
-        LocalDb localDb = provider.GetRequiredService<ILocalDb>().Should().BeOfType<LocalDb>().Subject;
+        FileInfo databaseFile = provider.GetRequiredService<FileInfo>();
         PersistenceOptions persistence = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
-        Path.GetFileName(localDb.Path).Should().Be(persistence.DatabaseName);
+        databaseFile.Name.Should().Be(persistence.DatabaseName);
         persistence.DefaultRecipients.Select(row => row.Id).Should().Equal(
             "seed:rent-4th-st",
             "seed:utilities-co");
@@ -44,7 +44,11 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<IRecipientSeedInitializer>().Should().BeOfType<RecipientSeedInitializer>();
         provider.GetRequiredService<IMarketRepository>().Should().BeOfType<MarketRepository>();
         provider.GetRequiredService<IPrefsStore>().Should().BeOfType<PrefsStore>();
-        provider.GetRequiredService<IRatesCache>().Should().BeOfType<RatesCache>();
+        provider.GetRequiredService<ILocalDatabaseInitializer>().Should().BeOfType<LocalDatabaseInitializer>();
+        provider.GetRequiredService<AppStartupCoordinator>().Should().BeOfType<AppStartupCoordinator>();
+        provider.GetRequiredService<IRateSnapshotStore>().Should().BeOfType<SqliteRateSnapshotStore>();
+        provider.GetRequiredService<ISingleFlightJobFactory>().Should().BeOfType<SingleFlightJobFactory>();
+        provider.GetRequiredService<IPrioritizedJobDispatcher>().Should().BeOfType<PrioritizedJobDispatcher>();
         provider.GetRequiredService<ISyncJobScheduler>().Should().BeOfType<SyncJobScheduler>();
     }
 

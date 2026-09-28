@@ -45,6 +45,12 @@ internal static class CipherBankCoreOptionsRegistration
                 static options => options.AreDefaultRecipientsValid(),
                 ConfigurationValidationMessages.DefaultRecipientsInvalid)
             .ValidateOnStart();
+        services.AddOptions<UserPreferenceDefaultsOptions>()
+            .Bind(configuration.GetSection(nameof(UserPreferenceDefaultsOptions)))
+            .Validate(
+                static options => options.IsValid(),
+                "User preference defaults are invalid.")
+            .ValidateOnStart();
         services.AddOptions<CoraOptions>()
             .Bind(configuration.GetSection(CoraOptions.SectionName));
         services.AddOptions<CarouselLayoutConfig>()

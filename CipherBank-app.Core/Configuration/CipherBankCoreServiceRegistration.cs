@@ -6,6 +6,8 @@ using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Pos;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -26,22 +28,30 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ICoraLineProvider, CoraLineProvider>();
         services.AddSingleton<IEmvExchangeSimulator, EmvExchangeSimulator>();
-        services.AddSingleton<ISyncJobScheduler>(static provider => new SyncJobScheduler(
-            TaskScheduler.Default,
-            provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value));
-        services.AddSingleton<ILocalDb>(provider =>
+        services.AddSingleton(provider =>
         {
             PersistenceOptions options = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
-            return new LocalDb(new FileInfo(Path.Combine(databaseDirectory, options.DatabaseName)));
+            return new FileInfo(Path.Combine(databaseDirectory, options.DatabaseName));
         });
+        services.AddDbContextFactory<CipherBankDbContext>((provider, options) =>
+        {
+            string connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = provider.GetRequiredService<FileInfo>().FullName,
+            }.ToString();
+            options.UseSqlite(connectionString);
+        });
+        services.AddSingleton<ILocalDatabaseInitializer, LocalDatabaseInitializer>();
+        services.AddSingleton<IRecipientSeedInitializer, RecipientSeedInitializer>();
+        services.AddSingleton<AppStartupCoordinator>();
         services.AddSingleton<IMarketRepository, MarketRepository>();
         services.AddSingleton<IPrefsStore, PrefsStore>();
-        services.AddSingleton<IRatesCache, RatesCache>();
+        services.AddSingleton<IRateSnapshotStore, SqliteRateSnapshotStore>();
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
-        services.AddSingleton<IRecipientSeedInitializer>(provider => new RecipientSeedInitializer(
-            provider.GetRequiredService<ILocalDb>(),
-            provider.GetRequiredService<IOptions<PersistenceOptions>>().Value,
-            provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IWalletRepository, WalletRepository>();
+        services.AddSingleton<ISingleFlightJobFactory, SingleFlightJobFactory>();
+        services.AddSingleton<IPrioritizedJobDispatcher, PrioritizedJobDispatcher>();
+        services.AddSingleton<ISyncJobScheduler, SyncJobScheduler>();
+        services.AddSingleton<MarketRateHydrator>();
     }
 }
