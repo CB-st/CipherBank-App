@@ -86,6 +86,30 @@ Route constants are defined in `Constants/Routes.cs`:
 | Routes.PurchaseWithSymbol(symbol) | `//PurchasePage?symbol=BTC` | PurchasePage with pre-selected crypto |
 | Routes.Settings | `//SettingsPage` | SettingsPage |
 
+## Persistence Work Scheduling
+
+`SyncJobScheduler` is a façade over two singleton policies.
+`SingleFlightJobFactory` coalesces equivalent typed `SyncJobKey` values while
+an operation is active. `PrioritizedJobDispatcher` owns the .NET 10 prioritized
+channel, submission sequence, fixed asynchronous consumers, cancellation,
+drain, and disposal. Each consumer awaits an entire operation before reading
+another, enforcing whole-operation concurrency across `await` boundaries.
+
+Job kind is a closed application enum and determines queue priority. Dynamic
+asset scope uses `AssetSymbol`, an immutable open-set value that normalizes
+ticker text. JSON, navigation, HTTP, preferences, and SQLite continue using
+plain strings at their boundaries; listed assets are deliberately not an enum.
+OS `ThreadPriority` and `TaskScheduler` govern different scheduling concerns.
+
+## Local Persistence Lifecycle
+
+The startup gate awaits `LocalDatabaseInitializer` and recipient seeding before
+exposing `AppShell`. The initializer owns prototype cleanup and EF migration;
+routine repositories receive `IDbContextFactory<CipherBankDbContext>` and use
+one short-lived context per operation. `SqliteRateSnapshotStore` keeps one
+durable latest row per symbol for offline fallback, while configured preference
+defaults fill only fields absent from the user's stored JSON payload.
+
 ## Security
 
 ### Certificate Pinning

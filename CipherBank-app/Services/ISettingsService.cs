@@ -20,12 +20,12 @@ public interface ISettingsService
     string ThemeMode { get; set; }
 
     /// <summary>
-    /// Gets or sets whether push notifications are enabled.
+    /// Gets or sets a value indicating whether push notifications are enabled.
     /// </summary>
     bool NotificationsEnabled { get; set; }
 
     /// <summary>
-    /// Gets or sets whether biometric authentication is enabled.
+    /// Gets or sets a value indicating whether biometric authentication is enabled.
     /// </summary>
     bool BiometricAuthEnabled { get; set; }
 
@@ -44,17 +44,10 @@ public interface ISettingsService
     /// </summary>
     string Environment { get; set; }
 
-#if DEBUG
     /// <summary>
-    /// Gets or sets whether developer mode is enabled.
+    /// Gets or sets a value indicating whether developer mode is enabled.
     /// </summary>
     bool DeveloperModeEnabled { get; set; }
-
-    /// <summary>
-    /// Gets or sets whether to use mock services instead of real API.
-    /// </summary>
-    bool UseMockServices { get; set; }
-#endif
 
     /// <summary>
     /// Resets all settings to their default values.

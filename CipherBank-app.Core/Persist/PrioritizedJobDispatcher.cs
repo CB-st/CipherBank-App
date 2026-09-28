@@ -118,7 +118,7 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
 
     private async Task ProcessQueueAsync()
     {
-        await foreach (QueuedWork job in _channel.Reader.ReadAllAsync(CancellationToken.None).ConfigureAwait(false))
+        await foreach (QueuedWork job in _channel.Reader.ReadAllAsync().ConfigureAwait(false))
         {
             await ExecuteAsync(job).ConfigureAwait(false);
         }

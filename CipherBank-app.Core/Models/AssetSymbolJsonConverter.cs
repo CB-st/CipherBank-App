@@ -32,7 +32,7 @@ public sealed class AssetSymbolJsonConverter : JsonConverter<AssetSymbol>
             throw new JsonException("Asset symbol must be a nonblank string.");
         }
 
-        return symbol;
+        return symbol!;
     }
 
     /// <inheritdoc />

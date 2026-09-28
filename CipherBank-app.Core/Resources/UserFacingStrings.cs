@@ -10,11 +10,11 @@ namespace CipherBank_app.Resources;
 /// <summary>
 /// Strongly-typed access to Core user-facing, localizable product copy (S4055
 /// ResourceManager). Owns user-facing strings only: startup validation diagnostics are
-/// configuration-owned and live in <c>ConfigurationValidationMessages</c>.
+/// configuration-owned and live in <c>OptionsValidationMessages</c>.
 /// </summary>
 public static class UserFacingStrings
 {
-    private static readonly ResourceManager Manager =
+    private static readonly ResourceManager _manager =
         new(typeof(UserFacingStrings).FullName!, typeof(UserFacingStrings).Assembly);
 
     public static string AchEnterPayeeName => Get(nameof(AchEnterPayeeName));
@@ -49,7 +49,7 @@ public static class UserFacingStrings
         => string.Format(CultureInfo.CurrentCulture, Get(nameof(PinChangeTooShort)), minLength);
 
     private static string Get(string name)
-        => Manager.GetString(name, CultureInfo.CurrentUICulture)
-           ?? Manager.GetString(name, CultureInfo.InvariantCulture)
+        => _manager.GetString(name, CultureInfo.CurrentUICulture)
+           ?? _manager.GetString(name, CultureInfo.InvariantCulture)
            ?? name;
 }

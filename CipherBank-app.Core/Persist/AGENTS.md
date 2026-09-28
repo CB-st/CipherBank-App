@@ -11,10 +11,9 @@ override CI Sonar: new issues on Persist code still fail the gate.
 - Schema changes require a new EF migration under `Persist/Migrations/`, a
   clean-database test, and an upgrade test from the previous migration.
   Generate with `dotnet ef migrations add` using Tests as the startup project
-  so desktop SQLite native libraries load. Designer and snapshot artifacts are
-  generator-owned. The `Up`/`Down` class may receive a file header and trailing
-  commas so this slice's StyleCop build stays clean; those edits must not
-  change migration operations. One migration per PR.
+  so desktop SQLite native libraries load. All migration, designer, and
+  snapshot artifacts are generator-owned: never hand-edit them. One migration
+  per PR; migration-integrity CI regenerates and compares the artifact.
 - Prototype SQLite files without `__EFMigrationsHistory` are disposable and
   deleted on initialize. Do not add compatibility SQL to preserve lab leftovers.
 - Database entities and mappings use the on-device table/column names.

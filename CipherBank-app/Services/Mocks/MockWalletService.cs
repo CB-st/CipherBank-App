@@ -2,12 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Models;
 using Microsoft.Extensions.Logging;
 
@@ -69,7 +64,7 @@ public sealed partial class MockWalletService : IWalletService
         LogInitialized(_logger, _wallets.Count);
     }
 
-    public async Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken)
     {
         LogGettingAllWallets(_logger);
         await SimulateNetworkDelayAsync(cancellationToken);
@@ -78,57 +73,55 @@ public sealed partial class MockWalletService : IWalletService
         return _wallets.ToList();
     }
 
-    public async Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         LogGettingWallet(_logger, id);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var wallet = _wallets.FirstOrDefault(w => w.Id == id);
+        Wallet? wallet = _wallets.FirstOrDefault(w => w.Id == id);
         if (wallet == null)
         {
             LogWalletNotFound(_logger, id);
             throw new KeyNotFoundException($"Wallet with ID '{id}' not found");
         }
 
-        LogReturnedWallet(_logger, wallet.Id, wallet.Balance, wallet.CryptoSymbol);
+        LogReturnedWallet(_logger, wallet.Id, wallet.Balance, wallet.CryptoSymbol.Value);
         return wallet;
     }
 
-    public async Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<decimal> GetWalletBalanceAsync(string id, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
         LogGettingBalance(_logger, id);
-        var wallet = await GetWalletAsync(id, cancellationToken);
+        Wallet wallet = await GetWalletAsync(id, cancellationToken);
 
-        LogWalletBalance(_logger, id, wallet.Balance, wallet.CryptoSymbol);
+        LogWalletBalance(_logger, id, wallet.Balance, wallet.CryptoSymbol.Value);
         return wallet.Balance;
     }
 
-    public async Task<Wallet> CreateWalletAsync(string cryptoSymbol, CancellationToken cancellationToken = default)
+    public async Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(cryptoSymbol);
+        ArgumentNullException.ThrowIfNull(cryptoSymbol);
 
-        LogCreatingWallet(_logger, cryptoSymbol);
+        LogCreatingWallet(_logger, cryptoSymbol.Value);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var normalizedSymbol = cryptoSymbol.ToUpperInvariant();
-
         // Check if wallet already exists
-        if (_wallets.Any(w => w.CryptoSymbol.Equals(normalizedSymbol, StringComparison.OrdinalIgnoreCase)))
+        if (_wallets.Any(w => w.CryptoSymbol == cryptoSymbol))
         {
-            LogWalletAlreadyExists(_logger, normalizedSymbol);
-            throw new InvalidOperationException($"Wallet for {normalizedSymbol} already exists");
+            LogWalletAlreadyExists(_logger, cryptoSymbol.Value);
+            throw new InvalidOperationException($"Wallet for {cryptoSymbol} already exists");
         }
 
-        var cryptoName = GetCryptoName(normalizedSymbol);
-        var address = GenerateAddress(normalizedSymbol);
+        var cryptoName = GetCryptoName(cryptoSymbol);
+        var address = GenerateAddress(cryptoSymbol);
 
         var wallet = new Wallet(
             GenerateWalletId(),
-            normalizedSymbol,
+            cryptoSymbol,
             cryptoName,
             0m,
             address,
@@ -136,7 +129,7 @@ public sealed partial class MockWalletService : IWalletService
 
         _wallets.Add(wallet);
 
-        LogWalletCreated(_logger, wallet.Id, wallet.CryptoSymbol, wallet.Address);
+        LogWalletCreated(_logger, wallet.Id, wallet.CryptoSymbol.Value, wallet.Address);
         return wallet;
     }
 
@@ -156,10 +149,9 @@ public sealed partial class MockWalletService : IWalletService
     /// <summary>
     /// Internal method to get a wallet by symbol for transaction processing.
     /// </summary>
-    internal Wallet? GetWalletBySymbol(string symbol)
+    internal Wallet? GetWalletBySymbol(AssetSymbol symbol)
     {
-        return _wallets.FirstOrDefault(w =>
-            w.CryptoSymbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+        return _wallets.FirstOrDefault(w => w.CryptoSymbol == symbol);
     }
 
     private static string GenerateWalletId() => Guid.NewGuid().ToString("N")[..16];
@@ -193,7 +185,7 @@ public sealed partial class MockWalletService : IWalletService
             .Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
     }
 
-    private static string GenerateAddress(string symbol) => symbol.ToUpperInvariant() switch
+    private static string GenerateAddress(AssetSymbol symbol) => symbol.Value switch
     {
         "BTC" => GenerateBitcoinAddress(),
         "ETH" => GenerateEthereumAddress(),
@@ -202,7 +194,7 @@ public sealed partial class MockWalletService : IWalletService
         _ => GenerateEthereumAddress(), // Default to ETH-style address
     };
 
-    private static string GetCryptoName(string symbol) => symbol.ToUpperInvariant() switch
+    private static string GetCryptoName(AssetSymbol symbol) => symbol.Value switch
     {
         "BTC" => "Bitcoin",
         "ETH" => "Ethereum",
@@ -214,7 +206,7 @@ public sealed partial class MockWalletService : IWalletService
         "DOGE" => "Dogecoin",
         "DOT" => "Polkadot",
         "LINK" => "Chainlink",
-        _ => symbol,
+        _ => symbol.Value,
     };
 
     private static async Task SimulateNetworkDelayAsync(CancellationToken cancellationToken)

@@ -81,7 +81,7 @@ public sealed class MarketRateHydrator
         foreach (AssetSymbol symbol in requestedSymbols)
         {
             PublicQuote quote = await _publicQuotes
-                .GetInverseQuoteAsync(symbol.Value, 1m, usd.Value, ct)
+                .GetInverseQuoteAsync(symbol, 1m, usd, ct)
                 .ConfigureAwait(false);
             refreshedRows.Add(RateRow.FromQuote(quote, nowMs));
         }

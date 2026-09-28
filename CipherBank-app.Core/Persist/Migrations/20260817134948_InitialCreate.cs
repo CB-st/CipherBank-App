@@ -1,8 +1,4 @@
-// <copyright file="20260817134948_InitialCreate.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
-// </copyright>
-
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -20,7 +16,7 @@ namespace CipherBank_app.Persist.Migrations
                 {
                     symbol = table.Column<string>(type: "TEXT", nullable: false),
                     t = table.Column<long>(type: "INTEGER", nullable: false),
-                    v = table.Column<double>(type: "REAL", nullable: false),
+                    v = table.Column<double>(type: "REAL", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -32,7 +28,7 @@ namespace CipherBank_app.Persist.Migrations
                 columns: table => new
                 {
                     key = table.Column<string>(type: "TEXT", nullable: false),
-                    value = table.Column<string>(type: "TEXT", nullable: false),
+                    value = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -46,7 +42,7 @@ namespace CipherBank_app.Persist.Migrations
                     symbol = table.Column<string>(type: "TEXT", nullable: false),
                     usd = table.Column<decimal>(type: "TEXT", nullable: false),
                     change24h = table.Column<decimal>(type: "TEXT", nullable: false),
-                    updated_at = table.Column<long>(type: "INTEGER", nullable: false),
+                    updated_at = table.Column<long>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -65,7 +61,7 @@ namespace CipherBank_app.Persist.Migrations
                     memo = table.Column<string>(type: "TEXT", nullable: true),
                     account_mask = table.Column<string>(type: "TEXT", nullable: true),
                     routing_mask = table.Column<string>(type: "TEXT", nullable: true),
-                    created_at = table.Column<string>(type: "TEXT", nullable: false),
+                    created_at = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -78,7 +74,7 @@ namespace CipherBank_app.Persist.Migrations
                 {
                     key = table.Column<string>(type: "TEXT", nullable: false),
                     value = table.Column<string>(type: "TEXT", nullable: false),
-                    updated_at = table.Column<long>(type: "INTEGER", nullable: false),
+                    updated_at = table.Column<long>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -96,7 +92,7 @@ namespace CipherBank_app.Persist.Migrations
                     path = table.Column<string>(type: "TEXT", nullable: true),
                     account_index = table.Column<int>(type: "INTEGER", nullable: false),
                     kind = table.Column<string>(type: "TEXT", nullable: false),
-                    created_at = table.Column<string>(type: "TEXT", nullable: false),
+                    created_at = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {

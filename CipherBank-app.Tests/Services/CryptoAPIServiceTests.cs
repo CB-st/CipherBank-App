@@ -10,25 +10,25 @@ using Xunit;
 
 namespace CipherBank_app.Tests.Services;
 
-public class CryptoAPIServiceTests
+public class CryptoApiServiceTests
 {
     [Fact]
     public async Task GetCryptoPricesAsync_ReturnsListOfCryptos()
     {
         // Arrange
-        Mock<ICryptoApiService> mockService = new Mock<ICryptoApiService>();
-        List<CryptoCurrency> expectedCryptos = new List<CryptoCurrency>
-        {
-            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, null),
-            new("ETH", "Ethereum", 3000m, 30m, 1.0m, 500000000m, 20000000m, null),
-        };
+        Mock<ICryptoApiService> mockService = new() { CallBase = true };
+        List<CryptoCurrency> expectedCryptos =
+        [
+            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, new Uri("https://example.com/btc.png")),
+            new("ETH", "Ethereum", 3000m, 30m, 1.0m, 500000000m, 20000000m, new Uri("https://example.com/eth.png"))
+        ];
 
         mockService
             .Setup(x => x.GetCryptoPricesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedCryptos);
 
         // Act
-        List<CryptoCurrency> result = await mockService.Object.GetCryptoPricesAsync(default);
+        List<CryptoCurrency> result = await mockService.Object.GetCryptoPricesAsync();
 
         // Assert
         result.Should().HaveCount(2);
@@ -40,8 +40,8 @@ public class CryptoAPIServiceTests
     public async Task GetCryptoPriceAsync_WithValidSymbol_ReturnsCrypto()
     {
         // Arrange
-        Mock<ICryptoApiService> mockService = new Mock<ICryptoApiService>();
-        CryptoCurrency expectedCrypto = new CryptoCurrency(
+        Mock<ICryptoApiService> mockService = new() { CallBase = true };
+        CryptoCurrency expectedCrypto = new(
             "BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, new Uri("https://example.com/btc.png"));
 
         mockService
@@ -49,10 +49,10 @@ public class CryptoAPIServiceTests
             .ReturnsAsync(expectedCrypto);
 
         // Act
-        CryptoCurrency result = await mockService.Object.GetCryptoPriceAsync("BTC", default);
+        CryptoCurrency result = await mockService.Object.GetCryptoPriceAsync("BTC");
 
         // Assert
-        result.Symbol.Should().Be("BTC");
+        result.Symbol.Value.Should().Be("BTC");
         result.Name.Should().Be("Bitcoin");
         result.CurrentPrice.Should().Be(50000m);
     }
@@ -61,13 +61,13 @@ public class CryptoAPIServiceTests
     public async Task GetCryptoPriceAsync_WithInvalidSymbol_ThrowsKeyNotFoundException()
     {
         // Arrange
-        Mock<ICryptoApiService> mockService = new Mock<ICryptoApiService>();
+        Mock<ICryptoApiService> mockService = new() { CallBase = true };
         mockService
             .Setup(x => x.GetCryptoPriceAsync("INVALID", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new KeyNotFoundException("Cryptocurrency 'INVALID' not found"));
 
         // Act
-        Func<Task<CryptoCurrency>> act = async () => await mockService.Object.GetCryptoPriceAsync("INVALID", default);
+        Func<Task<CryptoCurrency>> act = async () => await mockService.Object.GetCryptoPriceAsync("INVALID");
 
         // Assert
         await act.Should().ThrowAsync<KeyNotFoundException>();
@@ -77,13 +77,13 @@ public class CryptoAPIServiceTests
     public async Task GetPriceHistoryAsync_ReturnsHistoricalData()
     {
         // Arrange
-        Mock<ICryptoApiService> mockService = new Mock<ICryptoApiService>();
-        List<PricePoint> pricePoints = new List<PricePoint>
-        {
+        Mock<ICryptoApiService> mockService = new() { CallBase = true };
+        List<PricePoint> pricePoints =
+        [
             new(DateTimeOffset.UtcNow.AddDays(-1), 49000m),
-            new(DateTimeOffset.UtcNow, 50000m),
-        };
-        PriceHistory expectedHistory = new PriceHistory(
+            new(DateTimeOffset.UtcNow, 50000m)
+        ];
+        PriceHistory expectedHistory = new(
             "BTC",
             pricePoints,
             DateTimeOffset.UtcNow.AddDays(-1),
@@ -94,10 +94,10 @@ public class CryptoAPIServiceTests
             .ReturnsAsync(expectedHistory);
 
         // Act
-        PriceHistory result = await mockService.Object.GetPriceHistoryAsync("BTC", "1d", default);
+        PriceHistory result = await mockService.Object.GetPriceHistoryAsync("BTC", "1d");
 
         // Assert
-        result.Symbol.Should().Be("BTC");
+        result.Symbol.Value.Should().Be("BTC");
         result.PricePoints.Should().HaveCount(2);
         result.PriceChange.Should().Be(1000m);
     }
@@ -106,35 +106,35 @@ public class CryptoAPIServiceTests
     public async Task SearchCryptoAsync_WithMatchingQuery_ReturnsResults()
     {
         // Arrange
-        Mock<ICryptoApiService> mockService = new Mock<ICryptoApiService>();
-        List<CryptoCurrency> expectedResults = new List<CryptoCurrency>
-        {
-            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, null),
-        };
+        Mock<ICryptoApiService> mockService = new() { CallBase = true };
+        List<CryptoCurrency> expectedResults =
+        [
+            new("BTC", "Bitcoin", 50000m, 500m, 1.0m, 1000000000m, 50000000m, new Uri("https://example.com/btc.png"))
+        ];
 
         mockService
             .Setup(x => x.SearchCryptoAsync("bit", It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedResults);
 
         // Act
-        List<CryptoCurrency> result = await mockService.Object.SearchCryptoAsync("bit", default);
+        List<CryptoCurrency> result = await mockService.Object.SearchCryptoAsync("bit");
 
         // Assert
         result.Should().HaveCount(1);
-        result[0].Name.Should().Contain("Bitcoin");
+        result.First().Name.Should().Contain("Bitcoin");
     }
 
     [Fact]
     public async Task SearchCryptoAsync_WithNoMatches_ReturnsEmptyList()
     {
         // Arrange
-        Mock<ICryptoApiService> mockService = new Mock<ICryptoApiService>();
+        Mock<ICryptoApiService> mockService = new() { CallBase = true };
         mockService
             .Setup(x => x.SearchCryptoAsync("xyz123", It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         // Act
-        List<CryptoCurrency> result = await mockService.Object.SearchCryptoAsync("xyz123", default);
+        List<CryptoCurrency> result = await mockService.Object.SearchCryptoAsync("xyz123");
 
         // Assert
         result.Should().BeEmpty();

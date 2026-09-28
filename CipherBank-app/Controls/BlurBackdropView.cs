@@ -5,9 +5,8 @@
 namespace CipherBank_app.Controls;
 
 /// <summary>
-/// Placeholder view whose platform handler (registered on iOS/Mac Catalyst only) renders a
-/// native UIVisualEffectView blur. Never add this view to the tree on platforms without a
-/// registered handler; <see cref="GlassCard"/> guards this with compile-time directives.
+/// Platform-owned glass backdrop. Apple handlers render native blur; other supported
+/// platforms register an explicit simulated material handler.
 /// </summary>
 public class BlurBackdropView : View
 {

@@ -13,8 +13,8 @@ namespace CipherBank_app.Services;
 /// </summary>
 public sealed partial class RateLimiter : IDisposable
 {
-    /// <summary>Default max requests per sliding window (1/sec average over one minute).</summary>
-    private const int DefaultMaxRequestsPerWindow = 60;
+    private const int DefaultMaxRequests = 60;
+    private static readonly TimeSpan DefaultWindowDuration = TimeSpan.FromMinutes(1);
 
     private readonly ILogger<RateLimiter>? _logger;
     private readonly TimeProvider _timeProvider;
@@ -22,30 +22,36 @@ public sealed partial class RateLimiter : IDisposable
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     public RateLimiter()
-        : this(null, DefaultMaxRequestsPerWindow, TimeSpan.FromMinutes(1), null)
+        : this(null, TimeProvider.System)
     {
     }
 
     public RateLimiter(ILogger<RateLimiter>? logger)
-        : this(logger, DefaultMaxRequestsPerWindow, TimeSpan.FromMinutes(1), null)
+        : this(logger, TimeProvider.System)
     {
     }
 
     public RateLimiter(ILogger<RateLimiter>? logger, int maxRequests, TimeSpan windowDuration)
-        : this(logger, maxRequests, windowDuration, null)
+        : this(logger, TimeProvider.System, maxRequests, windowDuration)
+    {
+    }
+
+    public RateLimiter(ILogger<RateLimiter>? logger, TimeProvider timeProvider)
+        : this(logger, timeProvider, DefaultMaxRequests, DefaultWindowDuration)
     {
     }
 
     public RateLimiter(
         ILogger<RateLimiter>? logger,
+        TimeProvider timeProvider,
         int maxRequests,
-        TimeSpan windowDuration,
-        TimeProvider? timeProvider)
+        TimeSpan windowDuration)
     {
+        ArgumentNullException.ThrowIfNull(timeProvider);
         _logger = logger;
-        _timeProvider = timeProvider ?? TimeProvider.System;
-        MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), "Must be positive");
-        WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), "Must be positive");
+        _timeProvider = timeProvider;
+        MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), @"Must be positive");
+        WindowDuration = windowDuration > TimeSpan.Zero ? windowDuration : throw new ArgumentOutOfRangeException(nameof(windowDuration), @"Must be positive");
 
         if (_logger is not null)
         {
@@ -72,14 +78,21 @@ public sealed partial class RateLimiter : IDisposable
     /// Attempts to acquire a permit to make a request.
     /// Returns true if the request is allowed, false if rate limited.
     /// </summary>
-    public async Task<bool> TryAcquireAsync(CancellationToken cancellationToken)
+    public async Task<bool> TryAcquireAsync(CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);
         try
         {
             DateTimeOffset now = _timeProvider.GetUtcNow();
-            PruneExpired(now);
+            DateTimeOffset windowStart = now - WindowDuration;
 
+            // Remove expired timestamps
+            while (_requestTimestamps.TryPeek(out DateTimeOffset oldest) && oldest < windowStart)
+            {
+                _requestTimestamps.TryDequeue(out _);
+            }
+
+            // Check if we're at the limit
             if (_requestTimestamps.Count >= MaxRequests)
             {
                 if (_logger is not null)
@@ -90,6 +103,7 @@ public sealed partial class RateLimiter : IDisposable
                 return false;
             }
 
+            // Add the new request timestamp
             _requestTimestamps.Enqueue(now);
             return true;
         }
@@ -103,22 +117,30 @@ public sealed partial class RateLimiter : IDisposable
     /// Gets the time to wait before the next request can be made.
     /// Returns TimeSpan.Zero if a request can be made immediately.
     /// </summary>
-    public async Task<TimeSpan> GetWaitTimeAsync(CancellationToken cancellationToken)
+    public async Task<TimeSpan> GetWaitTimeAsync(CancellationToken cancellationToken = default)
     {
         await _lock.WaitAsync(cancellationToken);
         try
         {
             DateTimeOffset now = _timeProvider.GetUtcNow();
-            PruneExpired(now);
+            DateTimeOffset windowStart = now - WindowDuration;
+
+            // Remove expired timestamps
+            while (_requestTimestamps.TryPeek(out DateTimeOffset oldest) && oldest < windowStart)
+            {
+                _requestTimestamps.TryDequeue(out _);
+            }
 
             if (_requestTimestamps.Count < MaxRequests)
             {
                 return TimeSpan.Zero;
             }
 
+            // Get the oldest timestamp that's still in the window
             if (_requestTimestamps.TryPeek(out DateTimeOffset oldestInWindow))
             {
-                TimeSpan waitTime = (oldestInWindow + WindowDuration) - now;
+                DateTimeOffset waitUntil = oldestInWindow + WindowDuration;
+                TimeSpan waitTime = waitUntil - now;
                 return waitTime > TimeSpan.Zero ? waitTime : TimeSpan.Zero;
             }
 
@@ -131,24 +153,14 @@ public sealed partial class RateLimiter : IDisposable
     }
 
     /// <inheritdoc/>
-    public void Dispose() => _lock.Dispose();
+    public void Dispose()
+    {
+        _lock.Dispose();
+    }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "RateLimiter initialized: {MaxRequests} requests per {WindowDuration}")]
     private static partial void LogRateLimiterInitialized(ILogger logger, int maxRequests, TimeSpan windowDuration);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit exceeded: {Count}/{Max} requests in window")]
     private static partial void LogRateLimitExceeded(ILogger logger, int count, int max);
-
-    /// <summary>
-    /// Drops timestamps that fall outside the current sliding window.
-    /// Use: High (TryAcquire / GetWaitTime). Scope: this limiter instance.
-    /// </summary>
-    private void PruneExpired(DateTimeOffset now)
-    {
-        DateTimeOffset windowStart = now - WindowDuration;
-        while (_requestTimestamps.TryPeek(out DateTimeOffset oldest) && oldest < windowStart)
-        {
-            _requestTimestamps.TryDequeue(out _);
-        }
-    }
 }

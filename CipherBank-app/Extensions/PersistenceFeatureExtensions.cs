@@ -27,20 +27,17 @@ public static class PersistenceFeatureExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(databaseDirectory);
 
-        services.AddOptions<PersistenceOptions>()
-            .Bind(configuration.GetSection(PersistenceOptions.SectionName))
+        services.AddRequiredOptions(configuration, new PersistenceOptions())
             .Validate(static options => options.IsValid(), "Persistence options are invalid.")
             .ValidateOnStart();
-        services.AddOptions<SyncSchedulerOptions>()
-            .Bind(configuration.GetSection(SyncSchedulerOptions.SectionName))
+        services.AddRequiredOptions(configuration, new SyncSchedulerOptions())
             .Validate(
                 static options => options.MaxConcurrency == 0
                     || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
                         && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency),
                 "SyncScheduler options are invalid.")
             .ValidateOnStart();
-        services.AddOptions<UserPreferenceDefaultsOptions>()
-            .Bind(configuration.GetSection(nameof(UserPreferenceDefaultsOptions)))
+        services.AddRequiredOptions(configuration, new UserPreferenceDefaultsOptions())
             .Validate(static options => options.IsValid(), "User preference defaults are invalid.")
             .ValidateOnStart();
 

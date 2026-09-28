@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CryptographyUnsafe" xml:space="preserve">
+    <value>Cryptography parameters are unsafe or blob-incompatible.</value>
+  </data>
+  <data name="SyncConcurrencyOutOfRange" xml:space="preserve">
+    <value>Sync concurrency must be between 1 and 8.</value>
+  </data>
+  <data name="DatabaseNameRequired" xml:space="preserve">
+    <value>DatabaseName is required.</value>
+  </data>
+  <data name="DatabaseNameMustBeFileName" xml:space="preserve">
+    <value>DatabaseName must not contain a path.</value>
+  </data>
+  <data name="DefaultRecipientsInvalid" xml:space="preserve">
+    <value>DefaultRecipients must have unique non-blank ids and names.</value>
+  </data>
+</root>

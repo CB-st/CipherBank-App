@@ -15,7 +15,7 @@ public sealed class MarketRateHydratorTests
     [Fact]
     public void FromQuote_MapsInverseQuoteRateAndTimestamp()
     {
-        PublicQuote quote = new("btc", 1m, "USD", 67_123.45m);
+        PublicQuote quote = new(new AssetSymbol("btc"), 1m, new AssetSymbol("USD"), 67_123.45m);
 
         RateRow row = RateRow.FromQuote(quote, updatedAtMs: 1_000);
 
@@ -119,13 +119,13 @@ public sealed class MarketRateHydratorTests
         public Task<bool> TestConnectionAsync(CancellationToken cancellationToken)
             => Task.FromResult(true);
 
-        public Task<IReadOnlyList<string>> GetCurrenciesAsync(CancellationToken cancellationToken)
-            => Task.FromResult<IReadOnlyList<string>>(["BTC"]);
+        public Task<IReadOnlyList<AssetSymbol>> GetCurrenciesAsync(CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<AssetSymbol>>([new AssetSymbol("BTC")]);
 
         public Task<PublicQuote> GetInverseQuoteAsync(
-            string inputSymbol,
+            AssetSymbol inputSymbol,
             decimal inputAmount,
-            string outputSymbol,
+            AssetSymbol outputSymbol,
             CancellationToken cancellationToken)
         {
             InverseQuoteCalls++;
@@ -133,9 +133,9 @@ public sealed class MarketRateHydratorTests
         }
 
         public Task<PublicQuote> GetQuoteAsync(
-            string inputSymbol,
+            AssetSymbol inputSymbol,
             decimal outputAmount,
-            string outputSymbol,
+            AssetSymbol outputSymbol,
             CancellationToken cancellationToken)
             => Task.FromResult(new PublicQuote(inputSymbol, 1m, outputSymbol, outputAmount));
     }

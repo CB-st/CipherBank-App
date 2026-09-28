@@ -16,8 +16,8 @@ public class AuthServiceTests
     public async Task LoginAsync_WithValidCredentials_ReturnsToken()
     {
         // Arrange
-        Mock<IAuthService> mockAuthService = new Mock<IAuthService>();
-        AuthToken expectedToken = new AuthToken(
+        var mockAuthService = new Mock<IAuthService>();
+        var expectedToken = new AuthToken(
             "test_access_token",
             "test_refresh_token",
             DateTimeOffset.UtcNow.AddHours(1));
@@ -27,7 +27,7 @@ public class AuthServiceTests
             .ReturnsAsync(expectedToken);
 
         // Act
-        AuthToken result = await mockAuthService.Object.LoginAsync("testuser", "password", default);
+        AuthToken result = await mockAuthService.Object.LoginAsync("testuser", "password");
 
         // Assert
         result.Should().NotBeNull();
@@ -40,13 +40,13 @@ public class AuthServiceTests
     public async Task LoginAsync_WithInvalidCredentials_ThrowsException()
     {
         // Arrange
-        Mock<IAuthService> mockAuthService = new Mock<IAuthService>();
+        var mockAuthService = new Mock<IAuthService>();
         mockAuthService
             .Setup(x => x.LoginAsync("invalid", "wrong", It.IsAny<CancellationToken>()))
             .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));
 
         // Act
-        Func<Task<AuthToken>> act = async () => await mockAuthService.Object.LoginAsync("invalid", "wrong", default);
+        Func<Task<AuthToken>> act = async () => await mockAuthService.Object.LoginAsync("invalid", "wrong");
 
         // Assert
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
@@ -57,8 +57,8 @@ public class AuthServiceTests
     public async Task RefreshAsync_WithValidToken_ReturnsNewToken()
     {
         // Arrange
-        Mock<IAuthService> mockAuthService = new Mock<IAuthService>();
-        AuthToken newToken = new AuthToken(
+        var mockAuthService = new Mock<IAuthService>();
+        var newToken = new AuthToken(
             "new_access_token",
             "new_refresh_token",
             DateTimeOffset.UtcNow.AddHours(1));
@@ -68,7 +68,7 @@ public class AuthServiceTests
             .ReturnsAsync(newToken);
 
         // Act
-        AuthToken result = await mockAuthService.Object.RefreshAsync("old_refresh_token", default);
+        AuthToken result = await mockAuthService.Object.RefreshAsync("old_refresh_token");
 
         // Assert
         result.AccessToken.Should().Be("new_access_token");
@@ -78,13 +78,13 @@ public class AuthServiceTests
     public async Task IsTokenExpiredAsync_WhenExpired_ReturnsTrue()
     {
         // Arrange
-        Mock<IAuthService> mockAuthService = new Mock<IAuthService>();
+        var mockAuthService = new Mock<IAuthService>();
         mockAuthService
             .Setup(x => x.IsTokenExpiredAsync())
             .ReturnsAsync(true);
 
         // Act
-        bool result = await mockAuthService.Object.IsTokenExpiredAsync();
+        var result = await mockAuthService.Object.IsTokenExpiredAsync();
 
         // Assert
         result.Should().BeTrue();
@@ -94,7 +94,7 @@ public class AuthServiceTests
     public async Task LogoutAsync_ClearsSession()
     {
         // Arrange
-        Mock<IAuthService> mockAuthService = new Mock<IAuthService>();
+        var mockAuthService = new Mock<IAuthService>();
         mockAuthService.Setup(x => x.LogoutAsync()).Returns(Task.CompletedTask);
         mockAuthService.Setup(x => x.GetStoredTokenAsync()).ReturnsAsync((AuthToken?)null);
 
