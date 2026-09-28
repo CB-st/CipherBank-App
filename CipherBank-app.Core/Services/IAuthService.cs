@@ -11,9 +11,9 @@ namespace CipherBank_app.Services;
 /// </summary>
 public interface IAuthService
 {
-    Task<AuthToken> LoginAsync(string user, string password, CancellationToken cancellationToken = default);
+    Task<AuthToken> LoginAsync(string user, string password, CancellationToken cancellationToken);
 
-    Task<AuthToken> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default);
+    Task<AuthToken> RefreshAsync(string refreshToken, CancellationToken cancellationToken);
 
     Task<AuthToken?> GetStoredTokenAsync();
 
@@ -27,5 +27,5 @@ public interface IAuthService
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if revocation succeeded, false otherwise</returns>
-    Task<bool> RevokeTokenAsync(CancellationToken cancellationToken = default);
+    Task<bool> RevokeTokenAsync(CancellationToken cancellationToken);
 }
