@@ -97,21 +97,3 @@ Static validator for cryptocurrency addresses. Supports Bitcoin, Ethereum, and S
 | IsValidBitcoinAddress(address) | bool | P2PKH (1...), P2SH (3...), Bech32 (bc1...), testnet |
 | IsValidEthereumAddress(address) | bool | 0x + 40 hex chars |
 | IsValidSolanaAddress(address) | bool | Base58, 32–44 chars |
-
----
-
-## LogRedactionHelper
-
-**File**: `Services/Logging/LogRedactionHelper.cs`
-
-Static helper for redacting sensitive data in log messages.
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| RedactUsername(username) | string | e.g. "testuser123" → "t*********3" |
-| RedactWalletId(walletId) | string | e.g. "wallet123...cdef" |
-| RedactAddress(address) | string | e.g. "1A1zP1...fNa" |
-| RedactToken(token) | string | e.g. "eyJhbGci..." |
-| RedactEmail(email) | string | e.g. "us***@example.com" |
-| RedactTransactionId(txId) | string | e.g. "tx_12345...cdef" |
-| Redact(value, showChars) | string | Generic redaction with configurable visible chars |
