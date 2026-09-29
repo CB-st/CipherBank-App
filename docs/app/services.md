@@ -97,7 +97,7 @@ Used by Settings Test Connection. Uses app's configured HttpClient (certificate 
 
 **File**: `Services/ShellNavigationService.cs`
 
-Abstraction for `Shell.Current.GoToAsync` and `GoBackAsync`. Enables ViewModel testability.
+Abstraction for `Shell.Current.GoToAsync`. Enables ViewModel testability.
 
 ---
 

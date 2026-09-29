@@ -31,7 +31,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         ITransactionService transactionService,
         ICryptoApiService cryptoService,
         IErrorHandler errorHandler,
-        INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
@@ -39,7 +38,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         _transactionService = transactionService;
         _cryptoService = cryptoService;
         _errorHandler = errorHandler;
-        _ = navigation; // Reserved for future navigation needs
         _dialog = dialog;
     }
 
@@ -62,10 +60,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     /// <summary>Gets or sets the focused wallet card.</summary>
     [ObservableProperty]
     public partial WalletCardItem? FocusedWalletCard { get; set; }
-
-    /// <summary>Gets or sets the total wallet balance.</summary>
-    [ObservableProperty]
-    public partial decimal TotalBalance { get; set; }
 
     /// <summary>Gets or sets the total wallet balance in USD.</summary>
     [ObservableProperty]
