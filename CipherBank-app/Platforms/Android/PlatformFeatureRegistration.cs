@@ -15,7 +15,7 @@ public static class PlatformFeatureRegistration
     public static IServiceCollection AddPlatformFeatures(this IServiceCollection services)
     {
         services.AddSingleton<IPlatformHttpMessageHandlerFactory, AndroidHttpMessageHandlerFactory>();
-        services.AddSingleton<IMotionPreference, AndroidMotionPreference>();
+        services.AddSingleton<IMotionPreference, DefaultMotionPreference>();
         return services;
     }
 
