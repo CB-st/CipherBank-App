@@ -13,7 +13,6 @@ public interface IAppThemeSetter
 {
     /// <summary>
     /// Applies the requested theme; <see cref="AppTheme.Unspecified"/> follows the system theme.
-    /// No-op when the application singleton is not yet available.
     /// </summary>
     void SetUserAppTheme(AppTheme theme);
 }

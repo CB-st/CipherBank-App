@@ -13,9 +13,4 @@ public interface INavigationService
     /// Navigates to the specified route.
     /// </summary>
     Task GoToAsync(string route);
-
-    /// <summary>
-    /// Navigates back in the navigation stack.
-    /// </summary>
-    Task GoBackAsync();
 }

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace CipherBank_app.Services;
 
 /// <summary>
-/// Implementation of application settings using secure preferences storage.
+/// Implementation of application settings using preferences storage.
 /// </summary>
 public sealed partial class SettingsService : ISettingsService
 {
@@ -32,11 +32,7 @@ public sealed partial class SettingsService : ISettingsService
     private const string DefaultEnvironment = "Sandbox";
     private const bool DefaultDeveloperModeEnabled = false;
 
-    private readonly ILogger<SettingsService>? _logger;
-
-    public SettingsService()
-    {
-    }
+    private readonly ILogger<SettingsService> _logger;
 
     public SettingsService(ILogger<SettingsService> logger)
     {
@@ -48,11 +44,7 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdCipherBankEndpointBase, DefaultCipherBankEndpointBase);
         set
         {
-            if (_logger != null && _logger.IsEnabled(LogLevel.Information))
-            {
-                LogSettingChanged(_logger, "CipherBankEndpointBase", value);
-            }
-
+            LogSettingChanged(_logger, "CipherBankEndpointBase", value);
             Preferences.Set(IdCipherBankEndpointBase, value);
         }
     }
@@ -62,11 +54,7 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdThemeMode, DefaultThemeMode);
         set
         {
-            if (_logger != null && _logger.IsEnabled(LogLevel.Information))
-            {
-                LogSettingChanged(_logger, "ThemeMode", value);
-            }
-
+            LogSettingChanged(_logger, "ThemeMode", value);
             Preferences.Set(IdThemeMode, value);
         }
     }
@@ -76,12 +64,7 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdNotificationsEnabled, DefaultNotificationsEnabled);
         set
         {
-            if (_logger != null)
-            {
-                var valueString = value.ToString();
-                LogSettingChanged(_logger, "NotificationsEnabled", valueString);
-            }
-
+            LogSettingChanged(_logger, "NotificationsEnabled", value.ToString());
             Preferences.Set(IdNotificationsEnabled, value);
         }
     }
@@ -91,12 +74,7 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdBiometricAuthEnabled, DefaultBiometricAuthEnabled);
         set
         {
-            if (_logger != null)
-            {
-                var valueString = value.ToString();
-                LogSettingChanged(_logger, "BiometricAuthEnabled", valueString);
-            }
-
+            LogSettingChanged(_logger, "BiometricAuthEnabled", value.ToString());
             Preferences.Set(IdBiometricAuthEnabled, value);
         }
     }
@@ -106,12 +84,7 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdAutoLockTimeout, DefaultAutoLockTimeout);
         set
         {
-            if (_logger != null)
-            {
-                var valueString = value.ToString(CultureInfo.InvariantCulture);
-                LogSettingChanged(_logger, "AutoLockTimeoutMinutes", valueString);
-            }
-
+            LogSettingChanged(_logger, "AutoLockTimeoutMinutes", value.ToString(CultureInfo.InvariantCulture));
             Preferences.Set(IdAutoLockTimeout, value);
         }
     }
@@ -121,11 +94,7 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdDefaultCurrency, DefaultDefaultCurrency);
         set
         {
-            if (_logger != null)
-            {
-                LogSettingChanged(_logger, "DefaultCurrency", value);
-            }
-
+            LogSettingChanged(_logger, "DefaultCurrency", value);
             Preferences.Set(IdDefaultCurrency, value);
         }
     }
@@ -135,11 +104,7 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdEnvironment, DefaultEnvironment);
         set
         {
-            if (_logger != null)
-            {
-                LogSettingChanged(_logger, "Environment", value);
-            }
-
+            LogSettingChanged(_logger, "Environment", value);
             Preferences.Set(IdEnvironment, value);
 
             // Update endpoint based on environment
@@ -159,12 +124,7 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdDeveloperModeEnabled, DefaultDeveloperModeEnabled);
         set
         {
-            if (_logger != null)
-            {
-                var valueString = value.ToString();
-                LogSettingChanged(_logger, "DeveloperModeEnabled", valueString);
-            }
-
+            LogSettingChanged(_logger, "DeveloperModeEnabled", value.ToString());
             Preferences.Set(IdDeveloperModeEnabled, value);
         }
     }
@@ -179,11 +139,7 @@ public sealed partial class SettingsService : ISettingsService
         DefaultCurrency = DefaultDefaultCurrency;
         Environment = DefaultEnvironment;
         DeveloperModeEnabled = DefaultDeveloperModeEnabled;
-
-        if (_logger != null)
-        {
-            LogSettingsResetToDefaults(_logger);
-        }
+        LogSettingsResetToDefaults(_logger);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Setting {SettingName} to {Value}")]
