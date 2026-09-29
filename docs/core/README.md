@@ -10,7 +10,6 @@ The CipherBank-app.Core project contains shared interfaces, models, and utilitie
 
 ## Dependencies
 
-- `Microsoft.Extensions.Http`
 - `Microsoft.Extensions.Logging.Abstractions`
 
 ## Usage
