@@ -2,15 +2,13 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Persist;
+
 namespace CipherBank_app.Configuration;
 
 /// <summary>Settings for the on-device EF Core database.</summary>
 public sealed class PersistenceOptions
 {
-    private const int AccountNumberMinLength = 4;
-    private const int RoutingNumberLength = 9;
-    private const int MemoMaxLength = 140;
-
     public string DatabaseName { get; set; } = "cipherbank.db";
 
     /// <summary>
@@ -55,40 +53,25 @@ public sealed class PersistenceOptions
 
     private static bool IsRecipientValid(DefaultRecipientOptions row)
     {
-        if (!HasRecipientIdentity(row) || !HasBankIdentity(row))
+        // AccountType is declared non-nullable, but the configuration binder can still assign null.
+        // Copy it to a nullable local and reject null before AchRecipientValidation, whose account-type
+        // check calls Trim(). A non-null value, including surrounding whitespace, is passed through.
+        string? accountType = row.AccountType;
+        if (accountType is null)
         {
             return false;
         }
 
-        if (!IsRoutingValid(row.Routing) || !IsAccountValid(row.Account))
-        {
-            return false;
-        }
-
-        return IsAccountTypeValid(row.AccountType)
-            && (row.Memo is null || row.Memo.Length <= MemoMaxLength);
+        return !string.IsNullOrWhiteSpace(row.Id)
+            && AchRecipientValidation.Validate(
+                row.Name,
+                row.Holder ?? string.Empty,
+                row.Bank ?? string.Empty,
+                row.Routing ?? string.Empty,
+                row.Account ?? string.Empty,
+                accountType,
+                row.Memo) is null;
     }
-
-    private static bool HasRecipientIdentity(DefaultRecipientOptions row)
-        => !string.IsNullOrWhiteSpace(row.Id)
-            && !string.IsNullOrWhiteSpace(row.Name);
-
-    private static bool HasBankIdentity(DefaultRecipientOptions row)
-        => !string.IsNullOrWhiteSpace(row.Holder)
-            && !string.IsNullOrWhiteSpace(row.Bank);
-
-    private static bool IsAccountValid(string? account)
-        => !string.IsNullOrWhiteSpace(account)
-            && account.Trim().Length >= AccountNumberMinLength;
-
-    private static bool IsAccountTypeValid(string accountType)
-        => string.Equals(accountType, "checking", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(accountType, "savings", StringComparison.OrdinalIgnoreCase);
-
-    private static bool IsRoutingValid(string? routing)
-        => routing is not null
-            && routing.Length == RoutingNumberLength
-            && routing.All(static character => character is >= '0' and <= '9');
 
     private bool IsDatabaseNameValid()
         => !string.IsNullOrWhiteSpace(DatabaseName)
