@@ -8,21 +8,21 @@ Certificate pinning and platform entry points.
 
 **File**: `Platforms/Android/AndroidCertificatePinningHandler.cs`
 
-Extends `HttpClientHandler`. Certificate pinning is configured in `NetworkSecurityConfig.xml` (Resources/xml). The handler uses the default HttpClientHandler; Android's network security framework validates certs against pinned keys in the config.
+Extends `HttpClientHandler`. Certificate pinning is configured in `Platforms/Android/Resources/xml/network_security_config.xml`. The handler uses the default HttpClientHandler; Android's network security framework validates certs against pinned keys in the config.
 
-**NetworkSecurityConfig.xml**: Defines pin set for `api.cipherbank.money`, `api.sandbox.cipherbank.money`. Placeholder pins must be replaced before production.
+**network_security_config.xml**: Defines pin set for `api.cipherbank.money`, `api.sandbox.cipherbank.money`. Placeholder pins must be replaced before production.
 
 ---
 
-## iOS / Mac Catalyst
+## iOS
 
-**File**: `Platforms/iOS/CertificatePinningHandler.cs`
+**File**: `Platforms/iOS/IosCertificatePinningHandler.cs`
 
 Class: `IosCertificatePinningHandler` (NSUrlSessionHandler). Uses `TrustOverrideForUrl` to validate server certificates.
 
 **Pinned hostnames**: `api.cipherbank.money`, `api.sandbox.cipherbank.money`
 
-**Validation**: SecTrust policy, leaf cert public key SHA256 hash compared to `PinnedPublicKeys` array. Placeholder pins must be replaced.
+**Validation**: SecTrust policy, leaf cert public key SHA256 hash compared through `CertificatePinPolicy`. Placeholder pins must be replaced.
 
 The iOS platform feature registration binds this handler through
 `IPlatformHttpMessageHandlerFactory`.
@@ -37,15 +37,15 @@ Extends `HttpClientHandler`. Uses `ServerCertificateCustomValidationCallback` fo
 
 **Pinned hostnames**: Same as iOS and Android.
 
-**Validation**: For pinned hosts, validates cert chain; computes SHA256 of SubjectPublicKeyInfo (RSA or ECDSA) and compares to `PinnedPublicKeys`. Placeholder pins must be replaced.
+**Validation**: For pinned hosts, validates cert chain; computes SHA256 of SubjectPublicKeyInfo (RSA or ECDSA) and compares it through `CertificatePinPolicy`. Placeholder pins must be replaced.
 
 ---
 
 ## Mac Catalyst
 
-**File**: `Platforms/MacCatalyst/AppDelegate.cs`, `Program.cs`
+**File**: `Platforms/MacCatalyst/CertificatePinningHandler.cs`
 
-Uses its own `NSUrlSessionHandler` adapter and the shared Core pin policy.
+Class: `MacCatalystCertificatePinningHandler` (NSUrlSessionHandler). `MacCatalystHttpMessageHandlerFactory` implements `IPlatformHttpMessageHandlerFactory`. Entry points remain `AppDelegate.cs` and `Program.cs`.
 
 ---
 

@@ -32,7 +32,7 @@ Implements `ICryptoApiService`. HTTP client for market data.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GetCryptoPricesAsync | GET /api/v1/crypto/prices | All crypto prices |
-| GetCryptoPriceAsync | GET /api/v1/crypto/prices/{symbol} | Single price |
+| GetCryptoPriceAsync | GET /api/v1/crypto/price/{symbol} | Single price |
 | GetPriceHistoryAsync | GET /api/v1/crypto/history/{symbol}?period= | Price history |
 | SearchCryptoAsync | GET /api/v1/crypto/search?q= | Search by name/symbol |
 
@@ -133,18 +133,19 @@ Centralizes catch logic for `HttpRequestException`, `UnauthorizedAccessException
 
 ---
 
-## PlatformHttpHandlerFactory
+## IPlatformHttpMessageHandlerFactory
 
-**File**: `Services/PlatformHttpHandlerFactory.cs`
+**File**: `Services/IPlatformHttpMessageHandlerFactory.cs`
 
-Static factory. Returns platform-specific handler:
+Each platform registers its own `*HttpMessageHandlerFactory`:
 
-| Platform | Handler |
-|----------|---------|
-| Android | AndroidCertificatePinningHandler |
-| iOS / Mac Catalyst | IosCertificatePinningHandler |
-| Windows | WindowsCertificatePinningHandler |
-| Other | HttpClientHandler |
+| Platform | Factory | Handler |
+|----------|---------|---------|
+| Android | AndroidHttpMessageHandlerFactory | AndroidCertificatePinningHandler |
+| iOS | IosHttpMessageHandlerFactory | IosCertificatePinningHandler |
+| Mac Catalyst | MacCatalystHttpMessageHandlerFactory | MacCatalystCertificatePinningHandler |
+| Windows | WindowsHttpMessageHandlerFactory | WindowsCertificatePinningHandler |
+| Other | UnsupportedPlatformHttpMessageHandlerFactory | fails closed |
 
 ---
 

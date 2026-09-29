@@ -66,7 +66,7 @@ sequenceDiagram
 
 Outgoing HTTP requests pass through the following pipeline (order matters):
 
-1. **PlatformHttpHandlerFactory** – Creates platform-specific handler with certificate pinning (iOS, Android, Windows).
+1. **IPlatformHttpMessageHandlerFactory** – The registered per-platform factory creates the certificate-pinning handler (iOS, Mac Catalyst, Android, Windows).
 2. **RateLimitingHandler** – Sliding-window rate limiter (60 requests/minute default). Returns 429 if exceeded.
 3. **AuthHeaderHandler** – Injects Bearer token from `IAuthService`. Skips auth endpoints (`/auth/login`, `/auth/refresh`, `/auth/register`). Auto-refreshes token if expiring within 5 minutes.
 4. **StandardResilienceHandler** – Retry (3 attempts, exponential backoff, jitter), circuit breaker (50% failure, 30s break), timeouts (15s attempt, 60s total).
@@ -114,8 +114,9 @@ defaults fill only fields absent from the user's stored JSON payload.
 
 ### Certificate Pinning
 
-- **iOS/Mac Catalyst**: `IosCertificatePinningHandler` (NSUrlSessionHandler) validates server cert against pinned public key hashes.
-- **Android**: `AndroidCertificatePinningHandler` + `NetworkSecurityConfig.xml`.
+- **iOS**: `IosCertificatePinningHandler` in `Platforms/iOS/IosCertificatePinningHandler.cs` (NSUrlSessionHandler) validates server cert against pinned public key hashes.
+- **Mac Catalyst**: `MacCatalystCertificatePinningHandler` in `Platforms/MacCatalyst/CertificatePinningHandler.cs` (NSUrlSessionHandler) validates server cert against pinned public key hashes.
+- **Android**: `AndroidCertificatePinningHandler` + `Platforms/Android/Resources/xml/network_security_config.xml`.
 - **Windows**: `WindowsCertificatePinningHandler` (HttpClientHandler with custom validation).
 
 Pinned hostnames: `api.cipherbank.money`, `api.sandbox.cipherbank.money`. Placeholder pins must be replaced before production.

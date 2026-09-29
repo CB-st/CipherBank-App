@@ -23,21 +23,12 @@ Merged dictionaries: `Colors.xaml`, `Styles.xaml`. Registers converters:
 
 **File**: `AppShell.xaml`
 
-Shell with `FlyoutBehavior="Flyout"`. Routes:
+Routes:
 
 | Route | ContentTemplate | Notes |
 |-------|----------------|
 | LoginPage | LoginPage | FlyoutItemIsVisible=False, NavBarHidden |
 | MainTabs (TabBar) | Dashboard, Wallets, Buy, Settings | Tab bar |
-| MainPage | MainPage | FlyoutItemIsVisible=False |
-
----
-
-## MainPage
-
-**File**: `MainPage.xaml`, `MainPage.xaml.cs`
-
-Legacy home page. Minimal content.
 
 ---
 
@@ -60,8 +51,6 @@ Legacy home page. Minimal content.
 **Bindings**: IsRefreshing, RefreshPricesCommand, IsLoading, ErrorMessage, Cryptocurrencies, SelectedCrypto, ViewCryptoDetailsCommand, NavigateToPurchaseCommand
 
 **UI**: RefreshView, "Market Overview" header, ActivityIndicator, error Border, CollectionView of CryptoCurrency (symbol, name, price, percent change). EmptyView with Refresh button. Quick actions: "Buy Crypto", "My Wallets". Uses PriceChangeColorConverter for percent change color.
-
-**Code-behind**: `OnWalletsClicked` navigates to `//WalletPage`.
 
 ---
 
@@ -89,8 +78,8 @@ Legacy home page. Minimal content.
 
 **File**: `Views/SettingsPage.xaml`
 
-**Bindings**: ApiEndpoint, UseMocks, ThemeMode, DefaultCurrency, BiometricEnabled, AutoLockTimeout, NotificationsEnabled, StatusMessage, IsStatusSuccess, SaveSettingsCommand, TestConnectionCommand, ResetToDefaultsCommand, LogoutCommand, ShowAboutCommand
+**Bindings**: ApiEndpoint, ThemeMode, DefaultCurrency, BiometricEnabled, AutoLockTimeout, NotificationsEnabled, StatusMessage, IsStatusSuccess, SaveSettingsCommand, TestConnectionCommand, ResetToDefaultsCommand, LogoutCommand, ShowAboutCommand
 
-**UI**: API Configuration (endpoint, Use Mock Data switch, Test Connection), Appearance (Theme, Currency), Security (Biometric, Auto-Lock), Notifications, Status message, Save/Reset buttons, Account (Log Out, About CipherBank).
+**UI**: API Configuration (endpoint, Test Connection), Appearance (Theme, Currency), Security (Biometric, Auto-Lock), Notifications, Status message, Save/Reset buttons, Account (Log Out, About CipherBank).
 
 **Note**: AutoLockOptions Picker uses hardcoded Items; SettingsViewModel has `AutoLockOptions` array that may not match.
