@@ -16,10 +16,12 @@ public sealed class CipherBankDiagnosticsTests
         Assert.Equal("CB1002", CipherBankDiagnostics.LegacyAssemblyInfo.Id);
         Assert.Equal("CB1003", CipherBankDiagnostics.ScatteredSql.Id);
         Assert.Equal("CB1004", CipherBankDiagnostics.RetiredApiName.Id);
+        Assert.Equal("CB1005", CipherBankDiagnostics.ViewModelPlatformGlobal.Id);
         Assert.Equal("CipherBank.Structure", CipherBankDiagnostics.Category);
         Assert.Equal("CipherBank.Structure", CipherBankDiagnostics.CentralPackageVersion.Category);
         Assert.Equal("CipherBank.Structure", CipherBankDiagnostics.LegacyAssemblyInfo.Category);
         Assert.Equal("CipherBank.Structure", CipherBankDiagnostics.ScatteredSql.Category);
         Assert.Equal("CipherBank.Structure", CipherBankDiagnostics.RetiredApiName.Category);
+        Assert.Equal("CipherBank.Structure", CipherBankDiagnostics.ViewModelPlatformGlobal.Category);
     }
 }
