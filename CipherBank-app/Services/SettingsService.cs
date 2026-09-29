@@ -64,7 +64,8 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdNotificationsEnabled, DefaultNotificationsEnabled);
         set
         {
-            LogSettingChanged(_logger, "NotificationsEnabled", value.ToString());
+            var valueString = value.ToString();
+            LogSettingChanged(_logger, "NotificationsEnabled", valueString);
             Preferences.Set(IdNotificationsEnabled, value);
         }
     }
@@ -74,7 +75,8 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdBiometricAuthEnabled, DefaultBiometricAuthEnabled);
         set
         {
-            LogSettingChanged(_logger, "BiometricAuthEnabled", value.ToString());
+            var valueString = value.ToString();
+            LogSettingChanged(_logger, "BiometricAuthEnabled", valueString);
             Preferences.Set(IdBiometricAuthEnabled, value);
         }
     }
@@ -84,7 +86,8 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdAutoLockTimeout, DefaultAutoLockTimeout);
         set
         {
-            LogSettingChanged(_logger, "AutoLockTimeoutMinutes", value.ToString(CultureInfo.InvariantCulture));
+            var valueString = value.ToString(CultureInfo.InvariantCulture);
+            LogSettingChanged(_logger, "AutoLockTimeoutMinutes", valueString);
             Preferences.Set(IdAutoLockTimeout, value);
         }
     }
@@ -124,7 +127,8 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdDeveloperModeEnabled, DefaultDeveloperModeEnabled);
         set
         {
-            LogSettingChanged(_logger, "DeveloperModeEnabled", value.ToString());
+            var valueString = value.ToString();
+            LogSettingChanged(_logger, "DeveloperModeEnabled", valueString);
             Preferences.Set(IdDeveloperModeEnabled, value);
         }
     }
