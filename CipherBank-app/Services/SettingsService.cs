@@ -50,9 +50,10 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdCipherBankEndpointBase, DefaultCipherBankEndpointBase);
         set
         {
-            if (_logger != null && _logger.IsEnabled(LogLevel.Information))
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
             {
-                LogSettingChanged(_logger, "CipherBankEndpointBase", LogRedactionHelper.Redact(value));
+                string redactedEndpoint = LogRedactionHelper.Redact(value);
+                LogSettingChanged(_logger, "CipherBankEndpointBase", redactedEndpoint);
             }
 
             Preferences.Set(IdCipherBankEndpointBase, value);
