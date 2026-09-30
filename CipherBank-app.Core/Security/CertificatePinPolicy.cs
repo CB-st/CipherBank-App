@@ -11,6 +11,15 @@ namespace CipherBank_app.Security;
 /// <summary>Platform-neutral API hostname and SPKI pin policy.</summary>
 public static class CertificatePinPolicy
 {
+    /// <summary>
+    /// HPKP-style prefix used by the C# pin comparison. Android network security
+    /// config stores the base64 digest only and puts the algorithm on the pin element.
+    /// </summary>
+    public const string SpkiSha256Prefix = "sha256/";
+
+    /// <summary>Marker that means a pin has not been replaced with a real SPKI hash.</summary>
+    public const string PlaceholderMarker = "REPLACE_WITH_";
+
     public static string ProductionHost { get; } = "api.cipherbank.money";
 
     public static string SandboxHost { get; } = "api.sandbox.cipherbank.money";
@@ -44,7 +53,52 @@ public static class CertificatePinPolicy
     public static string ComputeSpkiSha256Pin(ReadOnlySpan<byte> subjectPublicKeyInfo)
     {
         byte[] hash = SHA256.HashData(subjectPublicKeyInfo);
-        return $"sha256/{Convert.ToBase64String(hash)}";
+        return string.Concat(SpkiSha256Prefix, Convert.ToBase64String(hash));
+    }
+
+    /// <summary>Returns true when <paramref name="pin"/> still contains <see cref="PlaceholderMarker"/>.</summary>
+    public static bool IsPlaceholderPin(string pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        return pin.Contains(PlaceholderMarker, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Fails when any configured pin still contains <see cref="PlaceholderMarker"/>.
+    /// Release startup calls this so a build cannot ship with placeholder pins.
+    /// </summary>
+    public static void EnsureReleasePinsAreConfigured() =>
+        EnsurePinsAreNotPlaceholders(ProductionPin, BackupPin, SandboxPin, SandboxBackupPin);
+
+    /// <summary>Fails when any supplied pin still contains <see cref="PlaceholderMarker"/>.</summary>
+    public static void EnsurePinsAreNotPlaceholders(params string[] pins)
+    {
+        ArgumentNullException.ThrowIfNull(pins);
+        foreach (string pin in pins)
+        {
+            if (IsPlaceholderPin(pin))
+            {
+                throw new InvalidOperationException(
+                    "Certificate pin configuration contains a REPLACE_WITH_ placeholder. Replace the production and sandbox pins before shipping a Release build.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Converts a C# <c>sha256/</c> pin to the base64 digest Android's
+    /// <c>network_security_config.xml</c> pin element expects.
+    /// </summary>
+    public static string ToAndroidNetworkSecurityPin(string policyPin)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyPin);
+        if (!policyPin.StartsWith(SpkiSha256Prefix, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "C# SPKI pins must start with sha256/. Android network_security_config.xml stores only the base64 digest because digest=\"SHA-256\" already names the algorithm.",
+                nameof(policyPin));
+        }
+
+        return policyPin[SpkiSha256Prefix.Length..];
     }
 
     public static bool TryComputeSpkiSha256PinFromCertificateDer(
