@@ -15,10 +15,10 @@ public static class CertificatePinPolicy
     /// HPKP-style prefix used by the C# pin comparison. Android network security
     /// config stores the base64 digest only and puts the algorithm on the pin element.
     /// </summary>
-    public const string SpkiSha256Prefix = "sha256/";
+    public static string SpkiSha256Prefix { get; } = "sha256/";
 
     /// <summary>Marker that means a pin has not been replaced with a real SPKI hash.</summary>
-    public const string PlaceholderMarker = "REPLACE_WITH_";
+    public static string PlaceholderMarker { get; } = "REPLACE_WITH_";
 
     public static string ProductionHost { get; } = "api.cipherbank.money";
 
@@ -74,13 +74,10 @@ public static class CertificatePinPolicy
     public static void EnsurePinsAreNotPlaceholders(params string[] pins)
     {
         ArgumentNullException.ThrowIfNull(pins);
-        foreach (string pin in pins)
+        if (pins.Any(IsPlaceholderPin))
         {
-            if (IsPlaceholderPin(pin))
-            {
-                throw new InvalidOperationException(
-                    "Certificate pin configuration contains a REPLACE_WITH_ placeholder. Replace the production and sandbox pins before shipping a Release build.");
-            }
+            throw new InvalidOperationException(
+                "Certificate pin configuration contains a REPLACE_WITH_ placeholder. Replace the production and sandbox pins before shipping a Release build.");
         }
     }
 
