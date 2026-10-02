@@ -2,16 +2,41 @@
 
 This guide explains how to configure certificate pinning for the CipherBank mobile app. Certificate pinning is a security technique that helps prevent man-in-the-middle (MITM) attacks by validating that the server's certificate matches a known, trusted certificate.
 
-Shared hostname and C# pin matching policy lives in
-`CipherBank-app.Core/Security/CertificatePinPolicy.cs`. Android enforces the
-same values through `network_security_config.xml`; update both together.
+Shared hostname and C# pin matching live in
+`CipherBank-app.Core/Security/CertificatePinPolicy.cs`. iOS
+(`Platforms/iOS/IosCertificatePinningHandler.cs`), Mac Catalyst
+(`Platforms/MacCatalyst/CertificatePinningHandler.cs`, class
+`MacCatalystCertificatePinningHandler`), and Windows
+(`Platforms/Windows/WindowsCertificatePinningHandler.cs`) call that type.
+Those pins use the `sha256/` prefix plus the base64 SHA-256 of the
+SubjectPublicKeyInfo.
+
+Android does not read `CertificatePinPolicy`. `AndroidCertificatePinningHandler`
+is a default `HttpClientHandler`. Pinning is enforced by
+`CipherBank-app/Platforms/Android/Resources/xml/network_security_config.xml`,
+which `Platforms/Android/AndroidManifest.xml` references as
+`@xml/network_security_config`. Android pin text is the base64 digest only.
+The `digest="SHA-256"` attribute names the algorithm. Omitting `sha256/` is
+the Android network security config format: adding the prefix to the XML
+would not match. Each XML pin body must equal the matching
+`CertificatePinPolicy` pin with the `sha256/` prefix removed
+(`CertificatePinPolicy.ToAndroidNetworkSecurityPin`). Update both sources
+together.
+
+`MauiProgram` calls `CertificatePinPolicy.EnsureReleasePinsAreConfigured()`
+when the assembly configuration is not Debug. A Release start throws
+`InvalidOperationException` if any configured pin still contains
+`REPLACE_WITH_`. Debug startup leaves the placeholders in place so local
+development can run.
 
 ## Overview
 
 The CipherBank app implements certificate pinning on all platforms:
-- **iOS/Mac Catalyst**: `Platforms/iOS/CertificatePinningHandler.cs`
-- **Android**: `Platforms/Android/NetworkSecurityConfig.xml`
-- **Windows**: `Platforms/Windows/WindowsCertificatePinningHandler.cs`
+- **iOS**: `Platforms/iOS/IosCertificatePinningHandler.cs` (uses `CertificatePinPolicy`)
+- **Mac Catalyst**: `Platforms/MacCatalyst/CertificatePinningHandler.cs` (uses `CertificatePinPolicy`)
+- **Android**: `Platforms/Android/Resources/xml/network_security_config.xml` (base64 digests, no `sha256/` prefix)
+- **Windows**: `Platforms/Windows/WindowsCertificatePinningHandler.cs` (uses `CertificatePinPolicy`)
+- **Shared pins**: `CipherBank-app.Core/Security/CertificatePinPolicy.cs`
 
 ## Prerequisites
 
@@ -73,21 +98,26 @@ openssl s_client -servername api.cipherbank.money -connect api.cipherbank.money:
 
 ## Updating Certificate Pins
 
-### iOS/Mac Catalyst
+### C# policy (iOS, Mac Catalyst, Windows)
 
-Edit `CipherBank-app/Platforms/iOS/CertificatePinningHandler.cs`:
+Edit the pin properties on `CertificatePinPolicy` in
+`CipherBank-app.Core/Security/CertificatePinPolicy.cs`. Keep the `sha256/`
+prefix. The platform handlers do not keep a separate `PinnedPublicKeys` array.
 
 ```csharp
-private static readonly string[] PinnedPublicKeys = new[]
-{
-    "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=",  // Primary production pin
-    "sha256/BACKUP_PIN_HERE=",                                 // Backup pin for rotation
-};
+public static string ProductionPin { get; } = "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=";
+
+public static string BackupPin { get; } = "sha256/BACKUP_PIN_HERE=";
 ```
+
+Set `SandboxPin` and `SandboxBackupPin` the same way. Do not leave
+`REPLACE_WITH_` in any of those four properties in a Release build.
+`EnsureReleasePinsAreConfigured` throws at startup when the marker remains.
 
 ### Android
 
-Edit `CipherBank-app/Platforms/Android/NetworkSecurityConfig.xml`:
+Edit `CipherBank-app/Platforms/Android/Resources/xml/network_security_config.xml`.
+Use the same digest as the C# pin, without the `sha256/` prefix:
 
 ```xml
 <domain-config>
@@ -99,19 +129,10 @@ Edit `CipherBank-app/Platforms/Android/NetworkSecurityConfig.xml`:
 </domain-config>
 ```
 
-**Note**: Android pins do NOT include the `sha256/` prefix.
-
-### Windows
-
-Edit `CipherBank-app/Platforms/Windows/WindowsCertificatePinningHandler.cs`:
-
-```csharp
-private static readonly string[] PinnedPublicKeys = new[]
-{
-    "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=",  // Primary production pin
-    "sha256/BACKUP_PIN_HERE=",                                 // Backup pin for rotation
-};
-```
+**Note**: Android pins do NOT include the `sha256/` prefix. The `digest`
+attribute is `SHA-256`. That is the network security config schema.
+`AndroidCertificatePinningHandler` does not compare `CertificatePinPolicy`
+itself; the XML is the Android source of truth.
 
 ## Pin Expiration and Rotation
 
@@ -198,7 +219,7 @@ or on failure:
 
 ### Android-specific issues
 
-- Verify `NetworkSecurityConfig.xml` is in `Platforms/Android/` folder
+- Verify `network_security_config.xml` is in `Platforms/Android/Resources/xml/`
 - Check that pins are base64-encoded (without `sha256/` prefix)
 - Verify `AndroidManifest.xml` references the config correctly
 - Check logcat for network security errors
@@ -213,10 +234,13 @@ or on failure:
 
 | Platform | File | Description |
 |----------|------|-------------|
-| iOS/Mac | `Platforms/iOS/CertificatePinningHandler.cs` | NSUrlSessionHandler implementation |
-| Android | `Platforms/Android/NetworkSecurityConfig.xml` | Network security configuration |
+| Shared C# pins | `CipherBank-app.Core/Security/CertificatePinPolicy.cs` | Hostnames and `sha256/` SPKI pins used by iOS, Mac Catalyst, and Windows |
+| iOS | `Platforms/iOS/IosCertificatePinningHandler.cs` | NSUrlSessionHandler implementation |
+| Mac Catalyst | `Platforms/MacCatalyst/CertificatePinningHandler.cs` | NSUrlSessionHandler implementation (`MacCatalystCertificatePinningHandler`) |
+| Android | `Platforms/Android/Resources/xml/network_security_config.xml` | Network security configuration (base64 digests, no `sha256/` prefix) |
+| Android handler | `Platforms/Android/AndroidCertificatePinningHandler.cs` | Default handler; pinning is the XML above, referenced from `AndroidManifest.xml` |
 | Windows | `Platforms/Windows/WindowsCertificatePinningHandler.cs` | HttpClientHandler implementation |
-| Shared | `Services/PlatformHttpHandlerFactory.cs` | Factory for platform-specific handlers |
+| Handler factory | `Services/IPlatformHttpMessageHandlerFactory.cs` | Per-platform `*HttpMessageHandlerFactory` |
 
 ## Security Best Practices
 
