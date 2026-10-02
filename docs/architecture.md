@@ -64,12 +64,12 @@ sequenceDiagram
 
 ## HTTP Pipeline
 
-Outgoing HTTP requests pass through the following pipeline (order matters):
+Outgoing HTTP requests pass through the following pipeline in request order (the primary handler is last):
 
-1. **PlatformHttpHandlerFactory** – Creates platform-specific handler with certificate pinning (iOS, Android, Windows).
-2. **RateLimitingHandler** – Sliding-window rate limiter (60 requests/minute default). Returns 429 if exceeded.
-3. **AuthHeaderHandler** – Injects Bearer token from `IAuthService`. Skips auth endpoints (`/auth/login`, `/auth/refresh`, `/auth/register`). Auto-refreshes token if expiring within 5 minutes.
-4. **StandardResilienceHandler** – Retry (3 attempts, exponential backoff, jitter), circuit breaker (50% failure, 30s break), timeouts (15s attempt, 60s total).
+1. **RateLimitingHandler** – Sliding-window rate limiter (60 requests/minute default). Returns 429 if exceeded.
+2. **AuthHeaderHandler** – Injects Bearer token from `IAuthService`. Skips auth endpoints (`/auth/login`, `/auth/refresh`, `/auth/register`). Auto-refreshes token if expiring within 5 minutes.
+3. **StandardResilienceHandler** – Retry (3 attempts, exponential backoff, jitter), circuit breaker (50% failure, 30s break), timeouts (15s attempt, 60s total).
+4. **IPlatformHttpMessageHandlerFactory** – The registered per-platform factory creates the certificate-pinning handler (iOS, Mac Catalyst, Android, Windows).
 
 ## Navigation
 
@@ -134,9 +134,7 @@ Pinned hostnames: `api.cipherbank.money`, `api.sandbox.cipherbank.money`. Placeh
 
 ## Mock vs Real Services
 
-Mock strategy is **build-time only** (no runtime switching):
+`MauiProgram.RegisterServices` branches on `HostBehaviorOptions.UseMockServices`. There is no `#if DEBUG` switch.
 
-- **DEBUG**: Uses mock services (`MockAuthService`, `MockCryptoAPIService`, etc.).
-- **Release**: Always uses real services (AuthService, CryptoAPIService, etc.).
-
-`UseMocks` has been removed from settings; registration is conditional via `#if DEBUG` in MauiProgram.
+- **UseMockServices true**: mock services (`MockAuthService`, `MockCryptoApiService`, `MockWalletService`, `MockTransactionService`). `config/appsettings.Development.jsonc` sets this to true.
+- **UseMockServices false**: real services (`AuthService`, `CryptoApiService`, `WalletService`, `TransactionService`). `config/appsettings.jsonc` sets this to false.
