@@ -29,6 +29,8 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <!-- Desktop e_sqlite3 pin (NU1903); Android uses sqlitepclraw.lib.e_sqlite3.android from Core -->
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
@@ -40,6 +42,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Host resilience policy lives on the MAUI project, which this net10.0 suite cannot reference. -->
+    <Compile Include="..\CipherBank-app\Extensions\CipherBankHttpResilience.cs" Link="Extensions\CipherBankHttpResilience.cs" />
   </ItemGroup>
 
 </Project>
