@@ -14,7 +14,7 @@ The CipherBank-app project is the main .NET MAUI application targeting Android, 
 1. **UseMauiApp<App>()** – Sets the application type.
 2. **ConfigureFonts()** – OpenSans-Regular, OpenSans-Semibold.
 3. **ConfigureLogging()** – Serilog; log level and file sink vary by build (see [config/README.md](../config/README.md)).
-4. **RegisterServices()** – All services via `AddCipherBankHttpClient<T>` extension; mock/real by `#if DEBUG`.
+4. **RegisterServices()** – All services via `AddCipherBankHttpClient<T>` extension; mock or real by `HostBehaviorOptions.UseMockServices`.
 5. **RegisterViewModels()** – ViewModels for DI.
 6. **RegisterViews()** – Pages for DI.
 
@@ -27,8 +27,8 @@ The CipherBank-app project is the main .NET MAUI application targeting Android, 
 | INavigationService, IDialogService | Singleton | Shell wrappers |
 | IErrorHandler | Singleton | Centralized API error handling |
 | IHealthCheckClient | Transient | For Settings Test Connection (cert pinning) |
-| Mock services | Singleton | MockAuthService, MockCryptoAPIService, etc. (DEBUG only) |
-| IAuthService, ICryptoApiService, etc. | Transient | Resolved by `#if DEBUG` (mocks vs real) |
+| Mock services | Singleton | MockAuthService, MockCryptoAPIService, etc. (when UseMockServices is true) |
+| IAuthService, ICryptoApiService, etc. | Transient | Resolved by HostBehaviorOptions.UseMockServices (mocks or real) |
 | AuthService, CryptoAPIService, etc. | Transient | Typed HttpClient via AddCipherBankHttpClient |
 | ViewModels | Transient | Per-page |
 | Views | Transient | Per-page |
