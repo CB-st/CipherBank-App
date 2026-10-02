@@ -2,14 +2,11 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Net;
 using System.Reflection;
 using CipherBank_app.Configuration;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Handlers;
-using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
-using Polly;
 
 namespace CipherBank_app.Extensions;
 
@@ -34,7 +31,6 @@ public static class HttpClientExtensions
         {
             ISettingsService settings = sp.GetRequiredService<ISettingsService>();
             http.BaseAddress = new Uri(settings.CipherBankEndpointBase);
-            http.Timeout = TimeSpan.FromSeconds(30);
             http.DefaultRequestHeaders.Add("Accept", "application/json");
             if (sp.GetRequiredService<IOptions<HostBehaviorOptions>>().Value.IncludeDiagnosticHeaders)
             {
@@ -49,7 +45,7 @@ public static class HttpClientExtensions
         .AddHttpMessageHandler(sp => new RateLimitingHandler(sp))
         .AddHttpMessageHandler(sp => new AuthHeaderHandler(sp));
 
-        builder.AddStandardResilienceHandler(ConfigureResilienceOptions);
+        builder.AddCipherBankResilience();
 
         return builder;
     }
@@ -64,27 +60,5 @@ public static class HttpClientExtensions
                 sp.GetRequiredService<IPlatformHttpMessageHandlerFactory>().CreateHandler());
         services.AddTransient<IHealthCheckClient, HealthCheckClient>();
         return services;
-    }
-
-    private static void ConfigureResilienceOptions(HttpStandardResilienceOptions options)
-    {
-        options.Retry.MaxRetryAttempts = 3;
-        options.Retry.Delay = TimeSpan.FromSeconds(1);
-        options.Retry.BackoffType = DelayBackoffType.Exponential;
-        options.Retry.UseJitter = true;
-        options.Retry.ShouldHandle = args => ValueTask.FromResult(
-            args.Outcome.Exception is HttpRequestException ||
-            args.Outcome.Result?.StatusCode is HttpStatusCode.ServiceUnavailable or
-                HttpStatusCode.GatewayTimeout or
-                HttpStatusCode.RequestTimeout or
-                HttpStatusCode.TooManyRequests ||
-            (int?)args.Outcome.Result?.StatusCode >= 500);
-
-        options.CircuitBreaker.FailureRatio = 0.5;
-        options.CircuitBreaker.MinimumThroughput = 10;
-        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
-        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
-        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(60);
-        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(15);
     }
 }
