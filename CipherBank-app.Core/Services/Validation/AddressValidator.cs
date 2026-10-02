@@ -170,7 +170,7 @@ public static partial class AddressValidator
         var bech32Data = address.Substring(3); // Remove bc1 or tb1 prefix
         const string bech32Alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
 
-        return bech32Data.All(c => bech32Alphabet.Contains(char.ToLowerInvariant(c)) || char.IsDigit(c));
+        return bech32Data.All(c => bech32Alphabet.Contains(char.ToLowerInvariant(c)));
     }
 
     [GeneratedRegex("^0x[a-fA-F0-9]{40}$")]

@@ -18,6 +18,7 @@ public class AddressValidatorTests
     [InlineData("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2", true)] // P2PKH
     [InlineData("3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy", true)] // P2SH
     [InlineData("bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq", true)] // Bech32
+    [InlineData("bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5md1", false)] // Bech32 data part contains 1
     [InlineData("", false)]
     [InlineData("invalid", false)]
     [InlineData("1", false)]
