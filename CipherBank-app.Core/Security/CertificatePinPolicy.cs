@@ -74,7 +74,7 @@ public static class CertificatePinPolicy
     public static void EnsurePinsAreNotPlaceholders(params string[] pins)
     {
         ArgumentNullException.ThrowIfNull(pins);
-        if (pins.Any(IsPlaceholderPin))
+        if (Array.Exists(pins, IsPlaceholderPin))
         {
             throw new InvalidOperationException(
                 "Certificate pin configuration contains a REPLACE_WITH_ placeholder. Replace the production and sandbox pins before shipping a Release build.");
