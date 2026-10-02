@@ -3,9 +3,14 @@
 // </copyright>
 
 using System.Net;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Polly;
+
+// The MAUI host imports this namespace implicitly; an explicit using is IDE0005 there.
+// The unit-test link compile does not, so restore it for that compilation only.
+#if CIPHERBANK_RESILIENCE_LINK
+using Microsoft.Extensions.DependencyInjection;
+#endif
 
 namespace CipherBank_app.Extensions;
 

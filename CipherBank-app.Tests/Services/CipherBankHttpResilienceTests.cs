@@ -8,6 +8,8 @@ using CipherBank_app.Extensions;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
+using Polly;
+using Polly.Retry;
 using Xunit;
 
 namespace CipherBank_app.Tests.Services;
@@ -20,7 +22,7 @@ public class CipherBankHttpResilienceTests
     [Fact]
     public void ConfigureResilienceOptions_UsesSixtySecondTotalBudget()
     {
-        var options = new HttpStandardResilienceOptions();
+        HttpStandardResilienceOptions options = new();
 
         CipherBankHttpResilience.ConfigureResilienceOptions(options);
 
@@ -34,7 +36,7 @@ public class CipherBankHttpResilienceTests
     {
         // Two 11s 503 responses plus one 11s success exceed the old 30s HttpClient.Timeout
         // and stay inside the 60s total request budget. Each attempt stays under the 15s attempt timeout.
-        var handler = new SlowUnavailableHandler(TimeSpan.FromSeconds(11));
+        SlowUnavailableHandler handler = new(TimeSpan.FromSeconds(11));
         ServiceCollection services = new();
         services.AddHttpClient(
                 "cipherbank",
@@ -46,7 +48,7 @@ public class CipherBankHttpResilienceTests
         HttpClient client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("cipherbank");
         client.Timeout.Should().Be(Timeout.InfiniteTimeSpan);
 
-        var stopwatch = Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
         using HttpResponseMessage response = await client.GetAsync(new Uri("/", UriKind.Relative));
         stopwatch.Stop();
 
@@ -54,6 +56,55 @@ public class CipherBankHttpResilienceTests
         handler.Attempts.Should().Be(3);
         stopwatch.Elapsed.Should().BeGreaterThan(TimeSpan.FromSeconds(30));
         stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(60));
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.ServiceUnavailable, true)]
+    [InlineData(HttpStatusCode.GatewayTimeout, true)]
+    [InlineData(HttpStatusCode.RequestTimeout, true)]
+    [InlineData(HttpStatusCode.TooManyRequests, true)]
+    [InlineData(HttpStatusCode.InternalServerError, true)]
+    [InlineData(HttpStatusCode.BadGateway, true)]
+    [InlineData(HttpStatusCode.OK, false)]
+    [InlineData(HttpStatusCode.NotFound, false)]
+    public async Task ShouldHandle_ClassifiesHttpStatus(HttpStatusCode status, bool retry)
+    {
+        using HttpResponseMessage response = new(status);
+        bool actual = await InvokeShouldHandle(Outcome.FromResult(response));
+        actual.Should().Be(retry);
+    }
+
+    [Fact]
+    public async Task ShouldHandle_RetriesHttpRequestException()
+    {
+        bool actual = await InvokeShouldHandle(
+            Outcome.FromException<HttpResponseMessage>(new HttpRequestException()));
+        actual.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ShouldHandle_IgnoresUnrelatedExceptions()
+    {
+        // A null response (no HttpRequestException) is the ?. path on status checks.
+        bool actual = await InvokeShouldHandle(
+            Outcome.FromException<HttpResponseMessage>(new InvalidOperationException()));
+        actual.Should().BeFalse();
+    }
+
+    private static async Task<bool> InvokeShouldHandle(Outcome<HttpResponseMessage> outcome)
+    {
+        HttpStandardResilienceOptions options = new();
+        CipherBankHttpResilience.ConfigureResilienceOptions(options);
+        ResilienceContext context = ResilienceContextPool.Shared.Get();
+        try
+        {
+            return await options.Retry.ShouldHandle(
+                new RetryPredicateArguments<HttpResponseMessage>(context, outcome, 0));
+        }
+        finally
+        {
+            ResilienceContextPool.Shared.Return(context);
+        }
     }
 
     private sealed class SlowUnavailableHandler(TimeSpan attemptDelay) : HttpMessageHandler

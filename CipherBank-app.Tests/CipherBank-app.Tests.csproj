@@ -44,6 +44,14 @@
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <!-- Coverlet skips test assemblies by default, so this linked host file would be
+         absent from the OpenCover report and Sonar would show 0% on the app path. -->
+    <IncludeTestAssembly>true</IncludeTestAssembly>
+    <!-- MAUI implicit usings already import DependencyInjection; the link compile does not. -->
+    <DefineConstants>$(DefineConstants);CIPHERBANK_RESILIENCE_LINK</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- Host resilience policy lives on the MAUI project, which this net10.0 suite cannot reference. -->
     <Compile Include="..\CipherBank-app\Extensions\CipherBankHttpResilience.cs" Link="Extensions\CipherBankHttpResilience.cs" />
