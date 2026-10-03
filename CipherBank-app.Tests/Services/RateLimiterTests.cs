@@ -48,11 +48,13 @@ public class RateLimiterTests
     public async Task TryAcquireAsync_AfterWindowExpires_ReturnsTrue()
     {
         // Arrange - Very short window
-        var rateLimiter = new RateLimiter(null, 1, TimeSpan.FromMilliseconds(50));
+        var window = TimeSpan.FromMilliseconds(50);
+        var clock = new FixedTimeProvider(new DateTimeOffset(2026, 8, 18, 12, 0, 0, TimeSpan.Zero));
+        var rateLimiter = new RateLimiter(null, clock, 1, window);
 
         // Act - Make request, wait for window, make another
         await rateLimiter.TryAcquireAsync();
-        await Task.Delay(100); // Wait for window to expire
+        clock.Advance(window + TimeSpan.FromTicks(1));
         var result = await rateLimiter.TryAcquireAsync();
 
         // Assert
@@ -160,7 +162,9 @@ public class RateLimiterTests
     public async Task SlidingWindow_CorrectlyExpireOldRequests()
     {
         // Arrange - 2 requests allowed per 100ms window
-        var rateLimiter = new RateLimiter(null, 2, TimeSpan.FromMilliseconds(100));
+        var window = TimeSpan.FromMilliseconds(100);
+        var clock = new FixedTimeProvider(new DateTimeOffset(2026, 8, 18, 12, 0, 0, TimeSpan.Zero));
+        var rateLimiter = new RateLimiter(null, clock, 2, window);
 
         // Act
         await rateLimiter.TryAcquireAsync(); // Request 1
@@ -169,13 +173,26 @@ public class RateLimiterTests
 
         atLimit.Should().BeFalse();
 
-        // Wait for window to slide
-        await Task.Delay(150);
+        clock.Advance(window + TimeSpan.FromTicks(1));
 
         // Now should be able to make requests again
         var afterExpiry = await rateLimiter.TryAcquireAsync();
 
         // Assert
         afterExpiry.Should().BeTrue();
+    }
+
+    private sealed class FixedTimeProvider : TimeProvider
+    {
+        private DateTimeOffset _utcNow;
+
+        public FixedTimeProvider(DateTimeOffset utcNow)
+        {
+            _utcNow = utcNow;
+        }
+
+        public override DateTimeOffset GetUtcNow() => _utcNow;
+
+        public void Advance(TimeSpan by) => _utcNow += by;
     }
 }
