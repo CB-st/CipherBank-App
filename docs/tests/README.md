@@ -62,7 +62,8 @@ Sonar (`new_coverage`) and Cobertura for tooling:
   coverage condition is the gate.
 - **Unit tests**: Coverlet Cobertura + OpenCover
   (`reports/coverage.cobertura.xml`, `reports/coverage.opencover.xml`).
-  Project file still records a 70% local threshold; CI passes
+  `CipherBank-app.Tests.csproj` does not set `CollectCoverage` or a coverage
+  threshold. Coverage is opt-in only on the CI coverage job, which passes
   `Threshold=0` and lets Sonar enforce new-code coverage.
 - **Integration tests**: Coverage collected, 0% threshold. Not in the M1
   coverage job.
