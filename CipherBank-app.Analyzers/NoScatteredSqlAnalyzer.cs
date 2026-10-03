@@ -21,8 +21,18 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
     private static readonly HashSet<string> _rawSqlMethods = new(StringComparer.Ordinal)
     {
+        "FromSql",
+        "FromSqlInterpolated",
         "FromSqlRaw",
+        "ExecuteSql",
+        "ExecuteSqlAsync",
+        "ExecuteSqlInterpolated",
+        "ExecuteSqlInterpolatedAsync",
         "ExecuteSqlRaw",
+        "ExecuteSqlRawAsync",
+        "Sql",
+        "SqlQuery",
+        "SqlQueryRaw",
     };
 
     /// <inheritdoc />
@@ -39,7 +49,21 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
         context.ConfigureGeneratedCodeAnalysis(
             GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
         context.EnableConcurrentExecution();
-        context.RegisterSyntaxNodeAction(AnalyzeAssignment, SyntaxKind.SimpleAssignmentExpression);
+        context.RegisterSyntaxNodeAction(
+            AnalyzeAssignment,
+            SyntaxKind.SimpleAssignmentExpression,
+            SyntaxKind.AddAssignmentExpression,
+            SyntaxKind.SubtractAssignmentExpression,
+            SyntaxKind.MultiplyAssignmentExpression,
+            SyntaxKind.DivideAssignmentExpression,
+            SyntaxKind.ModuloAssignmentExpression,
+            SyntaxKind.AndAssignmentExpression,
+            SyntaxKind.ExclusiveOrAssignmentExpression,
+            SyntaxKind.OrAssignmentExpression,
+            SyntaxKind.LeftShiftAssignmentExpression,
+            SyntaxKind.RightShiftAssignmentExpression,
+            SyntaxKind.UnsignedRightShiftAssignmentExpression,
+            SyntaxKind.CoalesceAssignmentExpression);
         context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
     }
 
@@ -55,16 +79,16 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
         }
 
         AssignmentExpressionSyntax assignment = (AssignmentExpressionSyntax)context.Node;
-        if (assignment.Left is not MemberAccessExpressionSyntax member
-            || member.Name.Identifier.ValueText != CommandTextName)
+        SyntaxToken? name = CommandTextToken(assignment.Left);
+        if (name is null)
         {
             return;
         }
 
         context.ReportDiagnostic(Diagnostic.Create(
             CipherBankDiagnostics.ScatteredSql,
-            member.Name.GetLocation(),
-            member.Name.Identifier.ValueText));
+            name.Value.GetLocation(),
+            name.Value.ValueText));
     }
 
     /// <summary>
@@ -107,7 +131,24 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
         return invocation.Expression switch
         {
             MemberAccessExpressionSyntax member => member.Name.Identifier.ValueText,
-            IdentifierNameSyntax identifier => identifier.Identifier.ValueText,
+            MemberBindingExpressionSyntax binding => binding.Name.Identifier.ValueText,
+            SimpleNameSyntax name => name.Identifier.ValueText,
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// Returns the CommandText token when the assignment target is that name.
+    /// Use: High (every assignment). Scope: this analyzer.
+    /// </summary>
+    private static SyntaxToken? CommandTextToken(ExpressionSyntax left)
+    {
+        return left switch
+        {
+            MemberAccessExpressionSyntax member when member.Name.Identifier.ValueText == CommandTextName
+                => member.Name.Identifier,
+            IdentifierNameSyntax identifier when identifier.Identifier.ValueText == CommandTextName
+                => identifier.Identifier,
             _ => null,
         };
     }
