@@ -1,0 +1,31 @@
+{
+  "source": [
+    "**/bin/**",
+    "**/obj/**",
+    "**/Platforms/**",
+    "**/Resources/**",
+    "**/Persist/Migrations/**",
+    "design_handoff_cipherbank/**",
+    ".cursor/**",
+    "reports/**"
+  ],
+  "coverage": [
+    "**/Platforms/**",
+    "**/Resources/**",
+    "**/*Tests*/**",
+    "scripts/**",
+    "design_handoff_cipherbank/**"
+  ],
+  "cpd": [
+    "**/IProductApi.cs",
+    "**/IWalletService.cs",
+    "**/IPublicQuoteService.cs",
+    "**/IMnemonicBackupService.cs",
+    "**/IPrefsSyncService.cs",
+    "**/IStepUpChallenges.cs",
+    "**/IChallengePass*.cs",
+    "**/IAccountKeySource.cs",
+    "**/ISessionChallengeClient.cs",
+    "**/IPq*.cs"
+  ]
+}

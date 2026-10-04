@@ -1,54 +1,23 @@
-using System;
-using System.Linq;
-using System.Net.Http;
+// <copyright file="WindowsCertificatePinningHandler.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using System.Net.Security;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using CipherBank_app.Security;
+using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Platforms.Windows;
 
-/// <summary>
-/// Windows-specific HTTP handler with certificate pinning support.
-/// Validates server certificates against pinned public key hashes.
-/// </summary>
-public class WindowsCertificatePinningHandler : HttpClientHandler
+/// <summary>Windows HTTP handler enforcing the shared SPKI pin policy.</summary>
+public sealed partial class WindowsCertificatePinningHandler : HttpClientHandler
 {
-    // ===================================================================================
-    // TODO: REPLACE CERTIFICATE PINS BEFORE PRODUCTION DEPLOYMENT
-    // ===================================================================================
-    // These placeholder pins MUST be replaced with actual certificate pins before release.
-    // The app will fail to connect to the API with these placeholder values.
-    //
-    // To obtain production pins, run the following commands in PowerShell or Git Bash:
-    //
-    // For api.cipherbank.money (production):
-    //   openssl s_client -servername api.cipherbank.money -connect api.cipherbank.money:443 < /dev/null 2>/dev/null | \
-    //     openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
-    //     openssl dgst -sha256 -binary | openssl enc -base64
-    //
-    // For api.sandbox.cipherbank.money (sandbox):
-    //   openssl s_client -servername api.sandbox.cipherbank.money -connect api.sandbox.cipherbank.money:443 < /dev/null 2>/dev/null | \
-    //     openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
-    //     openssl dgst -sha256 -binary | openssl enc -base64
-    //
-    // IMPORTANT: Always include a backup pin for certificate rotation.
-    // See CERTIFICATE_PINNING_SETUP.md for detailed instructions.
-    // ===================================================================================
-    private static readonly string[] PinnedPublicKeys = new[]
-    {
-        "sha256/REPLACE_WITH_PRODUCTION_PIN=",  // Primary pin - MUST be replaced before production
-        "sha256/REPLACE_WITH_BACKUP_PIN=",      // Backup pin for certificate rotation
-    };
+    private readonly ILogger<WindowsCertificatePinningHandler> _logger;
 
-    // Hostnames that require certificate pinning
-    private static readonly string[] PinnedHostnames = new[]
+    public WindowsCertificatePinningHandler(
+        ILogger<WindowsCertificatePinningHandler> logger)
     {
-        "api.cipherbank.money",
-        "api.sandbox.cipherbank.money"
-    };
-
-    public WindowsCertificatePinningHandler()
-    {
+        _logger = logger;
         ServerCertificateCustomValidationCallback = ValidateServerCertificate;
     }
 
@@ -58,114 +27,53 @@ public class WindowsCertificatePinningHandler : HttpClientHandler
         X509Chain? chain,
         SslPolicyErrors sslPolicyErrors)
     {
-        // Get the hostname from the request
-        var hostname = request.RequestUri?.Host ?? "";
-
-        // Check if this hostname requires pinning
-        if (!PinnedHostnames.Any(h => hostname.Equals(h, StringComparison.OrdinalIgnoreCase)))
+        string hostname = request.RequestUri?.Host ?? string.Empty;
+        if (!CertificatePinPolicy.RequiresPinning(hostname))
         {
-            // Not a pinned host, use standard validation
             return sslPolicyErrors == SslPolicyErrors.None;
         }
 
-        // For pinned hosts, require valid certificate chain
-        if (sslPolicyErrors != SslPolicyErrors.None)
+        if (sslPolicyErrors != SslPolicyErrors.None || certificate is null)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] SSL errors for {hostname}: {sslPolicyErrors}");
-#endif
+            LogCertificateValidationFailed(_logger, hostname, sslPolicyErrors);
             return false;
         }
 
-        if (certificate == null)
-        {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] No certificate for {hostname}");
-#endif
-            return false;
-        }
-
-        // Validate certificate pinning
         return ValidateCertificatePin(certificate, hostname);
     }
 
-    private static bool ValidateCertificatePin(X509Certificate2 certificate, string hostname)
+    private bool ValidateCertificatePin(X509Certificate2 certificate, string hostname)
     {
         try
         {
-            // Get the public key
-            var publicKey = certificate.GetPublicKey();
-            if (publicKey == null || publicKey.Length == 0)
+            if (!CertificatePinPolicy.TryComputeSpkiSha256Pin(certificate, out string? pin))
             {
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine("[Certificate Pinning] Failed to get public key");
-#endif
+                LogUnsupportedCertificateKeyType(_logger, hostname);
                 return false;
             }
 
-            // For RSA keys, we need to export the SubjectPublicKeyInfo
-            using var rsa = certificate.GetRSAPublicKey();
-            if (rsa != null)
-            {
-                var spki = rsa.ExportSubjectPublicKeyInfo();
-                var hash = SHA256.HashData(spki);
-                var base64Hash = Convert.ToBase64String(hash);
-                var pin = $"sha256/{base64Hash}";
-
-                foreach (var pinnedKey in PinnedPublicKeys)
-                {
-                    if (string.Equals(pin, pinnedKey, StringComparison.OrdinalIgnoreCase))
-                    {
-#if DEBUG
-                        System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Success for {hostname}");
-#endif
-                        return true;
-                    }
-                }
-
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Pin mismatch for {hostname}");
-#endif
-                return false;
-            }
-
-            // For ECDSA keys
-            using var ecdsa = certificate.GetECDsaPublicKey();
-            if (ecdsa != null)
-            {
-                var spki = ecdsa.ExportSubjectPublicKeyInfo();
-                var hash = SHA256.HashData(spki);
-                var base64Hash = Convert.ToBase64String(hash);
-                var pin = $"sha256/{base64Hash}";
-
-                foreach (var pinnedKey in PinnedPublicKeys)
-                {
-                    if (string.Equals(pin, pinnedKey, StringComparison.OrdinalIgnoreCase))
-                    {
-#if DEBUG
-                        System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Success for {hostname}");
-#endif
-                        return true;
-                    }
-                }
-
-#if DEBUG
-                System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Pin mismatch for {hostname}");
-#endif
-                return false;
-            }
-
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine("[Certificate Pinning] Unsupported key type");
-#endif
-            return false;
+            bool matched = CertificatePinPolicy.Matches(hostname, pin);
+            LogCertificatePinValidation(_logger, hostname, matched);
+            return matched;
         }
         catch (Exception ex)
         {
-#if DEBUG
-            System.Diagnostics.Debug.WriteLine($"[Certificate Pinning] Error: {ex.Message}");
-#endif
+            LogCertificatePinValidationFailed(_logger, ex, hostname);
             return false;
         }
     }
+
+#pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Certificate validation failed for pinned host {Hostname}: {Errors}")]
+    private static partial void LogCertificateValidationFailed(ILogger logger, string hostname, SslPolicyErrors errors);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Unsupported certificate key type for {Hostname}")]
+    private static partial void LogUnsupportedCertificateKeyType(ILogger logger, string hostname);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Certificate pin validation for {Hostname}: {Matched}")]
+    private static partial void LogCertificatePinValidation(ILogger logger, string hostname, bool matched);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Certificate pin validation failed for {Hostname}")]
+    private static partial void LogCertificatePinValidationFailed(ILogger logger, Exception ex, string hostname);
+#pragma warning restore SA1204 // Static members should appear before non-static members
 }

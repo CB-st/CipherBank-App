@@ -14,7 +14,7 @@ public class WalletRegistryTests
     [Fact]
     public void BtcModule_CanDerive()
     {
-        WalletModule mod = WalletRegistry.Get("BTC");
+        IWalletModule mod = WalletRegistry.Get("BTC");
         mod.CanDerive.Should().BeTrue();
         mod.AddModes.Should().Contain(WalletUiMode.Derive);
         mod.UsesServerWallets.Should().BeFalse();
@@ -23,7 +23,7 @@ public class WalletRegistryTests
     [Fact]
     public void XmrModule_UsesServerWallets()
     {
-        WalletModule mod = WalletRegistry.Get("XMR");
+        IWalletModule mod = WalletRegistry.Get("XMR");
         mod.CanDerive.Should().BeFalse();
         mod.UsesServerWallets.Should().BeTrue();
         mod.AddModes.Should().Contain(WalletUiMode.Managed);

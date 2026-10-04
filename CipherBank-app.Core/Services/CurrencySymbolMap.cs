@@ -2,10 +2,14 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Services;
 
 /// <summary>
 /// Maps app ticker symbols to CipherBank public API currency codes and back.
+/// App identity is <see cref="AssetSymbol"/> (open set; not an enum). Provider
+/// codes such as BITCOIN stay in this map and are not a second ticker type.
 /// </summary>
 public static class CurrencySymbolMap
 {
@@ -34,16 +38,24 @@ public static class CurrencySymbolMap
     /// <param name="appSymbol">App or API symbol.</param>
     /// <returns>Uppercase API currency code.</returns>
     /// <exception cref="ArgumentException">When the symbol is unsupported.</exception>
-    public static string ToApiCurrency(string appSymbol)
+    public static string ToApiCurrency(AssetSymbol appSymbol)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(appSymbol);
-
-        if (AppToApi.TryGetValue(appSymbol.Trim(), out string? api))
+        ArgumentNullException.ThrowIfNull(appSymbol);
+        if (AppToApi.TryGetValue(appSymbol.Value, out string? api))
         {
             return api;
         }
 
-        throw new ArgumentException($"Unsupported currency symbol '{appSymbol}'.", nameof(appSymbol));
+        throw new ArgumentException($"Unsupported currency symbol '{appSymbol.Value}'.", nameof(appSymbol));
+    }
+
+    /// <summary>
+    /// Converts ticker text to a public API currency code.
+    /// </summary>
+    public static string ToApiCurrency(string appSymbol)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(appSymbol);
+        return ToApiCurrency(new AssetSymbol(appSymbol));
     }
 
     /// <summary>
@@ -51,12 +63,21 @@ public static class CurrencySymbolMap
     /// </summary>
     /// <param name="apiCurrency">API currency code.</param>
     /// <returns>App ticker symbol.</returns>
+    public static AssetSymbol ToAppSymbol(AssetSymbol apiCurrency)
+    {
+        ArgumentNullException.ThrowIfNull(apiCurrency);
+        string ticker = ApiToApp.TryGetValue(apiCurrency.Value, out string? app) ? app : apiCurrency.Value;
+        return new AssetSymbol(ticker);
+    }
+
+    /// <summary>
+    /// Converts a public API currency code to an app ticker.
+    /// Unknown codes pass through uppercased so callers can still display them.
+    /// </summary>
     public static string ToAppSymbol(string apiCurrency)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(apiCurrency);
-
-        string key = apiCurrency.Trim().ToUpperInvariant();
-        return ApiToApp.TryGetValue(key, out string? app) ? app : key;
+        return ToAppSymbol(new AssetSymbol(apiCurrency)).Value;
     }
 
     /// <summary>
@@ -64,5 +85,6 @@ public static class CurrencySymbolMap
     /// </summary>
     /// <param name="symbol">App or API symbol.</param>
     /// <returns>True when mapped.</returns>
-    public static bool IsSupported(string? symbol) => !string.IsNullOrWhiteSpace(symbol) && AppToApi.ContainsKey(symbol.Trim());
+    public static bool IsSupported(string? symbol)
+        => AssetSymbol.TryParse(symbol, out AssetSymbol? parsed) && AppToApi.ContainsKey(parsed.Value);
 }

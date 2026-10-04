@@ -1,0 +1,4 @@
+// Windows overlay. Merged after appsettings.json when the host identifies as Windows.
+// Add section overrides here instead of forked JSON files.
+{
+}

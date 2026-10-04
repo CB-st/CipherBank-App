@@ -17,6 +17,9 @@ public sealed record OhlcPointEntity
     /// <summary>Unix timestamp for this value-series point.</summary>
     public long Timestamp { get; set; }
 
-    /// <summary>Quoted value at the timestamp (not open/high/low/close fields).</summary>
-    public double Value { get; set; }
+    /// <summary>Quoted price at the timestamp.</summary>
+    public decimal Price { get; set; }
+
+    /// <summary>Optional traded volume at the timestamp.</summary>
+    public decimal? Volume { get; set; }
 }

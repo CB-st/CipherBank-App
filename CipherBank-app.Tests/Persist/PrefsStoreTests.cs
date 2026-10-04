@@ -15,9 +15,9 @@ public class PrefsStoreTests
     public async Task SaveLoad_IdleSecondsRoundTrip()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        PrefsStore store = new PrefsStore(db);
+        PrefsStore store = new(db, TestPreferenceDefaults.Options);
         UserPrefs prefs = await store.LoadAsync();
         prefs.LockIdleSeconds = 90;
         prefs.Appearance = "light";
@@ -39,7 +39,7 @@ public class PrefsStoreTests
     public async Task LoadAsync_InvalidJson_ReturnsDefaults()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
         await using (CipherBankDbContext context = await db.CreateContextAsync())
         {
@@ -47,10 +47,11 @@ public class PrefsStoreTests
             await context.SaveChangesAsync();
         }
 
-        PrefsStore store = new PrefsStore(db);
+        PrefsStore store = new(db, TestPreferenceDefaults.Options);
         UserPrefs prefs = await store.LoadAsync();
-        prefs.LockIdleSeconds.Should().Be(new UserPrefs().LockIdleSeconds);
-        prefs.EnabledCurrencies.Should().Equal(UserPrefs.DefaultEnabledCurrencies);
+        prefs.LockIdleSeconds.Should().Be(TestPreferenceDefaults.Value.LockIdleSeconds);
+        prefs.EnabledCurrencies.Should().Equal(
+            TestPreferenceDefaults.Value.EnabledCurrencies.Select(symbol => symbol.Value));
     }
 
     /// <summary>
@@ -61,8 +62,8 @@ public class PrefsStoreTests
     public async Task LoadAsync_CanceledToken_ThrowsOperationCanceledException()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-prefs-" + Guid.NewGuid().ToString("N") + ".db");
-        PrefsStore store = new PrefsStore(new LocalDb(new FileInfo(path)));
-        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        PrefsStore store = new(new LocalDb(new FileInfo(path)), TestPreferenceDefaults.Options);
+        using CancellationTokenSource cancellation = new();
         await cancellation.CancelAsync();
 
         Func<Task> act = async () => await store.LoadAsync(cancellation.Token);

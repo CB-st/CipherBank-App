@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using FluentAssertions;
 using Xunit;
@@ -14,15 +15,21 @@ public class MarketRepositoryTests
     public async Task UpsertThenGet_ReturnsPointsOrderedByTimestamp()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-market-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        MarketRepository repository = new MarketRepository(db);
+        MarketRepository repository = new(db);
 
-        await repository.UpsertOhlcAsync("BTC", [(300, 3.0), (100, 1.0), (200, 2.0)], default);
-        await repository.UpsertOhlcAsync("BTC", [(200, 2.5)], default);
+        await repository.UpsertOhlcAsync(
+            "BTC",
+            [Point(300, 3m, 12m), Point(100, 1m), Point(200, 2m)],
+            default);
+        await repository.UpsertOhlcAsync("BTC", [Point(200, 2.5m)], default);
 
-        IReadOnlyList<(long T, double V)> points = await repository.GetOhlcAsync("BTC", 200, default);
+        IReadOnlyList<PricePoint> points = await repository.GetOhlcAsync("BTC", 200, default);
 
-        points.Should().Equal((200L, 2.5), (300L, 3.0));
+        points.Should().Equal(Point(200, 2.5m), Point(300, 3m, 12m));
     }
+
+    private static PricePoint Point(long timestamp, decimal price, decimal? volume = null) =>
+        new(DateTimeOffset.FromUnixTimeMilliseconds(timestamp), price, volume);
 }

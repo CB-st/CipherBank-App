@@ -16,10 +16,10 @@ public class RecipientRepositoryTests
     public async Task DeleteAsync_RemovesOnlyRecipientWithMatchingId()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        RecipientRepository repo = new RecipientRepository(db);
-        AchRecipientRow recipientToDelete = new AchRecipientRow(
+        RecipientRepository repo = new(db);
+        AchRecipientRow recipientToDelete = new(
             "delete-me",
             "Delete me",
             null,
@@ -44,9 +44,9 @@ public class RecipientRepositoryTests
     public async Task UpsertAsync_DoesNotPersistCleartextAccountOrRouting()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        RecipientRepository repo = new RecipientRepository(db);
+        RecipientRepository repo = new(db);
         await repo.UpsertAsync(new AchRecipientRow(
             "payee-1",
             "Payee",
@@ -83,7 +83,7 @@ public class RecipientRepositoryTests
 
             await using SqliteCommand schema = conn.CreateCommand();
             schema.CommandText = "SELECT name FROM pragma_table_info('recipients')";
-            List<string> columns = new List<string>();
+            List<string> columns = new();
             await using SqliteDataReader schemaReader = await schema.ExecuteReaderAsync();
             while (await schemaReader.ReadAsync())
             {
@@ -104,9 +104,9 @@ public class RecipientRepositoryTests
     public async Task UpsertAsync_RecomputesMasksWhenCleartextReplaced()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        RecipientRepository repo = new RecipientRepository(db);
+        RecipientRepository repo = new(db);
         await repo.UpsertAsync(new AchRecipientRow(
             "payee-1",
             "Payee",
@@ -140,8 +140,8 @@ public class RecipientRepositoryTests
     public async Task ListAsync_CanceledToken_ThrowsOperationCanceledException()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-test-" + Guid.NewGuid().ToString("N") + ".db");
-        RecipientRepository repo = new RecipientRepository(new LocalDb(new FileInfo(path)));
-        using CancellationTokenSource cancellation = new CancellationTokenSource();
+        RecipientRepository repo = new(new LocalDb(new FileInfo(path)));
+        using CancellationTokenSource cancellation = new();
         await cancellation.CancelAsync();
 
         Func<Task> act = async () => await repo.ListAsync(cancellation.Token);

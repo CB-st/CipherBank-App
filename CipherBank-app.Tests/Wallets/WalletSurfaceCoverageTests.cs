@@ -68,28 +68,17 @@ public sealed class WalletSurfaceCoverageTests
         doge.Path.Should().Contain("44'/3'");
     }
 
-    /// <summary>WalletModule.SourceFor mapping. Use: Medium. Scope: WalletModule.</summary>
+    /// <summary>Create mode maps to storage source. Use: Medium. Scope: IWalletModule.SourceFor.</summary>
     [Fact]
     public void WalletModule_SourceFor_MapsModes()
     {
-        WalletModule local = new WalletModule
-        {
-            Symbol = "BTC",
-            AddModes = [WalletUiMode.Watch, WalletUiMode.Unmanaged],
-            CanDerive = true,
-            UsesServerWallets = false,
-        };
+        IWalletModule local = WalletRegistry.Get("BTC");
         local.SourceFor(WalletUiMode.Watch).Should().Be(WalletSource.Watch);
         local.SourceFor(WalletUiMode.Managed).Should().Be(WalletSource.Server);
         local.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Local);
+        local.SourceFor(WalletUiMode.Derive).Should().Be(WalletSource.Local);
 
-        WalletModule server = new WalletModule
-        {
-            Symbol = "XMR",
-            AddModes = [WalletUiMode.Managed],
-            CanDerive = false,
-            UsesServerWallets = true,
-        };
+        IWalletModule server = WalletRegistry.Get("XMR");
         server.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Server);
     }
 
@@ -97,9 +86,10 @@ public sealed class WalletSurfaceCoverageTests
     [Fact]
     public void QrCodeGenerator_ProducesPngBytes()
     {
-        byte[] png = QrCodeGenerator.ToPngBytes("bitcoin:bc1qtest");
-        png.Should().NotBeEmpty();
-        png[0].Should().Be(0x89);
+        QrPng png = QrCodeGenerator.ToPng("bitcoin:bc1qtest");
+        png.Bytes.Length.Should().BeGreaterThan(0);
+        png.Bytes.Span[0].Should().Be(0x89);
+        QrPng.MediaType.Should().Be("image/png");
     }
 
     /// <summary>NullNfcPresentmentService failure path. Use: Medium. Scope: NullNfcPresentmentService.</summary>

@@ -8,7 +8,7 @@ Start with this file, then read the nearest subtree contract and the relevant do
 
 | Layer | Owns | Must not own |
 | --- | --- | --- |
-| `CipherBank-app.Core` | Domain models, application services, persistence ports, EF Core LocalDb | MAUI controls, platform APIs |
+| `CipherBank-app.Core` | Domain models, application services, persistence ports, EF Core through `ILocalDatabaseInitializer` | MAUI controls, platform APIs |
 | `CipherBank-app` | MAUI composition root, views, ViewModels, platform adapters | Domain policy, manual SQL, static service locators |
 | `CipherBank-app.Tests` | Unit and options regression tests | Shared mutable fixtures or production substitutes |
 | `CipherBank-app.Analyzers` | Repository-structure Roslyn diagnostics (CPM, AssemblyInfo, Core SQL, retired names) | Product behavior |
@@ -49,7 +49,7 @@ dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj /p:CollectCoverage=
 |---|---|
 | `CipherBank-app/AGENTS.md` | Host (composition/startup) + UI |
 | `CipherBank-app.Core/AGENTS.md` | Core/domain |
-| `CipherBank-app.Core/Persist/AGENTS.md` | Persist (EF / LocalDb / sync); M7 emulation pointer |
+| `CipherBank-app.Core/Persist/AGENTS.md` | Persist (EF initializer, rate snapshots, sync dispatcher); M7 emulation pointer |
 | `CipherBank-app.Tests/AGENTS.md` | Unit tests |
 | `CipherBank-app.Analyzers/AGENTS.md` | Repository-structure Roslyn analyzers |
 | `CipherBank-app.IntegrationTests/AGENTS.md` | Integration tests |

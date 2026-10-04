@@ -3,6 +3,7 @@
 // </copyright>
 
 using CipherBank_app.Persist;
+using CipherBank_app.Tests.Persist;
 using CipherBank_app.V1;
 using FluentAssertions;
 using Xunit;
@@ -22,7 +23,7 @@ public class PrefsSyncAndStreamTests
         store.Current.AssetsLayout = "combined";
         (await sync.SaveAndPushAsync(store.Current, default)).Should().BeTrue();
 
-        store.Current = new UserPrefs { CoraEnabled = true, AssetsLayout = "separate" };
+        store.Current = new UserPrefs(TestPreferenceDefaults.Value) { CoraEnabled = true, AssetsLayout = "separate" };
         await sync.PullMergeAsync(default);
         store.Current.CoraEnabled.Should().BeFalse();
         store.Current.AssetsLayout.Should().Be("combined");
@@ -31,7 +32,7 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public void PrefsMerge_KeepsLocalAssetsLayout_WhenRemoteOmitsIt()
     {
-        UserPrefs local = new UserPrefs { AssetsLayout = "combined", CoraEnabled = true };
+        UserPrefs local = new UserPrefs(TestPreferenceDefaults.Value) { AssetsLayout = "combined", CoraEnabled = true };
         PrefsWireDto remote = new PrefsWireDto { CoraEnabled = false };
         PrefsMerge.Merge(local, remote);
         local.AssetsLayout.Should().Be("combined");
@@ -101,7 +102,7 @@ public class PrefsSyncAndStreamTests
 
     private sealed class MemPrefs : IPrefsStore
     {
-        public UserPrefs Current { get; set; } = new();
+        public UserPrefs Current { get; set; } = new(TestPreferenceDefaults.Value);
 
         public Task<UserPrefs> LoadAsync(CancellationToken ct = default) => Task.FromResult(Current);
 

@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Globalization;
+using System.Reflection;
 using CipherBank_app.Configuration;
 using CipherBank_app.Extensions;
 using CipherBank_app.Services;
@@ -10,7 +11,9 @@ using CipherBank_app.V1;
 using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Core;
 using Serilog.Events;
 
 namespace CipherBank_app;
@@ -25,16 +28,14 @@ public static class MauiProgram
     // HTTP factories, IMotionPreference, and native/simulated blur handlers.
     public static MauiApp CreateMauiApp()
     {
-#if DEBUG
-        const bool IsDevelopment = true;
-#else
-        const bool IsDevelopment = false;
-#endif
-
         // Runtime platform check selects the appsettings.Windows.json overlay; no preprocessor fork.
+        string configuration = typeof(MauiProgram).Assembly
+            .GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration
+            ?? "Release";
+        bool isDevelopment = string.Equals(configuration, "Debug", StringComparison.OrdinalIgnoreCase);
         MauiAppBuilder builder = MauiApp.CreateBuilder();
         builder.Configuration.AddConfiguration(CipherBankDefaultsConfiguration.BuildForHost(
-            IsDevelopment,
+            isDevelopment,
             OperatingSystem.IsWindows()));
 
         return builder
@@ -50,12 +51,7 @@ public static class MauiProgram
                 fonts.AddFont("Inter-Medium.ttf", "InterMedium");
                 fonts.AddFont("Inter-SemiBold.ttf", "InterSemiBold");
             })
-            .ConfigureMauiHandlers(handlers =>
-            {
-#if IOS || MACCATALYST
-                handlers.AddHandler<Controls.BlurBackdropView, Handlers.BlurBackdropViewHandler>();
-#endif
-            })
+            .ConfigureMauiHandlers(handlers => handlers.AddPlatformHandlers())
             .ConfigureLogging()
             .RegisterServices()
             .RegisterViewModels()
@@ -68,39 +64,35 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder ConfigureLogging(this MauiAppBuilder mauiAppBuilder)
     {
-#if DEBUG
-        var minimumLevel = LogEventLevel.Debug;
-        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
-#else
-        var minimumLevel = LogEventLevel.Information;
-        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
-#endif
+        HostBehaviorOptions behavior = mauiAppBuilder.Configuration
+            .GetRequiredSection(nameof(HostBehaviorOptions))
+            .Get<HostBehaviorOptions>()
+            ?? throw new InvalidOperationException("Host behavior configuration is missing.");
+        if (!behavior.IsValid()
+            || !Enum.TryParse(behavior.MinimumLogLevel, ignoreCase: false, out LogEventLevel minimumLevel))
+        {
+            throw new InvalidOperationException("Host behavior configuration is invalid.");
+        }
 
-        var config = new LoggerConfiguration()
+        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
+
+        LoggerConfiguration config = new LoggerConfiguration()
             .MinimumLevel.Is(minimumLevel)
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .Enrich.FromLogContext();
 
-#if DEBUG
-        config = config.WriteTo.File(
-            logPath,
-            rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: 7,
-            formatProvider: CultureInfo.InvariantCulture,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-#else
-        // In Release: file sink enabled for diagnostics; consider disabling for privacy
-        config = config.WriteTo.File(
-            logPath,
-            rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: 3,
-            restrictedToMinimumLevel: LogEventLevel.Warning,
-            formatProvider: CultureInfo.InvariantCulture,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
-#endif
+        if (behavior.EnableFileLogging)
+        {
+            config = config.WriteTo.File(
+                logPath,
+                rollingInterval: RollingInterval.Day,
+                retainedFileCountLimit: 7,
+                formatProvider: CultureInfo.InvariantCulture,
+                outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}");
+        }
 
-        var logger = config.CreateLogger();
+        Logger logger = config.CreateLogger();
 
         mauiAppBuilder.Services.AddSerilog(logger);
 
@@ -116,6 +108,12 @@ public static class MauiProgram
     /// </summary>
     public static MauiAppBuilder RegisterServices(this MauiAppBuilder mauiAppBuilder)
     {
+        mauiAppBuilder.Services.AddPlatformFeatures();
+        mauiAppBuilder.Services.AddRequiredOptions(
+                mauiAppBuilder.Configuration,
+                new HostBehaviorOptions())
+            .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
+            .ValidateOnStart();
         mauiAppBuilder.Services.AddCipherBankCore(
             mauiAppBuilder.Configuration,
             FileSystem.Current.AppDataDirectory);
@@ -141,7 +139,7 @@ public static class MauiProgram
 #if DEBUG
         mauiAppBuilder.Services.AddSingleton<IProductClient>(sp =>
         {
-            var settings = sp.GetRequiredService<ISettingsService>();
+            ISettingsService settings = sp.GetRequiredService<ISettingsService>();
             if (settings.UseMockServices)
             {
                 Log.Debug("Using InMemoryProductClient (based on settings)");

@@ -3,8 +3,10 @@
 // </copyright>
 
 using CipherBank_app.Custody;
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using CipherBank_app.Session;
+using CipherBank_app.Tests.Persist;
 using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using FluentAssertions;
@@ -180,12 +182,12 @@ public class AppSessionTests
 
     private sealed class FakeWallets : IWalletRepository
     {
-        public List<LocalWalletRow> Rows { get; } = [];
+        public List<LocalWalletDescriptor> Rows { get; } = [];
 
-        public Task<IReadOnlyList<LocalWalletRow>> ListAsync(CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<LocalWalletRow>>(Rows);
+        public Task<IReadOnlyList<LocalWalletDescriptor>> ListAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<LocalWalletDescriptor>>(Rows);
 
-        public Task UpsertAsync(LocalWalletRow row, CancellationToken ct = default)
+        public Task UpsertAsync(LocalWalletDescriptor row, CancellationToken ct = default)
         {
             Rows.RemoveAll(r => r.Id == row.Id);
             Rows.Add(row);
@@ -201,7 +203,7 @@ public class AppSessionTests
 
     private sealed class FakePrefs : IPrefsStore
     {
-        public UserPrefs Current { get; set; } = new() { LockIdleSeconds = 1 };
+        public UserPrefs Current { get; set; } = new(TestPreferenceDefaults.Value) { LockIdleSeconds = 1 };
 
         public Task<UserPrefs> LoadAsync(CancellationToken ct = default) => Task.FromResult(Current);
 
@@ -215,8 +217,6 @@ public class AppSessionTests
     private sealed class MemRecipients : IRecipientRepository
     {
         public List<AchRecipientRow> Rows { get; } = [];
-
-        public Task EnsureSchemaAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public Task<IReadOnlyList<AchRecipientRow>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<AchRecipientRow>>(Rows);

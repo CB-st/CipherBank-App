@@ -32,15 +32,7 @@ public static class MnemonicHelper
             _ = new Mnemonic(Normalize(phrase), Wordlist.English);
             return true;
         }
-        catch (FormatException)
-        {
-            return false;
-        }
-        catch (ArgumentOutOfRangeException)
-        {
-            return false;
-        }
-        catch (ArgumentException)
+        catch (Exception ex) when (ex is FormatException or ArgumentException)
         {
             return false;
         }
@@ -58,6 +50,10 @@ public static class MnemonicHelper
     /// <summary>
     /// BIP39 entropy bytes for HKDF account / hybrid key derivation.
     /// NBitcoin 8 no longer exposes <c>Mnemonic.Entropy</c>; recover from word indices.
+    /// Each English word is an 11-bit index. The mnemonic is ENT entropy bits plus CS
+    /// checksum bits, with CS = ENT/32, so checksum length is totalBits/33. The loop
+    /// writes only the entropy prefix, most-significant bit first, and stops before
+    /// the checksum bits.
     /// </summary>
     public static byte[] Entropy(string phrase)
     {
@@ -70,6 +66,7 @@ public static class MnemonicHelper
         int bitPos = 0;
         foreach (int index in indices)
         {
+            // Word index bits are stored big-endian; bit 10 is the high bit of the 11-bit group.
             for (int i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
             {
                 if (((index >> i) & 1) == 1)
