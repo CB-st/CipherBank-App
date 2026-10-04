@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Persist;
 
 /// <summary>
@@ -10,4 +12,4 @@ namespace CipherBank_app.Persist;
 /// wallets ordered by creation time.
 /// </summary>
 public interface IWalletRepository
-    : IListable<LocalWalletRow>, IUpsert<LocalWalletRow>, IDeleteById;
+    : IListable<LocalWalletDescriptor>, IUpsert<LocalWalletDescriptor>, IDeleteById;

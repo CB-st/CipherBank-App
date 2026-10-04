@@ -16,7 +16,7 @@ public interface IErrorHandler
     /// </summary>
     /// <param name="operation">The async operation to execute.</param>
     /// <param name="setErrorMessage">Action to set the error message (e.g. ErrorMessage = value).</param>
-    /// <param name="networkErrorMessage">Optional custom message for HttpRequestException. Default: "Network error. Please check your connection."</param>
+    /// <param name="networkErrorMessage">Optional custom message for HttpRequestException. Default: "Network error. Please check your connection.".</param>
     /// <returns>True if operation succeeded, false if an error was caught and handled.</returns>
     Task<bool> HandleApiErrorsAsync(
         Func<Task> operation,

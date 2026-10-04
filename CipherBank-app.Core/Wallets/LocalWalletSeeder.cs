@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Globalization;
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 
 namespace CipherBank_app.Wallets;
@@ -41,23 +42,18 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     /// </summary>
     private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<string> symbols)
     {
-        IReadOnlyList<LocalWalletRow> existing = await _wallets.ListAsync().ConfigureAwait(false);
+        IReadOnlyList<LocalWalletDescriptor> existing = await _wallets.ListAsync().ConfigureAwait(false);
         foreach (string sym in symbols)
         {
-            WalletModule module = WalletRegistry.Get(sym);
-            if (!module.CanDerive)
+            // CanDerive and a null derive are the same gate. TryDerive is the one check.
+            if (WalletRegistry.Get(sym).TryDerive(mnemonic) is not DerivedAddress derived)
             {
                 continue;
             }
 
-            DerivedAddress? derived = AddressDerive.Derive(sym, mnemonic);
-            if (derived is null)
-            {
-                continue;
-            }
-
-            LocalWalletRow? existingDerived = existing.FirstOrDefault(w =>
-                w.Symbol.Equals(sym, StringComparison.OrdinalIgnoreCase)
+            AssetSymbol symbol = new(sym);
+            LocalWalletDescriptor? existingDerived = existing.FirstOrDefault(w =>
+                w.Symbol == symbol
                 && w.Kind.Equals("derived", StringComparison.OrdinalIgnoreCase));
 
             if (existingDerived is not null)
@@ -76,10 +72,10 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
                 continue;
             }
 
-            await _wallets.UpsertAsync(new LocalWalletRow(
+            await _wallets.UpsertAsync(new LocalWalletDescriptor(
                 Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
-                sym.ToUpperInvariant(),
-                $"{sym.ToUpperInvariant()} Primary",
+                symbol,
+                $"{symbol} Primary",
                 derived.Address,
                 derived.Path,
                 derived.AccountIndex,

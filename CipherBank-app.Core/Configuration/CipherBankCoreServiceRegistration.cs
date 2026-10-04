@@ -7,6 +7,8 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Pos;
 using CipherBank_app.V1;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -18,8 +20,9 @@ internal static class CipherBankCoreServiceRegistration
     // Rebase note: preserve M2's class-named .jsonc options, IOptions<T>,
     // context factory/startup initializer split, configured preference defaults,
     // generated-only migrations, and renamed wallet/rate/history contracts.
+
     /// <summary>
-    /// Registers crypto, persistence, sync dispatch, Cora copy, and EMV simulation services.
+    /// Registers crypto, persistence, sync dispatch, Cora copy, EMV simulation, and product session services.
     /// Use: Low (host startup). Scope: Core DI.
     /// </summary>
     internal static void AddCipherBankCoreServices(
@@ -30,25 +33,31 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ICoraLineProvider, CoraLineProvider>();
         services.AddSingleton<IEmvExchangeSimulator, EmvExchangeSimulator>();
-        // Rebase note: retain M2's typed SyncJobKey facade and register its single-flight
-        // factory and prioritized dispatcher; remove TaskScheduler.Default composition.
-        services.AddSingleton<ISyncJobScheduler>(static provider => new SyncJobScheduler(
-            TaskScheduler.Default,
-            provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value));
-        services.AddSingleton<ILocalDb>(provider =>
+        services.AddSingleton(provider =>
         {
             PersistenceOptions options = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
-            return new LocalDb(new FileInfo(Path.Combine(databaseDirectory, options.DatabaseName)));
+            return new FileInfo(Path.Combine(databaseDirectory, options.DatabaseName));
         });
+        services.AddDbContextFactory<CipherBankDbContext>((provider, options) =>
+        {
+            string connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = provider.GetRequiredService<FileInfo>().FullName,
+            }.ToString();
+            options.UseSqlite(connectionString);
+        });
+        services.AddSingleton<ILocalDatabaseInitializer, LocalDatabaseInitializer>();
+        services.AddSingleton<IRecipientSeedInitializer, RecipientSeedInitializer>();
+        services.AddSingleton<AppStartupCoordinator>();
         services.AddSingleton<IMarketRepository, MarketRepository>();
         services.AddSingleton<IPrefsStore, PrefsStore>();
-        services.AddSingleton<IRatesCache, RatesCache>();
+        services.AddSingleton<IRateSnapshotStore, SqliteRateSnapshotStore>();
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
-        services.AddSingleton<IRecipientSeedInitializer>(provider => new RecipientSeedInitializer(
-            provider.GetRequiredService<ILocalDb>(),
-            provider.GetRequiredService<IOptions<PersistenceOptions>>().Value,
-            provider.GetRequiredService<TimeProvider>()));
         services.AddSingleton<IWalletRepository, WalletRepository>();
+        services.AddSingleton<ISingleFlightJobFactory, SingleFlightJobFactory>();
+        services.AddSingleton<IPrioritizedJobDispatcher, PrioritizedJobDispatcher>();
+        services.AddSingleton<ISyncJobScheduler, SyncJobScheduler>();
+        services.AddSingleton<MarketRateHydrator>();
 
         // Production product wire: host (MauiProgram) registers HttpProductClient on the
         // pinned/rate-limited pipeline. Isolated Core tests construct the client directly.

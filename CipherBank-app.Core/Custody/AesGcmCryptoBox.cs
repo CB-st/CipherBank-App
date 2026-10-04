@@ -13,8 +13,9 @@ namespace CipherBank_app.Custody;
 public sealed class AesGcmCryptoBox : ICryptoBox
 {
     /// <summary>
-    /// Current packed-blob version. Follow-up: encode salt/tag/key/iteration sizes in-band when
-    /// CryptographyOptions may diverge across releases.
+    /// Packed-blob layout marker. This is a wire constant, not a <see cref="CryptographyOptions"/>
+    /// setting: the persisted profile is frozen, and a config-controlled version would let an
+    /// appsettings edit change the on-disk envelope.
     /// </summary>
     private const byte BlobFormatVersion = 0x01;
 
@@ -57,17 +58,19 @@ public sealed class AesGcmCryptoBox : ICryptoBox
             using AesGcm aes = new AesGcm(key, _options.TagSizeBytes);
             aes.Encrypt(nonce, plain, cipher, tag);
 
-            // v1: [version][salt][nonce][tag][cipher] — version documents the packing layout.
+            // v1: [version][salt][nonce][tag][cipher]. Bytes, not a StringBuilder:
+            // the buffer holds key-derived ciphertext and must be able to be zeroed.
             byte[] packed = new byte[1 + salt.Length + nonce.Length + tag.Length + cipher.Length];
-            int offset = 0;
-            packed[offset++] = BlobFormatVersion;
-            Buffer.BlockCopy(salt, 0, packed, offset, salt.Length);
-            offset += salt.Length;
-            Buffer.BlockCopy(nonce, 0, packed, offset, nonce.Length);
-            offset += nonce.Length;
-            Buffer.BlockCopy(tag, 0, packed, offset, tag.Length);
-            offset += tag.Length;
-            Buffer.BlockCopy(cipher, 0, packed, offset, cipher.Length);
+            Span<byte> destination = packed;
+            destination[0] = BlobFormatVersion;
+            destination = destination[1..];
+            salt.CopyTo(destination);
+            destination = destination[salt.Length..];
+            nonce.CopyTo(destination);
+            destination = destination[nonce.Length..];
+            tag.CopyTo(destination);
+            destination = destination[tag.Length..];
+            cipher.CopyTo(destination);
             return Convert.ToBase64String(packed);
         }
         finally

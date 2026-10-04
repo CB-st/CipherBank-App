@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Configuration;
 using CipherBank_app.Custody;
 using FluentAssertions;
 using Xunit;
@@ -31,7 +32,7 @@ public class BiometricUnlockContractTests
         PinService pin = new PinService(store);
         await pin.SetPinAsync("654321");
         string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
-        await store.SetAsync("cb_custody_blob", CryptoBox.Seal(mnemonic, "654321"));
+        await store.SetAsync("cb_custody_blob", CryptoBox.Seal(CryptographyOptions.Default, mnemonic, "654321"));
 
         CustodyService custody = new CustodyService(store, pin);
         (await custody.CanUnlockWithDeviceOwnerAsync()).Should().BeFalse();
@@ -50,7 +51,7 @@ public class BiometricUnlockContractTests
         PinService pin = new PinService(store);
         await pin.SetPinAsync("246810");
         string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
-        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, "246810"));
+        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(CryptographyOptions.Default, mnemonic, "246810"));
 
         // Simulate old bug: device secret persisted, blob still PIN-sealed.
         await store.SetAsync(CustodyService.DeviceSecretKey, Convert.ToBase64String(new byte[32]));
@@ -73,7 +74,7 @@ public class BiometricUnlockContractTests
         string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
         string deviceSecret = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
         await store.SetAsync(CustodyService.StagingDeviceSecretKey, deviceSecret);
-        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, deviceSecret));
+        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(CryptographyOptions.Default, mnemonic, deviceSecret));
 
         // DeviceSecretKey never promoted.
         CustodyService custody = new CustodyService(store, pin);
