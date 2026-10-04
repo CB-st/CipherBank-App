@@ -26,29 +26,7 @@ internal static class CipherBankCoreOptionsRegistration
         services.AddSingleton<IValidateOptions<CryptographyOptions>, CryptographyOptionsValidator>();
         services.AddRequiredOptions(configuration, new CryptographyOptions())
             .ValidateOnStart();
-        services.AddRequiredOptions(configuration, new SyncSchedulerOptions())
-            .Validate(
-                static options => options.MaxConcurrency == 0
-                    || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
-                        && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency),
-                OptionsValidationMessages.SyncConcurrencyOutOfRange)
-            .ValidateOnStart();
-        services.AddRequiredOptions(configuration, new PersistenceOptions())
-            .Validate(
-                static options => !string.IsNullOrWhiteSpace(options.DatabaseName),
-                OptionsValidationMessages.DatabaseNameRequired)
-            .Validate(
-                static options => Path.GetFileName(options.DatabaseName) == options.DatabaseName,
-                OptionsValidationMessages.DatabaseNameMustBeFileName)
-            .Validate(
-                static options => options.AreDefaultRecipientsValid(),
-                OptionsValidationMessages.DefaultRecipientsInvalid)
-            .ValidateOnStart();
-        services.AddRequiredOptions(configuration, new UserPreferenceDefaultsOptions())
-            .Validate(
-                static options => options.IsValid(),
-                "User preference defaults are invalid.")
-            .ValidateOnStart();
+        services.AddValidatedPersistenceOptions(configuration);
         services.AddRequiredOptions(configuration, new CoraOptions());
         services.AddRequiredOptions(configuration, new CarouselLayoutConfig());
     }

@@ -30,11 +30,20 @@ public sealed class CustodyService : ICustodyService
     private string? _mnemonic;
     private DateTimeOffset? _expires;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CustodyService"/> class.
+    /// Test convenience: seals with <see cref="CryptographyOptions.Default"/>.
+    /// Production hosts inject <see cref="ICryptoBox"/> built from bound options.
+    /// </summary>
     public CustodyService(ISecureStore store, IPinService pin)
         : this(store, pin, new AesGcmCryptoBox(CryptographyOptions.Default), TimeProvider.System)
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CustodyService"/> class.
+    /// Test convenience with an explicit clock. Seals with <see cref="CryptographyOptions.Default"/>.
+    /// </summary>
     public CustodyService(ISecureStore store, IPinService pin, TimeProvider timeProvider)
         : this(store, pin, new AesGcmCryptoBox(CryptographyOptions.Default), timeProvider)
     {

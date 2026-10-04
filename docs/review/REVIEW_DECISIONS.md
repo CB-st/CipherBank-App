@@ -169,21 +169,23 @@ the durable rationale so future rounds do not relitigate settled questions.
   strings only at JSON, HTTP, navigation, preferences, and EF boundaries.
   Keep provider-specific currency-code mapping separate from normalization.
 
-## 11. Options parent type with a custom section name
+## 11. Options parent type with a class-named section
 
 - **Ask:** keep an options interface plus abstract base, but look the section
   up with `nameof`.
-- **Decision:** declined the new parent. `AddRequiredOptions` already binds the
-  section named after the runtime class (`GetType().Name`, decision 9). A
-  non-generic base cannot express `nameof(Derived)`, and a CRTP base would be a
-  second convention beside that helper. `IOptionsSection` and the short keys
-  `Cryptography`, `Cora`, and `Carousel` are removed. Json keys are
-  `CryptographyOptions`, `CoraOptions`, and `CarouselLayoutConfig`.
+- **Decision:** accepted as `CipherBankOptions<TSelf>` where
+  `TSelf : CipherBankOptions<TSelf>` and `SectionName` is `typeof(TSelf).Name`.
+  For `CryptographyOptions`, `CoraOptions`, and `CarouselLayoutConfig` that
+  string is `nameof` of the class (decision 9). `AddRequiredOptions` still
+  binds `GetType().Name`, so a subclass cannot publish a different key.
+  `IOptionsSection` and the short keys `Cryptography`, `Cora`, and `Carousel`
+  stay removed. Json keys are `CryptographyOptions`, `CoraOptions`, and
+  `CarouselLayoutConfig`.
 - **Evidence:**
   [Options pattern](https://learn.microsoft.com/en-us/dotnet/core/extensions/options),
   decision 9 in this file.
-- **Forward guidance:** new options classes use `AddRequiredOptions` and a
-  class-named section. Do not add a `SectionName` string.
+- **Forward guidance:** class-named options inherit `CipherBankOptions<TSelf>`.
+  Register them with `AddRequiredOptions`, which uses the runtime class name.
 
 ## 12. Put the custody blob version and KDF sizes in options
 

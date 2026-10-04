@@ -5,7 +5,7 @@
 namespace CipherBank_app.Configuration;
 
 /// <summary>Non-secret algorithm parameters for custody blob encryption.</summary>
-public sealed class CryptographyOptions
+public sealed record CryptographyOptions : CipherBankOptions<CryptographyOptions>
 {
     /// <summary>AES-GCM nonce size required by the existing custody blob format.</summary>
     public const int AesGcmNonceSizeBytes = 12;

@@ -195,7 +195,9 @@ public class PinAndCustodyTests
         // old promoted secret still present.
         string stagedSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
         await store.SetAsync(CustodyService.StagingDeviceSecretKey, stagedSecret);
-        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, stagedSecret));
+        await store.SetAsync(
+            CustodyService.BlobKey,
+            CryptoBox.Seal(CryptographyOptions.Default, mnemonic, stagedSecret));
 
         (await custody.UnlockWithDeviceSecretAsync()).Should().BeTrue();
         custody.ExportMnemonic().Should().Be(mnemonic);

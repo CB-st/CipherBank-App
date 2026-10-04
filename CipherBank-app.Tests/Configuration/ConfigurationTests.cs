@@ -99,6 +99,10 @@ public sealed class ConfigurationTests
 
         configuration.GetSection(nameof(CoraOptions)).Get<CoraOptions>()!.Fallback.Should().Be("CipherBank.");
         configuration.GetSection(nameof(CarouselLayoutConfig)).Get<CarouselLayoutConfig>()!.Stride.Should().Be(220);
+        CryptographyOptions.SectionName.Should().Be(nameof(CryptographyOptions));
+        CoraOptions.SectionName.Should().Be(nameof(CoraOptions));
+        CarouselLayoutConfig.SectionName.Should().Be(nameof(CarouselLayoutConfig));
+        new CarouselLayoutConfig().Should().Be(CarouselLayoutConfig.Default);
         configuration.GetSection("Cora").Exists().Should().BeFalse();
         configuration.GetSection("Carousel").Exists().Should().BeFalse();
         configuration.GetSection("Cryptography").Exists().Should().BeFalse();
@@ -122,5 +126,48 @@ public sealed class ConfigurationTests
         Action act = () => _ = provider.GetRequiredService<IOptions<CryptographyOptions>>().Value;
 
         act.Should().Throw<OptionsValidationException>();
+    }
+
+    [Fact]
+    public void SyncSchedulerOptions_NonDefaultConcurrency_FailsValidation()
+    {
+        Dictionary<string, string?> values = new Dictionary<string, string?>
+        {
+            ["SyncSchedulerOptions:MaxConcurrency"] = "99",
+        };
+        IConfiguration configuration = new ConfigurationBuilder()
+            .AddConfiguration(CipherBankDefaultsConfiguration.Build())
+            .AddInMemoryCollection(values)
+            .Build();
+        ServiceCollection services = new ServiceCollection();
+        services.AddCipherBankCoreOptions(configuration);
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        Action act = () => _ = provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value;
+
+        act.Should().Throw<OptionsValidationException>();
+    }
+
+    [Fact]
+    public void PersistenceOptions_PathDatabaseName_FailsValidator()
+    {
+        PersistenceOptionsValidator validator = new();
+        PersistenceOptions options = new() { DatabaseName = "../cipherbank.db" };
+
+        ValidateOptionsResult result = validator.Validate(Options.DefaultName, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("DatabaseName must not contain a path.");
+    }
+
+    [Fact]
+    public void UserPreferenceDefaultsOptions_InvalidLayout_FailsValidator()
+    {
+        UserPreferenceDefaultsOptionsValidator validator = new();
+        UserPreferenceDefaultsOptions options = new() { AssetsLayout = "stacked" };
+
+        ValidateOptionsResult result = validator.Validate(Options.DefaultName, options);
+
+        result.Failed.Should().BeTrue();
     }
 }

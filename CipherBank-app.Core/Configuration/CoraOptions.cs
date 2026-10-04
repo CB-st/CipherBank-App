@@ -5,7 +5,7 @@
 namespace CipherBank_app.Configuration;
 
 /// <summary>Localizable Cora copy keyed by stable screen identifier.</summary>
-public sealed class CoraOptions
+public sealed record CoraOptions : CipherBankOptions<CoraOptions>
 {
     public string Fallback { get; set; } = "CipherBank.";
 
