@@ -34,10 +34,48 @@ flowchart TB
 |-------|----------------|
 | **Views** | XAML UI, bindings, user interaction. No business logic. |
 | **ViewModels** | Presentation logic, commands, state. Uses CommunityToolkit.Mvvm. |
-| **Services** | API calls, auth, persistence. Implements Core interfaces. |
-| **Core** | Shared interfaces, models, validation, rate limiting. Referenced by tests. |
+| **Services** | API calls, auth, platform adapters. Implements Core interfaces. |
+| **Core** | Domain services, typed configuration, EF Core persistence, dispatch, validation. |
 
 **Note**: The app references CipherBank-app.Core as the single source of truth for Models and service interfaces. Core is MAUI-agnostic.
+
+## Composition and dependency injection
+
+`MauiProgram` is the composition root. It loads the embedded defaults under
+`config/`, binds them to typed options, and maps interfaces to production or
+development implementations. Core services use constructor injection; dependency
+bag records and service-location calls are prohibited by `AGENTS.md` and structure
+tests.
+
+The `/v1` abstraction is `IProductClient`: callers model the client they invoke,
+not a remote API as a domain object. `InMemoryProductClient` is a stateful
+development fixture; behavior-specific unit tests use Moq instead.
+
+## Persistence
+
+Routine data access uses `CipherBankDbContext` and the EF Core SQLite provider.
+Repositories do not open connections or embed SQL. The only raw SQL owner is
+`Persist/Sql/LocalDbSql.cs`, which performs idempotent compatibility repair for
+databases created before EF Core and scrubs legacy cleartext recipient columns.
+
+Recipient account and routing values are input-only: repositories convert them to
+masks before creating an EF entity, and the EF model has no cleartext properties.
+
+## Dispatch
+
+`SyncJobScheduler` uses the framework `PriorityQueue` for P1/P2 ordering and an
+injected `TaskScheduler` for dispatch. A stable sequence number gives FIFO order
+within a priority, duplicate keys are rejected while queued or running, and
+configuration bounds concurrency to 1–8 workers.
+
+## Enforced repository structure
+
+- `Directory.Packages.props` is the only NuGet version owner.
+- Assembly attributes are generated from project files.
+- `scripts/validate-structure.sh` and `RepositoryStructureTests` reject scattered
+  SQL, dependency bags, legacy API/mock terminology, and package versions.
+- Sonar waits for the server quality gate and no longer excludes interfaces from
+  duplicate-code analysis.
 
 ## Data Flow
 

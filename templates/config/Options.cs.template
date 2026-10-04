@@ -1,0 +1,10 @@
+namespace CipherBank_app.Configuration;
+
+/// <summary>Configuration for __THEME__.</summary>
+public sealed class __THEME__Options
+{
+    public const string SectionName = "__THEME__";
+
+    /// <summary>Explains the unit and operational effect of this value.</summary>
+    public int ExampleValue { get; set; } = 1;
+}
