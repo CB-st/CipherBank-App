@@ -2,90 +2,57 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Custody;
-using NBitcoin;
-using Nethereum.HdWallet;
-using Nethereum.Util;
+using CipherBank_app.Models;
 
 namespace CipherBank_app.Wallets;
 
-/// <summary>BIP84/BIP44 derivation (Cora derive.ts parity).</summary>
+/// <summary>BIP84/BIP44 derivation facade. Chain logic lives on <see cref="IWalletModule"/>.</summary>
 public static class AddressDerive
 {
-    public static bool IsDerivable(string symbol)
-    {
-        string s = symbol.ToUpperInvariant();
-        return s is "BTC" or "ETH" or "LTC" or "DOGE";
-    }
+    /// <summary>Returns true when <paramref name="symbol"/> has an on-device derive path.</summary>
+    public static bool IsDerivable(AssetSymbol symbol)
+        => WalletRegistry.Get(symbol).CanDerive;
 
-    public static DerivedAddress? Derive(string symbol, string mnemonic)
+    /// <summary>Derives account 0, or null when the module cannot derive.</summary>
+    public static DerivedAddress? Derive(AssetSymbol symbol, string mnemonic)
         => Derive(symbol, mnemonic, 0);
 
-    public static DerivedAddress? Derive(string symbol, string mnemonic, int accountIndex)
-    {
-        string s = symbol.ToUpperInvariant();
-        return s switch
-        {
-            "BTC" => DeriveBtc(mnemonic, accountIndex),
-            "LTC" => DeriveLtc(mnemonic, accountIndex),
-            "DOGE" => DeriveDoge(mnemonic, accountIndex),
-            "ETH" => DeriveEth(mnemonic, accountIndex),
-            _ => null,
-        };
-    }
+    /// <summary>Derives <paramref name="accountIndex"/>, or null when the module cannot derive.</summary>
+    public static DerivedAddress? Derive(AssetSymbol symbol, string mnemonic, int accountIndex)
+        => WalletRegistry.Get(symbol).TryDerive(mnemonic, accountIndex);
 
+    /// <summary>Derives the first Bitcoin receive address.</summary>
     public static DerivedAddress DeriveBtc(string mnemonic)
         => DeriveBtc(mnemonic, 0);
 
+    /// <summary>Derives a Bitcoin receive address at <paramref name="accountIndex"/>.</summary>
     public static DerivedAddress DeriveBtc(string mnemonic, int accountIndex)
-    {
-        Mnemonic m = MnemonicHelper.Parse(mnemonic);
-        ExtKey root = m.DeriveExtKey();
-        string path = $"m/84'/0'/0'/0/{accountIndex}";
-        ExtKey key = root.Derive(new KeyPath(path));
-        BitcoinAddress addr = key.Neuter().PubKey.GetAddress(ScriptPubKeyType.Segwit, Network.Main);
-        return new DerivedAddress(addr.ToString(), path, accountIndex);
-    }
+        => Require(Derive("BTC", mnemonic, accountIndex));
 
+    /// <summary>Derives the first Litecoin receive address.</summary>
     public static DerivedAddress DeriveLtc(string mnemonic)
         => DeriveLtc(mnemonic, 0);
 
+    /// <summary>Derives a Litecoin receive address at <paramref name="accountIndex"/>.</summary>
     public static DerivedAddress DeriveLtc(string mnemonic, int accountIndex)
-    {
-        // Litecoin mainnet via NBitcoin Litecoin networks if available; fallback bech32 manually via BTC path style
-        Mnemonic m = MnemonicHelper.Parse(mnemonic);
-        ExtKey root = m.DeriveExtKey();
-        string path = $"m/84'/2'/0'/0/{accountIndex}";
-        ExtKey key = root.Derive(new KeyPath(path));
+        => Require(Derive("LTC", mnemonic, accountIndex));
 
-        // Use Litecoin network if registered; otherwise encode wit program with ltc HRP via BTC segwit then rewrite
-        WitKeyId wit = key.Neuter().PubKey.WitHash;
-        string address = new BitcoinWitPubKeyAddress(wit, NBitcoin.Altcoins.Litecoin.Instance.Mainnet).ToString();
-        return new DerivedAddress(address, path, accountIndex);
-    }
-
+    /// <summary>Derives the first Dogecoin receive address.</summary>
     public static DerivedAddress DeriveDoge(string mnemonic)
         => DeriveDoge(mnemonic, 0);
 
+    /// <summary>Derives a Dogecoin receive address at <paramref name="accountIndex"/>.</summary>
     public static DerivedAddress DeriveDoge(string mnemonic, int accountIndex)
-    {
-        Mnemonic m = MnemonicHelper.Parse(mnemonic);
-        ExtKey root = m.DeriveExtKey();
-        string path = $"m/44'/3'/0'/0/{accountIndex}";
-        ExtKey key = root.Derive(new KeyPath(path));
-        BitcoinAddress addr = key.Neuter().PubKey.GetAddress(ScriptPubKeyType.Legacy, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet);
-        return new DerivedAddress(addr.ToString(), path, accountIndex);
-    }
+        => Require(Derive("DOGE", mnemonic, accountIndex));
 
+    /// <summary>Derives the first Ethereum account.</summary>
     public static DerivedAddress DeriveEth(string mnemonic)
         => DeriveEth(mnemonic, 0);
 
+    /// <summary>Derives an Ethereum account at <paramref name="accountIndex"/>.</summary>
     public static DerivedAddress DeriveEth(string mnemonic, int accountIndex)
-    {
-        Wallet wallet = new Wallet(MnemonicHelper.Normalize(mnemonic), null);
-        Nethereum.Web3.Accounts.Account account = wallet.GetAccount(accountIndex);
-        string path = $"m/44'/60'/0'/0/{accountIndex}";
-        string checksum = new AddressUtil().ConvertToChecksumAddress(account.Address);
-        return new DerivedAddress(checksum, path, accountIndex);
-    }
+        => Require(Derive("ETH", mnemonic, accountIndex));
+
+    private static DerivedAddress Require(DerivedAddress? derived)
+        => derived ?? throw new InvalidOperationException("Wallet derivation returned no address.");
 }

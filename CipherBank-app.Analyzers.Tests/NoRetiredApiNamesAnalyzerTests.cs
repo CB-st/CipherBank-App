@@ -11,7 +11,7 @@ namespace CipherBank_app.Analyzers.Tests;
 public sealed class NoRetiredApiNamesAnalyzerTests
 {
     [Fact]
-    public async Task ReportsIProductApi()
+    public async Task ReportsIProductApiAsync()
     {
         var test = new CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier>
         {
@@ -27,7 +27,7 @@ public sealed class NoRetiredApiNamesAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsMockProductApiAndAppSessionDeps()
+    public async Task ReportsMockProductApiAndAppSessionDepsAsync()
     {
         var test = new CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier>
         {
@@ -43,7 +43,7 @@ public sealed class NoRetiredApiNamesAnalyzerTests
     }
 
     [Fact]
-    public async Task IgnoresUnrelatedIdentifiers()
+    public async Task IgnoresUnrelatedIdentifiersAsync()
     {
         var test = new CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier>
         {
@@ -59,7 +59,7 @@ public sealed class NoRetiredApiNamesAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsRetiredNameFromAdditionalHostFile()
+    public async Task ReportsRetiredNameFromAdditionalHostFileAsync()
     {
         CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier> test = new()
         {
@@ -83,7 +83,7 @@ public sealed class NoRetiredApiNamesAnalyzerTests
     }
 
     [Fact]
-    public async Task DoesNotDoubleReportWhenAdditionalFileIsCompilationTree()
+    public async Task DoesNotDoubleReportWhenAdditionalFileIsCompilationTreeAsync()
     {
         CSharpAnalyzerTest<NoRetiredApiNamesAnalyzer, DefaultVerifier> test = new()
         {

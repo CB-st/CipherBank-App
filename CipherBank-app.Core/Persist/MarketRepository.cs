@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Persist.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,54 +11,54 @@ namespace CipherBank_app.Persist;
 /// <inheritdoc />
 public sealed class MarketRepository : IMarketRepository
 {
-    private readonly ILocalDb _db;
+    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
 
-    public MarketRepository(ILocalDb db)
+    public MarketRepository(IDbContextFactory<CipherBankDbContext> contexts)
     {
-        _db = db;
+        _contexts = contexts;
     }
 
     /// <inheritdoc />
     public Task UpsertOhlcAsync(
-        string symbol,
-        IEnumerable<(long T, double V)> points,
+        AssetSymbol symbol,
+        IEnumerable<PricePoint> points,
         CancellationToken ct)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+        ArgumentNullException.ThrowIfNull(symbol);
         ArgumentNullException.ThrowIfNull(points);
         return UpsertOhlcCoreAsync(symbol, points, ct);
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
-        string symbol,
+    public Task<IReadOnlyList<PricePoint>> GetOhlcAsync(
+        AssetSymbol symbol,
         CancellationToken ct)
         => GetOhlcCoreAsync(symbol, null, ct);
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<(long T, double V)>> GetOhlcAsync(
-        string symbol,
+    public Task<IReadOnlyList<PricePoint>> GetOhlcAsync(
+        AssetSymbol symbol,
         long fromT,
         CancellationToken ct)
         => GetOhlcCoreAsync(symbol, fromT, ct);
 
     private async Task UpsertOhlcCoreAsync(
-        string symbol,
-        IEnumerable<(long T, double V)> points,
+        AssetSymbol symbol,
+        IEnumerable<PricePoint> points,
         CancellationToken ct)
     {
-        string normalizedSymbol = symbol.ToUpperInvariant();
-        (long T, double V)[] snapshot = points.ToArray();
+        string normalizedSymbol = symbol.Value;
+        PricePoint[] snapshot = points.ToArray();
         if (snapshot is [])
         {
             return;
         }
 
-        Dictionary<long, double> latestByTimestamp = snapshot
-            .GroupBy(point => point.T)
-            .ToDictionary(group => group.Key, group => group.Last().V);
+        Dictionary<long, PricePoint> latestByTimestamp = snapshot
+            .GroupBy(point => point.Timestamp.ToUnixTimeMilliseconds())
+            .ToDictionary(group => group.Key, group => group.Last());
 
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             long[] timestamps = latestByTimestamp.Keys.ToArray();
@@ -66,7 +67,7 @@ public sealed class MarketRepository : IMarketRepository
                 .ToDictionaryAsync(entity => entity.Timestamp, ct)
                 .ConfigureAwait(false);
 
-            foreach (KeyValuePair<long, double> point in latestByTimestamp)
+            foreach (KeyValuePair<long, PricePoint> point in latestByTimestamp)
             {
                 if (!existing.TryGetValue(point.Key, out OhlcPointEntity? entity))
                 {
@@ -78,21 +79,29 @@ public sealed class MarketRepository : IMarketRepository
                     context.OhlcPoints.Add(entity);
                 }
 
-                entity.Value = point.Value;
+                entity.Price = point.Value.Price;
+                entity.Volume = point.Value.Volume;
             }
 
             await context.SaveChangesAsync(ct).ConfigureAwait(false);
         }
     }
 
-    private async Task<IReadOnlyList<(long T, double V)>> GetOhlcCoreAsync(
-        string symbol,
+    private Task<IReadOnlyList<PricePoint>> GetOhlcCoreAsync(
+        AssetSymbol symbol,
         long? fromT,
         CancellationToken ct)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
-        string normalizedSymbol = symbol.ToUpperInvariant();
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(symbol);
+        return GetOhlcFromDatabaseAsync(symbol.Value, fromT, ct);
+    }
+
+    private async Task<IReadOnlyList<PricePoint>> GetOhlcFromDatabaseAsync(
+        string normalizedSymbol,
+        long? fromT,
+        CancellationToken ct)
+    {
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             IQueryable<OhlcPointEntity> query = context.OhlcPoints
@@ -107,7 +116,10 @@ public sealed class MarketRepository : IMarketRepository
                 .OrderBy(entity => entity.Timestamp)
                 .ToListAsync(ct)
                 .ConfigureAwait(false);
-            return entities.Select(entity => (entity.Timestamp, entity.Value)).ToList();
+            return entities.Select(entity => new PricePoint(
+                DateTimeOffset.FromUnixTimeMilliseconds(entity.Timestamp),
+                entity.Price,
+                entity.Volume)).ToList();
         }
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using CipherBank_app.Wallets;
 using FluentAssertions;
@@ -15,7 +16,7 @@ public class LocalWalletSeederTests
     public async Task EnsureDerivedAsync_UpdatesAddressWhenDerivedRowExistsForDifferentSeed()
     {
         FakeWallets wallets = new FakeWallets();
-        wallets.Rows.Add(new LocalWalletRow(
+        wallets.Rows.Add(new LocalWalletDescriptor(
             "old-btc",
             "BTC",
             "BTC Primary",
@@ -31,7 +32,7 @@ public class LocalWalletSeederTests
 
         await seeder.EnsureDerivedAsync(mnemonic, ["BTC"]);
 
-        LocalWalletRow row = wallets.Rows.Should().ContainSingle(r => r.Id == "old-btc").Subject;
+        LocalWalletDescriptor row = wallets.Rows.Should().ContainSingle(r => r.Id == "old-btc").Subject;
         row.Address.Should().NotBe("old-address-should-be-replaced");
         row.Address.Should().NotBeNullOrWhiteSpace();
         row.Kind.Should().Be("derived");
@@ -39,12 +40,12 @@ public class LocalWalletSeederTests
 
     private sealed class FakeWallets : IWalletRepository
     {
-        public List<LocalWalletRow> Rows { get; } = [];
+        public List<LocalWalletDescriptor> Rows { get; } = [];
 
-        public Task<IReadOnlyList<LocalWalletRow>> ListAsync(CancellationToken ct = default)
-            => Task.FromResult<IReadOnlyList<LocalWalletRow>>(Rows);
+        public Task<IReadOnlyList<LocalWalletDescriptor>> ListAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyList<LocalWalletDescriptor>>(Rows);
 
-        public Task UpsertAsync(LocalWalletRow row, CancellationToken ct = default)
+        public Task UpsertAsync(LocalWalletDescriptor row, CancellationToken ct = default)
         {
             Rows.RemoveAll(r => r.Id == row.Id);
             Rows.Add(row);

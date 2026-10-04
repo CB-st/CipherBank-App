@@ -2,15 +2,15 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Configuration;
+
 namespace CipherBank_app.Animations;
 
 /// <summary>
 /// Tunable constants for the arc carousel layout.
 /// </summary>
-public sealed record CarouselLayoutConfig
+public sealed record CarouselLayoutConfig : CipherBankOptions<CarouselLayoutConfig>
 {
-    public static string SectionName { get; } = "Carousel";
-
     /// <summary>Horizontal spacing (device-independent px) between adjacent cards.</summary>
     public double Stride { get; init; } = 220;
 

@@ -10,28 +10,24 @@ namespace CipherBank_app.Persist;
 /// <inheritdoc />
 public sealed class RecipientRepository : IRecipientRepository
 {
-    private readonly ILocalDb _db;
+    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RecipientRepository"/> class.
     /// Use: Medium (host composition). Scope: application database.
     /// </summary>
-    public RecipientRepository(ILocalDb db)
+    public RecipientRepository(IDbContextFactory<CipherBankDbContext> contexts)
     {
-        ArgumentNullException.ThrowIfNull(db);
-        _db = db;
+        ArgumentNullException.ThrowIfNull(contexts);
+        _contexts = contexts;
     }
-
-    public Task EnsureSchemaAsync() => EnsureSchemaAsync(CancellationToken.None);
-
-    public Task EnsureSchemaAsync(CancellationToken ct) => _db.InitializeAsync(ct);
 
     public Task<IReadOnlyList<AchRecipientRow>> ListAsync()
         => ListAsync(CancellationToken.None);
 
     public async Task<IReadOnlyList<AchRecipientRow>> ListAsync(CancellationToken ct)
     {
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             return await context.Recipients
@@ -60,7 +56,7 @@ public sealed class RecipientRepository : IRecipientRepository
     public async Task DeleteAsync(string id, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             RecipientEntity? entity = await context.Recipients.FindAsync([id], ct).ConfigureAwait(false);
@@ -76,7 +72,7 @@ public sealed class RecipientRepository : IRecipientRepository
 
     private async Task UpsertCoreAsync(AchRecipientRow row, CancellationToken ct)
     {
-        CipherBankDbContext context = await _db.CreateContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             await RecipientEntityWriter.ApplyAsync(context, row, ct).ConfigureAwait(false);

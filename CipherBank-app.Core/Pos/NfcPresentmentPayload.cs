@@ -35,21 +35,9 @@ public sealed class NfcPresentmentPayload
                 MerchantId = root.TryGetProperty("merchantId", out JsonElement m) ? m.GetString() : null,
             };
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException or FormatException)
         {
-            return null;
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
-        catch (InvalidOperationException)
-        {
-            // Wrong JSON value kinds (e.g. string where int expected).
-            return null;
-        }
-        catch (FormatException)
-        {
+            // InvalidOperationException: wrong JSON value kinds (e.g. string where int expected).
             return null;
         }
     }

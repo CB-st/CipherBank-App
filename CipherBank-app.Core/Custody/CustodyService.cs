@@ -30,11 +30,20 @@ public sealed class CustodyService : ICustodyService
     private string? _mnemonic;
     private DateTimeOffset? _expires;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CustodyService"/> class.
+    /// Test convenience: seals with <see cref="CryptographyOptions.Default"/>.
+    /// Production hosts inject <see cref="ICryptoBox"/> built from bound options.
+    /// </summary>
     public CustodyService(ISecureStore store, IPinService pin)
         : this(store, pin, new AesGcmCryptoBox(CryptographyOptions.Default), TimeProvider.System)
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CustodyService"/> class.
+    /// Test convenience with an explicit clock. Seals with <see cref="CryptographyOptions.Default"/>.
+    /// </summary>
     public CustodyService(ISecureStore store, IPinService pin, TimeProvider timeProvider)
         : this(store, pin, new AesGcmCryptoBox(CryptographyOptions.Default), timeProvider)
     {
@@ -60,24 +69,12 @@ public sealed class CustodyService : ICustodyService
     /// <inheritdoc />
     public event EventHandler? Locked;
 
-    public bool IsUnlocked
-    {
-        get
-        {
-            if (_mnemonic is null)
-            {
-                return false;
-            }
-
-            if (_expires is not DateTimeOffset expires || expires <= _timeProvider.GetUtcNow())
-            {
-                Lock();
-                return false;
-            }
-
-            return true;
-        }
-    }
+    /// <summary>
+    /// Gets whether the in-memory session is still inside its TTL. Reading this does not lock;
+    /// secret readers call <see cref="CloseIfExpired"/> so a binding refresh cannot raise
+    /// <see cref="Locked"/> as a side effect.
+    /// </summary>
+    public bool IsUnlocked => SessionIsLive();
 
     public DateTimeOffset? SessionExpiresAt => _expires;
 
@@ -151,19 +148,7 @@ public sealed class CustodyService : ICustodyService
             _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
             return true;
         }
-        catch (CryptographicException)
-        {
-            return FailUnlock();
-        }
-        catch (FormatException)
-        {
-            return FailUnlock();
-        }
-        catch (InvalidOperationException)
-        {
-            return FailUnlock();
-        }
-        catch (ArgumentException)
+        catch (Exception ex) when (IsRejectedSeal(ex))
         {
             return FailUnlock();
         }
@@ -191,19 +176,7 @@ public sealed class CustodyService : ICustodyService
             _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
             return true;
         }
-        catch (CryptographicException)
-        {
-            return FailUnlock();
-        }
-        catch (FormatException)
-        {
-            return FailUnlock();
-        }
-        catch (InvalidOperationException)
-        {
-            return FailUnlock();
-        }
-        catch (ArgumentException)
+        catch (Exception ex) when (IsRejectedSeal(ex))
         {
             return FailUnlock();
         }
@@ -217,10 +190,27 @@ public sealed class CustodyService : ICustodyService
     }
 
     public string? ExportMnemonic()
-        => IsUnlocked ? _mnemonic : null;
+    {
+        if (!SessionIsLive())
+        {
+            CloseIfExpired();
+            return null;
+        }
+
+        return _mnemonic;
+    }
 
     private static string CreateDeviceSecret()
         => Convert.ToBase64String(RandomNumberGenerator.GetBytes(DeviceSecretByteLength));
+
+    /// <summary>
+    /// True for seal failures that must lock the session instead of escaping the unlock call.
+    /// </summary>
+    private static bool IsRejectedSeal(Exception exception)
+        => exception is CryptographicException
+            or FormatException
+            or InvalidOperationException
+            or ArgumentException;
 
     /// <summary>
     /// Opens a sealed blob without throwing so unlock can try the next key material.
@@ -233,25 +223,26 @@ public sealed class CustodyService : ICustodyService
             mnemonic = _cryptoBox.Open(blob, keyMaterial);
             return true;
         }
-        catch (CryptographicException)
+        catch (Exception ex) when (IsRejectedSeal(ex))
         {
             mnemonic = null;
             return false;
         }
-        catch (FormatException)
+    }
+
+    private bool SessionIsLive()
+        => _mnemonic is not null
+            && _expires is DateTimeOffset expires
+            && expires > _timeProvider.GetUtcNow();
+
+    /// <summary>
+    /// Clears an expired mnemonic and raises <see cref="Locked"/>. A live or already-empty session is left alone.
+    /// </summary>
+    private void CloseIfExpired()
+    {
+        if (_mnemonic is not null && !SessionIsLive())
         {
-            mnemonic = null;
-            return false;
-        }
-        catch (InvalidOperationException)
-        {
-            mnemonic = null;
-            return false;
-        }
-        catch (ArgumentException)
-        {
-            mnemonic = null;
-            return false;
+            Lock();
         }
     }
 
