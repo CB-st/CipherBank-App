@@ -2,69 +2,77 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Wallets;
 
-/// <summary>Payment / receive URI builder (Cora paymentUri.ts).</summary>
+/// <summary>Payment / receive URI builder. Chain-specific formatting lives on <see cref="IWalletModule"/>.</summary>
 public static class PaymentUri
 {
     private const int DefaultShortenHeadLength = 8;
     private const int DefaultShortenTailLength = 6;
 
-    private static readonly Dictionary<string, string> SimpleSchemePrefixes = new()
-    {
-        ["BTC"] = "bitcoin",
-        ["LTC"] = "litecoin",
-        ["DOGE"] = "dogecoin",
-    };
-
     private static readonly HashSet<string> FiatCurrencies = ["USD", "EUR", "JPY"];
 
-    public static string Build(string symbol, string address)
-        => Build(symbol, address, null, null, null);
-
-    public static string Build(string symbol, string address, string? amount)
-        => Build(symbol, address, amount, null, null);
-
-    public static string Build(string symbol, string address, string? amount, string? label)
-        => Build(symbol, address, amount, label, null);
-
-    public static string Build(string symbol, string address, string? amount, string? label, string? message)
+    /// <summary>Builds a receive URI. Empty addresses return an empty string.</summary>
+    public static string Build(
+        string symbol,
+        string address,
+        string? amount = null,
+        string? label = null,
+        string? message = null)
     {
-        string sym = symbol.ToUpperInvariant();
         string addr = address.Trim();
-        if (string.IsNullOrEmpty(addr))
+        if (string.IsNullOrEmpty(addr) || !AssetSymbol.TryParse(symbol, out AssetSymbol? parsed))
         {
             return string.Empty;
         }
 
-        string suffix = BuildQuerySuffix(sym, amount, label, message);
-        return MapSchemeUri(sym, addr, suffix, amount).OriginalString;
+        if (FiatCurrencies.Contains(parsed.Value))
+        {
+            return new Uri(
+                $"cipherbank:receive/{parsed.Value}?address={Uri.EscapeDataString(addr)}",
+                UriKind.Absolute).OriginalString;
+        }
+
+        return WalletRegistry.Get(parsed).BuildReceiveUri(addr, amount, label, message).OriginalString;
     }
 
+    /// <summary>Shortens an address for display. Lengths are presentation defaults, not deployment settings.</summary>
     public static string Shorten(string address)
         => Shorten(address, DefaultShortenHeadLength, DefaultShortenTailLength);
 
+    /// <summary>Shortens an address, keeping <paramref name="head"/> characters and the default tail.</summary>
     public static string Shorten(string address, int head)
         => Shorten(address, head, DefaultShortenTailLength);
 
+    /// <summary>Shortens an address to <paramref name="head"/> and <paramref name="tail"/> characters.</summary>
     public static string Shorten(string address, int head, int tail)
     {
-        string a = address.Trim();
-        if (a.Length <= head + tail + 1)
+        string trimmed = address.Trim();
+        if (trimmed.Length <= head + tail + 1)
         {
-            return a;
+            return trimmed;
         }
 
-        return string.Concat(a.AsSpan(0, head), "…", a.AsSpan(a.Length - tail));
+        return string.Concat(trimmed.AsSpan(0, head), "…", trimmed.AsSpan(trimmed.Length - tail));
     }
 
-    private static string BuildQuerySuffix(string sym, string? amount, string? label, string? message)
-    {
-        if (sym is "ETH" or "XMR")
-        {
-            return string.Empty;
-        }
+    /// <summary>BIP21-style URI with optional amount, label, and message query fields.</summary>
+    internal static Uri Bip21(string scheme, string address, string? amount, string? label, string? message)
+        => new($"{scheme}:{address}{Query(amount, label, message)}", UriKind.Absolute);
 
+    /// <summary>Account-model URI. Amount uses <paramref name="amountParameter"/> when present.</summary>
+    internal static Uri Account(string scheme, string amountParameter, string address, string? amount)
+    {
+        string uriString = string.IsNullOrEmpty(amount)
+            ? $"{scheme}:{address}"
+            : $"{scheme}:{address}?{amountParameter}={Uri.EscapeDataString(amount)}";
+        return new Uri(uriString, UriKind.Absolute);
+    }
+
+    private static string Query(string? amount, string? label, string? message)
+    {
         List<string> parts = [];
         if (!string.IsNullOrEmpty(amount))
         {
@@ -81,49 +89,6 @@ public static class PaymentUri
             parts.Add("message=" + Uri.EscapeDataString(message));
         }
 
-        return parts.Count == 0 ? string.Empty : "?" + string.Join("&", parts);
-    }
-
-    /// <summary>
-    /// Dispatches a symbol to its scheme-specific URI builder (simple prefix, account-based, or fiat).
-    /// Use: High (every receive-address render). Scope: PaymentUri.Build.
-    /// </summary>
-    private static Uri MapSchemeUri(string sym, string addr, string suffix, string? amount)
-    {
-        if (SimpleSchemePrefixes.TryGetValue(sym, out string? prefix))
-        {
-            return new Uri($"{prefix}:{addr}{suffix}", UriKind.Absolute);
-        }
-
-        if (sym == "ETH")
-        {
-            return BuildAccountUri("ethereum", "value", addr, amount);
-        }
-
-        if (sym == "XMR")
-        {
-            return BuildAccountUri("monero", "tx_amount", addr, amount);
-        }
-
-        if (FiatCurrencies.Contains(sym))
-        {
-            return new Uri($"cipherbank:receive/{sym}?address={Uri.EscapeDataString(addr)}", UriKind.Absolute);
-        }
-
-        return Uri.TryCreate(addr, UriKind.Absolute, out Uri? parsed)
-            ? parsed
-            : new Uri(addr, UriKind.Relative);
-    }
-
-    /// <summary>
-    /// Formats an account-model (non-UTXO) receive URI, appending the amount query param when present.
-    /// Use: High (every receive-address render for ETH/XMR). Scope: PaymentUri.MapSchemeUri.
-    /// </summary>
-    private static Uri BuildAccountUri(string scheme, string amountParam, string addr, string? amount)
-    {
-        string uriString = string.IsNullOrEmpty(amount)
-            ? $"{scheme}:{addr}"
-            : $"{scheme}:{addr}?{amountParam}={Uri.EscapeDataString(amount)}";
-        return new Uri(uriString, UriKind.Absolute);
+        return parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
     }
 }

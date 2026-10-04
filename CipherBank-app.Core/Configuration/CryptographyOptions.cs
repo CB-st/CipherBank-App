@@ -5,7 +5,7 @@
 namespace CipherBank_app.Configuration;
 
 /// <summary>Non-secret algorithm parameters for custody blob encryption.</summary>
-public sealed class CryptographyOptions : IOptionsSection
+public sealed class CryptographyOptions
 {
     /// <summary>AES-GCM nonce size required by the existing custody blob format.</summary>
     public const int AesGcmNonceSizeBytes = 12;
@@ -30,9 +30,6 @@ public sealed class CryptographyOptions : IOptionsSection
 
     /// <summary>Minimum PBKDF2 iteration count compatible with the custody blob format.</summary>
     public const int MinPbkdf2Iterations = 210_000;
-
-    /// <inheritdoc />
-    public static string SectionName => "Cryptography";
 
     /// <summary>Default values compatible with the existing custody blob format.</summary>
     public static CryptographyOptions Default => new();

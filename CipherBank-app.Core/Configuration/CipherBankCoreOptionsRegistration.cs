@@ -5,6 +5,7 @@
 using CipherBank_app.Animations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Configuration;
 
@@ -12,48 +13,43 @@ namespace CipherBank_app.Configuration;
 internal static class CipherBankCoreOptionsRegistration
 {
     /// <summary>
-    /// Registers Cryptography / Sync / Persistence / Cora / Carousel options with start-time validation.
+    /// Registers Core options with start-time validation.
+    /// Persistence, sync, and preference defaults are bound here because this composition
+    /// root is self-contained for Core tests. The MAUI host binds those three through
+    /// <c>AddPersistenceFeature</c> and must not also call <c>AddCipherBankCore</c>.
     /// Use: Low (host startup). Scope: Core DI.
     /// </summary>
     internal static void AddCipherBankCoreOptions(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddOptions<CryptographyOptions>()
-            .Bind(configuration.GetSection(CryptographyOptions.SectionName))
-            .Validate(
-                static options => options.IsValid() && options.MatchesPersistedProfile(),
-                ConfigurationValidationMessages.CryptographyUnsafe)
+        services.AddSingleton<IValidateOptions<CryptographyOptions>, CryptographyOptionsValidator>();
+        services.AddRequiredOptions(configuration, new CryptographyOptions())
             .ValidateOnStart();
-        services.AddOptions<SyncSchedulerOptions>()
-            .Bind(configuration.GetSection(nameof(SyncSchedulerOptions)))
+        services.AddRequiredOptions(configuration, new SyncSchedulerOptions())
             .Validate(
                 static options => options.MaxConcurrency == 0
                     || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
                         && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency),
-                ConfigurationValidationMessages.SyncConcurrencyOutOfRange)
+                OptionsValidationMessages.SyncConcurrencyOutOfRange)
             .ValidateOnStart();
-        services.AddOptions<PersistenceOptions>()
-            .Bind(configuration.GetSection(nameof(PersistenceOptions)))
+        services.AddRequiredOptions(configuration, new PersistenceOptions())
             .Validate(
                 static options => !string.IsNullOrWhiteSpace(options.DatabaseName),
-                ConfigurationValidationMessages.DatabaseNameRequired)
+                OptionsValidationMessages.DatabaseNameRequired)
             .Validate(
                 static options => Path.GetFileName(options.DatabaseName) == options.DatabaseName,
-                ConfigurationValidationMessages.DatabaseNameMustBeFileName)
+                OptionsValidationMessages.DatabaseNameMustBeFileName)
             .Validate(
                 static options => options.AreDefaultRecipientsValid(),
-                ConfigurationValidationMessages.DefaultRecipientsInvalid)
+                OptionsValidationMessages.DefaultRecipientsInvalid)
             .ValidateOnStart();
-        services.AddOptions<UserPreferenceDefaultsOptions>()
-            .Bind(configuration.GetSection(nameof(UserPreferenceDefaultsOptions)))
+        services.AddRequiredOptions(configuration, new UserPreferenceDefaultsOptions())
             .Validate(
                 static options => options.IsValid(),
                 "User preference defaults are invalid.")
             .ValidateOnStart();
-        services.AddOptions<CoraOptions>()
-            .Bind(configuration.GetSection(CoraOptions.SectionName));
-        services.AddOptions<CarouselLayoutConfig>()
-            .Bind(configuration.GetSection(CarouselLayoutConfig.SectionName));
+        services.AddRequiredOptions(configuration, new CoraOptions());
+        services.AddRequiredOptions(configuration, new CarouselLayoutConfig());
     }
 }

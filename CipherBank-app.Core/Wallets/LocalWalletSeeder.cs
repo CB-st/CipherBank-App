@@ -45,14 +45,8 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
         IReadOnlyList<LocalWalletDescriptor> existing = await _wallets.ListAsync().ConfigureAwait(false);
         foreach (string sym in symbols)
         {
-            WalletModule module = WalletRegistry.Get(sym);
-            if (!module.CanDerive)
-            {
-                continue;
-            }
-
-            DerivedAddress? derived = AddressDerive.Derive(sym, mnemonic);
-            if (derived is null)
+            // CanDerive and a null derive are the same gate. TryDerive is the one check.
+            if (WalletRegistry.Get(sym).TryDerive(mnemonic) is not DerivedAddress derived)
             {
                 continue;
             }
