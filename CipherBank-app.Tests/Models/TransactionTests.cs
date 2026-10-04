@@ -70,7 +70,7 @@ public class TransactionTests
     public void FormattedAmount_ReturnsCorrectFormat()
     {
         // Arrange
-        var transaction = new Transaction(
+        Transaction transaction = new Transaction(
             "tx123",
             TransactionType.Purchase,
             0.12345678m,
@@ -82,7 +82,7 @@ public class TransactionTests
             0.001m);
 
         // Act
-        var result = transaction.FormattedAmount;
+        string result = transaction.FormattedAmount;
 
         // Assert
         result.Should().Be("0.12345678 BTC");
@@ -92,7 +92,7 @@ public class TransactionTests
     public void FormattedFee_ReturnsCorrectFormat()
     {
         // Arrange
-        var transaction = new Transaction(
+        Transaction transaction = new Transaction(
             "tx123",
             TransactionType.Purchase,
             1m,
@@ -104,7 +104,7 @@ public class TransactionTests
             0.00150000m);
 
         // Act
-        var result = transaction.FormattedFee;
+        string result = transaction.FormattedFee;
 
         // Assert
         result.Should().Be("0.00150000 ETH");

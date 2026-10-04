@@ -14,7 +14,7 @@ public class PriceHistoryTests
     public void HighPrice_ReturnsMaximumPrice()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
@@ -30,7 +30,7 @@ public class PriceHistoryTests
     public void LowPrice_ReturnsMinimumPrice()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
@@ -46,7 +46,7 @@ public class PriceHistoryTests
     public void AveragePrice_ReturnsCorrectAverage()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
@@ -62,7 +62,7 @@ public class PriceHistoryTests
     public void PriceChange_ReturnsLastMinusFirst()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-3), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-2), 150m),
@@ -78,7 +78,7 @@ public class PriceHistoryTests
     public void PercentChange_ReturnsCorrectPercentage()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow.AddHours(-2), 100m),
             new(DateTimeOffset.UtcNow.AddHours(-1), 120m),
@@ -107,7 +107,7 @@ public class PriceHistoryTests
     public void SinglePricePoint_ReturnsZeroForChange()
     {
         // Arrange
-        var pricePoints = new List<PricePoint>
+        List<PricePoint> pricePoints = new List<PricePoint>
         {
             new(DateTimeOffset.UtcNow, 100m),
         };

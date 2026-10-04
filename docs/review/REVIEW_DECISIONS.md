@@ -168,3 +168,97 @@ the durable rationale so future rounds do not relitigate settled questions.
 - **Forward guidance:** use `AssetSymbol` for app ticker values and convert to
   strings only at JSON, HTTP, navigation, preferences, and EF boundaries.
   Keep provider-specific currency-code mapping separate from normalization.
+
+## 11. Options parent type with a class-named section
+
+- **Ask:** keep an options interface plus abstract base, but look the section
+  up with `nameof`.
+- **Decision:** accepted as `CipherBankOptions<TSelf>` where
+  `TSelf : CipherBankOptions<TSelf>` and `SectionName` is `typeof(TSelf).Name`.
+  For `CryptographyOptions`, `CoraOptions`, and `CarouselLayoutConfig` that
+  string is `nameof` of the class (decision 9). `AddRequiredOptions` still
+  binds `GetType().Name`, so a subclass cannot publish a different key.
+  `IOptionsSection` and the short keys `Cryptography`, `Cora`, and `Carousel`
+  stay removed. Json keys are `CryptographyOptions`, `CoraOptions`, and
+  `CarouselLayoutConfig`.
+- **Evidence:**
+  [Options pattern](https://learn.microsoft.com/en-us/dotnet/core/extensions/options),
+  decision 9 in this file.
+- **Forward guidance:** class-named options inherit `CipherBankOptions<TSelf>`.
+  Register them with `AddRequiredOptions`, which uses the runtime class name.
+
+## 12. Put the custody blob version and KDF sizes in options
+
+- **Ask:** move `BlobFormatVersion` into `CryptographyOptions`, and consider a
+  `StringBuilder` for the pack loop.
+- **Decision:** declined. The version byte is the on-disk envelope marker.
+  KDF sizes are already frozen by `MatchesPersistedProfile`, so a config edit
+  cannot change them without failing startup. Encoding them as tunable options
+  would let appsettings change a layout the blob does not store. The pack
+  stays a byte span: a `StringBuilder` would retain plaintext on the managed
+  heap and is the wrong type for ciphertext.
+- **Evidence:**
+  [AesGcm](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.aesgcm),
+  [CryptographicOperations.ZeroMemory](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptographicoperations.zeromemory).
+- **Forward guidance:** format bytes stay constants next to `Seal`/`Open`.
+  Zero key and plaintext bytes after use.
+
+## 13. `WalletUiMode` and `WalletSource` are the same enum
+
+- **Ask:** consolidate the two enums.
+- **Decision:** declined. `WalletUiMode` is the create action the UI offers
+  (`Derive`, `Watch`, `Managed`, `Unmanaged`). `WalletSource` is where the
+  portfolio row lives afterward (`Local`, `Watch`, `Server`). `Unmanaged` is
+  server-backed only when the module uses server wallets. `SourceFor` is the
+  only mapping.
+- **Forward guidance:** do not merge the enums. New assets implement
+  `IWalletModule` and keep the default `SourceFor` unless storage really differs.
+
+## 14. Receive-URI shorten lengths and BIP21 schemes in appsettings
+
+- **Ask:** move payment-URI constants into appsettings.
+- **Decision:** declined. Head/tail shorten lengths are presentation defaults.
+  Scheme names (`bitcoin:`, `ethereum:`) are protocol, not deployment. Chain
+  formatting lives on `IWalletModule`.
+- **Forward guidance:** do not put BIP21 scheme strings in configuration.
+
+## 15. Reuse one QR generator and return a bitmap
+
+- **Ask:** cache a static `QRCodeGenerator`, and consider a bitmap instead of PNG.
+- **Decision:** declined the cache and the bitmap. `QRCodeGenerator` is
+  disposable and is not shared across UI threads; allocation is small next to
+  PNG encoding. Core is platform-neutral, so the return is `QrPng`
+  (`ReadOnlyMemory<byte>` plus `image/png`), which MAUI `ImageSource` can read.
+  A bitmap type would pull a UI stack into Core.
+- **Evidence:**
+  [QRCoder](https://github.com/codebude/QRCoder).
+- **Forward guidance:** create the generator per call. Do not add
+  `System.Drawing` or `Microsoft.Maui.Graphics` to Core for this payload.
+
+## 16. Chart samples should be `Microsoft.Maui.Graphics` points
+
+- **Ask:** replace `ChartPoint` with MAUI graphics points behind an interface.
+- **Decision:** declined. `ChartPoint` is a time/value sample (`T`, `V`).
+  Screen coordinates already leave `ChartMath` as `System.Numerics.Vector2`.
+  `Microsoft.Maui.Graphics.Point` is a drawing coordinate and would couple
+  platform-neutral Core to a UI package. An interface around two doubles does
+  not add a seam.
+- **Evidence:**
+  [Microsoft.Maui.Graphics](https://learn.microsoft.com/en-us/dotnet/maui/user-interface/graphics/).
+- **Forward guidance:** map `Vector2` to a UI point in the MAUI chart view, not
+  in Core.
+
+## 17. `dotnet-ef` should float with SemVer minor updates
+
+- **Ask:** bump `dotnet-ef` automatically because 10.0.12 is out and the tool
+  follows SemVer.
+- **Decision:** accepted as an exact pin to 10.0.12, matching
+  `Microsoft.EntityFrameworkCore.Design` in `Directory.Packages.props`.
+  `dotnet-tools.json` cannot express a version range. Dependabot's nuget
+  ecosystem updates that manifest and central package versions for minor and
+  patch releases, and ignores major bumps.
+- **Evidence:**
+  [dotnet-ef 10.0.12](https://www.nuget.org/packages/dotnet-ef/10.0.12),
+  [Dependabot nuget ecosystem](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem).
+- **Forward guidance:** keep the tool on the same 10.0 patch as EF Core. Do
+  not adopt 11.0 prerelease from the tool feed.

@@ -1,0 +1,28 @@
+// <copyright file="CryptoBoxTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
+using CipherBank_app.Configuration;
+using CipherBank_app.Custody;
+using FluentAssertions;
+using Xunit;
+
+namespace CipherBank_app.Tests.Custody;
+
+public class CryptoBoxTests
+{
+    [Fact]
+    public void SealOpen_RoundTripsPlaintext()
+    {
+        string sealedBlob = CryptoBox.Seal(CryptographyOptions.Default, "alpha beta gamma", "123456");
+        CryptoBox.Open(CryptographyOptions.Default, sealedBlob, "123456").Should().Be("alpha beta gamma");
+    }
+
+    [Fact]
+    public void Open_WithWrongPin_Throws()
+    {
+        string sealedBlob = CryptoBox.Seal(CryptographyOptions.Default, "secret", "123456");
+        Action act = () => CryptoBox.Open(CryptographyOptions.Default, sealedBlob, "000000");
+        act.Should().Throw<Exception>();
+    }
+}
