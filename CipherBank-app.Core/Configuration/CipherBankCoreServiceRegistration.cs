@@ -6,6 +6,7 @@ using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Pos;
+using CipherBank_app.V1;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +22,7 @@ internal static class CipherBankCoreServiceRegistration
     // LocalWalletDescriptor, PricePoint persistence, and SqliteRateSnapshotStore.
 
     /// <summary>
-    /// Registers crypto, persistence, sync dispatch, Cora copy, and EMV simulation services.
+    /// Registers crypto, persistence, sync dispatch, Cora copy, EMV simulation, and product session services.
     /// Use: Low (host startup). Scope: Core DI.
     /// </summary>
     internal static void AddCipherBankCoreServices(
@@ -57,5 +58,11 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton<IPrioritizedJobDispatcher, PrioritizedJobDispatcher>();
         services.AddSingleton<ISyncJobScheduler, SyncJobScheduler>();
         services.AddSingleton<MarketRateHydrator>();
+
+        // Production product wire: host (MauiProgram) registers HttpProductClient on the
+        // pinned/rate-limited pipeline. Isolated Core tests construct the client directly.
+        services.AddSingleton<ISessionProofBuilder, LabSessionProofBuilder>();
+        services.AddSingleton<IProductSessionStore, InMemoryProductSessionStore>();
+        services.AddTransient<ProductAuthHeaderHandler>();
     }
 }

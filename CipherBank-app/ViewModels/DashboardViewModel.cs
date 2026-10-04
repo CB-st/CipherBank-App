@@ -2,10 +2,15 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System;
 using System.Collections.ObjectModel;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -18,50 +23,44 @@ namespace CipherBank_app.ViewModels;
 public partial class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<DashboardViewModel> _logger;
-    private readonly ICryptoApiService _cryptoService;
+    private readonly IProductClient _product;
     private readonly IErrorHandler _errorHandler;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
+    [ObservableProperty]
+    private ObservableCollection<CryptoCurrency> cryptocurrencies = [];
+
+    [ObservableProperty]
+    private CryptoCurrency? selectedCrypto;
+
+    [ObservableProperty]
+    private bool isLoading;
+
+    [ObservableProperty]
+    private bool isRefreshing;
+
+    [ObservableProperty]
+    private string? errorMessage;
+
+    [ObservableProperty]
+    private decimal totalPortfolioValue;
+
     public DashboardViewModel(
         ILogger<DashboardViewModel> logger,
-        ICryptoApiService cryptoService,
+        IProductClient product,
         IErrorHandler errorHandler,
         INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
-        _cryptoService = cryptoService;
+        _product = product;
         _errorHandler = errorHandler;
         _navigation = navigation;
         _dialog = dialog;
     }
-
-    /// <summary>Gets or sets the cryptocurrencies shown on the dashboard.</summary>
-    [ObservableProperty]
-    public partial ObservableCollection<CryptoCurrency> Cryptocurrencies { get; set; } = [];
-
-    /// <summary>Gets or sets the selected cryptocurrency.</summary>
-    [ObservableProperty]
-    public partial CryptoCurrency? SelectedCrypto { get; set; }
-
-    /// <summary>Gets or sets a value indicating whether prices are loading.</summary>
-    [ObservableProperty]
-    public partial bool IsLoading { get; set; }
-
-    /// <summary>Gets or sets a value indicating whether a refresh is in progress.</summary>
-    [ObservableProperty]
-    public partial bool IsRefreshing { get; set; }
-
-    /// <summary>Gets or sets the dashboard error message.</summary>
-    [ObservableProperty]
-    public partial string? ErrorMessage { get; set; }
-
-    /// <summary>Gets or sets the total portfolio value.</summary>
-    [ObservableProperty]
-    public partial decimal TotalPortfolioValue { get; set; }
 
     /// <summary>
     /// Cancels any ongoing operations when leaving the page.
@@ -126,20 +125,20 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             var success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    List<CryptoCurrency> cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                    PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
                     Cryptocurrencies.Clear();
-                    foreach (CryptoCurrency crypto in cryptos)
+                    foreach (HoldingDto holding in portfolio.Holdings)
                     {
-                        Cryptocurrencies.Add(crypto);
+                        Cryptocurrencies.Add(ProductSurfaceMap.ToCryptoCurrency(holding));
                     }
 
                     if (isRefresh)
                     {
-                        LogRefreshedCount(_logger, cryptos.Count);
+                        LogRefreshedCount(_logger, portfolio.Holdings.Count);
                     }
                     else
                     {
-                        LogLoadedCount(_logger, cryptos.Count);
+                        LogLoadedCount(_logger, portfolio.Holdings.Count);
                     }
                 },
                 msg => ErrorMessage = msg,
@@ -158,6 +157,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                         LogLoadPricesCancelled(_logger);
                     }
                 }
+
+                return;
             }
         }
         catch (Exception ex)
@@ -190,7 +191,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol.Value);
+        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol);
         await _navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
     }
 
@@ -210,14 +211,20 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ViewCryptoDetailsAsync(CryptoCurrency crypto)
     {
-        LogViewingDetails(_logger, crypto.Symbol.Value);
+        if (crypto == null)
+        {
+            return;
+        }
+
+        LogViewingDetails(_logger, crypto.Symbol);
         SelectedCrypto = crypto;
 
         // Could navigate to a details page here
         var detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
         await _dialog.ShowAlertAsync(
             crypto.Name,
-            detailMessage);
+            detailMessage,
+            "OK");
     }
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
