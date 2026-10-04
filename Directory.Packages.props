@@ -8,7 +8,9 @@
     <PackageVersion Include="CommunityToolkit.Maui.Markup" Version="6.0.1" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.12" />
@@ -22,6 +24,9 @@
     <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Shiny.Hosting.Maui" Version="3.3.4" />
+  </ItemGroup>
+  <ItemGroup Label="ChallengePass">
+    <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />
   </ItemGroup>
   <ItemGroup Label="Core">
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
@@ -43,7 +48,9 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing" Version="1.1.4" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.9.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.100" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.9.0" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.31.0.145097" />
     <PackageVersion Include="StyleCop.Analyzers" Version="1.2.0-beta.556" />
   </ItemGroup>
   <ItemGroup Label="Testing">

@@ -1,0 +1,21 @@
+# __FEATURE__ contract
+
+This contract supplements the repository root for `__PATH__`.
+
+## Owns
+
+- __OWNED_CAPABILITY__
+
+## Must not own
+
+- __FORBIDDEN_DEPENDENCY__
+
+## Interfaces and DI
+
+- Depend on focused interfaces and register implementations at `__COMPOSITION_ROOT__`.
+- Keep configuration in `config/__THEME__/` with typed validation.
+
+## Verification
+
+- `__NARROW_TEST_COMMAND__`
+- `bash scripts/validate-structure.sh`
