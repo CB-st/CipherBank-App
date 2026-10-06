@@ -263,9 +263,5 @@ public class LocalDbMigrationTests
         : IDbContextFactory<CipherBankDbContext>
     {
         public CipherBankDbContext CreateDbContext() => new(options);
-
-        public ValueTask<CipherBankDbContext> CreateDbContextAsync(
-            CancellationToken cancellationToken = default) =>
-            ValueTask.FromResult(new CipherBankDbContext(options));
     }
 }
