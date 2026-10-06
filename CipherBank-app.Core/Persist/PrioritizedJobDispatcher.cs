@@ -213,6 +213,11 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
 
         private void Complete(Exception? failure = null, bool canceled = false)
         {
+            if (_completion.Task.IsCompleted)
+            {
+                return;
+            }
+
             bool completed;
 
             if (canceled)

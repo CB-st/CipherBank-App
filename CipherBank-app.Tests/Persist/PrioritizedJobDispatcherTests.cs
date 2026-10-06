@@ -491,6 +491,66 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     [Fact]
+    public async Task Dispose_DoesNotThrowWhenShutdownCancelsAnAlreadyCompletedJob()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int queuedRuns = 0;
+        Task running = dispatcher.EnqueueAsync(
+            SyncPriority.Interactive,
+            async ct =>
+            {
+                started.SetResult();
+
+                // Completing inline lets shutdown cancellation finish the consumer, including the
+                // second Cancel of the queued job, before Dispose cancels that job again.
+                TaskCompletionSource released = new();
+                using CancellationTokenRegistration registration = ct.Register(
+                    static state => ((TaskCompletionSource)state!).TrySetResult(),
+                    released);
+                await released.Task.ConfigureAwait(false);
+            },
+            CancellationToken.None);
+        await started.Task;
+        Task queued = dispatcher.EnqueueAsync(
+            SyncPriority.Background,
+            _ =>
+            {
+                Interlocked.Increment(ref queuedRuns);
+                return Task.CompletedTask;
+            },
+            CancellationToken.None);
+
+        List<Exception> unobserved = [];
+        EventHandler<UnobservedTaskExceptionEventArgs> handler = (_, args) =>
+        {
+            unobserved.Add(args.Exception);
+            args.SetObserved();
+        };
+
+        TaskScheduler.UnobservedTaskException += handler;
+        try
+        {
+            Action dispose = dispatcher.Dispose;
+            dispose.Should().NotThrow();
+            await running.WaitAsync(TimeSpan.FromSeconds(5));
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+                GC.WaitForPendingFinalizers();
+            }
+        }
+        finally
+        {
+            TaskScheduler.UnobservedTaskException -= handler;
+        }
+
+        queued.IsCanceled.Should().BeTrue();
+        Volatile.Read(ref queuedRuns).Should().Be(0);
+        unobserved.Exists(IsDispatcherObjectDisposed).Should().BeFalse();
+    }
+
+    [Fact]
     public void EnqueueAsync_AfterDisposeThrows()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
@@ -503,6 +563,14 @@ public sealed class PrioritizedJobDispatcherTests
 
         enqueue.Should().Throw<ObjectDisposedException>();
     }
+
+    private static bool IsDispatcherObjectDisposed(Exception exception) =>
+        exception is AggregateException aggregate
+        && aggregate.Flatten().InnerExceptions.Any(static inner =>
+            inner is ObjectDisposedException
+            && inner.StackTrace?.Contains(
+                nameof(PrioritizedJobDispatcher),
+                StringComparison.Ordinal) == true);
 
     private static PrioritizedJobDispatcher CreateDispatcher(int maxConcurrency = 1) =>
         new(Options.Create(new SyncSchedulerOptions { MaxConcurrency = maxConcurrency }));
