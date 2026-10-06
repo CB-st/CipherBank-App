@@ -49,7 +49,7 @@
     <PackageVersion Include="Appium.WebDriver" Version="9.0.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="coverlet.msbuild" Version="10.0.1" />
-    <PackageVersion Include="FluentAssertions" Version="7.2.2" />
+    <PackageVersion Include="AwesomeAssertions" Version="7.2.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="Selenium.WebDriver" Version="4.49.0" />
