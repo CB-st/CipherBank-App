@@ -61,7 +61,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
                 continue;
             }
 
-            foreach ((MemberAccessExpressionSyntax access, string root) in ProhibitedAccesses(tree, context.CancellationToken))
+            foreach ((SyntaxNode access, string root) in ProhibitedAccesses(tree, context.CancellationToken))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     CipherBankDiagnostics.ViewModelPlatformGlobal,
@@ -95,7 +95,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        foreach ((MemberAccessExpressionSyntax access, string root) in ProhibitedAccesses(tree, context.CancellationToken))
+        foreach ((SyntaxNode access, string root) in ProhibitedAccesses(tree, context.CancellationToken))
         {
             context.ReportDiagnostic(Diagnostic.Create(
                 CipherBankDiagnostics.ViewModelPlatformGlobal,
@@ -110,32 +110,161 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// so cancellable helpers such as <c>Task.Delay</c> remain available.
     /// Use: High (every ViewModel tree). Scope: this analyzer.
     /// </summary>
-    private static IEnumerable<(MemberAccessExpressionSyntax Access, string Root)> ProhibitedAccesses(
+    private static IEnumerable<(SyntaxNode Access, string Root)> ProhibitedAccesses(
         SyntaxTree tree,
         CancellationToken cancellationToken)
     {
         foreach (SyntaxNode node in tree.GetRoot(cancellationToken).DescendantNodes())
         {
-            if (node is not MemberAccessExpressionSyntax access
-                || access.Expression is not IdentifierNameSyntax identifier)
+            string? root = ProhibitedRoot(node);
+            if (root is null)
             {
                 continue;
             }
 
-            string root = identifier.Identifier.ValueText;
-            if (!_prohibitedRoots.Contains(root))
-            {
-                continue;
-            }
-
-            if (string.Equals(root, "Task", StringComparison.Ordinal)
-                && !string.Equals(access.Name.Identifier.ValueText, "Run", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            yield return (access, root);
+            yield return (node, root);
         }
+    }
+
+    /// <summary>
+    /// Returns the prohibited global for one member or conditional access, or null.
+    /// Qualified and <c>global::</c> receivers contribute the identifier that names the
+    /// global. <c>Task</c> bans <c>Run</c> and <c>Factory.StartNew</c>.
+    /// Use: High (every syntax node in a ViewModel tree). Scope: this analyzer.
+    /// </summary>
+    /// <param name="node">Candidate member or conditional access.</param>
+    /// <returns>The prohibited global name, or null when the node is allowed.</returns>
+    private static string? ProhibitedRoot(SyntaxNode node)
+    {
+        if (!TryReadDirectAccess(node, out ExpressionSyntax? receiver, out string member)
+            || receiver is null)
+        {
+            return null;
+        }
+
+        if (string.Equals(member, "StartNew", StringComparison.Ordinal) && IsTaskFactory(receiver))
+        {
+            return "Task";
+        }
+
+        string? root = ReceiverGlobalName(receiver);
+        if (root is null || !_prohibitedRoots.Contains(root))
+        {
+            return null;
+        }
+
+        if (string.Equals(root, "Task", StringComparison.Ordinal)
+            && !string.Equals(member, "Run", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        return root;
+    }
+
+    /// <summary>
+    /// Reads the receiver and the member name directly accessed on it.
+    /// Use: High (every syntax node in a ViewModel tree). Scope: this analyzer.
+    /// </summary>
+    /// <param name="node">Candidate member or conditional access.</param>
+    /// <param name="receiver">Expression that names the global, when the read succeeds.</param>
+    /// <param name="member">Member name taken from that receiver.</param>
+    /// <returns>True when <paramref name="node"/> is a member or conditional access.</returns>
+    private static bool TryReadDirectAccess(SyntaxNode node, out ExpressionSyntax? receiver, out string member)
+    {
+        if (node is MemberAccessExpressionSyntax access)
+        {
+            receiver = access.Expression;
+            member = access.Name.Identifier.ValueText;
+            return true;
+        }
+
+        if (node is ConditionalAccessExpressionSyntax conditional
+            && DirectConditionalMember(conditional.WhenNotNull) is string conditionalMember)
+        {
+            receiver = conditional.Expression;
+            member = conditionalMember;
+            return true;
+        }
+
+        receiver = null;
+        member = string.Empty;
+        return false;
+    }
+
+    /// <summary>
+    /// Returns the first member bound by <c>?.</c>, skipping a call around that member.
+    /// Use: High (each conditional access). Scope: this analyzer.
+    /// </summary>
+    /// <param name="whenNotNull">The <c>WhenNotNull</c> operand of a conditional access.</param>
+    /// <returns>The bound member name, or null when the shape is not a member access.</returns>
+    private static string? DirectConditionalMember(ExpressionSyntax whenNotNull)
+    {
+        ExpressionSyntax current = whenNotNull;
+        while (current is InvocationExpressionSyntax invocation)
+        {
+            current = invocation.Expression;
+        }
+
+        if (current is MemberBindingExpressionSyntax binding)
+        {
+            return binding.Name.Identifier.ValueText;
+        }
+
+        if (current is MemberAccessExpressionSyntax access
+            && access.Expression is MemberBindingExpressionSyntax nested)
+        {
+            return nested.Name.Identifier.ValueText;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// True when <paramref name="expression"/> is <c>Task.Factory</c>, including a qualified or
+    /// <c>global::</c> <c>Task</c>.
+    /// Use: High (each <c>StartNew</c> candidate). Scope: this analyzer.
+    /// </summary>
+    /// <param name="expression">Receiver of a potential <c>StartNew</c> access.</param>
+    /// <returns>True when the receiver is the task factory.</returns>
+    private static bool IsTaskFactory(ExpressionSyntax expression)
+    {
+        if (expression is not MemberAccessExpressionSyntax factory
+            || !string.Equals(factory.Name.Identifier.ValueText, "Factory", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return string.Equals(ReceiverGlobalName(factory.Expression), "Task", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Walks a qualified or alias-qualified receiver to the identifier that names the global.
+    /// Use: High (each member receiver). Scope: this analyzer.
+    /// </summary>
+    /// <param name="expression">Receiver of a member or conditional access.</param>
+    /// <returns>
+    /// Bare identifier text, the name after <c>::</c>, or the rightmost identifier of a
+    /// qualification such as <c>Microsoft.Maui.Controls.Application</c>.
+    /// </returns>
+    private static string? ReceiverGlobalName(ExpressionSyntax expression)
+    {
+        if (expression is IdentifierNameSyntax identifier)
+        {
+            return identifier.Identifier.ValueText;
+        }
+
+        if (expression is AliasQualifiedNameSyntax alias)
+        {
+            return alias.Name.Identifier.ValueText;
+        }
+
+        if (expression is MemberAccessExpressionSyntax member)
+        {
+            return member.Name.Identifier.ValueText;
+        }
+
+        return null;
     }
 
     /// <summary>
