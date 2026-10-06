@@ -5,6 +5,7 @@
 using System.Globalization;
 using CipherBank_app.Models;
 using CipherBank_app.Persist;
+using CipherBank_app.Persist.Entities;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -166,6 +167,69 @@ public class LocalDbMigrationTests
         }
     }
 
+    [Fact]
+    public async Task InitializeAsync_ExclusiveLock_ThrowsAndPreservesRow()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-lock-" + Guid.NewGuid().ToString("N") + ".db");
+        try
+        {
+            FileInfo databaseFile = new(path);
+            LocalDb migrated = new(databaseFile);
+            await migrated.InitializeAsync();
+            await using (CipherBankDbContext context = await migrated.CreateContextAsync())
+            {
+                context.Preferences.Add(new PreferenceEntity { Key = "user_prefs", Value = "kept-row" });
+                await context.SaveChangesAsync();
+            }
+
+            SqliteConnection.ClearAllPools();
+            await using (SqliteConnection holder = new(new SqliteConnectionStringBuilder
+            {
+                DataSource = path,
+                Pooling = false,
+            }.ToString()))
+            {
+                await holder.OpenAsync();
+                await using SqliteCommand begin = holder.CreateCommand();
+
+                // Migrated files are WAL. BEGIN EXCLUSIVE alone does not block the history read.
+                begin.CommandText = "PRAGMA locking_mode=EXCLUSIVE; BEGIN EXCLUSIVE;";
+                await begin.ExecuteNonQueryAsync();
+
+                string probeConnection = new SqliteConnectionStringBuilder
+                {
+                    DataSource = path,
+                    DefaultTimeout = 1,
+                    Pooling = false,
+                }.ToString();
+                DbContextOptions<CipherBankDbContext> probeOptions = new DbContextOptionsBuilder<CipherBankDbContext>()
+                    .UseSqlite(probeConnection)
+                    .Options;
+                LocalDatabaseInitializer initializer = new(new TimeoutContextFactory(probeOptions), new FileInfo(path));
+
+                Func<Task> act = () => initializer.InitializeAsync(CancellationToken.None);
+                await act.Should().ThrowAsync<SqliteException>();
+            }
+
+            SqliteConnection.ClearAllPools();
+            string readConnection = new SqliteConnectionStringBuilder { DataSource = path }.ToString();
+            CipherBankDbContext verify = new(
+                new DbContextOptionsBuilder<CipherBankDbContext>().UseSqlite(readConnection).Options);
+            await using (verify)
+            {
+                string value = await verify.Preferences
+                    .Where(row => row.Key == "user_prefs")
+                    .Select(row => row.Value)
+                    .SingleAsync();
+                value.Should().Be("kept-row");
+            }
+        }
+        finally
+        {
+            DeleteSqliteFiles(path);
+        }
+    }
+
     private static async Task<List<string>> ListTablesAsync(string path)
     {
         await using SqliteConnection conn = new(
@@ -193,5 +257,11 @@ public class LocalDbMigrationTests
                 File.Delete(candidate);
             }
         }
+    }
+
+    private sealed class TimeoutContextFactory(DbContextOptions<CipherBankDbContext> options)
+        : IDbContextFactory<CipherBankDbContext>
+    {
+        public CipherBankDbContext CreateDbContext() => new(options);
     }
 }
