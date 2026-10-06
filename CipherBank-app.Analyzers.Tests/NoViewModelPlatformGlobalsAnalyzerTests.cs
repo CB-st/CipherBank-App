@@ -43,6 +43,59 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
         await test.RunAsync();
     }
 
+    [Theory]
+    [InlineData("_ = {|CB1005:Microsoft.Maui.Controls.Application.Current|};")]
+    [InlineData("_ = {|CB1005:Application?.Current|};")]
+    [InlineData("_ = {|CB1005:global::Application.Current|};")]
+    [InlineData("_ = {|CB1005:Task.Factory.StartNew|}(() => 1);")]
+    public async Task ReportsQualifiedAndConditionalPlatformGlobalsFromViewModelAsync(string statement)
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestState =
+            {
+                Sources =
+                {
+                    ("CipherBank-app/ViewModels/QualifiedGlobalViewModel.cs", $$"""
+                        class QualifiedGlobalViewModel
+                        {
+                            void Execute()
+                            {
+                                {{statement}}
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task IgnoresTaskDelayFromViewModelAsync()
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestState =
+            {
+                Sources =
+                {
+                    ("CipherBank-app/ViewModels/DelayViewModel.cs", """
+                        class DelayViewModel
+                        {
+                            object Wait() => Task.Delay(1);
+                        }
+                        """),
+                },
+            },
+        };
+
+        await test.RunAsync();
+    }
+
     [Fact]
     public async Task IgnoresPlatformUseOutsideViewModelsAsync()
     {
