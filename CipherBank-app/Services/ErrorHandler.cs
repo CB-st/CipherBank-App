@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Net;
 using CipherBank_app.Constants;
 
 namespace CipherBank_app.Services;
@@ -38,6 +39,13 @@ public sealed class ErrorHandler : IErrorHandler
             return false;
         }
         catch (UnauthorizedAccessException)
+        {
+            setErrorMessage("Session expired. Please log in again.");
+            await _navigation.GoToAsync(Routes.Login);
+            return false;
+        }
+        catch (InvalidOperationException ex) when (ex.InnerException is HttpRequestException http
+            && http.StatusCode == HttpStatusCode.Unauthorized)
         {
             setErrorMessage("Session expired. Please log in again.");
             await _navigation.GoToAsync(Routes.Login);
