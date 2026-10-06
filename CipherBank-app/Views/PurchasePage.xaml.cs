@@ -34,6 +34,15 @@ public partial class PurchasePage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
+
+        // Shell raises this when the asset picker is pushed and when the Buy tab
+        // is left. Either event cancels a purchase the server may already have
+        // accepted, and the view model logs that cancellation without a dialog.
+        if (_viewModel.IsPurchasing || Navigation.ModalStack.Count > 0)
+        {
+            return;
+        }
+
         _viewModel.OnDisappearing();
     }
 
