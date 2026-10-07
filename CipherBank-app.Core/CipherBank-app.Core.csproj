@@ -47,6 +47,8 @@
   <ItemGroup>
     <!-- Custody storage-key constants stay internal; the unit suite needs them to seed legacy blobs. -->
     <InternalsVisibleTo Include="CipherBank-app.Tests" />
+    <!-- Buy-page cancellation stays internal; the MAUI head is the only production caller. -->
+    <InternalsVisibleTo Include="CipherBank-app" />
   </ItemGroup>
 
   <ItemGroup>
