@@ -28,6 +28,14 @@ public partial class PurchasePage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+
+        // Tab changes, back navigation, and a Shell remount all enter here again.
+        // Reloading while a purchase is in flight used to cancel that purchase.
+        if (_viewModel.IsPurchasing)
+        {
+            return;
+        }
+
         await _viewModel.LoadAvailableCryptosCommand.ExecuteAsync(null);
     }
 
