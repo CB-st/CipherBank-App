@@ -48,6 +48,8 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     [InlineData("_ = {|CB1005:Application?.Current|};")]
     [InlineData("_ = {|CB1005:global::Application.Current|};")]
     [InlineData("_ = {|CB1005:Task.Factory.StartNew|}(() => 1);")]
+    [InlineData("_ = {|CB1005:Task.Factory?.StartNew(() => 1).ContinueWith(t => t)|};")]
+    [InlineData("_ = {|CB1005:Task.Factory?.StartNew(() => 1)?.ContinueWith(t => t)|};")]
     public async Task ReportsQualifiedAndConditionalPlatformGlobalsFromViewModelAsync(string statement)
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()

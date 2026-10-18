@@ -193,31 +193,29 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Returns the first member bound by <c>?.</c>, skipping a call around that member.
+    /// Returns the first member bound by <c>?.</c>, walking the leftmost operand of the
+    /// calls, member accesses, element accesses, and nested <c>?.</c> chained after it,
+    /// as in <c>Task.Factory?.StartNew(...).ContinueWith(...)</c>.
     /// Use: High (each conditional access). Scope: this analyzer.
     /// </summary>
     /// <param name="whenNotNull">The <c>WhenNotNull</c> operand of a conditional access.</param>
-    /// <returns>The bound member name, or null when the shape is not a member access.</returns>
+    /// <returns>The bound member name, or null when the chain does not start with a member binding.</returns>
     private static string? DirectConditionalMember(ExpressionSyntax whenNotNull)
     {
-        ExpressionSyntax current = whenNotNull;
-        while (current is InvocationExpressionSyntax invocation)
+        ExpressionSyntax? current = whenNotNull;
+        while (current is not null and not MemberBindingExpressionSyntax)
         {
-            current = invocation.Expression;
+            current = current switch
+            {
+                InvocationExpressionSyntax invocation => invocation.Expression,
+                MemberAccessExpressionSyntax access => access.Expression,
+                ElementAccessExpressionSyntax element => element.Expression,
+                ConditionalAccessExpressionSyntax conditional => conditional.Expression,
+                _ => null,
+            };
         }
 
-        if (current is MemberBindingExpressionSyntax binding)
-        {
-            return binding.Name.Identifier.ValueText;
-        }
-
-        if (current is MemberAccessExpressionSyntax access
-            && access.Expression is MemberBindingExpressionSyntax nested)
-        {
-            return nested.Name.Identifier.ValueText;
-        }
-
-        return null;
+        return (current as MemberBindingExpressionSyntax)?.Name.Identifier.ValueText;
     }
 
     /// <summary>
