@@ -10,8 +10,6 @@ namespace CipherBank_app.Purchasing;
 /// </summary>
 internal sealed class PurchaseRequestLifetime : IDisposable
 {
-    private readonly List<CancellationTokenSource> _retired = [];
-
     private CancellationTokenSource? _load;
     private CancellationTokenSource? _purchase;
     private bool _disposed;
@@ -26,13 +24,6 @@ internal sealed class PurchaseRequestLifetime : IDisposable
             _purchase?.Dispose();
             _load = null;
             _purchase = null;
-
-            foreach (CancellationTokenSource source in _retired)
-            {
-                source.Dispose();
-            }
-
-            _retired.Clear();
         }
 
         GC.SuppressFinalize(this);
@@ -74,7 +65,7 @@ internal sealed class PurchaseRequestLifetime : IDisposable
         }
     }
 
-    private CancellationToken Replace(ref CancellationTokenSource? slot)
+    private static CancellationToken Replace(ref CancellationTokenSource? slot)
     {
         Retire(ref slot);
         CancellationTokenSource next = new();
@@ -82,15 +73,18 @@ internal sealed class PurchaseRequestLifetime : IDisposable
         return next.Token;
     }
 
-    private void Retire(ref CancellationTokenSource? slot)
+    private static void Retire(ref CancellationTokenSource? slot)
     {
         if (slot is null)
         {
             return;
         }
 
+        // Cancel runs the operation's callbacks first. Its token still reports
+        // cancellation after Dispose, so the source is released here rather than
+        // kept until the page's view model is disposed.
         slot.Cancel();
-        _retired.Add(slot);
+        slot.Dispose();
         slot = null;
     }
 }
