@@ -4,6 +4,7 @@
 
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
@@ -194,7 +195,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// Returns the first member bound by <c>?.</c>, walking the leftmost operand of the
-    /// calls, member accesses, element accesses, and nested <c>?.</c> chained after it,
+    /// calls, member accesses, element accesses, null-forgiving <c>!</c>, and nested <c>?.</c> chained after it,
     /// as in <c>Task.Factory?.StartNew(...).ContinueWith(...)</c>.
     /// Use: High (each conditional access). Scope: this analyzer.
     /// </summary>
@@ -211,6 +212,8 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
                 MemberAccessExpressionSyntax access => access.Expression,
                 ElementAccessExpressionSyntax element => element.Expression,
                 ConditionalAccessExpressionSyntax conditional => conditional.Expression,
+                PostfixUnaryExpressionSyntax suppressed
+                    when suppressed.IsKind(SyntaxKind.SuppressNullableWarningExpression) => suppressed.Operand,
                 _ => null,
             };
         }
