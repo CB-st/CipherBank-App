@@ -97,6 +97,32 @@ public class PurchaseRequestLifetimeTests
     }
 
     [Fact]
+    public void BeginLoad_ReleasesTheReplacedLoadSource()
+    {
+        using PurchaseRequestLifetime lifetime = new();
+        CancellationToken firstLoad = lifetime.BeginLoad();
+
+        _ = lifetime.BeginLoad();
+        _ = lifetime.BeginPurchase();
+
+        // A disposed source still reports cancellation but no longer hands out a wait handle.
+        firstLoad.IsCancellationRequested.Should().BeTrue();
+        firstLoad.Invoking(static token => token.WaitHandle).Should().Throw<ObjectDisposedException>();
+    }
+
+    [Fact]
+    public void BeginPurchase_ReleasesThePreviousPurchaseSource()
+    {
+        using PurchaseRequestLifetime lifetime = new();
+        CancellationToken firstPurchase = lifetime.BeginPurchase();
+
+        _ = lifetime.BeginPurchase();
+
+        firstPurchase.IsCancellationRequested.Should().BeTrue();
+        firstPurchase.Invoking(static token => token.WaitHandle).Should().Throw<ObjectDisposedException>();
+    }
+
+    [Fact]
     public void Dispose_DoesNotCancelInFlightPurchase()
     {
         PurchaseRequestLifetime lifetime = new();
