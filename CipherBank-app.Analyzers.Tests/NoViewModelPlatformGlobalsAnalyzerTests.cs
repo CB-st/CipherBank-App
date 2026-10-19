@@ -438,4 +438,118 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
 
         await test.RunAsync();
     }
+
+    [Theory]
+    [InlineData("_ = {|CB1005:Task<int>.Run|}(() => 1);")]
+    [InlineData("_ = {|CB1005:System.Threading.Tasks.Task<int>.Run|}(() => 1);")]
+    [InlineData("_ = {|CB1005:global::Task<int>.Run|}(() => 1);")]
+    [InlineData("_ = {|CB1005:global::System.Threading.Tasks.Task<int>.Run|}(() => 1);")]
+    [InlineData("_ = {|CB1005:Tasks.Task<int>.Run|}(() => 1);")]
+    [InlineData("_ = {|CB1005:Threading.Tasks.Task<int>.Run|}(() => 1);")]
+    [InlineData("_ = {|CB1005:Work<int>.Run|}(() => 1);")]
+    [InlineData("_ = {|CB1005:Work<int>.Factory.StartNew|}(() => 1);")]
+    public async Task ReportsGenericTaskReceiversWhenSymbolResolvesAsync(string statement)
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestState =
+            {
+                Sources =
+                {
+                    ("CipherBank-app/ViewModels/GenericTaskViewModel.cs", $$"""
+                        using System;
+                        using System.Threading;
+                        using Work = System.Threading.Tasks.Task;
+
+                        class GenericTaskViewModel
+                        {
+                            void Execute()
+                            {
+                                {{statement}}
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task IgnoresNonPlatformGenericReceiversAsync()
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestState =
+            {
+                Sources =
+                {
+                    ("CipherBank-app/ViewModels/LocalGenericViewModel.cs", """
+                        using Work = System.Threading.Tasks.Task;
+
+                        class Task<T>
+                        {
+                            public static int Run(System.Func<T> action) => 0;
+                        }
+
+                        class Widget<T>
+                        {
+                            public static Widget<T> Current { get { return null; } }
+                        }
+
+                        class LocalGenericViewModel
+                        {
+                            void Execute()
+                            {
+                                _ = Task<int>.Run(() => 1);
+                                _ = Widget<int>.Current;
+                                _ = Work<int>.Delay(1);
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReportsGenericTaskReceiversInAdditionalViewModelFileAsync()
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestCode = "class Anchor { }",
+            TestState =
+            {
+                AdditionalFiles =
+                {
+                    ("CipherBank-app/ViewModels/GenericTaskAdditionalViewModel.cs", """
+                        class GenericTaskAdditionalViewModel
+                        {
+                            void Execute()
+                            {
+                                _ = {|CB1005:Task<int>.Run|}(() => 1);
+                                _ = {|CB1005:System.Threading.Tasks.Task<int>.Run|}(() => 1);
+                                _ = {|CB1005:global::Task<int>.Run|}(() => 1);
+                                _ = {|CB1005:global::System.Threading.Tasks.Task<int>.Run|}(() => 1);
+                                _ = {|CB1005:Tasks.Task<int>.Run|}(() => 1);
+                                _ = {|CB1005:Threading.Tasks.Task<int>.Run|}(() => 1);
+                                _ = {|CB1005:Task<int>.Factory.StartNew|}(() => 1);
+                                _ = _scheduler.Task<int>.Run(() => 1);
+                                _ = Widget<int>.Current;
+                                _ = Task<int>.Delay(1);
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+
+        await test.RunAsync();
+    }
 }

@@ -451,15 +451,21 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// </summary>
     /// <param name="expression">Receiver of a member or conditional access.</param>
     /// <returns>
-    /// Bare identifier text, the name after <c>::</c>, or the rightmost identifier of a
-    /// namespace qualification such as <c>Microsoft.Maui.Controls.Application</c>.
-    /// Instance member chains return null.
+    /// Bare identifier text, the name of a generic type such as <c>Task&lt;int&gt;</c>,
+    /// the name after <c>::</c>, or the rightmost identifier of a namespace qualification
+    /// such as <c>System.Threading.Tasks.Task&lt;int&gt;</c>. Instance member chains return null.
     /// </returns>
     private static string? SyntacticQualificationName(ExpressionSyntax expression)
     {
         if (expression is IdentifierNameSyntax identifier)
         {
             return identifier.Identifier.ValueText;
+        }
+
+        // Additional files have no semantic model. Task<int>.Run is a generic name, not an identifier.
+        if (expression is GenericNameSyntax generic)
+        {
+            return generic.Identifier.ValueText;
         }
 
         if (expression is AliasQualifiedNameSyntax alias)
