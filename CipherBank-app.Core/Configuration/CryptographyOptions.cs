@@ -46,31 +46,14 @@ public sealed record CryptographyOptions : CipherBankOptions<CryptographyOptions
 
     /// <summary>Returns whether values are safe and compatible with AES-GCM/SHA-256.</summary>
     public bool IsValid()
-    {
-        if (NonceSizeBytes != AesGcmNonceSizeBytes)
-        {
-            return false;
-        }
-
-        if (TagSizeBytes < MinTagSizeBytes || TagSizeBytes > MaxTagSizeBytes)
-        {
-            return false;
-        }
-
-        if (KeySizeBytes != Aes128KeySizeBytes
-            && KeySizeBytes != Aes192KeySizeBytes
-            && KeySizeBytes != Aes256KeySizeBytes)
-        {
-            return false;
-        }
-
-        if (SaltSizeBytes < MinSaltSizeBytes)
-        {
-            return false;
-        }
-
-        return Pbkdf2Iterations >= MinPbkdf2Iterations;
-    }
+        => NonceSizeBytes == AesGcmNonceSizeBytes
+        && TagSizeBytes >= MinTagSizeBytes
+        && TagSizeBytes <= MaxTagSizeBytes
+        && (KeySizeBytes == Aes128KeySizeBytes
+            || KeySizeBytes == Aes192KeySizeBytes
+            || KeySizeBytes == Aes256KeySizeBytes)
+        && SaltSizeBytes >= MinSaltSizeBytes
+        && Pbkdf2Iterations >= MinPbkdf2Iterations;
 
     /// <summary>
     /// True when values match the single persisted custody blob profile.
