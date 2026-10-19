@@ -8,28 +8,28 @@ namespace CipherBank_app.Configuration;
 public sealed record CryptographyOptions : CipherBankOptions<CryptographyOptions>
 {
     /// <summary>AES-GCM nonce size required by the existing custody blob format.</summary>
-    public const int AesGcmNonceSizeBytes = 12;
+    public static int AesGcmNonceSizeBytes => 12;
 
     /// <summary>Minimum authentication tag size accepted for AES-GCM.</summary>
-    public const int MinTagSizeBytes = 12;
+    public static int MinTagSizeBytes => 12;
 
     /// <summary>Maximum authentication tag size accepted for AES-GCM.</summary>
-    public const int MaxTagSizeBytes = 16;
+    public static int MaxTagSizeBytes => 16;
 
     /// <summary>AES-128 key length in bytes.</summary>
-    public const int Aes128KeySizeBytes = 16;
+    public static int Aes128KeySizeBytes => 16;
 
     /// <summary>AES-192 key length in bytes.</summary>
-    public const int Aes192KeySizeBytes = 24;
+    public static int Aes192KeySizeBytes => 24;
 
     /// <summary>AES-256 key length in bytes.</summary>
-    public const int Aes256KeySizeBytes = 32;
+    public static int Aes256KeySizeBytes => 32;
 
     /// <summary>Minimum PBKDF2 salt size compatible with the custody blob format.</summary>
-    public const int MinSaltSizeBytes = 16;
+    public static int MinSaltSizeBytes => 16;
 
     /// <summary>Minimum PBKDF2 iteration count compatible with the custody blob format.</summary>
-    public const int MinPbkdf2Iterations = 210_000;
+    public static int MinPbkdf2Iterations => 210_000;
 
     /// <summary>Default values compatible with the existing custody blob format.</summary>
     public static CryptographyOptions Default => new();
@@ -46,14 +46,7 @@ public sealed record CryptographyOptions : CipherBankOptions<CryptographyOptions
 
     /// <summary>Returns whether values are safe and compatible with AES-GCM/SHA-256.</summary>
     public bool IsValid()
-        => NonceSizeBytes == AesGcmNonceSizeBytes
-        && TagSizeBytes >= MinTagSizeBytes
-        && TagSizeBytes <= MaxTagSizeBytes
-        && (KeySizeBytes == Aes128KeySizeBytes
-            || KeySizeBytes == Aes192KeySizeBytes
-            || KeySizeBytes == Aes256KeySizeBytes)
-        && SaltSizeBytes >= MinSaltSizeBytes
-        && Pbkdf2Iterations >= MinPbkdf2Iterations;
+        => HasValidNonceAndTag() && HasSupportedKeySize() && HasValidKdfParameters();
 
     /// <summary>
     /// True when values match the single persisted custody blob profile.
@@ -62,10 +55,29 @@ public sealed record CryptographyOptions : CipherBankOptions<CryptographyOptions
     public bool MatchesPersistedProfile()
     {
         CryptographyOptions persisted = Default;
-        return NonceSizeBytes == persisted.NonceSizeBytes
-            && TagSizeBytes == persisted.TagSizeBytes
-            && KeySizeBytes == persisted.KeySizeBytes
-            && SaltSizeBytes == persisted.SaltSizeBytes
-            && Pbkdf2Iterations == persisted.Pbkdf2Iterations;
+        return NonceAndTagMatch(persisted) && KeyAndKdfMatch(persisted);
     }
+
+    private bool HasValidNonceAndTag()
+        => NonceSizeBytes == AesGcmNonceSizeBytes
+        && TagSizeBytes >= MinTagSizeBytes
+        && TagSizeBytes <= MaxTagSizeBytes;
+
+    private bool HasSupportedKeySize()
+        => KeySizeBytes == Aes128KeySizeBytes
+        || KeySizeBytes == Aes192KeySizeBytes
+        || KeySizeBytes == Aes256KeySizeBytes;
+
+    private bool HasValidKdfParameters()
+        => SaltSizeBytes >= MinSaltSizeBytes
+        && Pbkdf2Iterations >= MinPbkdf2Iterations;
+
+    private bool NonceAndTagMatch(CryptographyOptions persisted)
+        => NonceSizeBytes == persisted.NonceSizeBytes
+        && TagSizeBytes == persisted.TagSizeBytes;
+
+    private bool KeyAndKdfMatch(CryptographyOptions persisted)
+        => KeySizeBytes == persisted.KeySizeBytes
+        && SaltSizeBytes == persisted.SaltSizeBytes
+        && Pbkdf2Iterations == persisted.Pbkdf2Iterations;
 }

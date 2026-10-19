@@ -10,7 +10,7 @@ namespace CipherBank_app.Pos;
 public sealed class NfcPresentmentPayload
 {
     /// <summary>Payload version this parser accepts.</summary>
-    public const int SupportedVersion = 1;
+    public static int SupportedVersion => 1;
 
     public int V { get; set; } = SupportedVersion;
 
