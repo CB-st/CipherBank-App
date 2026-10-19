@@ -44,7 +44,7 @@ public sealed class MoneroWalletModule : IWalletModule
     }
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex = 0)
+    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
     {
         _ = mnemonic;
         _ = accountIndex;

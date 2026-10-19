@@ -44,10 +44,13 @@ public interface IWalletModule
     /// <summary>Returns true when <paramref name="address"/> is an acceptable watch destination.</summary>
     bool IsValidAddress(string address);
 
+    /// <summary>Derives account 0, or null when this module cannot derive.</summary>
+    DerivedAddress? TryDerive(string mnemonic) => TryDerive(mnemonic, 0);
+
     /// <summary>
     /// Derives the account address, or null when this module cannot derive.
     /// </summary>
-    DerivedAddress? TryDerive(string mnemonic, int accountIndex = 0);
+    DerivedAddress? TryDerive(string mnemonic, int accountIndex);
 
     /// <summary>Builds the receive URI for a non-empty address.</summary>
     Uri BuildReceiveUri(string address, string? amount, string? label, string? message);

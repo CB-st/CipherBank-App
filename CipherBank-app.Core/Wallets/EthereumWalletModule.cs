@@ -36,7 +36,7 @@ public sealed partial class EthereumWalletModule : IWalletModule
     public bool IsValidAddress(string address) => EthAddressRegex().IsMatch(address);
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex = 0)
+    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
     {
         Nethereum.HdWallet.Wallet wallet = new Nethereum.HdWallet.Wallet(MnemonicHelper.Normalize(mnemonic), null);
         Nethereum.Web3.Accounts.Account account = wallet.GetAccount(accountIndex);

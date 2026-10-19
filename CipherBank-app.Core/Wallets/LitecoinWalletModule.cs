@@ -40,7 +40,7 @@ public sealed class LitecoinWalletModule : IWalletModule
     }
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex = 0)
+    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
     {
         Mnemonic parsed = MnemonicHelper.Parse(mnemonic);
         ExtKey root = parsed.DeriveExtKey();
