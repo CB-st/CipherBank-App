@@ -43,15 +43,21 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<string> symbols)
     {
         IReadOnlyList<LocalWalletDescriptor> existing = await _wallets.ListAsync().ConfigureAwait(false);
+        HashSet<AssetSymbol> seen = [];
         foreach (string sym in symbols)
         {
-            // CanDerive and a null derive are the same gate. TryDerive is the one check.
-            if (WalletRegistry.Get(sym).TryDerive(mnemonic) is not DerivedAddress derived)
+            AssetSymbol symbol = new(sym);
+            if (!seen.Add(symbol))
             {
                 continue;
             }
 
-            AssetSymbol symbol = new(sym);
+            // CanDerive and a null derive are the same gate. TryDerive is the one check.
+            if (WalletRegistry.Get(symbol).TryDerive(mnemonic) is not DerivedAddress derived)
+            {
+                continue;
+            }
+
             LocalWalletDescriptor? existingDerived = existing.FirstOrDefault(w =>
                 w.Symbol == symbol
                 && w.Kind.Equals("derived", StringComparison.OrdinalIgnoreCase));
