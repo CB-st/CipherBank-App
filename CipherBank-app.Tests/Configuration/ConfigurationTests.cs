@@ -135,9 +135,9 @@ public sealed class ConfigurationTests
 
         configuration.GetSection(nameof(CoraOptions)).Get<CoraOptions>()!.Fallback.Should().Be("CipherBank.");
         configuration.GetSection(nameof(CarouselLayoutConfig)).Get<CarouselLayoutConfig>()!.Stride.Should().Be(220);
-        CryptographyOptions.SectionName.Should().Be(nameof(CryptographyOptions));
-        CoraOptions.SectionName.Should().Be(nameof(CoraOptions));
-        CarouselLayoutConfig.SectionName.Should().Be(nameof(CarouselLayoutConfig));
+        new CryptographyOptions().SectionName.Should().Be(nameof(CryptographyOptions));
+        new CoraOptions().SectionName.Should().Be(nameof(CoraOptions));
+        new CarouselLayoutConfig().SectionName.Should().Be(nameof(CarouselLayoutConfig));
         new CarouselLayoutConfig().Should().Be(CarouselLayoutConfig.Default);
         configuration.GetSection("Cora").Exists().Should().BeFalse();
         configuration.GetSection("Carousel").Exists().Should().BeFalse();
