@@ -28,6 +28,8 @@ internal static class CipherBankCoreServiceRegistration
         this IServiceCollection services,
         string databaseDirectory)
     {
+        // Full custody registration, including this box, is AddCustodyFeature at the MAUI root.
+        // This test root only needs the box; pin and step-up require platform ports.
         services.AddSingleton<ICryptoBox, AesGcmCryptoBox>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ICoraLineProvider, CoraLineProvider>();
