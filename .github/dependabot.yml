@@ -1,4 +1,0 @@
-# NuGet minor/patch automation is off. Versions stay pinned in
-# Directory.Packages.props and .config/dotnet-tools.json.
-version: 2
-updates: []
