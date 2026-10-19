@@ -18,7 +18,9 @@ internal sealed class PersistenceOptionsValidator : IValidateOptions<Persistence
         {
             failures.Add(OptionsValidationMessages.DatabaseNameRequired);
         }
-        else if (Path.GetFileName(options.DatabaseName) != options.DatabaseName)
+
+        if (!string.IsNullOrWhiteSpace(options.DatabaseName)
+            && Path.GetFileName(options.DatabaseName) != options.DatabaseName)
         {
             failures.Add(OptionsValidationMessages.DatabaseNameMustBeFileName);
         }
