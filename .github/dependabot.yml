@@ -1,18 +1,4 @@
+# NuGet minor/patch automation is off. Versions stay pinned in
+# Directory.Packages.props and .config/dotnet-tools.json.
 version: 2
-updates:
-  - package-ecosystem: nuget
-    directory: "/"
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      dotnet-servicing:
-        patterns:
-          - "*"
-        update-types:
-          - minor
-          - patch
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - version-update:semver-major
+updates: []
