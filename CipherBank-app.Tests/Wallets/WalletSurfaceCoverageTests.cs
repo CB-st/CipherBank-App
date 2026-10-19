@@ -38,6 +38,9 @@ public sealed class WalletSurfaceCoverageTests
     public void AddressValidate_CoversSymbolsAndFailures()
     {
         AddressValidate.IsValid("BTC", string.Empty).Should().BeFalse();
+        AddressValidate.IsValid("BTC", "   ").Should().BeFalse();
+        AddressValidate.IsValid(" ", "long-enough").Should().BeFalse();
+        AddressValidate.IsValid(null!, "long-enough").Should().BeFalse();
         AddressValidate.IsValid("BTC", "not-valid").Should().BeFalse();
         AddressValidate.IsValid("LTC", "not-valid").Should().BeFalse();
         AddressValidate.IsValid("DOGE", "not-valid").Should().BeFalse();

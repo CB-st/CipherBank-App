@@ -16,11 +16,8 @@ public static class AddressValidate
     public static bool IsValid(string symbol, string address)
     {
         string addr = address.Trim();
-        if (string.IsNullOrEmpty(addr) || !AssetSymbol.TryParse(symbol, out AssetSymbol? parsed))
-        {
-            return false;
-        }
-
-        return WalletRegistry.Get(parsed).IsValidAddress(addr);
+        return !string.IsNullOrEmpty(addr)
+            && AssetSymbol.TryParse(symbol, out AssetSymbol? parsed)
+            && WalletRegistry.Get(parsed).IsValidAddress(addr);
     }
 }
