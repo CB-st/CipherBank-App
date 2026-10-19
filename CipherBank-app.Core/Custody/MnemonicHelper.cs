@@ -58,6 +58,7 @@ public static class MnemonicHelper
     public static byte[] Entropy(string phrase)
     {
         int[] indices = Parse(phrase).Indices;
+
         // Each English word is an 11-bit wordlist index. The concatenated bits are
         // ENT entropy bits plus a CS checksum, with CS = ENT/32, so CS = totalBits/33.
         int totalBits = indices.Length * BitsPerWordIndex;

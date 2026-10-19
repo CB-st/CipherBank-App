@@ -7,29 +7,38 @@ namespace CipherBank_app.Configuration;
 /// <summary>Non-secret algorithm parameters for custody blob encryption.</summary>
 public sealed record CryptographyOptions : CipherBankOptions<CryptographyOptions>
 {
+    private const int DefaultNonceBytes = 12;
+    private const int MinimumTagBytes = 12;
+    private const int MaximumTagBytes = 16;
+    private const int Aes128KeyBytes = 16;
+    private const int Aes192KeyBytes = 24;
+    private const int Aes256KeyBytes = 32;
+    private const int MinimumSaltBytes = 16;
+    private const int MinimumPbkdf2Iterations = 210_000;
+
     /// <summary>AES-GCM nonce size required by the existing custody blob format.</summary>
-    public static int AesGcmNonceSizeBytes => 12;
+    public static int AesGcmNonceSizeBytes => DefaultNonceBytes;
 
     /// <summary>Minimum authentication tag size accepted for AES-GCM.</summary>
-    public static int MinTagSizeBytes => 12;
+    public static int MinTagSizeBytes => MinimumTagBytes;
 
     /// <summary>Maximum authentication tag size accepted for AES-GCM.</summary>
-    public static int MaxTagSizeBytes => 16;
+    public static int MaxTagSizeBytes => MaximumTagBytes;
 
     /// <summary>AES-128 key length in bytes.</summary>
-    public static int Aes128KeySizeBytes => 16;
+    public static int Aes128KeySizeBytes => Aes128KeyBytes;
 
     /// <summary>AES-192 key length in bytes.</summary>
-    public static int Aes192KeySizeBytes => 24;
+    public static int Aes192KeySizeBytes => Aes192KeyBytes;
 
     /// <summary>AES-256 key length in bytes.</summary>
-    public static int Aes256KeySizeBytes => 32;
+    public static int Aes256KeySizeBytes => Aes256KeyBytes;
 
     /// <summary>Minimum PBKDF2 salt size compatible with the custody blob format.</summary>
-    public static int MinSaltSizeBytes => 16;
+    public static int MinSaltSizeBytes => MinimumSaltBytes;
 
     /// <summary>Minimum PBKDF2 iteration count compatible with the custody blob format.</summary>
-    public static int MinPbkdf2Iterations => 210_000;
+    public static int MinPbkdf2Iterations => MinimumPbkdf2Iterations;
 
     /// <summary>Default values compatible with the existing custody blob format.</summary>
     public static CryptographyOptions Default => new();

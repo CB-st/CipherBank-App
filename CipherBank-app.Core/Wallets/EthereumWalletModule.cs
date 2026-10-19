@@ -50,6 +50,7 @@ public sealed partial class EthereumWalletModule : IWalletModule
     {
         _ = label;
         _ = message;
+
         // Nominal ETH (for example 0.1) is not a wei count. Encode an exact integer.
         string? wei = string.IsNullOrWhiteSpace(amount) ? null : ToWei(amount);
         return PaymentUri.Account("ethereum", "value", address, wei);
@@ -62,64 +63,61 @@ public sealed partial class EthereumWalletModule : IWalletModule
     private static string ToWei(string amount)
     {
         string trimmed = amount.Trim();
-        int separator = trimmed.IndexOf('.');
-        if (separator != trimmed.LastIndexOf('.')
-            || !ContainsAsciiDigit(trimmed))
+        if (!TryGetSeparator(trimmed, out int separator))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(amount),
                 "ETH amount must be a non-negative decimal with at most 18 fractional digits.");
         }
 
-        string whole = separator < 0 ? trimmed : trimmed[..separator];
-        string fraction = separator < 0 ? string.Empty : trimmed[(separator + 1)..];
-        if (whole.StartsWith('-') || fraction.Contains('-'))
+        string whole = IntegerPart(trimmed, separator);
+        string fraction = FractionalPart(trimmed, separator);
+        if (IsNegative(whole, fraction))
         {
             throw new ArgumentOutOfRangeException(nameof(amount), "ETH amount cannot be negative.");
         }
 
-        if (whole.Length == 0)
-        {
-            whole = "0";
-        }
-
-        if (!IsAsciiDigits(whole) || !IsAsciiDigits(fraction) || fraction.Length > WeiDecimalPlaces)
+        whole = whole.Length == 0 ? "0" : whole;
+        if (!HasWeiPrecision(whole, fraction))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(amount),
                 "ETH amount must be a non-negative decimal with at most 18 fractional digits.");
         }
 
+        return FormatWei(whole, fraction);
+    }
+
+    private static bool TryGetSeparator(string trimmed, out int separator)
+    {
+        separator = trimmed.IndexOf('.');
+        return separator == trimmed.LastIndexOf('.') && ContainsAsciiDigit(trimmed);
+    }
+
+    private static string IntegerPart(string trimmed, int separator)
+        => separator < 0 ? trimmed : trimmed[..separator];
+
+    private static string FractionalPart(string trimmed, int separator)
+        => separator < 0 ? string.Empty : trimmed[(separator + 1)..];
+
+    private static bool IsNegative(string whole, string fraction)
+        => whole.StartsWith('-') || fraction.Contains('-');
+
+    private static bool HasWeiPrecision(string whole, string fraction)
+        => IsAsciiDigits(whole) && IsAsciiDigits(fraction) && fraction.Length <= WeiDecimalPlaces;
+
+    private static string FormatWei(string whole, string fraction)
+    {
         fraction = fraction.PadRight(WeiDecimalPlaces, '0');
         return BigInteger.Parse(whole + fraction, CultureInfo.InvariantCulture)
             .ToString(CultureInfo.InvariantCulture);
     }
 
     private static bool ContainsAsciiDigit(string value)
-    {
-        foreach (char c in value)
-        {
-            if (c is >= '0' and <= '9')
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+        => value.Where(static c => c is >= '0' and <= '9').Any();
 
     private static bool IsAsciiDigits(string value)
-    {
-        foreach (char c in value)
-        {
-            if (c is < '0' or > '9')
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
+        => !value.Where(static c => c is < '0' or > '9').Any();
 
     [GeneratedRegex("^0x[0-9a-fA-F]{40}$", RegexOptions.Compiled)]
     private static partial Regex EthAddressRegex();
