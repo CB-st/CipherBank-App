@@ -9,7 +9,10 @@ namespace CipherBank_app.Pos;
 /// <summary>NDEF presentment payload (tokenRef only — no PAN).</summary>
 public sealed class NfcPresentmentPayload
 {
-    public int V { get; set; } = 1;
+    /// <summary>Payload version this parser accepts.</summary>
+    public const int SupportedVersion = 1;
+
+    public int V { get; set; } = SupportedVersion;
 
     public string SessionId { get; set; } = string.Empty;
 
@@ -27,11 +30,25 @@ public sealed class NfcPresentmentPayload
         {
             using JsonDocument doc = JsonDocument.Parse(json);
             JsonElement root = doc.RootElement;
+            int version = root.TryGetProperty("v", out JsonElement v) ? v.GetInt32() : SupportedVersion;
+            string sessionId = root.TryGetProperty("sessionId", out JsonElement s)
+                ? s.GetString() ?? string.Empty
+                : string.Empty;
+            string tokenRef = root.TryGetProperty("tokenRef", out JsonElement t)
+                ? t.GetString() ?? string.Empty
+                : string.Empty;
+            if (version != SupportedVersion
+                || string.IsNullOrWhiteSpace(sessionId)
+                || string.IsNullOrWhiteSpace(tokenRef))
+            {
+                return null;
+            }
+
             return new NfcPresentmentPayload
             {
-                V = root.TryGetProperty("v", out JsonElement v) ? v.GetInt32() : 1,
-                SessionId = root.TryGetProperty("sessionId", out JsonElement s) ? s.GetString() ?? string.Empty : string.Empty,
-                TokenRef = root.TryGetProperty("tokenRef", out JsonElement t) ? t.GetString() ?? string.Empty : string.Empty,
+                V = version,
+                SessionId = sessionId,
+                TokenRef = tokenRef,
                 MerchantId = root.TryGetProperty("merchantId", out JsonElement m) ? m.GetString() : null,
             };
         }
