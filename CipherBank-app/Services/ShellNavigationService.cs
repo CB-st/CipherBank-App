@@ -17,5 +17,5 @@ public sealed class ShellNavigationService : INavigationService
 
     /// <inheritdoc />
     public string? CurrentRoute =>
-        Shell.Current?.CurrentState?.Location.OriginalString;
+        Shell.Current?.CurrentState?.Location?.OriginalString;
 }
