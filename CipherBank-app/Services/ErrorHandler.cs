@@ -8,15 +8,20 @@ using CipherBank_app.Constants;
 namespace CipherBank_app.Services;
 
 /// <summary>
-/// Centralizes API error handling: sets ErrorMessage, navigates to Login on 401.
+/// Centralizes API error handling: sets ErrorMessage, clears the stored session, and navigates to Login on 401.
 /// </summary>
 public sealed class ErrorHandler : IErrorHandler
 {
     private readonly INavigationService _navigation;
+    private readonly IAuthService _auth;
+    private int _loginRedirectInProgress;
 
-    public ErrorHandler(INavigationService navigation)
+    public ErrorHandler(INavigationService navigation, IAuthService auth)
     {
+        ArgumentNullException.ThrowIfNull(navigation);
+        ArgumentNullException.ThrowIfNull(auth);
         _navigation = navigation;
+        _auth = auth;
     }
 
     public async Task<bool> HandleApiErrorsAsync(
@@ -33,23 +38,134 @@ public sealed class ErrorHandler : IErrorHandler
         {
             return false;
         }
+        catch (Exception ex) when (SessionExpiry.IsExpired(ex))
+        {
+            setErrorMessage("Session expired. Please log in again.");
+            await InvalidateSessionAndRedirectToLoginAsync();
+            return false;
+        }
         catch (HttpRequestException)
         {
             setErrorMessage(networkErrorMessage ?? "Network error. Please check your connection.");
             return false;
         }
-        catch (UnauthorizedAccessException)
+    }
+
+    private async Task InvalidateSessionAndRedirectToLoginAsync()
+    {
+        await _auth.LogoutAsync();
+
+        if (SessionExpiry.IsLoginRoute(_navigation.CurrentRoute) || !TryBeginLoginRedirect())
         {
-            setErrorMessage("Session expired. Please log in again.");
-            await _navigation.GoToAsync(Routes.Login);
+            return;
+        }
+
+        try
+        {
+            if (!SessionExpiry.IsLoginRoute(_navigation.CurrentRoute))
+            {
+                await _navigation.GoToAsync(Routes.Login);
+            }
+        }
+        finally
+        {
+            EndLoginRedirect();
+        }
+    }
+
+    private bool TryBeginLoginRedirect()
+        => Interlocked.CompareExchange(ref _loginRedirectInProgress, 1, 0) == 0;
+
+    private void EndLoginRedirect()
+        => Interlocked.Exchange(ref _loginRedirectInProgress, 0);
+
+    private static class SessionExpiry
+    {
+        public static bool IsExpired(Exception exception)
+        {
+            var pending = new Stack<Exception>();
+            var seen = new HashSet<Exception>(ReferenceEqualityComparer.Instance);
+            pending.Push(exception);
+
+            while (pending.TryPop(out Exception? current))
+            {
+                if (!seen.Add(current))
+                {
+                    continue;
+                }
+
+                if (IsUnauthorized(current))
+                {
+                    return true;
+                }
+
+                PushNested(pending, current);
+            }
+
             return false;
         }
-        catch (InvalidOperationException ex) when (ex.InnerException is HttpRequestException http
-            && http.StatusCode == HttpStatusCode.Unauthorized)
+
+        public static bool IsLoginRoute(string? currentRoute)
         {
-            setErrorMessage("Session expired. Please log in again.");
-            await _navigation.GoToAsync(Routes.Login);
-            return false;
+            if (string.IsNullOrWhiteSpace(currentRoute))
+            {
+                return false;
+            }
+
+            return string.Equals(
+                RouteSegment(currentRoute),
+                RouteSegment(Routes.Login),
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsUnauthorized(Exception current)
+            => current is UnauthorizedAccessException
+                || (current is HttpRequestException http && http.StatusCode == HttpStatusCode.Unauthorized);
+
+        private static void PushNested(Stack<Exception> pending, Exception current)
+        {
+            if (current is AggregateException aggregate)
+            {
+                for (int index = aggregate.InnerExceptions.Count - 1; index >= 0; index--)
+                {
+                    pending.Push(aggregate.InnerExceptions[index]);
+                }
+
+                return;
+            }
+
+            if (current.InnerException is not null)
+            {
+                pending.Push(current.InnerException);
+            }
+        }
+
+        private static string RouteSegment(string route)
+        {
+            string path = StripQueryAndFragment(route.Trim()).TrimEnd('/');
+            int slash = path.LastIndexOf('/');
+            return slash >= 0 ? path[(slash + 1)..] : path;
+        }
+
+        private static string StripQueryAndFragment(string route)
+        {
+            int cutoff = FirstSeparator(route.IndexOf('?'), route.IndexOf('#'));
+            return cutoff >= 0 ? route[..cutoff] : route;
+        }
+
+        private static int FirstSeparator(int query, int fragment)
+        {
+            if (query < 0)
+            {
+                return fragment;
+            }
+
+            if (fragment < 0)
+            {
+                return query;
+            }
+
+            return Math.Min(query, fragment);
         }
     }
 }

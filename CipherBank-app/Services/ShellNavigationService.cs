@@ -14,4 +14,8 @@ public sealed class ShellNavigationService : INavigationService
 
     public Task GoBackAsync() =>
         Shell.Current.GoToAsync("..");
+
+    /// <inheritdoc />
+    public string? CurrentRoute =>
+        Shell.Current?.CurrentState?.Location.OriginalString;
 }

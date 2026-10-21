@@ -42,4 +42,13 @@
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
   </ItemGroup>
 
+  <!-- ErrorHandler has no MAUI types. The app head targets Android, so the unit
+       suite compiles these host sources instead of referencing the MAUI project. -->
+  <ItemGroup>
+    <Compile Include="..\CipherBank-app\Services\ErrorHandler.cs" Link="Host\ErrorHandler.cs" />
+    <Compile Include="..\CipherBank-app\Services\IErrorHandler.cs" Link="Host\IErrorHandler.cs" />
+    <Compile Include="..\CipherBank-app\Services\INavigationService.cs" Link="Host\INavigationService.cs" />
+    <Compile Include="..\CipherBank-app\Constants\Routes.cs" Link="Host\Routes.cs" />
+  </ItemGroup>
+
 </Project>
