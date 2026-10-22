@@ -2,15 +2,14 @@
 
 **Project**: CipherBank-app.IntegrationTests
 
-Tests API endpoint behavior using WireMock. Verifies that the app correctly handles HTTP responses and security patterns.
+Tests API endpoint behavior using WireMock. Verifies that the app correctly handles HTTP responses.
 
 ## Structure
 
 ```
 CipherBank-app.IntegrationTests/
 ├── MockServerFixture.cs    # WireMock server + endpoint setup
-├── ApiIntegrationTests.cs  # API endpoint tests
-└── SecurityTests.cs       # Auth, rate limiting, injection tests
+└── ApiIntegrationTests.cs  # API endpoint tests
 ```
 
 ## Dependencies
@@ -53,20 +52,3 @@ CipherBank-app.IntegrationTests/
 | GetTransactionHistory_ReturnsList | GET /api/v1/transactions?walletId= → list |
 | PurchaseCrypto_ReturnsTransaction | POST /api/v1/transactions/purchase → tx |
 | SendCrypto_ReturnsTransaction | POST /api/v1/transactions/send → tx |
-
-## SecurityTests
-
-| Test | Description |
-|------|-------------|
-| UnauthorizedRequest_ReturnsUnauthorized | Request without auth → 401 |
-| AuthorizedRequest_WithValidToken_Succeeds | Request with Bearer token → 200 |
-| ExpiredToken_Returns401 | Expired token → 401 |
-| InvalidCredentials_ReturnsUnauthorized | Invalid login → 401 |
-| RateLimiting_Returns429WhenExceeded | Rate-limited endpoint → 429, Retry-After |
-| XssAttempt_IsSanitized | XSS in query → 400 |
-| SqlInjectionAttempt_IsRejected | SQL injection in path → 400 |
-| ContentSecurityHeaders_ArePresent | Secure headers present |
-| SensitiveDataNotInLogs_TransactionEndpoint | Send endpoint accepts request |
-| TimeoutHandling_ReturnsGatewayTimeout | Slow endpoint → 504 |
-
-**Note**: SecurityTests configures additional WireMock scenarios per test; the fixture's default endpoints are extended or overridden.
