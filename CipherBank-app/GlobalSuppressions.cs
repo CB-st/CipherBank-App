@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Namespace derived from project name convention", Scope = "namespace", Target = "~N:CipherBank_app")]
 [assembly: SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Namespace derived from project name convention", Scope = "namespace", Target = "~N:CipherBank_app.Constants")]
 [assembly: SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Namespace derived from project name convention", Scope = "namespace", Target = "~N:CipherBank_app.Extensions")]
-[assembly: SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Namespace derived from project name convention", Scope = "namespace", Target = "~N:CipherBank_app.Models")]
 [assembly: SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Namespace derived from project name convention", Scope = "namespace", Target = "~N:CipherBank_app.Services")]
 [assembly: SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Namespace derived from project name convention", Scope = "namespace", Target = "~N:CipherBank_app.Services.Handlers")]
 [assembly: SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores", Justification = "Namespace derived from project name convention", Scope = "namespace", Target = "~N:CipherBank_app.Services.Mocks")]
