@@ -8,8 +8,9 @@ namespace CipherBank_app.E2ETests.Infrastructure;
 
 /// <summary>
 /// Builds Appium session options for the E2E journeys.
-/// Standard capabilities use the typed <see cref="AppiumOptions"/> properties; adding them through
-/// <see cref="AppiumOptions.AddAdditionalAppiumOption(string, object)"/> throws because the typed property already owns them.
+/// Standard capabilities such as deviceName and platformVersion are set through the typed
+/// <see cref="AppiumOptions"/> properties rather than <see cref="AppiumOptions.AddAdditionalAppiumOption(string, object)"/>,
+/// so each capability has a single source and is emitted once by <see cref="AppiumOptions.ToCapabilities"/>.
 /// </summary>
 public static class AppiumOptionsFactory
 {
