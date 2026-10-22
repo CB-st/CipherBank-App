@@ -25,8 +25,6 @@ internal sealed class PurchaseRequestLifetime : IDisposable
             _load = null;
             _purchase = null;
         }
-
-        GC.SuppressFinalize(this);
     }
 
     /// <summary>
