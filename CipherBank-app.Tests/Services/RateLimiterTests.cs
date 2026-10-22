@@ -178,4 +178,24 @@ public class RateLimiterTests
         // Assert
         afterExpiry.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task RateLimiter_ConcurrentRequests_ThreadSafe()
+    {
+        // Arrange
+        var rateLimiter = new RateLimiter(null, 50, TimeSpan.FromMinutes(1));
+        var tasks = new Task<bool>[100];
+
+        // Act - Make 100 concurrent requests
+        for (int i = 0; i < 100; i++)
+        {
+            tasks[i] = rateLimiter.TryAcquireAsync();
+        }
+
+        var results = await Task.WhenAll(tasks);
+
+        // Assert - Exactly 50 should succeed (the limit)
+        var successCount = results.Count(r => r);
+        successCount.Should().Be(50);
+    }
 }
