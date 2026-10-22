@@ -29,8 +29,8 @@ public static class MnemonicHelper
     {
         try
         {
-            _ = new Mnemonic(Normalize(phrase), Wordlist.English);
-            return true;
+            // NBitcoin's constructor checks words only; the BIP39 checksum is a separate flag.
+            return new Mnemonic(Normalize(phrase), Wordlist.English).IsValidChecksum;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException)
         {
