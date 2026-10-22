@@ -76,8 +76,8 @@ public static class MnemonicHelper
             // No BitConverter / Array.Reverse is needed because no integer is ever
             // serialized to bytes. Walk bit 10 (MSB) down to bit 0 of the word index;
             // bitPos < entropyBits stops before the trailing checksum bits.
-            // Example: "abandon" x11 + "about" -> 11 zero indices then index 3, so all 128
-            // entropy bits are 0 and the last 4 bits (0b0011) are the checksum.
+            // Example: eleven words "abandon" (index 0) and a final "about" (index 3) give
+            // 128 zero entropy bits followed by the 4 checksum bits 0011.
             for (int i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
             {
                 if (((index >> i) & 1) == 1)

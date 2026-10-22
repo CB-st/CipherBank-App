@@ -15,19 +15,22 @@ public class CryptoBoxBoundaryTests
 {
     private const string Pin = "123456";
 
-    public static TheoryData<CryptographyOptions> DivergentProfiles => new()
-    {
-        CryptographyOptions.Default with { TagSizeBytes = 12 },
-        CryptographyOptions.Default with { KeySizeBytes = 16 },
-        CryptographyOptions.Default with { SaltSizeBytes = 32 },
-        CryptographyOptions.Default with { Pbkdf2Iterations = 300_000 },
-        CryptographyOptions.Default with { BlobFormatVersion = 0x02 },
-    };
-
     [Theory]
-    [MemberData(nameof(DivergentProfiles))]
-    public void Constructor_RejectsValidButNonPersistedProfile(CryptographyOptions options)
+    [InlineData("tag")]
+    [InlineData("key")]
+    [InlineData("salt")]
+    [InlineData("iterations")]
+    [InlineData("version")]
+    public void Constructor_RejectsValidButNonPersistedProfile(string field)
     {
+        CryptographyOptions options = field switch
+        {
+            "tag" => CryptographyOptions.Default with { TagSizeBytes = 12 },
+            "key" => CryptographyOptions.Default with { KeySizeBytes = 16 },
+            "salt" => CryptographyOptions.Default with { SaltSizeBytes = 32 },
+            "iterations" => CryptographyOptions.Default with { Pbkdf2Iterations = 300_000 },
+            _ => CryptographyOptions.Default with { BlobFormatVersion = 0x02 },
+        };
         Action box = () => _ = new AesGcmCryptoBox(options);
         Action helper = () => CryptoBox.Seal(options, "x", Pin);
 

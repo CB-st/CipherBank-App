@@ -22,6 +22,7 @@ public sealed class AesGcmCryptoBox : ICryptoBox
     public AesGcmCryptoBox(CryptographyOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+
         // Freeze the profile at the box boundary, not only in DI: a box built from any other
         // profile could seal a blob the host cannot open.
         if (!options.MatchesPersistedProfile())
@@ -48,25 +49,23 @@ public sealed class AesGcmCryptoBox : ICryptoBox
         byte[] nonce = RandomNumberGenerator.GetBytes(_options.NonceSizeBytes);
         byte[] cipher = new byte[plain.Length];
         byte[] tag = new byte[_options.TagSizeBytes];
-        using (AesGcm aes = new AesGcm(key.Span, _options.TagSizeBytes))
-        {
-            aes.Encrypt(nonce, plain.Span, cipher, tag);
+        using AesGcm aes = new AesGcm(key.Span, _options.TagSizeBytes);
+        aes.Encrypt(nonce, plain.Span, cipher, tag);
 
-            // v1: [version][salt][nonce][tag][cipher]. Bytes, not a StringBuilder:
-            // the buffer holds key-derived ciphertext and must be able to be zeroed.
-            byte[] packed = new byte[1 + salt.Length + nonce.Length + tag.Length + cipher.Length];
-            Span<byte> destination = packed;
-            destination[0] = _options.BlobFormatVersion;
-            destination = destination[1..];
-            salt.CopyTo(destination);
-            destination = destination[salt.Length..];
-            nonce.CopyTo(destination);
-            destination = destination[nonce.Length..];
-            tag.CopyTo(destination);
-            destination = destination[tag.Length..];
-            cipher.CopyTo(destination);
-            return Convert.ToBase64String(packed);
-        }
+        // v1: [version][salt][nonce][tag][cipher]. Bytes, not a StringBuilder:
+        // the buffer holds key-derived ciphertext and must be able to be zeroed.
+        byte[] packed = new byte[1 + salt.Length + nonce.Length + tag.Length + cipher.Length];
+        Span<byte> destination = packed;
+        destination[0] = _options.BlobFormatVersion;
+        destination = destination[1..];
+        salt.CopyTo(destination);
+        destination = destination[salt.Length..];
+        nonce.CopyTo(destination);
+        destination = destination[nonce.Length..];
+        tag.CopyTo(destination);
+        destination = destination[tag.Length..];
+        cipher.CopyTo(destination);
+        return Convert.ToBase64String(packed);
     }
 
     public string Open(string sealedB64, string pin)
