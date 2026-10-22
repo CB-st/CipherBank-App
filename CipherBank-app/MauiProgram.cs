@@ -139,6 +139,9 @@ public static class MauiProgram
         // Health check client (for Settings Test Connection)
         mauiAppBuilder.Services.AddHealthCheckClient();
 
+        // Shared by every AuthService instance so a refresh cannot outlive logout.
+        mauiAppBuilder.Services.AddSingleton<AuthSessionGuard>();
+
         // Error handler for ViewModel API error consolidation
         mauiAppBuilder.Services.AddSingleton<IErrorHandler, ErrorHandler>();
 
