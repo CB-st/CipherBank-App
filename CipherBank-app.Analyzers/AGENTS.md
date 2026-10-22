@@ -4,7 +4,7 @@ Repository-structure diagnostics. Not product behavior.
 
 - CB1001: `PackageReference Version=` outside `Directory.Packages.props` (IDE fence; CPM already owns restore)
 - CB1002: `Properties/AssemblyInfo.cs`
-- CB1003: raw SQL anywhere in Core (`CommandText`, `FromSqlRaw`, `ExecuteSqlRaw` by identifier). Total ban — no `LocalDbSql` quarantine. Schema is EF `Migrate()` on M2.
+- CB1003: raw SQL anywhere in Core. `CommandText` assignments, including null-conditional targets, and EF Core relational raw-SQL methods (`RelationalDatabaseFacadeExtensions`, `RelationalQueryableExtensions`, `MigrationBuilder`) resolved through the semantic model, including method-group conversions and delegate aliases. Alias tracking covers every part of a partial class, so a delegate field assigned in one file is still flagged when another file invokes it. Same-named methods that are not those APIs are not flagged. Total ban — no `LocalDbSql` quarantine. Schema is EF `Migrate()` on M2.
 - CB1004: retired names `IProductApi`, `MockProductApi`, `AppSessionDeps`
 - `SourcePath`: string predicates over the original Roslyn additional-file path (no `FileInfo`, no separator rewriting, no `GetFullPath`, no filesystem access). Segments come from `Path.GetFileName` / `GetExtension` / `GetDirectoryName`. Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo`. Compare paths with `SourcePath.NamesEqual` (ordinal-ignore-case; the BCL has no path-equality API).
 

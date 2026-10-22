@@ -48,7 +48,8 @@ public static class CipherBankDiagnostics
         "Raw SQL ('{0}') is not allowed in CipherBank-app.Core",
         Category,
         DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
 
     /// <summary>
     /// Describes CB1004.
