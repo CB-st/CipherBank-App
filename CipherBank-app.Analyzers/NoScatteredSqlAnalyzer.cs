@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -12,7 +13,7 @@ using Microsoft.CodeAnalysis.Operations;
 namespace CipherBank_app.Analyzers;
 
 /// <summary>
-/// Flags raw SQL in CipherBank-app.Core.
+/// Flags raw SQL in CipherBank-app.Core. Delegate aliases are resolved across every part of a partial class.
 /// Use: High (every Core compilation). Scope: Core C# trees.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
@@ -46,6 +47,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// Registers assignment, invocation, and delegate-creation actions for Core trees.
+    /// Semantic models for every tree are kept until compilation end so a partial class can be traced across files.
     /// Use: High (every compilation). Scope: this analyzer.
     /// </summary>
     /// <param name="context">Roslyn analysis context for this compilation.</param>
@@ -54,23 +56,35 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
         context.ConfigureGeneratedCodeAnalysis(
             GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
         context.EnableConcurrentExecution();
-        context.RegisterSyntaxNodeAction(
-            AnalyzeAssignment,
-            SyntaxKind.SimpleAssignmentExpression,
-            SyntaxKind.AddAssignmentExpression,
-            SyntaxKind.SubtractAssignmentExpression,
-            SyntaxKind.MultiplyAssignmentExpression,
-            SyntaxKind.DivideAssignmentExpression,
-            SyntaxKind.ModuloAssignmentExpression,
-            SyntaxKind.AndAssignmentExpression,
-            SyntaxKind.ExclusiveOrAssignmentExpression,
-            SyntaxKind.OrAssignmentExpression,
-            SyntaxKind.LeftShiftAssignmentExpression,
-            SyntaxKind.RightShiftAssignmentExpression,
-            SyntaxKind.UnsignedRightShiftAssignmentExpression,
-            SyntaxKind.CoalesceAssignmentExpression);
-        context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
-        context.RegisterOperationAction(AnalyzeDelegateCreation, OperationKind.DelegateCreation);
+        context.RegisterCompilationStartAction(static start =>
+        {
+            ConcurrentDictionary<SyntaxTree, SemanticModel> models = new();
+            ConcurrentBag<DeferredInvoke> deferred = new();
+            start.RegisterSyntaxNodeAction(
+                syntaxContext => Remember(models, syntaxContext.SemanticModel),
+                SyntaxKind.CompilationUnit);
+            start.RegisterSyntaxNodeAction(
+                AnalyzeAssignment,
+                SyntaxKind.SimpleAssignmentExpression,
+                SyntaxKind.AddAssignmentExpression,
+                SyntaxKind.SubtractAssignmentExpression,
+                SyntaxKind.MultiplyAssignmentExpression,
+                SyntaxKind.DivideAssignmentExpression,
+                SyntaxKind.ModuloAssignmentExpression,
+                SyntaxKind.AndAssignmentExpression,
+                SyntaxKind.ExclusiveOrAssignmentExpression,
+                SyntaxKind.OrAssignmentExpression,
+                SyntaxKind.LeftShiftAssignmentExpression,
+                SyntaxKind.RightShiftAssignmentExpression,
+                SyntaxKind.UnsignedRightShiftAssignmentExpression,
+                SyntaxKind.CoalesceAssignmentExpression);
+            start.RegisterSyntaxNodeAction(
+                syntaxContext => AnalyzeInvocation(syntaxContext, deferred),
+                SyntaxKind.InvocationExpression);
+            start.RegisterOperationAction(AnalyzeDelegateCreation, OperationKind.DelegateCreation);
+            start.RegisterCompilationEndAction(
+                endContext => ReportDeferred(endContext, models, deferred));
+        });
     }
 
     /// <summary>
@@ -99,9 +113,14 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// Reports a resolved EF Core relational raw-SQL call, including a delegate whose target is one.
+    /// A partial-class alias whose write is in another file is retried at compilation end.
     /// Use: High (every invocation). Scope: Core C# trees.
     /// </summary>
-    private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+    /// <param name="context">Syntax analysis context for one invocation.</param>
+    /// <param name="deferred">Invocations whose alias crosses a partial-class part that is not bound yet.</param>
+    private static void AnalyzeInvocation(
+        SyntaxNodeAnalysisContext context,
+        ConcurrentBag<DeferredInvoke> deferred)
     {
         if (!ShouldScan(context.Node.SyntaxTree.FilePath)
             || context.SemanticModel.GetOperation(context.Node, context.CancellationToken) is not IInvocationOperation invocation)
@@ -120,18 +139,22 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
             return;
         }
 
+        FlowState state = new(context.SemanticModel);
         string? name = RawSqlMethodName(
             invocation.Instance,
-            context.SemanticModel,
-            new HashSet<ISymbol>(SymbolEqualityComparer.Default),
+            state,
             depth: 0,
             context.CancellationToken);
-        if (name is null)
+        if (name is not null)
         {
+            Report(context, invocation.Syntax.GetLocation(), name);
             return;
         }
 
-        Report(context, invocation.Syntax.GetLocation(), name);
+        if (state.Incomplete && invocation.Instance is not null)
+        {
+            deferred.Add(new DeferredInvoke(invocation.Instance, invocation.Syntax.GetLocation()));
+        }
     }
 
     /// <summary>
@@ -233,14 +256,12 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     /// Use: High (delegate invocations and method groups). Scope: this analyzer.
     /// </summary>
     /// <param name="operation">Value that may be a method group or a delegate alias.</param>
-    /// <param name="model">Semantic model for the tree that contains <paramref name="operation"/>.</param>
-    /// <param name="visited">Symbols already traced, so aliases cannot loop.</param>
+    /// <param name="state">Symbols already traced, and the semantic models available for this pass.</param>
     /// <param name="depth">Remaining alias hops.</param>
     /// <param name="cancellationToken">Cancellation token for syntax and semantic lookups.</param>
     private static string? RawSqlMethodName(
         IOperation? operation,
-        SemanticModel model,
-        HashSet<ISymbol> visited,
+        FlowState state,
         int depth,
         CancellationToken cancellationToken)
     {
@@ -253,36 +274,36 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
         switch (operation)
         {
             case IConversionOperation conversion:
-                return RawSqlMethodName(conversion.Operand, model, visited, depth + 1, cancellationToken);
+                return RawSqlMethodName(conversion.Operand, state, depth + 1, cancellationToken);
             case IDelegateCreationOperation creation:
-                return RawSqlMethodName(creation.Target, model, visited, depth + 1, cancellationToken);
+                return RawSqlMethodName(creation.Target, state, depth + 1, cancellationToken);
             case IMethodReferenceOperation methodReference when IsEfRelationalRawSql(methodReference.Method):
                 return methodReference.Method.Name;
             case IParenthesizedOperation parenthesized:
-                return RawSqlMethodName(parenthesized.Operand, model, visited, depth + 1, cancellationToken);
+                return RawSqlMethodName(parenthesized.Operand, state, depth + 1, cancellationToken);
             case IConditionalAccessOperation conditional:
-                return RawSqlMethodName(conditional.WhenNotNull, model, visited, depth + 1, cancellationToken)
-                    ?? RawSqlMethodName(conditional.Operation, model, visited, depth + 1, cancellationToken);
+                return RawSqlMethodName(conditional.WhenNotNull, state, depth + 1, cancellationToken)
+                    ?? RawSqlMethodName(conditional.Operation, state, depth + 1, cancellationToken);
             case IConditionalOperation conditional:
-                return RawSqlMethodName(conditional.WhenTrue, model, visited, depth + 1, cancellationToken)
-                    ?? RawSqlMethodName(conditional.WhenFalse, model, visited, depth + 1, cancellationToken);
+                return RawSqlMethodName(conditional.WhenTrue, state, depth + 1, cancellationToken)
+                    ?? RawSqlMethodName(conditional.WhenFalse, state, depth + 1, cancellationToken);
             case ICoalesceOperation coalesce:
-                return RawSqlMethodName(coalesce.Value, model, visited, depth + 1, cancellationToken)
-                    ?? RawSqlMethodName(coalesce.WhenNull, model, visited, depth + 1, cancellationToken);
+                return RawSqlMethodName(coalesce.Value, state, depth + 1, cancellationToken)
+                    ?? RawSqlMethodName(coalesce.WhenNull, state, depth + 1, cancellationToken);
             case IAssignmentOperation assignment:
-                return RawSqlMethodName(assignment.Value, model, visited, depth + 1, cancellationToken);
+                return RawSqlMethodName(assignment.Value, state, depth + 1, cancellationToken);
             case ILocalReferenceOperation local:
-                return SymbolFlowsFromRawSql(local.Local, model, visited, depth + 1, cancellationToken);
+                return SymbolFlowsFromRawSql(local.Local, state, depth + 1, cancellationToken);
             case IParameterReferenceOperation parameter:
-                return SymbolFlowsFromRawSql(parameter.Parameter, model, visited, depth + 1, cancellationToken);
+                return SymbolFlowsFromRawSql(parameter.Parameter, state, depth + 1, cancellationToken);
             case IFieldReferenceOperation field:
-                return SymbolFlowsFromRawSql(field.Field, model, visited, depth + 1, cancellationToken);
+                return SymbolFlowsFromRawSql(field.Field, state, depth + 1, cancellationToken);
             case IPropertyReferenceOperation property:
-                return SymbolFlowsFromRawSql(property.Property, model, visited, depth + 1, cancellationToken);
+                return SymbolFlowsFromRawSql(property.Property, state, depth + 1, cancellationToken);
             case IInvocationOperation invocation when invocation.TargetMethod.MethodKind == MethodKind.DelegateInvoke:
-                return RawSqlMethodName(invocation.Instance, model, visited, depth + 1, cancellationToken);
+                return RawSqlMethodName(invocation.Instance, state, depth + 1, cancellationToken);
             case IInvocationOperation invocation:
-                return MethodReturnsRawSql(invocation.TargetMethod, model, visited, depth + 1, cancellationToken);
+                return MethodReturnsRawSql(invocation.TargetMethod, state, depth + 1, cancellationToken);
             default:
                 return null;
         }
@@ -290,21 +311,19 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// Returns the EF method name when a stored delegate was filled from a raw-SQL method group.
-    /// Use: High (delegate alias tracing). Scope: this analyzer.
+    /// Use: High (delegate alias tracing). Scope: every part of the symbol's partial type.
     /// </summary>
     /// <param name="symbol">Local, parameter, field, or property that holds a delegate.</param>
-    /// <param name="model">Semantic model for the tree being analyzed.</param>
-    /// <param name="visited">Symbols already traced.</param>
+    /// <param name="state">Symbols already traced, and the semantic models available for this pass.</param>
     /// <param name="depth">Remaining alias hops.</param>
     /// <param name="cancellationToken">Cancellation token for syntax and semantic lookups.</param>
     private static string? SymbolFlowsFromRawSql(
         ISymbol symbol,
-        SemanticModel model,
-        HashSet<ISymbol> visited,
+        FlowState state,
         int depth,
         CancellationToken cancellationToken)
     {
-        if (!visited.Add(symbol))
+        if (!state.Visited.Add(symbol))
         {
             return null;
         }
@@ -318,7 +337,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
                 PropertyDeclarationSyntax property => property.Initializer?.Value,
                 _ => null,
             };
-            string? name = ValueFlowsFromRawSql(initializer, model, visited, depth, cancellationToken);
+            string? name = ValueFlowsFromRawSql(initializer, state, depth, cancellationToken);
             if (name is not null)
             {
                 return name;
@@ -327,19 +346,21 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
         foreach (SyntaxNode scope in AssignmentScopes(symbol, cancellationToken))
         {
-            if (scope.SyntaxTree != model.SyntaxTree)
+            cancellationToken.ThrowIfCancellationRequested();
+            SemanticModel? scopeModel = state.ModelFor(scope.SyntaxTree);
+            if (scopeModel is null)
             {
                 continue;
             }
 
             foreach (AssignmentExpressionSyntax assignment in scope.DescendantNodes().OfType<AssignmentExpressionSyntax>())
             {
-                if (!IsSymbolReference(model.GetOperation(assignment.Left, cancellationToken), symbol))
+                if (!IsSymbolReference(scopeModel.GetOperation(assignment.Left, cancellationToken), symbol))
                 {
                     continue;
                 }
 
-                string? name = ValueFlowsFromRawSql(assignment.Right, model, visited, depth, cancellationToken);
+                string? name = ValueFlowsFromRawSql(assignment.Right, state, depth, cancellationToken);
                 if (name is not null)
                 {
                     return name;
@@ -349,7 +370,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
         if (symbol is IParameterSymbol parameter)
         {
-            return ArgumentFlowsFromRawSql(parameter, model, visited, depth, cancellationToken);
+            return ArgumentFlowsFromRawSql(parameter, state, depth, cancellationToken);
         }
 
         return null;
@@ -357,17 +378,15 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// Returns the EF method name when a call passes a raw-SQL delegate into <paramref name="parameter"/>.
-    /// Use: Medium (delegate parameter tracing). Scope: the parameter's containing type.
+    /// Use: Medium (delegate parameter tracing). Scope: every part of the parameter's partial type.
     /// </summary>
     /// <param name="parameter">Delegate parameter to trace back to its arguments.</param>
-    /// <param name="model">Semantic model for the tree being analyzed.</param>
-    /// <param name="visited">Symbols already traced.</param>
+    /// <param name="state">Symbols already traced, and the semantic models available for this pass.</param>
     /// <param name="depth">Remaining alias hops.</param>
     /// <param name="cancellationToken">Cancellation token for syntax and semantic lookups.</param>
     private static string? ArgumentFlowsFromRawSql(
         IParameterSymbol parameter,
-        SemanticModel model,
-        HashSet<ISymbol> visited,
+        FlowState state,
         int depth,
         CancellationToken cancellationToken)
     {
@@ -378,14 +397,16 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
         foreach (SyntaxNode scope in TypeScopes(parameter, cancellationToken))
         {
-            if (scope.SyntaxTree != model.SyntaxTree)
+            cancellationToken.ThrowIfCancellationRequested();
+            SemanticModel? scopeModel = state.ModelFor(scope.SyntaxTree);
+            if (scopeModel is null)
             {
                 continue;
             }
 
             foreach (InvocationExpressionSyntax invocation in scope.DescendantNodes().OfType<InvocationExpressionSyntax>())
             {
-                if (model.GetOperation(invocation, cancellationToken) is not IInvocationOperation call
+                if (scopeModel.GetOperation(invocation, cancellationToken) is not IInvocationOperation call
                     || !SymbolEqualityComparer.Default.Equals(call.TargetMethod.OriginalDefinition, method.OriginalDefinition))
                 {
                     continue;
@@ -393,12 +414,12 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
                 foreach (IArgumentOperation argument in call.Arguments)
                 {
-                    if (!SymbolEqualityComparer.Default.Equals(argument.Parameter, parameter))
+                    if (!SymbolEqualityComparer.Default.Equals(argument.Parameter?.OriginalDefinition, parameter.OriginalDefinition))
                     {
                         continue;
                     }
 
-                    string? name = RawSqlMethodName(argument.Value, model, visited, depth + 1, cancellationToken);
+                    string? name = RawSqlMethodName(argument.Value, state, depth + 1, cancellationToken);
                     if (name is not null)
                     {
                         return name;
@@ -412,22 +433,20 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// Returns the EF method name when <paramref name="method"/> returns a raw-SQL delegate.
-    /// Use: Medium (returned delegate aliases). Scope: the method body.
+    /// Use: Medium (returned delegate aliases). Scope: every declaration of the method.
     /// </summary>
     /// <param name="method">Method whose returned delegate may be invoked.</param>
-    /// <param name="model">Semantic model for the tree being analyzed.</param>
-    /// <param name="visited">Symbols already traced.</param>
+    /// <param name="state">Symbols already traced, and the semantic models available for this pass.</param>
     /// <param name="depth">Remaining alias hops.</param>
     /// <param name="cancellationToken">Cancellation token for syntax and semantic lookups.</param>
     private static string? MethodReturnsRawSql(
         IMethodSymbol method,
-        SemanticModel model,
-        HashSet<ISymbol> visited,
+        FlowState state,
         int depth,
         CancellationToken cancellationToken)
     {
         method = method.OriginalDefinition;
-        if (!visited.Add(method))
+        if (!state.Visited.Add(method))
         {
             return null;
         }
@@ -442,7 +461,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
                 AccessorDeclarationSyntax accessor => accessor.ExpressionBody?.Expression,
                 _ => null,
             };
-            string? name = ValueFlowsFromRawSql(expressionBody, model, visited, depth, cancellationToken);
+            string? name = ValueFlowsFromRawSql(expressionBody, state, depth, cancellationToken);
             if (name is not null)
             {
                 return name;
@@ -455,7 +474,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
                     continue;
                 }
 
-                name = ValueFlowsFromRawSql(returnStatement.Expression, model, visited, depth, cancellationToken);
+                name = ValueFlowsFromRawSql(returnStatement.Expression, state, depth, cancellationToken);
                 if (name is not null)
                 {
                     return name;
@@ -488,23 +507,27 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     /// Use: High (initializers, assignments, and returns). Scope: this analyzer.
     /// </summary>
     /// <param name="expression">Expression to evaluate, or null.</param>
-    /// <param name="model">Semantic model for the tree being analyzed.</param>
-    /// <param name="visited">Symbols already traced.</param>
+    /// <param name="state">Symbols already traced, and the semantic models available for this pass.</param>
     /// <param name="depth">Remaining alias hops.</param>
     /// <param name="cancellationToken">Cancellation token for semantic lookups.</param>
     private static string? ValueFlowsFromRawSql(
         ExpressionSyntax? expression,
-        SemanticModel model,
-        HashSet<ISymbol> visited,
+        FlowState state,
         int depth,
         CancellationToken cancellationToken)
     {
-        if (expression is null || expression.SyntaxTree != model.SyntaxTree)
+        if (expression is null)
         {
             return null;
         }
 
-        return RawSqlMethodName(model.GetOperation(expression, cancellationToken), model, visited, depth, cancellationToken);
+        SemanticModel? model = state.ModelFor(expression.SyntaxTree);
+        if (model is null)
+        {
+            return null;
+        }
+
+        return RawSqlMethodName(model.GetOperation(expression, cancellationToken), state, depth, cancellationToken);
     }
 
     /// <summary>
@@ -635,4 +658,129 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
             CipherBankDiagnostics.ScatteredSql,
             location,
             name));
+
+    /// <summary>
+    /// Keeps the semantic model supplied for one tree. Compilation.GetSemanticModel is not used.
+    /// Use: High (every tree). Scope: this compilation.
+    /// </summary>
+    /// <param name="models">Models collected for the compilation.</param>
+    /// <param name="model">Semantic model from the tree's own analysis callback.</param>
+    private static void Remember(ConcurrentDictionary<SyntaxTree, SemanticModel> models, SemanticModel model)
+        => models.TryAdd(model.SyntaxTree, model);
+
+    /// <summary>
+    /// Reports delegate invocations whose raw-SQL alias is written in another part of a partial class.
+    /// Use: High (compilation end). Scope: invocations deferred from the inline pass.
+    /// </summary>
+    /// <param name="context">Compilation end context.</param>
+    /// <param name="models">Semantic model of every tree in the compilation.</param>
+    /// <param name="deferred">Invocations the inline pass could not finish.</param>
+    private static void ReportDeferred(
+        CompilationAnalysisContext context,
+        ConcurrentDictionary<SyntaxTree, SemanticModel> models,
+        ConcurrentBag<DeferredInvoke> deferred)
+    {
+        foreach (DeferredInvoke item in deferred)
+        {
+            context.CancellationToken.ThrowIfCancellationRequested();
+            string? name = RawSqlMethodName(
+                item.Instance,
+                new FlowState(models),
+                depth: 0,
+                context.CancellationToken);
+            if (name is null)
+            {
+                continue;
+            }
+
+            context.ReportDiagnostic(Diagnostic.Create(
+                CipherBankDiagnostics.ScatteredSql,
+                item.Location,
+                name));
+        }
+    }
+
+    /// <summary>
+    /// An invocation whose delegate target may be assigned in another partial-class part.
+    /// </summary>
+    private readonly struct DeferredInvoke
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DeferredInvoke"/> struct.
+        /// </summary>
+        /// <param name="instance">Delegate instance that was not fully traced.</param>
+        /// <param name="location">Invocation location to report when the alias is raw SQL.</param>
+        public DeferredInvoke(IOperation instance, Location location)
+        {
+            Instance = instance;
+            Location = location;
+        }
+
+        /// <summary>Gets the delegate instance that was not fully traced.</summary>
+        public IOperation Instance { get; }
+
+        /// <summary>Gets the invocation location to report when the alias is raw SQL.</summary>
+        public Location Location { get; }
+    }
+
+    /// <summary>
+    /// Alias trace for one invocation. A single-tree pass records missing partial-class parts as incomplete.
+    /// The compilation-end pass supplies a semantic model for every part.
+    /// </summary>
+    private sealed class FlowState
+    {
+        private readonly SemanticModel? _current;
+        private readonly ConcurrentDictionary<SyntaxTree, SemanticModel>? _models;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FlowState"/> class for the tree being analyzed.
+        /// </summary>
+        /// <param name="current">Semantic model of the invocation's tree.</param>
+        public FlowState(SemanticModel current)
+        {
+            _current = current;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FlowState"/> class for every tree in the compilation.
+        /// </summary>
+        /// <param name="models">Semantic model of every tree, keyed by that tree.</param>
+        public FlowState(ConcurrentDictionary<SyntaxTree, SemanticModel> models)
+        {
+            _models = models;
+        }
+
+        /// <summary>Gets symbols already traced, so aliases cannot loop.</summary>
+        public HashSet<ISymbol> Visited { get; } = new(SymbolEqualityComparer.Default);
+
+        /// <summary>Gets a value indicating whether a partial-class part had no semantic model yet.</summary>
+        public bool Incomplete { get; private set; }
+
+        /// <summary>
+        /// Returns the semantic model for <paramref name="tree"/>, or null when this pass cannot bind it.
+        /// </summary>
+        /// <param name="tree">Tree that contains the syntax being traced.</param>
+        /// <returns>The semantic model for <paramref name="tree"/>, or null when it is not available yet.</returns>
+        public SemanticModel? ModelFor(SyntaxTree tree)
+        {
+            if (_models is not null)
+            {
+                if (_models.TryGetValue(tree, out SemanticModel? model))
+                {
+                    return model;
+                }
+
+                Incomplete = true;
+                return null;
+            }
+
+            if (_current is not null && _current.SyntaxTree == tree)
+            {
+                return _current;
+            }
+
+            Incomplete = true;
+            return null;
+        }
+    }
 }

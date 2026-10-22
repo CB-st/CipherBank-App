@@ -397,6 +397,109 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
+    public async Task ReportsDelegateAliasAcrossPartialClassFilesAsync()
+    {
+        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        {
+            TestState =
+            {
+                ReferenceAssemblies = _efCoreReferences,
+                Sources =
+                {
+                    ("CipherBank-app.Core/Persist/Migrations/PartialSqlAliasArm.cs", """
+                        using Microsoft.EntityFrameworkCore;
+                        using Microsoft.EntityFrameworkCore.Infrastructure;
+
+                        partial class PartialSqlAlias
+                        {
+                            private System.Func<System.FormattableString, int> _execute = static _ => 0;
+                            private System.Func<System.FormattableString, int> _copied = static _ => 0;
+
+                            void Arm(DatabaseFacade database)
+                            {
+                                _execute = {|CB1003:database.ExecuteSqlInterpolated|};
+                                var execute = {|CB1003:database.ExecuteSqlInterpolated|};
+                                _copied = execute;
+                            }
+
+                            System.Func<System.FormattableString, int> Get() => _execute;
+
+                            void Accept(System.Func<System.FormattableString, int> command) => {|CB1003:command($"SELECT 1")|};
+                        }
+                        """),
+                    ("CipherBank-app.Core/Persist/Migrations/PartialSqlAliasFire.cs", """
+                        using Microsoft.EntityFrameworkCore;
+                        using Microsoft.EntityFrameworkCore.Infrastructure;
+
+                        partial class PartialSqlAlias
+                        {
+                            void Fire(DatabaseFacade database)
+                            {
+                                {|CB1003:_execute($"SELECT 1")|};
+                                var alias = _execute;
+                                {|CB1003:alias($"SELECT 1")|};
+                                {|CB1003:_copied($"SELECT 1")|};
+                                {|CB1003:Get()($"SELECT 1")|};
+                                Accept({|CB1003:database.ExecuteSqlInterpolated|});
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task IgnoresUnrelatedDelegateAcrossPartialClassFilesAsync()
+    {
+        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        {
+            TestState =
+            {
+                Sources =
+                {
+                    ("CipherBank-app.Core/Persist/Migrations/PartialHarmlessArm.cs", """
+                        partial class PartialHarmless
+                        {
+                            private System.Func<string, int> _execute = static sql => sql.Length;
+                            private System.Func<string, int> _copied = static sql => sql.Length;
+
+                            void Arm()
+                            {
+                                _execute = ExecuteSqlRaw;
+                                var execute = ExecuteSqlRaw;
+                                _copied = execute;
+                            }
+
+                            int ExecuteSqlRaw(string sql) => sql.Length;
+
+                            System.Func<string, int> Get() => _execute;
+
+                            void Accept(System.Func<string, int> command) => command("SELECT 1");
+                        }
+                        """),
+                    ("CipherBank-app.Core/Persist/Migrations/PartialHarmlessFire.cs", """
+                        partial class PartialHarmless
+                        {
+                            void Fire()
+                            {
+                                _execute("SELECT 1");
+                                var alias = _execute;
+                                alias("SELECT 1");
+                                _copied("SELECT 1");
+                                Get()("SELECT 1");
+                                Accept(ExecuteSqlRaw);
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
     public async Task IgnoresSqlNamesThatAreNotInvocationsOrAssignmentsAsync()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
