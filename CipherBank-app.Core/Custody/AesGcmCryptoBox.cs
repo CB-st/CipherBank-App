@@ -84,19 +84,21 @@ public sealed class AesGcmCryptoBox : ICryptoBox
     {
         byte[] packed = Convert.FromBase64String(sealedB64);
 
-        // Prefer legacy layout first: a random salt may begin with 0x01 (~1/256), so treating that
-        // as a version marker would mis-slice fields. Versioned blobs still decrypt on fallback.
-        if (TryOpenAt(packed, dataOffset: 0, pin, out string? legacy) && legacy is not null)
-        {
-            return legacy;
-        }
-
+        // Every Seal blob starts with 0x01. Try that layout first so a normal unlock pays one KDF.
+        // A legacy salt can also start with 0x01. If the versioned tag does not authenticate, the
+        // legacy layout is the other candidate; it is accepted only when its own tag authenticates.
+        // The marker is a public format byte. Tag comparison stays inside AesGcm.
         if (packed.Length > 0
             && packed[0] == BlobFormatVersion
             && TryOpenAt(packed, dataOffset: 1, pin, out string? versioned)
             && versioned is not null)
         {
             return versioned;
+        }
+
+        if (TryOpenAt(packed, dataOffset: 0, pin, out string? legacy) && legacy is not null)
+        {
+            return legacy;
         }
 
         throw new CryptographicException("Invalid sealed blob.");

@@ -25,7 +25,7 @@ public sealed class WalletSurfaceCoverageTests
             .And.Contain("amount=1")
             .And.Contain("label=lab")
             .And.Contain("message=hi");
-        PaymentUri.Build("ETH", "0xabc", "0.1").Should().Be("ethereum:0xabc?value=0.1");
+        PaymentUri.Build("ETH", "0xabc", "0.1").Should().Be("ethereum:0xabc?value=100000000000000000");
         PaymentUri.Build("XMR", "4abc", null).Should().Be("monero:4abc");
         PaymentUri.Build("USD", "user-1").Should().Contain("cipherbank:receive/USD");
         PaymentUri.Build("DOGE", "Dtest").Should().StartWith("dogecoin:Dtest");
@@ -38,6 +38,9 @@ public sealed class WalletSurfaceCoverageTests
     public void AddressValidate_CoversSymbolsAndFailures()
     {
         AddressValidate.IsValid("BTC", string.Empty).Should().BeFalse();
+        AddressValidate.IsValid("BTC", "   ").Should().BeFalse();
+        AddressValidate.IsValid(" ", "long-enough").Should().BeFalse();
+        AddressValidate.IsValid(null!, "long-enough").Should().BeFalse();
         AddressValidate.IsValid("BTC", "not-valid").Should().BeFalse();
         AddressValidate.IsValid("LTC", "not-valid").Should().BeFalse();
         AddressValidate.IsValid("DOGE", "not-valid").Should().BeFalse();

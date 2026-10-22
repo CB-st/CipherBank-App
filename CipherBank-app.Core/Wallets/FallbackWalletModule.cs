@@ -36,7 +36,7 @@ public sealed class FallbackWalletModule : IWalletModule
     public bool IsValidAddress(string address) => address.Length >= GenericAddressMinLength;
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex = 0)
+    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
     {
         _ = mnemonic;
         _ = accountIndex;

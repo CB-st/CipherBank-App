@@ -58,6 +58,9 @@ public static class MnemonicHelper
     public static byte[] Entropy(string phrase)
     {
         int[] indices = Parse(phrase).Indices;
+
+        // Each English word is an 11-bit wordlist index. The concatenated bits are
+        // ENT entropy bits plus a CS checksum, with CS = ENT/32, so CS = totalBits/33.
         int totalBits = indices.Length * BitsPerWordIndex;
         int checksumBits = totalBits / ChecksumDivisor;
         int entropyBits = totalBits - checksumBits;
@@ -66,11 +69,15 @@ public static class MnemonicHelper
         int bitPos = 0;
         foreach (int index in indices)
         {
-            // Word index bits are stored big-endian; bit 10 is the high bit of the 11-bit group.
+            // BIP39 bit order, not host byte order: walk the 11-bit index from
+            // bit 10 down to bit 0 (most significant bit first). Do not reverse
+            // the bytes with BitConverter; that would follow machine endianness.
+            // bitPos < entropyBits stops before the checksum bits.
             for (int i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
             {
                 if (((index >> i) & 1) == 1)
                 {
+                    // Pack that bit into the entropy byte, most significant bit of the byte first.
                     entropy[bitPos / BitsPerByte] |= (byte)(1 << (HighestBitInByte - (bitPos % BitsPerByte)));
                 }
 

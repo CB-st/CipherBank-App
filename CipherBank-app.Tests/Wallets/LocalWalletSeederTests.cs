@@ -38,6 +38,26 @@ public class LocalWalletSeederTests
         row.Kind.Should().Be("derived");
     }
 
+    /// <summary>
+    /// BTC and btc are one normalized symbol, so seeding inserts a single derived row.
+    /// Use: Medium (seed). Scope: LocalWalletSeeder.
+    /// </summary>
+    [Fact]
+    public async Task EnsureDerivedAsync_DeduplicatesNormalizedSymbols()
+    {
+        FakeWallets wallets = new FakeWallets();
+        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+        const string mnemonic =
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+        await seeder.EnsureDerivedAsync(mnemonic, ["BTC", "btc", " BTC "]);
+
+        LocalWalletDescriptor row = wallets.Rows.Should().ContainSingle().Subject;
+        row.Symbol.Should().Be(new AssetSymbol("BTC"));
+        row.Kind.Should().Be("derived");
+        row.Address.Should().NotBeNullOrWhiteSpace();
+    }
+
     private sealed class FakeWallets : IWalletRepository
     {
         public List<LocalWalletDescriptor> Rows { get; } = [];

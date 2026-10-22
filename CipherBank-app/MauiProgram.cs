@@ -114,9 +114,12 @@ public static class MauiProgram
                 new HostBehaviorOptions())
             .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
             .ValidateOnStart();
-        mauiAppBuilder.Services.AddCipherBankCore(
+        mauiAppBuilder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+        mauiAppBuilder.Services.AddPersistenceFeature(
             mauiAppBuilder.Configuration,
-            FileSystem.Current.AppDataDirectory);
+            new DirectoryInfo(FileSystem.Current.AppDataDirectory));
+        mauiAppBuilder.Services.AddCustodyFeature(mauiAppBuilder.Configuration);
+        mauiAppBuilder.Services.AddProductSessionServices();
 
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
