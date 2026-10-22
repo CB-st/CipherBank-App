@@ -27,10 +27,6 @@ public sealed class MoneroWalletModule : IWalletModule
     // N characters decodes to this many bytes (-1 marks a length no block can have).
     private static readonly int[] BlockBytesForChars = [0, -1, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8];
 
-    // Network prefixes (single-byte varints): standard, integrated, subaddress for
-    // mainnet, testnet and stagenet.
-    private static readonly HashSet<byte> NetworkPrefixes = [18, 19, 42, 53, 54, 63, 24, 25, 36];
-
     /// <inheritdoc />
     public AssetSymbol Symbol => AssetSymbol.Xmr;
 
@@ -55,10 +51,10 @@ public sealed class MoneroWalletModule : IWalletModule
             return false;
         }
 
+        // Single-byte network prefixes select standard/subaddress or integrated payloads.
         byte[]? decoded = DecodeBase58(address);
         return decoded is not null
-            && decoded.Length > ChecksumLength + 1
-            && NetworkPrefixes.Contains(decoded[0])
+            && HasExpectedLength(address, decoded)
             && HasValidChecksum(decoded);
     }
 
@@ -77,6 +73,13 @@ public sealed class MoneroWalletModule : IWalletModule
         _ = message;
         return PaymentUri.Account("monero", "tx_amount", address, amount);
     }
+
+    private static bool HasExpectedLength(string address, byte[] decoded) => decoded[0] switch
+    {
+        18 or 42 or 53 or 63 or 24 or 36 => address.Length == 95 && decoded.Length == 69,
+        19 or 54 or 25 => address.Length == 106 && decoded.Length == 77,
+        _ => false,
+    };
 
     // The last four bytes are the first four bytes of Keccak-256 over everything before them.
     private static bool HasValidChecksum(byte[] decoded)

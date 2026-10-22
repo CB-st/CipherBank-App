@@ -23,13 +23,6 @@ public sealed class AesGcmCryptoBox : ICryptoBox
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        // Freeze the profile at the box boundary, not only in DI: a box built from any other
-        // profile could seal a blob the host cannot open.
-        if (!options.MatchesPersistedProfile())
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "Cryptography parameters do not match the persisted custody profile.");
-        }
-
         // Keep a private copy: the caller's instance is mutable and must not change this box later.
         _options = new CryptographyOptions
         {
@@ -40,6 +33,13 @@ public sealed class AesGcmCryptoBox : ICryptoBox
             Pbkdf2Iterations = options.Pbkdf2Iterations,
             BlobFormatVersion = options.BlobFormatVersion,
         };
+
+        // Freeze the profile at the box boundary, not only in DI: a box built from any other
+        // profile could seal a blob the host cannot open.
+        if (!_options.MatchesPersistedProfile())
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "Cryptography parameters do not match the persisted custody profile.");
+        }
     }
 
     public SensitiveBuffer DeriveKey(string pin, byte[] salt)
