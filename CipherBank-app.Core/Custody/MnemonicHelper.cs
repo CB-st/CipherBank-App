@@ -73,9 +73,9 @@ public static class MnemonicHelper
             // Bit order, not byte order: BIP39 defines the bit stream MSB-first, and this
             // loop reads bits with shifts on an int value. Shifts act on the value, not on
             // its in-memory bytes, so the result is the same on little- and big-endian CPUs.
-            // No BitConverter / Array.Reverse is needed because no integer is ever
-            // serialized to bytes. Walk bit 10 (MSB) down to bit 0 of the word index;
-            // bitPos < entropyBits stops before the trailing checksum bits.
+            // No BitConverter or Array.Reverse is needed because no integer is ever
+            // serialized to bytes. The inner loop walks bit 10 (MSB) down to bit 0 of the
+            // word index, and the bit-position guard stops before the trailing checksum bits.
             // Example: eleven words "abandon" (index 0) and a final "about" (index 3) give
             // 128 zero entropy bits followed by the 4 checksum bits 0011.
             for (int i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
