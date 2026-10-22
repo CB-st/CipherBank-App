@@ -6,6 +6,7 @@ Repository-structure diagnostics. Not product behavior.
 - CB1002: `Properties/AssemblyInfo.cs`
 - CB1003: raw SQL anywhere in Core (`CommandText`, `FromSqlRaw`, `ExecuteSqlRaw` by identifier). Total ban — no `LocalDbSql` quarantine. Schema is EF `Migrate()` on M2.
 - CB1004: retired names `IProductApi`, `MockProductApi`, `AppSessionDeps`
+- CB1005: platform globals in ViewModels (`Application`, `Clipboard`, `MainThread`, `Preferences`, `SecureStorage`, `Shell`, and `Task.Run`) via `NoViewModelPlatformGlobalsAnalyzer`
 - `SourcePath`: string predicates over the original Roslyn additional-file path (no `FileInfo`, no separator rewriting, no `GetFullPath`, no filesystem access). Segments come from `Path.GetFileName` / `GetExtension` / `GetDirectoryName`. Predicates answer Core / `Directory.Packages.props` / `AssemblyInfo`. Compare paths with `SourcePath.NamesEqual` (ordinal-ignore-case; the BCL has no path-equality API).
 
 These run on every `dotnet build` via `Directory.Build.props`. Each analyzer checks
