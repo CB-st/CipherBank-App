@@ -129,7 +129,6 @@ Pinned hostnames: `api.cipherbank.money`, `api.sandbox.cipherbank.money`. Placeh
 ### Other
 
 - **Rate limiting**: Client-side sliding window to avoid API abuse.
-- **Log redaction**: `LogRedactionHelper` redacts tokens, addresses, wallet IDs, etc.
 - **Address validation**: `AddressValidator` for BTC, ETH, SOL formats.
 
 ## Mock vs Real Services
