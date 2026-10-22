@@ -87,4 +87,27 @@ public class CryptoBoxBoundaryTests
         Action read = () => _ = key.Span.Length;
         read.Should().Throw<ObjectDisposedException>();
     }
+
+    [Fact]
+    public void Constructor_CopiesOptions_SoLaterMutationHasNoEffect()
+    {
+        CryptographyOptions options = new CryptographyOptions();
+        AesGcmCryptoBox box = new AesGcmCryptoBox(options);
+        options.BlobFormatVersion = 0x7F;
+
+        string sealedB64 = box.Seal("secret", Pin);
+
+        Convert.FromBase64String(sealedB64)[0].Should().Be(CryptographyOptions.Default.BlobFormatVersion);
+        box.Open(sealedB64, Pin).Should().Be("secret");
+    }
+
+    [Fact]
+    public void Length_ThrowsAfterDispose()
+    {
+        SensitiveBuffer buffer = new SensitiveBuffer(new byte[4]);
+        buffer.Dispose();
+
+        Action read = () => _ = buffer.Length;
+        read.Should().Throw<ObjectDisposedException>();
+    }
 }

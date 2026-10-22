@@ -23,8 +23,22 @@ public sealed class SensitiveBuffer : IDisposable
         _bytes = bytes;
     }
 
+    /// <summary>Finalizes an instance of the <see cref="SensitiveBuffer"/> class.</summary>
+    /// <remarks>Zeroes bytes a caller forgot to dispose.</remarks>
+    ~SensitiveBuffer()
+    {
+        CryptographicOperations.ZeroMemory(_bytes);
+    }
+
     /// <summary>Gets the buffer length in bytes.</summary>
-    public int Length => _bytes.Length;
+    public int Length
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _bytes.Length;
+        }
+    }
 
     /// <summary>Gets a span over the secret bytes.</summary>
     public Span<byte> Span
@@ -46,5 +60,6 @@ public sealed class SensitiveBuffer : IDisposable
 
         CryptographicOperations.ZeroMemory(_bytes);
         _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }

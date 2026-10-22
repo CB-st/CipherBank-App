@@ -38,6 +38,19 @@ public class LocalWalletSeederTests
         row.Kind.Should().Be("derived");
     }
 
+    /// <summary>A null symbol is rejected before any wallet is written. Use: Medium. Scope: LocalWalletSeeder.</summary>
+    [Fact]
+    public async Task EnsureDerivedAsync_RejectsNullSymbol()
+    {
+        FakeWallets wallets = new FakeWallets();
+        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+
+        Func<Task> act = () => seeder.EnsureDerivedAsync("abandon about", [new AssetSymbol("BTC"), null!]);
+
+        await act.Should().ThrowAsync<ArgumentException>().WithParameterName("symbols");
+        wallets.Rows.Should().BeEmpty();
+    }
+
     /// <summary>
     /// BTC and btc are one normalized symbol, so seeding inserts a single derived row.
     /// Use: Medium (seed). Scope: LocalWalletSeeder.

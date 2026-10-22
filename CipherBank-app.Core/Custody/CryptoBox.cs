@@ -18,7 +18,7 @@ public static class CryptoBox
 {
     /// <summary>Derives the custody key into a buffer that zeroes itself on dispose.</summary>
     public static SensitiveBuffer DeriveKey(CryptographyOptions options, string pin, byte[] salt)
-        => new(Create(options).DeriveKey(pin, salt));
+        => Create(options).DeriveKey(pin, salt);
 
     public static string Seal(CryptographyOptions options, string plaintext, string pin)
         => Create(options).Seal(plaintext, pin);

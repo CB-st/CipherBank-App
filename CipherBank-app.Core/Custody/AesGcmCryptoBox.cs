@@ -30,21 +30,31 @@ public sealed class AesGcmCryptoBox : ICryptoBox
             throw new ArgumentOutOfRangeException(nameof(options), "Cryptography parameters do not match the persisted custody profile.");
         }
 
-        _options = options;
+        // Keep a private copy: the caller's instance is mutable and must not change this box later.
+        _options = new CryptographyOptions
+        {
+            NonceSizeBytes = options.NonceSizeBytes,
+            TagSizeBytes = options.TagSizeBytes,
+            KeySizeBytes = options.KeySizeBytes,
+            SaltSizeBytes = options.SaltSizeBytes,
+            Pbkdf2Iterations = options.Pbkdf2Iterations,
+            BlobFormatVersion = options.BlobFormatVersion,
+        };
     }
 
-    public byte[] DeriveKey(string pin, byte[] salt)
-        => Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(pin),
-            salt,
-            _options.Pbkdf2Iterations,
-            HashAlgorithmName.SHA256,
-            _options.KeySizeBytes);
+    public SensitiveBuffer DeriveKey(string pin, byte[] salt)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        using SensitiveBuffer password = new(Encoding.UTF8.GetBytes(pin));
+        byte[] key = new byte[_options.KeySizeBytes];
+        Rfc2898DeriveBytes.Pbkdf2(password.Span, salt, key, _options.Pbkdf2Iterations, HashAlgorithmName.SHA256);
+        return new SensitiveBuffer(key);
+    }
 
     public string Seal(string plaintext, string pin)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(_options.SaltSizeBytes);
-        using SensitiveBuffer key = new(DeriveKey(pin, salt));
+        using SensitiveBuffer key = DeriveKey(pin, salt);
         using SensitiveBuffer plain = new(Encoding.UTF8.GetBytes(plaintext));
         byte[] nonce = RandomNumberGenerator.GetBytes(_options.NonceSizeBytes);
         byte[] cipher = new byte[plain.Length];
@@ -108,13 +118,13 @@ public sealed class AesGcmCryptoBox : ICryptoBox
         offset += nonce.Length;
         byte[] tag = packed.AsSpan(offset, _options.TagSizeBytes).ToArray();
         offset += tag.Length;
-        byte[] cipher = packed.AsSpan(offset).ToArray();
-        using SensitiveBuffer key = new(DeriveKey(pin, salt));
+        using SensitiveBuffer cipher = new(packed.AsSpan(offset).ToArray());
+        using SensitiveBuffer key = DeriveKey(pin, salt);
         using SensitiveBuffer plain = new(new byte[cipher.Length]);
         try
         {
             using AesGcm aes = new AesGcm(key.Span, _options.TagSizeBytes);
-            aes.Decrypt(nonce, cipher, tag, plain.Span);
+            aes.Decrypt(nonce, cipher.Span, tag, plain.Span);
             plaintext = Encoding.UTF8.GetString(plain.Span);
             return true;
         }

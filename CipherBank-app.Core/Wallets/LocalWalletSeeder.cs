@@ -32,7 +32,13 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     public Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
     {
         ArgumentNullException.ThrowIfNull(symbols);
-        return EnsureDerivedCoreAsync(mnemonic, symbols);
+        AssetSymbol[] list = [.. symbols];
+        if (Array.Exists(list, symbol => symbol is null))
+        {
+            throw new ArgumentException("Symbols must not contain null entries.", nameof(symbols));
+        }
+
+        return EnsureDerivedCoreAsync(mnemonic, list);
     }
 
     /// <summary>
