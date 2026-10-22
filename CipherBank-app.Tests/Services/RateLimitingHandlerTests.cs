@@ -63,7 +63,9 @@ public class RateLimitingHandlerTests
     public async Task RateLimiter_BurstThenWait_ResetsCorrectly()
     {
         // Arrange - Short window for testing
-        var rateLimiter = new RateLimiter(null, 5, TimeSpan.FromMilliseconds(200));
+        var window = TimeSpan.FromMilliseconds(200);
+        var clock = new FixedTimeProvider(new DateTimeOffset(2026, 8, 18, 12, 0, 0, TimeSpan.Zero));
+        var rateLimiter = new RateLimiter(null, clock, 5, window);
 
         // Act - Burst of requests
         for (int i = 0; i < 5; i++)
@@ -75,8 +77,7 @@ public class RateLimitingHandlerTests
         rateLimiter.CurrentRequestCount.Should().Be(5);
         (await rateLimiter.TryAcquireAsync()).Should().BeFalse();
 
-        // Wait for window to expire
-        await Task.Delay(250);
+        clock.Advance(window + TimeSpan.FromTicks(1));
 
         // Should be able to make requests again
         var afterWait = await rateLimiter.TryAcquireAsync();
@@ -97,5 +98,19 @@ public class RateLimitingHandlerTests
         // Assert - Wait time should be close to window duration
         waitTime.Should().BeGreaterThan(TimeSpan.Zero);
         waitTime.Should().BeLessThanOrEqualTo(windowDuration);
+    }
+
+    private sealed class FixedTimeProvider : TimeProvider
+    {
+        private DateTimeOffset _utcNow;
+
+        public FixedTimeProvider(DateTimeOffset utcNow)
+        {
+            _utcNow = utcNow;
+        }
+
+        public override DateTimeOffset GetUtcNow() => _utcNow;
+
+        public void Advance(TimeSpan by) => _utcNow += by;
     }
 }
