@@ -16,6 +16,10 @@ public sealed class WalletSurfaceCoverageTests
     private const string KnownMnemonic =
         "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
+    // Monero general-fund donation address (public, mainnet standard).
+    private const string MoneroAddress =
+        "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
+
     /// <summary>PaymentUri schemes and Shorten. Use: High. Scope: PaymentUri.</summary>
     [Fact]
     public void PaymentUri_CoversSchemesAndShorten()
@@ -45,7 +49,10 @@ public sealed class WalletSurfaceCoverageTests
         AddressValidate.IsValid("BTC", "not-valid").Should().BeFalse();
         AddressValidate.IsValid("LTC", "not-valid").Should().BeFalse();
         AddressValidate.IsValid("DOGE", "not-valid").Should().BeFalse();
-        AddressValidate.IsValid("XMR", new string('a', 100)).Should().BeTrue();
+        AddressValidate.IsValid("XMR", MoneroAddress).Should().BeTrue();
+        AddressValidate.IsValid("XMR", new string('a', 100)).Should().BeFalse();
+        AddressValidate.IsValid("XMR", MoneroAddress[..^1] + (MoneroAddress[^1] == 'A' ? 'B' : 'A')).Should().BeFalse();
+        AddressValidate.IsValid("XMR", "1" + MoneroAddress[1..]).Should().BeFalse();
         AddressValidate.IsValid("XMR", "short").Should().BeFalse();
         AddressValidate.IsValid("XYZ", "long-enough").Should().BeTrue();
         AddressValidate.IsValid("XYZ", "tiny").Should().BeFalse();
