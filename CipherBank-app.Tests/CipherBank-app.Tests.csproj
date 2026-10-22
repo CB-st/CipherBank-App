@@ -42,4 +42,10 @@
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- PurchaseRequestLifetime lives in the MAUI app layer (ViewModels). The app targets
+         net10.0-android only, so the unit suite compiles that single file in directly. -->
+    <Compile Include="..\CipherBank-app\ViewModels\PurchaseRequestLifetime.cs" Link="Purchasing\PurchaseRequestLifetime.cs" />
+  </ItemGroup>
+
 </Project>

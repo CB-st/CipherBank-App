@@ -26,7 +26,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     private readonly IErrorHandler _errorHandler;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
-    private CancellationTokenSource? _cts;
+    private readonly PurchaseRequestLifetime _requests = new();
     private bool _disposed;
 
     public PurchaseViewModel(
@@ -94,6 +94,13 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     /// </summary>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
+        // Shell can reapply the route when Buy is shown again. Selecting a
+        // symbol reloads the catalog, which must not disturb an in-flight purchase.
+        if (IsPurchasing)
+        {
+            return;
+        }
+
         if (query.TryGetValue("symbol", out var symbolObj) && symbolObj is string symbol)
         {
             LogReceivedSymbol(_logger, symbol);
@@ -102,11 +109,12 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     }
 
     /// <summary>
-    /// Cancels any ongoing operations when leaving the page.
+    /// Cancels catalog work when leaving the page.
+    /// An in-flight purchase is left running so a later return can show its result.
     /// </summary>
     public void OnDisappearing()
     {
-        _cts?.Cancel();
+        _requests.CancelWhenPageDisappears(IsPurchasing);
         LogPurchaseDisappearing(_logger);
     }
 
@@ -172,13 +180,14 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     [RelayCommand]
     private async Task LoadAvailableCryptosAsync()
     {
-        if (IsLoading)
+        // Returning to Buy runs this again. Leave the purchase token alone,
+        // and do not replace the catalog underneath a purchase still in flight.
+        if (IsLoading || IsPurchasing)
         {
             return;
         }
 
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
+        CancellationToken loadToken = _requests.BeginLoad();
 
         IsLoading = true;
         ErrorMessage = null;
@@ -190,7 +199,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             var success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    List<CryptoCurrency> cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                    List<CryptoCurrency> cryptos = await _cryptoService.GetCryptoPricesAsync(loadToken);
 
                     AvailableCryptos.Clear();
                     foreach (CryptoCurrency crypto in cryptos)
@@ -291,8 +300,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             return;
         }
 
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
+        CancellationToken purchaseToken = _requests.BeginPurchase();
 
         IsPurchasing = true;
         ErrorMessage = null;
@@ -302,7 +310,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             LogPurchasing(_logger, Amount, SelectedCrypto.Symbol.Value);
 
             Transaction transaction = await _transactionService.PurchaseCryptoAsync(
-                SelectedCrypto.Symbol, Amount, _cts.Token);
+                SelectedCrypto.Symbol, Amount, purchaseToken);
 
             var successMessage =
                 $"Successfully purchased {transaction.Amount:F8} {transaction.CryptoSymbol}!\n\n" +
@@ -430,7 +438,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         {
             if (disposing)
             {
-                _cts?.Dispose();
+                _requests.Dispose();
             }
 
             _disposed = true;
