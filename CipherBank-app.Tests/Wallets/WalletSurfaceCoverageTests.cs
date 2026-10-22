@@ -72,18 +72,13 @@ public sealed class WalletSurfaceCoverageTests
         doge.Path.Should().Contain("44'/3'");
     }
 
-    /// <summary>Create mode maps to storage source. Use: Medium. Scope: IWalletModule.SourceFor.</summary>
+    /// <summary>Server-backed creates follow the module flag. Use: Medium. Scope: IWalletModule.</summary>
     [Fact]
-    public void WalletModule_SourceFor_MapsModes()
+    public void WalletModule_UsesServerWallets_OnlyForMonero()
     {
-        IWalletModule local = WalletRegistry.Get("BTC");
-        local.SourceFor(WalletUiMode.Watch).Should().Be(WalletSource.Watch);
-        local.SourceFor(WalletUiMode.Managed).Should().Be(WalletSource.Server);
-        local.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Local);
-        local.SourceFor(WalletUiMode.Derive).Should().Be(WalletSource.Local);
-
-        IWalletModule server = WalletRegistry.Get("XMR");
-        server.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Server);
+        WalletRegistry.Get(AssetSymbol.Btc).UsesServerWallets.Should().BeFalse();
+        WalletRegistry.Get(AssetSymbol.Xmr).UsesServerWallets.Should().BeTrue();
+        WalletRegistry.Get(AssetSymbol.Xmr).AddModes.Should().Contain(WalletUiMode.Unmanaged);
     }
 
     /// <summary>QR PNG generation. Use: Medium. Scope: QrCodeGenerator.</summary>
