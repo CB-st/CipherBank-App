@@ -12,15 +12,17 @@ namespace CipherBank_app.Services;
 /// <summary>
 /// Production implementation of IAuthService using HTTP client.
 /// </summary>
-public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient http)
+public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient http, AuthSessionGuard sessionGuard)
     : IAuthService
 {
+    private const string SessionEndedMessage = "Session ended before the token could be stored";
     private const string AccessTokenKey = "auth_access_token";
     private const string RefreshTokenKey = "auth_refresh_token";
     private const string ExpiresUtcKey = "auth_expires_utc";
 
     public async Task<AuthToken> LoginAsync(string user, string password, CancellationToken cancellationToken = default)
     {
+        int generation = await sessionGuard.CaptureAsync(cancellationToken);
         HttpResponseMessage resp = await http.PostAsJsonAsync("auth/login", new { user, password }, cancellationToken);
         resp.EnsureSuccessStatusCode();
         AuthToken? token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
@@ -30,10 +32,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
             throw new InvalidOperationException("Authentication failed: Unable to parse token from server response");
         }
 
-        // Store tokens securely
-        await SecureStorage.Default.SetAsync(AccessTokenKey, token.AccessToken);
-        await SecureStorage.Default.SetAsync(RefreshTokenKey, token.RefreshToken);
-        await SecureStorage.Default.SetAsync(ExpiresUtcKey, token.ExpiresUtc.ToString("O"));
+        await StoreTokenIfCurrentAsync(token, generation, cancellationToken);
 
         LogUserAuthenticated(logger);
         return token;
@@ -41,6 +40,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task<AuthToken> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
+        int generation = await sessionGuard.CaptureAsync(cancellationToken);
         HttpResponseMessage resp = await http.PostAsJsonAsync("auth/refresh", new { refreshToken }, cancellationToken);
         resp.EnsureSuccessStatusCode();
         AuthToken? token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
@@ -50,10 +50,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
             throw new InvalidOperationException("Token refresh failed: Unable to parse token from server response");
         }
 
-        // Store refreshed tokens securely
-        await SecureStorage.Default.SetAsync(AccessTokenKey, token.AccessToken);
-        await SecureStorage.Default.SetAsync(RefreshTokenKey, token.RefreshToken);
-        await SecureStorage.Default.SetAsync(ExpiresUtcKey, token.ExpiresUtc.ToString("O"));
+        await StoreTokenIfCurrentAsync(token, generation, cancellationToken);
 
         LogTokenRefreshed(logger);
         return token;
@@ -110,9 +107,13 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
             LogRevokeTokenDuringLogoutFailed(logger, ex);
         }
 
-        SecureStorage.Default.Remove(AccessTokenKey);
-        SecureStorage.Default.Remove(RefreshTokenKey);
-        SecureStorage.Default.Remove(ExpiresUtcKey);
+        await sessionGuard.InvalidateAndClearAsync(() =>
+        {
+            SecureStorage.Default.Remove(AccessTokenKey);
+            SecureStorage.Default.Remove(RefreshTokenKey);
+            SecureStorage.Default.Remove(ExpiresUtcKey);
+            return Task.CompletedTask;
+        });
         LogUserLoggedOut(logger);
     }
 
@@ -185,4 +186,22 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Unexpected error during token revocation")]
     private static partial void LogUnexpectedErrorDuringRevocation(ILogger logger, Exception ex);
+
+    private async Task StoreTokenIfCurrentAsync(AuthToken token, int generation, CancellationToken cancellationToken)
+    {
+        bool stored = await sessionGuard.TryPersistAsync(
+            generation,
+            async () =>
+            {
+                await SecureStorage.Default.SetAsync(AccessTokenKey, token.AccessToken);
+                await SecureStorage.Default.SetAsync(RefreshTokenKey, token.RefreshToken);
+                await SecureStorage.Default.SetAsync(ExpiresUtcKey, token.ExpiresUtc.ToString("O"));
+            },
+            cancellationToken);
+
+        if (!stored)
+        {
+            throw new InvalidOperationException(SessionEndedMessage);
+        }
+    }
 }

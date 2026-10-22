@@ -264,15 +264,49 @@ public class ErrorHandlerTests
     }
 
     [Fact]
-    public async Task HandleApiErrorsAsync_Cancellation_DoesNotClearSessionOrNavigate()
+    public async Task HandleApiErrorsAsync_CancellationWrappingUnauthorized_ClearsSessionAndRedirects()
     {
         (ErrorHandler handler, Mock<INavigationService> navigation, Mock<IAuthService> auth) = CreateReadyHandler();
+        string? message = null;
 
         bool result = await handler.HandleApiErrorsAsync(
             () => throw new OperationCanceledException("cancelled", Unauthorized()),
-            _ => { });
+            value => message = value);
 
         result.Should().BeFalse();
+        message.Should().Be("Session expired. Please log in again.");
+        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleApiErrorsAsync_TaskCanceledWrappingUnauthorized_ClearsSessionAndRedirects()
+    {
+        (ErrorHandler handler, Mock<INavigationService> navigation, Mock<IAuthService> auth) = CreateReadyHandler();
+        string? message = null;
+
+        bool result = await handler.HandleApiErrorsAsync(
+            () => throw new TaskCanceledException("cancelled", Unauthorized()),
+            value => message = value);
+
+        result.Should().BeFalse();
+        message.Should().Be("Session expired. Please log in again.");
+        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleApiErrorsAsync_CancellationWithoutUnauthorized_DoesNotClearSessionOrNavigate()
+    {
+        (ErrorHandler handler, Mock<INavigationService> navigation, Mock<IAuthService> auth) = CreateReadyHandler();
+        string? message = null;
+
+        bool result = await handler.HandleApiErrorsAsync(
+            () => throw new OperationCanceledException("cancelled"),
+            value => message = value);
+
+        result.Should().BeFalse();
+        message.Should().BeNull();
         auth.Verify(service => service.LogoutAsync(), Times.Never);
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
     }

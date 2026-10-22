@@ -34,14 +34,14 @@ public sealed class ErrorHandler : IErrorHandler
             await operation();
             return true;
         }
-        catch (OperationCanceledException)
-        {
-            return false;
-        }
         catch (Exception ex) when (SessionExpiry.IsExpired(ex))
         {
             setErrorMessage("Session expired. Please log in again.");
             await InvalidateSessionAndRedirectToLoginAsync();
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
             return false;
         }
         catch (HttpRequestException)
@@ -49,6 +49,13 @@ public sealed class ErrorHandler : IErrorHandler
             setErrorMessage(networkErrorMessage ?? "Network error. Please check your connection.");
             return false;
         }
+    }
+
+    /// <inheritdoc />
+    public bool IsSessionExpired(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        return SessionExpiry.IsExpired(exception);
     }
 
     private async Task InvalidateSessionAndRedirectToLoginAsync()

@@ -22,4 +22,12 @@ public interface IErrorHandler
         Func<Task> operation,
         Action<string?> setErrorMessage,
         string? networkErrorMessage = null);
+
+    /// <summary>
+    /// True when the exception chain contains a 401 or an unauthorized failure,
+    /// including when that failure is wrapped in a cancellation exception.
+    /// </summary>
+    /// <param name="exception">The exception thrown by an API call.</param>
+    /// <returns>True when the session should be cleared and the user sent to Login.</returns>
+    bool IsSessionExpired(Exception exception);
 }

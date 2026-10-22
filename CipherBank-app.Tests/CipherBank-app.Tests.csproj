@@ -28,7 +28,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <!-- Desktop e_sqlite3 pin (NU1903); Android uses sqlitepclraw.lib.e_sqlite3.android from Core -->
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
@@ -42,13 +44,18 @@
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
   </ItemGroup>
 
-  <!-- ErrorHandler has no MAUI types. The app head targets Android, so the unit
-       suite compiles these host sources instead of referencing the MAUI project. -->
+  <!-- These host sources have no MAUI platform calls. The app head targets Android,
+       so the unit suite compiles them instead of referencing the MAUI project.
+       PurchaseViewModel names IQueryAttributable; Host/IQueryAttributable.cs stands in
+       for the MAUI interface. -->
   <ItemGroup>
     <Compile Include="..\CipherBank-app\Services\ErrorHandler.cs" Link="Host\ErrorHandler.cs" />
     <Compile Include="..\CipherBank-app\Services\IErrorHandler.cs" Link="Host\IErrorHandler.cs" />
+    <Compile Include="..\CipherBank-app\Services\IDialogService.cs" Link="Host\IDialogService.cs" />
     <Compile Include="..\CipherBank-app\Services\INavigationService.cs" Link="Host\INavigationService.cs" />
     <Compile Include="..\CipherBank-app\Constants\Routes.cs" Link="Host\Routes.cs" />
+    <Compile Include="..\CipherBank-app\ViewModels\PurchaseViewModel.cs" Link="Host\PurchaseViewModel.cs" />
+    <Compile Include="..\CipherBank-app\ViewModels\WalletViewModel.cs" Link="Host\WalletViewModel.cs" />
   </ItemGroup>
 
 </Project>
