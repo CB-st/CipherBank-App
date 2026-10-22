@@ -11,6 +11,50 @@ namespace CipherBank_app.Tests.Services;
 public class AuthSessionGuardTests
 {
     [Fact]
+    public async Task CaptureLogoutAsync_LoginDuringTokenRead_CapturesOnlyOwnedToken()
+    {
+        using var guard = new AuthSessionGuard();
+        string stored = "session-a";
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int generation = await guard.CaptureAsync();
+        var capture = guard.CaptureLogoutAsync(
+            async () =>
+            {
+                entered.SetResult();
+                await release.Task;
+                return stored;
+            },
+            generation);
+        await entered.Task;
+        Task<bool> login = guard.TryPersistAsync(
+            generation,
+            () =>
+            {
+                stored = "session-b";
+                return Task.CompletedTask;
+            },
+            startsSession: true);
+        login.IsCompleted.Should().BeFalse();
+        release.SetResult();
+        var session = await capture;
+        (await login).Should().BeTrue();
+
+        session.Should().NotBeNull();
+        session!.Value.RefreshToken.Should().Be("session-a");
+        bool cleared = await guard.InvalidateAndClearAsync(
+            () =>
+            {
+                stored = string.Empty;
+                return Task.CompletedTask;
+            },
+            capturedGeneration: session.Value.Generation);
+        cleared.Should().BeFalse();
+        stored.Should().Be("session-b");
+        (await guard.CaptureLogoutAsync(() => Task.FromResult<string?>(stored), generation)).Should().BeNull();
+    }
+
+    [Fact]
     public async Task CaptureRefreshAsync_LogoutDuringTokenRead_DoesNotRestoreSession()
     {
         using var guard = new AuthSessionGuard();

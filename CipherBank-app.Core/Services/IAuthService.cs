@@ -21,6 +21,12 @@ public interface IAuthService
 
     Task LogoutAsync();
 
+    /// <summary>Captures session ownership before starting an operation.</summary>
+    Task<int> CaptureSessionAsync();
+
+    /// <summary>Logs out only the originating session; returns false if it is no longer current.</summary>
+    Task<bool> LogoutAsync(int capturedGeneration);
+
     /// <summary>
     /// Revokes the current access and refresh tokens on the server.
     /// Should be called before logout to invalidate tokens server-side.

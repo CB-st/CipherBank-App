@@ -100,7 +100,7 @@ public sealed partial class MockAuthService : IAuthService
                 _currentToken = created;
                 return Task.CompletedTask;
             },
-            cancellationToken);
+            cancellationToken: cancellationToken);
 
         if (!stored)
         {
@@ -131,18 +131,25 @@ public sealed partial class MockAuthService : IAuthService
         return Task.FromResult(isExpired);
     }
 
+    public Task<int> CaptureSessionAsync() => _sessionGuard.CaptureAsync();
+
     public async Task LogoutAsync()
     {
-        int generation = await _sessionGuard.CaptureAsync();
+        await LogoutAsync(await CaptureSessionAsync());
+    }
+
+    public async Task<bool> LogoutAsync(int capturedGeneration)
+    {
         await RevokeTokenAsync();
-        await _sessionGuard.InvalidateAndClearAsync(
+        bool cleared = await _sessionGuard.InvalidateAndClearAsync(
             () =>
             {
                 _currentToken = null;
                 return Task.CompletedTask;
             },
-            capturedGeneration: generation);
+            capturedGeneration: capturedGeneration);
         LogUserLoggedOut(_logger);
+        return cleared;
     }
 
     public async Task<bool> RevokeTokenAsync(CancellationToken cancellationToken = default)

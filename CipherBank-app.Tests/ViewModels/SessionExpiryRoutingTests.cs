@@ -35,7 +35,7 @@ public class SessionExpiryRoutingTests
 
         viewModel.ErrorMessage.Should().Be("Session expired. Please log in again.");
         viewModel.WalletCards.Should().BeEmpty();
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -61,7 +61,7 @@ public class SessionExpiryRoutingTests
         viewModel.ErrorMessage.Should().BeNull();
         viewModel.WalletCards.Should().ContainSingle();
         viewModel.WalletCards[0].UsdValue.Should().Be(0m);
-        auth.Verify(service => service.LogoutAsync(), Times.Never);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Never);
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
     }
 
@@ -84,7 +84,7 @@ public class SessionExpiryRoutingTests
         await redirected.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         viewModel.ErrorMessage.Should().Be("Session expired. Please log in again.");
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -121,7 +121,7 @@ public class SessionExpiryRoutingTests
 
         viewModel.IsSending.Should().BeFalse();
         viewModel.ErrorMessage.Should().Be("Session expired. Please log in again.");
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
         dialog.Verify(
             service => service.ShowAlertAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -160,7 +160,7 @@ public class SessionExpiryRoutingTests
         await viewModel.SendCryptoCommand.ExecuteAsync(null);
 
         viewModel.IsSending.Should().BeFalse();
-        auth.Verify(service => service.LogoutAsync(), Times.Never);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Never);
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
         dialog.Verify(
             service => service.ShowAlertAsync("Transaction Failed", "Insufficient balance for transaction", "OK"),
@@ -180,7 +180,7 @@ public class SessionExpiryRoutingTests
 
         viewModel.Wallets.Should().BeEmpty();
         viewModel.ErrorMessage.Should().Be("Session expired. Please log in again.");
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
         dialog.Verify(
             service => service.ShowAlertAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -211,7 +211,7 @@ public class SessionExpiryRoutingTests
 
         viewModel.IsPurchasing.Should().BeFalse();
         viewModel.ErrorMessage.Should().Be("Session expired. Please log in again.");
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
         dialog.Verify(
             service => service.ShowAlertAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
@@ -236,7 +236,7 @@ public class SessionExpiryRoutingTests
         wallets?.Invoke(walletService);
         transactions?.Invoke(transactionService);
         crypto?.Invoke(cryptoService);
-        auth.Setup(service => service.LogoutAsync()).Returns(Task.CompletedTask);
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
         WalletViewModel viewModel = new(
             NullLogger<WalletViewModel>.Instance,
@@ -260,7 +260,7 @@ public class SessionExpiryRoutingTests
         var auth = new Mock<IAuthService>();
         var dialog = new Mock<IDialogService>();
         transactions(transactionService);
-        auth.Setup(service => service.LogoutAsync()).Returns(Task.CompletedTask);
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
         PurchaseViewModel viewModel = new(
             NullLogger<PurchaseViewModel>.Instance,

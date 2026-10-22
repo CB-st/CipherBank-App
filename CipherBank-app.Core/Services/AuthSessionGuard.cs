@@ -52,6 +52,28 @@ public sealed class AuthSessionGuard : IDisposable
         return generation;
     }
 
+    /// <summary>Reads a logout token under the same gate as its session generation.</summary>
+    public async Task<(int Generation, string? RefreshToken)?> CaptureLogoutAsync(
+        Func<Task<string?>> readRefreshToken,
+        int? capturedGeneration = null)
+    {
+        ArgumentNullException.ThrowIfNull(readRefreshToken);
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            if (capturedGeneration.HasValue && capturedGeneration.Value != _generation)
+            {
+                return null;
+            }
+
+            return (_generation, await readRefreshToken().ConfigureAwait(false));
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     /// <summary>
     /// Persists tokens only when logout has not moved the generation since <paramref name="capturedGeneration"/>.
     /// </summary>
@@ -97,7 +119,8 @@ public sealed class AuthSessionGuard : IDisposable
     /// <param name="clear">Removes the stored credentials.</param>
     /// <param name="capturedGeneration">When supplied, clear only this session.</param>
     /// <param name="cancellationToken">Cancels the wait for the storage gate.</param>
-    public async Task InvalidateAndClearAsync(
+    /// <returns>True when this session was invalidated and cleared.</returns>
+    public async Task<bool> InvalidateAndClearAsync(
         Func<Task> clear,
         int? capturedGeneration = null,
         CancellationToken cancellationToken = default)
@@ -108,11 +131,12 @@ public sealed class AuthSessionGuard : IDisposable
         {
             if (capturedGeneration.HasValue && capturedGeneration.Value != _generation)
             {
-                return;
+                return false;
             }
 
             Interlocked.Increment(ref _generation);
             await clear().ConfigureAwait(false);
+            return true;
         }
         finally
         {

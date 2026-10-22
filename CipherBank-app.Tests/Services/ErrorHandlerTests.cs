@@ -20,10 +20,11 @@ public class ErrorHandlerTests
         var auth = new Mock<IAuthService>();
         var logoutEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseLogout = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        auth.Setup(service => service.LogoutAsync()).Returns(async () =>
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).Returns(async () =>
         {
             logoutEntered.TrySetResult();
             await releaseLogout.Task;
+            return true;
         });
         ErrorHandler handler = CreateHandler(navigation, auth);
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(Task.CompletedTask);
@@ -31,13 +32,13 @@ public class ErrorHandlerTests
         Task<bool> first = handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
         await logoutEntered.Task;
         bool second = await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
         releaseLogout.SetResult();
 
         (await first).Should().BeFalse();
         second.Should().BeFalse();
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -48,7 +49,11 @@ public class ErrorHandlerTests
         var auth = new Mock<IAuthService>();
         var logout = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var navigatedBeforeLogout = false;
-        auth.Setup(service => service.LogoutAsync()).Returns(() => logout.Task);
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).Returns(async () =>
+        {
+            await logout.Task;
+            return true;
+        });
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(() =>
         {
             navigatedBeforeLogout = true;
@@ -71,7 +76,7 @@ public class ErrorHandlerTests
         result.Should().BeFalse();
         message.Should().Be("Session expired. Please log in again.");
         navigatedBeforeLogout.Should().BeTrue();
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -80,10 +85,10 @@ public class ErrorHandlerTests
     {
         (ErrorHandler handler, Mock<INavigationService> navigation, Mock<IAuthService> auth) = CreateReadyHandler();
         var order = new List<string>();
-        auth.Setup(service => service.LogoutAsync()).Returns(() =>
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).Returns(() =>
         {
             order.Add("logout");
-            return Task.CompletedTask;
+            return Task.FromResult(true);
         });
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(() =>
         {
@@ -110,7 +115,7 @@ public class ErrorHandlerTests
         bool result = await handler.HandleApiErrorsAsync(() => throw nested, _ => { });
 
         result.Should().BeFalse();
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -125,7 +130,7 @@ public class ErrorHandlerTests
         bool result = await handler.HandleApiErrorsAsync(() => throw aggregate, _ => { });
 
         result.Should().BeFalse();
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -139,7 +144,7 @@ public class ErrorHandlerTests
             _ => { });
 
         result.Should().BeFalse();
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -160,7 +165,7 @@ public class ErrorHandlerTests
         bool result = await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
 
         result.Should().BeFalse();
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
     }
 
@@ -178,7 +183,7 @@ public class ErrorHandlerTests
         bool result = await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
 
         result.Should().BeFalse();
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -187,7 +192,7 @@ public class ErrorHandlerTests
     {
         var navigation = new Mock<INavigationService>();
         var auth = new Mock<IAuthService>();
-        auth.Setup(service => service.LogoutAsync()).Returns(Task.CompletedTask);
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.SetupGet(service => service.CurrentRoute).Returns((string?)null);
         ErrorHandler handler = new(navigation.Object, auth.Object);
         var navigations = 0;
@@ -201,7 +206,7 @@ public class ErrorHandlerTests
 
         result.Should().BeFalse();
         navigations.Should().Be(1);
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -213,7 +218,7 @@ public class ErrorHandlerTests
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var navigations = 0;
-        auth.Setup(service => service.LogoutAsync()).Returns(Task.CompletedTask);
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.SetupGet(service => service.CurrentRoute).Returns((string?)null);
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(async () =>
         {
@@ -234,7 +239,7 @@ public class ErrorHandlerTests
         firstResult.Should().BeFalse();
         second.Should().BeFalse();
         navigations.Should().Be(1);
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
     }
 
     [Fact]
@@ -243,7 +248,7 @@ public class ErrorHandlerTests
         var route = "//DashboardPage";
         var navigation = new Mock<INavigationService>();
         var auth = new Mock<IAuthService>();
-        auth.Setup(service => service.LogoutAsync()).Returns(Task.CompletedTask);
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.SetupGet(service => service.CurrentRoute).Returns(() => route);
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(() =>
         {
@@ -256,7 +261,7 @@ public class ErrorHandlerTests
         await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
 
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
-        auth.Verify(service => service.LogoutAsync(), Times.Exactly(2));
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -272,7 +277,7 @@ public class ErrorHandlerTests
 
         result.Should().BeFalse();
         message.Should().Be("Failed to refresh. Pull down to try again.");
-        auth.Verify(service => service.LogoutAsync(), Times.Never);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Never);
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
     }
 
@@ -287,7 +292,7 @@ public class ErrorHandlerTests
         Func<Task> act = () => handler.HandleApiErrorsAsync(() => throw failure, _ => { });
 
         await act.Should().ThrowAsync<InvalidOperationException>();
-        auth.Verify(service => service.LogoutAsync(), Times.Never);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Never);
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
     }
 
@@ -303,7 +308,7 @@ public class ErrorHandlerTests
 
         result.Should().BeFalse();
         message.Should().Be("Session expired. Please log in again.");
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -319,7 +324,7 @@ public class ErrorHandlerTests
 
         result.Should().BeFalse();
         message.Should().Be("Session expired. Please log in again.");
-        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -335,7 +340,7 @@ public class ErrorHandlerTests
 
         result.Should().BeFalse();
         message.Should().BeNull();
-        auth.Verify(service => service.LogoutAsync(), Times.Never);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Never);
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
     }
 
@@ -343,7 +348,7 @@ public class ErrorHandlerTests
     public async Task HandleApiErrorsAsync_WhenLogoutThrows_DoesNotNavigate()
     {
         (ErrorHandler handler, Mock<INavigationService> navigation, Mock<IAuthService> auth) = CreateReadyHandler();
-        auth.Setup(service => service.LogoutAsync()).ThrowsAsync(new InvalidOperationException("storage failed"));
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ThrowsAsync(new InvalidOperationException("storage failed"));
 
         Func<Task> act = () => handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
 
@@ -352,7 +357,7 @@ public class ErrorHandlerTests
 
         // The redirect flag must be reset so a later 401 can still log out.
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("storage failed");
-        auth.Verify(service => service.LogoutAsync(), Times.Exactly(2));
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -363,7 +368,58 @@ public class ErrorHandlerTests
         bool result = await handler.HandleApiErrorsAsync(() => Task.CompletedTask, _ => { });
 
         result.Should().BeTrue();
-        auth.Verify(service => service.LogoutAsync(), Times.Never);
+        auth.Verify(service => service.LogoutAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    public async Task HandleApiErrorsAsync_DelayedUnauthorized_DoesNotLogoutAgain(bool logoutBeforeLogin, bool newLogin)
+    {
+        using var guard = new AuthSessionGuard();
+        var auth = new Mock<IAuthService>();
+        var navigation = new Mock<INavigationService>();
+        auth.Setup(service => service.CaptureSessionAsync()).Returns(() => guard.CaptureAsync());
+        int logoutCount = 0;
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).Returns((int generation) =>
+            guard.InvalidateAndClearAsync(
+                () =>
+                {
+                    logoutCount++;
+                    return Task.CompletedTask;
+                },
+                capturedGeneration: generation));
+        navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+        var handler = new ErrorHandler(navigation.Object, auth.Object);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task<bool> delayed = handler.HandleApiErrorsAsync(
+            async () =>
+            {
+                entered.SetResult();
+                await release.Task;
+                throw Unauthorized();
+            },
+            _ => { });
+        await entered.Task;
+        if (logoutBeforeLogin)
+        {
+            await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
+        }
+
+        if (newLogin)
+        {
+            int generation = await guard.CaptureAsync();
+            await guard.TryPersistAsync(generation, () => Task.CompletedTask, startsSession: true);
+        }
+
+        navigation.Invocations.Clear();
+        release.SetResult();
+
+        (await delayed).Should().BeFalse();
+        logoutCount.Should().Be(logoutBeforeLogin ? 1 : 0);
+        navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
     }
 
     private static (ErrorHandler Handler, Mock<INavigationService> Navigation, Mock<IAuthService> Auth) CreateReadyHandler(string? route = null)
@@ -371,7 +427,7 @@ public class ErrorHandlerTests
         var navigation = new Mock<INavigationService>();
         var auth = new Mock<IAuthService>();
         navigation.SetupGet(service => service.CurrentRoute).Returns(route);
-        auth.Setup(service => service.LogoutAsync()).Returns(Task.CompletedTask);
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
         return (new ErrorHandler(navigation.Object, auth.Object), navigation, auth);
     }

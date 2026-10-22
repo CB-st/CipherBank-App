@@ -29,6 +29,7 @@ public sealed class ErrorHandler : IErrorHandler
         Action<string?> setErrorMessage,
         string? networkErrorMessage = null)
     {
+        int generation = await _auth.CaptureSessionAsync();
         try
         {
             await operation();
@@ -37,7 +38,7 @@ public sealed class ErrorHandler : IErrorHandler
         catch (Exception ex) when (SessionExpiry.IsExpired(ex))
         {
             setErrorMessage("Session expired. Please log in again.");
-            await InvalidateSessionAndRedirectToLoginAsync();
+            await InvalidateSessionAndRedirectToLoginAsync(generation);
             return false;
         }
         catch (OperationCanceledException)
@@ -58,7 +59,7 @@ public sealed class ErrorHandler : IErrorHandler
         return SessionExpiry.IsExpired(exception);
     }
 
-    private async Task InvalidateSessionAndRedirectToLoginAsync()
+    private async Task InvalidateSessionAndRedirectToLoginAsync(int generation)
     {
         if (!TryBeginLoginRedirect())
         {
@@ -67,7 +68,11 @@ public sealed class ErrorHandler : IErrorHandler
 
         try
         {
-            await _auth.LogoutAsync();
+            if (!await _auth.LogoutAsync(generation))
+            {
+                return;
+            }
+
             if (!SessionExpiry.IsLoginRoute(_navigation.CurrentRoute))
             {
                 await _navigation.GoToAsync(Routes.Login);
