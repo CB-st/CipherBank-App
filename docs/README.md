@@ -8,8 +8,8 @@ CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. It provides cryp
 
 ## Prerequisites
 
-- **.NET 10 SDK** (10.0.101 or later)
-- **MAUI workload** for your target platform(s)
+- **.NET 10 SDK** (10.0.401)
+- **MAUI workload** for your target platform(s); NuGet MAUI packages are pinned to **10.0.20** to match the installed workload manifest
 
 ## Build and Run
 
@@ -32,6 +32,7 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 | Document | Description |
 |----------|-------------|
 | [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
+| [agentic/MODULE_COMPOSITION.md](agentic/MODULE_COMPOSITION.md) | Explicit feature registration and ViewModel/platform boundaries |
 | [core/README.md](core/README.md) | Core library overview |
 | [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |
 | [core/services.md](core/services.md) | Core service interfaces and utilities |
@@ -46,3 +47,5 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
 | [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end tests |
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |
+| [config/sonar/README.md](config/sonar/README.md) | Sonar quality-gate policy and local SonarQube-for-IDE setup |
+| [review/REVIEW_DECISIONS.md](review/REVIEW_DECISIONS.md) | Declined/deviated reviewer asks with researched rationale |

@@ -1,3 +1,7 @@
+// <copyright file="BasePage.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Support.UI;
@@ -10,9 +14,6 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// </summary>
 public abstract class BasePage
 {
-    protected readonly AppiumDriver Driver;
-    protected readonly WebDriverWait Wait;
-
     /// <summary>
     /// Default wait timeout for element visibility.
     /// </summary>
@@ -25,43 +26,14 @@ public abstract class BasePage
     }
 
     /// <summary>
-    /// Waits for an element to be visible and returns it.
+    /// Gets the Appium driver used by this page object.
     /// </summary>
-    protected IWebElement WaitForElement(By locator)
-    {
-        return Wait.Until(driver =>
-        {
-            var element = driver.FindElement(locator);
-            return element.Displayed ? element : null;
-        }) ?? throw new NoSuchElementException($"Element not found: {locator}");
-    }
+    protected AppiumDriver Driver { get; }
 
     /// <summary>
-    /// Waits for an element to be clickable and clicks it.
+    /// Gets the explicit wait helper for this page object.
     /// </summary>
-    protected void ClickElement(By locator)
-    {
-        var element = WaitForElement(locator);
-        element.Click();
-    }
-
-    /// <summary>
-    /// Enters text into an input field after clearing it.
-    /// </summary>
-    protected void EnterText(By locator, string text)
-    {
-        var element = WaitForElement(locator);
-        element.Clear();
-        element.SendKeys(text);
-    }
-
-    /// <summary>
-    /// Gets the text content of an element.
-    /// </summary>
-    protected string GetElementText(By locator)
-    {
-        return WaitForElement(locator).Text;
-    }
+    protected WebDriverWait Wait { get; }
 
     /// <summary>
     /// Checks if an element is displayed.
@@ -85,5 +57,44 @@ public abstract class BasePage
     public virtual void WaitForPageLoad()
     {
         // Default implementation - can be overridden
+    }
+
+    /// <summary>
+    /// Waits for an element to be visible and returns it.
+    /// </summary>
+    protected IWebElement WaitForElement(By locator)
+    {
+        return Wait.Until(driver =>
+        {
+            IWebElement element = driver.FindElement(locator);
+            return element.Displayed ? element : null;
+        }) ?? throw new NoSuchElementException($"Element not found: {locator}");
+    }
+
+    /// <summary>
+    /// Waits for an element to be clickable and clicks it.
+    /// </summary>
+    protected void ClickElement(By locator)
+    {
+        IWebElement element = WaitForElement(locator);
+        element.Click();
+    }
+
+    /// <summary>
+    /// Enters text into an input field after clearing it.
+    /// </summary>
+    protected void EnterText(By locator, string text)
+    {
+        IWebElement element = WaitForElement(locator);
+        element.Clear();
+        element.SendKeys(text);
+    }
+
+    /// <summary>
+    /// Gets the text content of an element.
+    /// </summary>
+    protected string GetElementText(By locator)
+    {
+        return WaitForElement(locator).Text;
     }
 }

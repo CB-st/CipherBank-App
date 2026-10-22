@@ -1,5 +1,5 @@
 // <copyright file="PriceHistory.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 namespace CipherBank_app.Models;
@@ -8,7 +8,7 @@ namespace CipherBank_app.Models;
 /// Represents historical price data for a cryptocurrency.
 /// </summary>
 public record PriceHistory(
-    string Symbol,
+    AssetSymbol Symbol,
     List<PricePoint> PricePoints,
     DateTimeOffset StartDate,
     DateTimeOffset EndDate)

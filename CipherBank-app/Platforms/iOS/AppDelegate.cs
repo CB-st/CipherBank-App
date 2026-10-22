@@ -1,7 +1,14 @@
-﻿using Foundation;
+﻿// <copyright file="AppDelegate.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
+using Foundation;
 
 namespace CipherBank_app;
 
+/// <summary>
+/// iOS application delegate.
+/// </summary>
 [Register("AppDelegate")]
 public class AppDelegate : MauiUIApplicationDelegate
 {

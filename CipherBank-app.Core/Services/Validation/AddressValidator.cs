@@ -1,10 +1,9 @@
 // <copyright file="AddressValidator.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Linq;
 using System.Text.RegularExpressions;
+using CipherBank_app.Models;
 
 namespace CipherBank_app.Services.Validation;
 
@@ -25,12 +24,22 @@ public static partial class AddressValidator
     /// <returns>True if the address format is valid, false otherwise</returns>
     public static bool IsValidAddress(string address, string symbol)
     {
-        if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(symbol))
+        return AssetSymbol.TryParse(symbol, out AssetSymbol? parsed)
+            && IsValidAddress(address, parsed);
+    }
+
+    /// <summary>Validates an address for a normalized asset symbol.</summary>
+    /// <param name="address">The address to validate.</param>
+    /// <param name="symbol">The normalized asset symbol.</param>
+    /// <returns>True if the address format is valid, false otherwise.</returns>
+    public static bool IsValidAddress(string address, AssetSymbol symbol)
+    {
+        if (string.IsNullOrWhiteSpace(address) || symbol is null)
         {
             return false;
         }
 
-        return symbol.ToUpperInvariant() switch
+        return symbol.Value switch
         {
             "BTC" => IsValidBitcoinAddress(address),
             "ETH" => IsValidEthereumAddress(address),

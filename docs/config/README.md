@@ -15,7 +15,7 @@ Shared MSBuild properties and package references for all projects.
 | LangVersion | latest |
 | Nullable | enable |
 | ImplicitUsings | enable |
-| TreatWarningsAsErrors | false |
+| TreatWarningsAsErrors | true |
 | EnforceCodeStyleInBuild | true |
 | AnalysisLevel | latest |
 | AnalysisMode | Recommended |
@@ -40,20 +40,25 @@ SDK version pinning:
 ```json
 {
   "sdk": {
-    "version": "10.0.101",
-    "rollForward": "latestMinor",
-    "allowPrerelease": false
+    "version": "10.0.401",
+    "rollForward": "latestPatch",
+    "allowPrerelease": false,
+    "workloadVersion": "10.0.401"
   }
 }
 ```
+
+MAUI NuGet packages (`Microsoft.Maui.Controls`, `Microsoft.Maui.Essentials`, `Microsoft.Maui.Resizetizer`) are centrally pinned to **10.0.20** in `Directory.Packages.props` to match the SDK workload manifest. Re-upgrade MAUI packages only when a workload manifest **>= 10.0.101** is available for the pinned SDK.
 
 ---
 
 ## stylecop.json
 
-**Location**: CipherBank-app/stylecop.json
+**Location**: repository root (`stylecop.json`)
 
-StyleCop Analyzers configuration. Referenced via `AdditionalFiles` in the app csproj.
+Single repository-wide StyleCop Analyzers configuration. `Directory.Build.props`
+injects it as an `AdditionalFiles` item into every project; do not add
+per-project `stylecop.json` copies.
 
 | Setting | Value |
 |---------|-------|

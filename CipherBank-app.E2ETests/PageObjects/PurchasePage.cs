@@ -1,3 +1,8 @@
+// <copyright file="PurchasePage.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
+using System.Globalization;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 
@@ -10,18 +15,19 @@ namespace CipherBank_app.E2ETests.PageObjects;
 public class PurchasePage : BasePage
 {
     // Element locators
-    private static readonly By ViewAllButton = By.Id("ViewAllButton");
-    private static readonly By AmountField = By.Id("AmountEntry");
-    private static readonly By PurchaseButton = By.Id("PurchaseButton");
-    private static readonly By ConfirmButton = By.Id("ConfirmPurchaseButton");
-    private static readonly By CancelButton = By.Id("CancelButton");
-    private static readonly By SuccessMessage = By.Id("SuccessLabel");
-    private static readonly By ErrorMessage = By.Id("ErrorLabel");
-    private static readonly By EstimatedCryptoLabel = By.Id("EstimatedCryptoLabel");
-    private static readonly By FeeLabel = By.Id("FeeLabel");
-    private static readonly By BackButton = By.Id("BackButton");
+    private static readonly By _viewAllButton = By.Id("ViewAllButton");
+    private static readonly By _amountField = By.Id("AmountEntry");
+    private static readonly By _purchaseButton = By.Id("PurchaseButton");
+    private static readonly By _confirmButton = By.Id("ConfirmPurchaseButton");
+    private static readonly By _cancelButton = By.Id("CancelButton");
+    private static readonly By _successMessage = By.Id("SuccessLabel");
+    private static readonly By _errorMessage = By.Id("ErrorLabel");
+    private static readonly By _estimatedCryptoLabel = By.Id("EstimatedCryptoLabel");
+    private static readonly By _feeLabel = By.Id("FeeLabel");
+    private static readonly By _backButton = By.Id("BackButton");
 
-    public PurchasePage(AppiumDriver driver) : base(driver)
+    public PurchasePage(AppiumDriver driver)
+        : base(driver)
     {
     }
 
@@ -30,7 +36,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public PurchasePage SelectCrypto(string symbol)
     {
-        ClickElement(ViewAllButton);
+        ClickElement(_viewAllButton);
         var cryptoOption = By.XPath($"//*[contains(@text, '{symbol}')]");
         ClickElement(cryptoOption);
         return this;
@@ -41,7 +47,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public PurchasePage EnterAmount(decimal amount)
     {
-        EnterText(AmountField, amount.ToString("F2"));
+        EnterText(_amountField, amount.ToString("F2", CultureInfo.InvariantCulture));
         return this;
     }
 
@@ -50,7 +56,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public PurchasePage ClickPurchase()
     {
-        ClickElement(PurchaseButton);
+        ClickElement(_purchaseButton);
         return this;
     }
 
@@ -59,7 +65,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public PurchasePage ConfirmPurchase()
     {
-        ClickElement(ConfirmButton);
+        ClickElement(_confirmButton);
         return this;
     }
 
@@ -68,7 +74,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public PurchasePage CancelPurchase()
     {
-        ClickElement(CancelButton);
+        ClickElement(_cancelButton);
         return this;
     }
 
@@ -89,7 +95,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public bool IsPurchaseSuccessful()
     {
-        return IsElementDisplayed(SuccessMessage);
+        return IsElementDisplayed(_successMessage);
     }
 
     /// <summary>
@@ -97,7 +103,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public string GetSuccessMessage()
     {
-        return GetElementText(SuccessMessage);
+        return GetElementText(_successMessage);
     }
 
     /// <summary>
@@ -105,7 +111,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public bool HasError()
     {
-        return IsElementDisplayed(ErrorMessage);
+        return IsElementDisplayed(_errorMessage);
     }
 
     /// <summary>
@@ -113,7 +119,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public string GetErrorMessage()
     {
-        return GetElementText(ErrorMessage);
+        return GetElementText(_errorMessage);
     }
 
     /// <summary>
@@ -121,7 +127,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public string GetEstimatedCrypto()
     {
-        return GetElementText(EstimatedCryptoLabel);
+        return GetElementText(_estimatedCryptoLabel);
     }
 
     /// <summary>
@@ -129,7 +135,7 @@ public class PurchasePage : BasePage
     /// </summary>
     public string GetFee()
     {
-        return GetElementText(FeeLabel);
+        return GetElementText(_feeLabel);
     }
 
     /// <summary>
@@ -137,13 +143,13 @@ public class PurchasePage : BasePage
     /// </summary>
     public DashboardPage GoBack()
     {
-        ClickElement(BackButton);
+        ClickElement(_backButton);
         return new DashboardPage(Driver);
     }
 
     public override void WaitForPageLoad()
     {
-        WaitForElement(ViewAllButton);
-        WaitForElement(AmountField);
+        WaitForElement(_viewAllButton);
+        WaitForElement(_amountField);
     }
 }

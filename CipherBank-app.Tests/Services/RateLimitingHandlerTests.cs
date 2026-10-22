@@ -1,9 +1,7 @@
 // <copyright file="RateLimitingHandlerTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Threading.Tasks;
 using CipherBank_app.Services;
 using FluentAssertions;
 using Xunit;
@@ -94,7 +92,7 @@ public class RateLimitingHandlerTests
 
         // Act
         await rateLimiter.TryAcquireAsync();
-        var waitTime = await rateLimiter.GetWaitTimeAsync();
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync();
 
         // Assert - Wait time should be close to window duration
         waitTime.Should().BeGreaterThan(TimeSpan.Zero);

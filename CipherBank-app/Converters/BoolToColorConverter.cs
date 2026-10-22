@@ -1,5 +1,5 @@
 // <copyright file="BoolToColorConverter.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using System.Globalization;
@@ -16,7 +16,7 @@ public class BoolToColorConverter : IValueConverter
 
     public Color FalseColor { get; set; } = Colors.Red;
 
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is bool boolValue)
         {

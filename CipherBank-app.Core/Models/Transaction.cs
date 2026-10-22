@@ -1,5 +1,5 @@
 // <copyright file="Transaction.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using System.Text.Json.Serialization;
@@ -14,7 +14,7 @@ public record Transaction(
     [property: JsonConverter(typeof(JsonStringEnumConverter))]
     TransactionType Type,
     decimal Amount,
-    string CryptoSymbol,
+    AssetSymbol CryptoSymbol,
     string? FromAddress,
     string? ToAddress,
     DateTimeOffset Timestamp,

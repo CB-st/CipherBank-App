@@ -1,5 +1,5 @@
 // <copyright file="DashboardPage.xaml.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using CipherBank_app.ViewModels;
@@ -9,7 +9,7 @@ namespace CipherBank_app.Views;
 /// <summary>
 /// Code-behind for the Dashboard page.
 /// </summary>
-public partial class DashboardPage : ContentPage
+public partial class DashboardPage
 {
     private readonly DashboardViewModel _viewModel;
 

@@ -1,5 +1,5 @@
 // <copyright file="TransactionTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using CipherBank_app.Models;
@@ -18,7 +18,7 @@ public class TransactionTests
     public void TypeDescription_ReturnsCorrectDescription(TransactionType type, string expected)
     {
         // Arrange
-        var transaction = CreateTransaction(type);
+        Transaction transaction = CreateTransaction(type);
 
         // Act & Assert
         transaction.TypeDescription.Should().Be(expected);
@@ -32,7 +32,7 @@ public class TransactionTests
     public void IsOutgoing_ReturnsCorrectValue(TransactionType type, bool expected)
     {
         // Arrange
-        var transaction = CreateTransaction(type);
+        Transaction transaction = CreateTransaction(type);
 
         // Act & Assert
         transaction.IsOutgoing.Should().Be(expected);
@@ -46,7 +46,7 @@ public class TransactionTests
     public void IsComplete_ReturnsCorrectValue(TransactionStatus status, bool expected)
     {
         // Arrange
-        var transaction = CreateTransaction(status: status);
+        Transaction transaction = CreateTransaction(status: status);
 
         // Act & Assert
         transaction.IsComplete.Should().Be(expected);
@@ -60,7 +60,7 @@ public class TransactionTests
     public void IsPending_ReturnsCorrectValue(TransactionStatus status, bool expected)
     {
         // Arrange
-        var transaction = CreateTransaction(status: status);
+        Transaction transaction = CreateTransaction(status: status);
 
         // Act & Assert
         transaction.IsPending.Should().Be(expected);

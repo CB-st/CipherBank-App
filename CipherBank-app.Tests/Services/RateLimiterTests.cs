@@ -1,9 +1,7 @@
 // <copyright file="RateLimiterTests.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
-using System.Threading.Tasks;
 using CipherBank_app.Services;
 using FluentAssertions;
 using Xunit;
@@ -68,7 +66,7 @@ public class RateLimiterTests
         var rateLimiter = new RateLimiter(null, 10, TimeSpan.FromMinutes(1));
 
         // Act
-        var waitTime = await rateLimiter.GetWaitTimeAsync();
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync();
 
         // Assert
         waitTime.Should().Be(TimeSpan.Zero);
@@ -82,7 +80,7 @@ public class RateLimiterTests
 
         // Act
         await rateLimiter.TryAcquireAsync(); // Use up the limit
-        var waitTime = await rateLimiter.GetWaitTimeAsync();
+        TimeSpan waitTime = await rateLimiter.GetWaitTimeAsync();
 
         // Assert
         waitTime.Should().BeGreaterThan(TimeSpan.Zero);

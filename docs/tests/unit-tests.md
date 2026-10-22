@@ -4,6 +4,10 @@
 
 Tests Core models and service interfaces using mocks. Does not reference the MAUI app.
 
+Repository-shape rules (central package versions, AssemblyInfo, Core SQL,
+retired API names) are not unit tests. They live in `CipherBank-app.Analyzers`
+and are covered by `CipherBank-app.Analyzers.Tests`.
+
 ## Structure
 
 ```
@@ -61,7 +65,8 @@ Tests mock the interface (e.g. `Mock<IAuthService>`) and verify behavior when th
 ## Coverage Configuration
 
 - **CollectCoverage**: true
-- **CoverletOutputFormat**: cobertura
-- **CoverletOutput**: ./coverage/
-- **Threshold**: 70 (line, branch, method)
+- **CoverletOutputFormat**: cobertura (CI also emits opencover for Sonar)
+- **CoverletOutput**: ./coverage/ locally; `reports/coverage` in CI
+- **Threshold**: 70 (line, branch, method) in the project file; CI uses 0 and
+  defers new-code coverage to Sonar
 - **ExcludeByAttribute**: Obsolete, GeneratedCodeAttribute, CompilerGeneratedAttribute

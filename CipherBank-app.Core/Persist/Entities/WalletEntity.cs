@@ -1,0 +1,37 @@
+// <copyright file="WalletEntity.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
+using CipherBank_app.Models;
+
+namespace CipherBank_app.Persist.Entities;
+
+public sealed record WalletEntity
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Symbol { get; set; } = string.Empty;
+
+    public string? Label { get; set; }
+
+    public string? Address { get; set; }
+
+    public string? Path { get; set; }
+
+    public int AccountIndex { get; set; }
+
+    public string Kind { get; set; } = "derived";
+
+    public DateTimeOffset CreatedAt { get; set; }
+
+    internal LocalWalletDescriptor ToDescriptor() =>
+        new(
+            Id,
+            AssetSymbol.Parse(Symbol),
+            Label,
+            Address,
+            Path,
+            AccountIndex,
+            Kind,
+            CreatedAt);
+}

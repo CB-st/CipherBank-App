@@ -1,5 +1,10 @@
+// <copyright file="CriticalUserJourneyTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
 using CipherBank_app.E2ETests.PageObjects;
 using FluentAssertions;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Appium;
 using OpenQA.Selenium.Appium.Android;
 using OpenQA.Selenium.Appium.iOS;
@@ -30,7 +35,7 @@ public class CriticalUserJourneyTests : IDisposable
             {
                 PlatformName = "iOS",
                 AutomationName = "XCUITest",
-                App = Environment.GetEnvironmentVariable("IOS_APP_PATH") ?? "/path/to/CipherBank.app"
+                App = Environment.GetEnvironmentVariable("IOS_APP_PATH") ?? "/path/to/CipherBank.app",
             };
             options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("IOS_DEVICE") ?? "iPhone 15");
             options.AddAdditionalAppiumOption("platformVersion", Environment.GetEnvironmentVariable("IOS_VERSION") ?? "17.0");
@@ -43,7 +48,7 @@ public class CriticalUserJourneyTests : IDisposable
             {
                 PlatformName = "Android",
                 AutomationName = "UiAutomator2",
-                App = Environment.GetEnvironmentVariable("ANDROID_APK_PATH") ?? "/path/to/CipherBank.apk"
+                App = Environment.GetEnvironmentVariable("ANDROID_APK_PATH") ?? "/path/to/CipherBank.apk",
             };
             options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator");
 
@@ -64,7 +69,7 @@ public class CriticalUserJourneyTests : IDisposable
         loginPage.WaitForPageLoad();
 
         // Act
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
 
         // Assert
@@ -101,11 +106,11 @@ public class CriticalUserJourneyTests : IDisposable
         // Arrange - Login first
         var loginPage = new LoginPage(_driver);
         loginPage.WaitForPageLoad();
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
 
         // Act - Navigate to purchase and complete
-        var purchasePage = dashboardPage.GoToPurchase();
+        PurchasePage purchasePage = dashboardPage.GoToPurchase();
         purchasePage.WaitForPageLoad();
         purchasePage.CompletePurchase("BTC", 100.00m);
 
@@ -123,11 +128,11 @@ public class CriticalUserJourneyTests : IDisposable
         // Arrange - Login first
         var loginPage = new LoginPage(_driver);
         loginPage.WaitForPageLoad();
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
 
         // Act - Navigate to wallet and send
-        var walletPage = dashboardPage.GoToWallet();
+        WalletPage walletPage = dashboardPage.GoToWallet();
         walletPage.WaitForPageLoad();
 
         var recipientAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Example address
@@ -146,15 +151,15 @@ public class CriticalUserJourneyTests : IDisposable
         // Arrange - Login first
         var loginPage = new LoginPage(_driver);
         loginPage.WaitForPageLoad();
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
 
         // Act
-        var resultLoginPage = dashboardPage.Logout();
+        LoginPage resultLoginPage = dashboardPage.Logout();
         resultLoginPage.WaitForPageLoad();
 
         // Assert - Should be back at login
-        resultLoginPage.IsElementDisplayed(OpenQA.Selenium.By.Id("LoginButton")).Should().BeTrue();
+        resultLoginPage.IsElementDisplayed(By.Id("LoginButton")).Should().BeTrue();
     }
 
     /// <summary>
@@ -166,34 +171,35 @@ public class CriticalUserJourneyTests : IDisposable
         // Step 1: Login
         var loginPage = new LoginPage(_driver);
         loginPage.WaitForPageLoad();
-        var dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
+        DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
         dashboardPage.IsLoggedIn().Should().BeTrue("User should be logged in");
 
         // Step 2: Make a purchase
-        var purchasePage = dashboardPage.GoToPurchase();
+        PurchasePage purchasePage = dashboardPage.GoToPurchase();
         purchasePage.WaitForPageLoad();
         purchasePage.CompletePurchase("ETH", 50.00m);
         purchasePage.IsPurchaseSuccessful().Should().BeTrue("Purchase should succeed");
 
         // Step 3: Verify in wallet
         dashboardPage = purchasePage.GoBack();
-        var walletPage = dashboardPage.GoToWallet();
+        WalletPage walletPage = dashboardPage.GoToWallet();
         walletPage.WaitForPageLoad();
         walletPage.HasTransactionHistory().Should().BeTrue("Transaction should appear in history");
 
         // Step 4: Logout
         dashboardPage = walletPage.GoBack();
-        var resultLoginPage = dashboardPage.Logout();
+        LoginPage resultLoginPage = dashboardPage.Logout();
         resultLoginPage.WaitForPageLoad();
 
         // Final assertion
-        resultLoginPage.IsElementDisplayed(OpenQA.Selenium.By.Id("LoginButton")).Should().BeTrue("Should be back at login");
+        resultLoginPage.IsElementDisplayed(By.Id("LoginButton")).Should().BeTrue("Should be back at login");
     }
 
     public void Dispose()
     {
-        _driver?.Quit();
-        _driver?.Dispose();
+        _driver.Quit();
+        _driver.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

@@ -1,5 +1,5 @@
 // <copyright file="Wallet.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 namespace CipherBank_app.Models;
@@ -9,7 +9,7 @@ namespace CipherBank_app.Models;
 /// </summary>
 public record Wallet(
     string Id,
-    string CryptoSymbol,
+    AssetSymbol CryptoSymbol,
     string CryptoName,
     decimal Balance,
     string Address,

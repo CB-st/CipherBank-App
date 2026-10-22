@@ -1,5 +1,5 @@
 // <copyright file="AssetPickerPage.xaml.cs" company="CipherBank">
-// Copyright (c) CipherBank. All rights reserved.
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
 using CipherBank_app.Models;
@@ -11,7 +11,7 @@ namespace CipherBank_app.Views;
 /// Modal sheet listing all available assets; tapping one selects it on the Buy page.
 /// Constructed with the Buy page's live ViewModel so selection flows straight back.
 /// </summary>
-public partial class AssetPickerPage : ContentPage
+public partial class AssetPickerPage
 {
     private readonly PurchaseViewModel _viewModel;
     private bool _isClosing;
