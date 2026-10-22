@@ -2,7 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-namespace CipherBank_app.Purchasing;
+namespace CipherBank_app.ViewModels;
 
 /// <summary>
 /// Cancellation for a Buy catalog reload and for the purchase request.

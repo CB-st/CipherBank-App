@@ -2,7 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Purchasing;
+using CipherBank_app.ViewModels;
 using FluentAssertions;
 using Xunit;
 

@@ -6,7 +6,6 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
-using CipherBank_app.Purchasing;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
