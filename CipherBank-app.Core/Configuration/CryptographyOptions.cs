@@ -15,6 +15,7 @@ public sealed record CryptographyOptions : CipherBankOptions<CryptographyOptions
     private const int Aes256KeyBytes = 32;
     private const int MinimumSaltBytes = 16;
     private const int MinimumPbkdf2Iterations = 210_000;
+    private const byte CurrentBlobFormatVersion = 0x01;
 
     /// <summary>AES-GCM nonce size required by the existing custody blob format.</summary>
     public static int AesGcmNonceSizeBytes => DefaultNonceBytes;
@@ -53,40 +54,33 @@ public sealed record CryptographyOptions : CipherBankOptions<CryptographyOptions
 
     public int Pbkdf2Iterations { get; set; } = MinPbkdf2Iterations;
 
+    /// <summary>
+    /// Gets or sets the leading envelope byte <see cref="Custody.AesGcmCryptoBox"/> writes.
+    /// Part of the frozen persisted profile: <see cref="MatchesPersistedProfile"/> rejects any other value.
+    /// </summary>
+    public byte BlobFormatVersion { get; set; } = CurrentBlobFormatVersion;
+
     /// <summary>Returns whether values are safe and compatible with AES-GCM/SHA-256.</summary>
     public bool IsValid()
-        => HasValidNonceAndTag() && HasSupportedKeySize() && HasValidKdfParameters();
+        => NonceSizeBytes == AesGcmNonceSizeBytes
+
+            // AES-GCM tag: 12 to 16 bytes.
+            && TagSizeBytes >= MinTagSizeBytes
+            && TagSizeBytes <= MaxTagSizeBytes
+
+            // AES-128, AES-192, or AES-256 key.
+            && (KeySizeBytes == Aes128KeySizeBytes
+                || KeySizeBytes == Aes192KeySizeBytes
+                || KeySizeBytes == Aes256KeySizeBytes)
+
+            // PBKDF2 floor.
+            && SaltSizeBytes >= MinSaltSizeBytes
+            && Pbkdf2Iterations >= MinPbkdf2Iterations;
 
     /// <summary>
     /// True when values match the single persisted custody blob profile.
     /// Overrides that pass <see cref="IsValid"/> still orphan existing vaults.
     /// </summary>
     public bool MatchesPersistedProfile()
-    {
-        CryptographyOptions persisted = Default;
-        return NonceAndTagMatch(persisted) && KeyAndKdfMatch(persisted);
-    }
-
-    private bool HasValidNonceAndTag()
-        => NonceSizeBytes == AesGcmNonceSizeBytes
-        && TagSizeBytes >= MinTagSizeBytes
-        && TagSizeBytes <= MaxTagSizeBytes;
-
-    private bool HasSupportedKeySize()
-        => KeySizeBytes == Aes128KeySizeBytes
-        || KeySizeBytes == Aes192KeySizeBytes
-        || KeySizeBytes == Aes256KeySizeBytes;
-
-    private bool HasValidKdfParameters()
-        => SaltSizeBytes >= MinSaltSizeBytes
-        && Pbkdf2Iterations >= MinPbkdf2Iterations;
-
-    private bool NonceAndTagMatch(CryptographyOptions persisted)
-        => NonceSizeBytes == persisted.NonceSizeBytes
-        && TagSizeBytes == persisted.TagSizeBytes;
-
-    private bool KeyAndKdfMatch(CryptographyOptions persisted)
-        => KeySizeBytes == persisted.KeySizeBytes
-        && SaltSizeBytes == persisted.SaltSizeBytes
-        && Pbkdf2Iterations == persisted.Pbkdf2Iterations;
+        => this == Default;
 }
