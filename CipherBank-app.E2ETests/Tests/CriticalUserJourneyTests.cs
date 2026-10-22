@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.E2ETests.Infrastructure;
 using CipherBank_app.E2ETests.PageObjects;
 using FluentAssertions;
 using OpenQA.Selenium;
@@ -31,26 +32,12 @@ public class CriticalUserJourneyTests : IDisposable
 
         if (platform.Equals("ios", StringComparison.OrdinalIgnoreCase))
         {
-            var options = new AppiumOptions
-            {
-                PlatformName = "iOS",
-                AutomationName = "XCUITest",
-                App = Environment.GetEnvironmentVariable("IOS_APP_PATH") ?? "/path/to/CipherBank.app",
-            };
-            options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("IOS_DEVICE") ?? "iPhone 15");
-            options.AddAdditionalAppiumOption("platformVersion", Environment.GetEnvironmentVariable("IOS_VERSION") ?? "17.0");
-
+            AppiumOptions options = AppiumOptionsFactory.CreateIos(Environment.GetEnvironmentVariable);
             _driver = new IOSDriver(new Uri("http://localhost:4723"), options);
         }
         else
         {
-            var options = new AppiumOptions
-            {
-                PlatformName = "Android",
-                AutomationName = "UiAutomator2",
-                App = Environment.GetEnvironmentVariable("ANDROID_APK_PATH") ?? "/path/to/CipherBank.apk",
-            };
-            options.AddAdditionalAppiumOption("deviceName", Environment.GetEnvironmentVariable("ANDROID_DEVICE") ?? "Android Emulator");
+            AppiumOptions options = AppiumOptionsFactory.CreateAndroid(Environment.GetEnvironmentVariable);
 
             _driver = new AndroidDriver(new Uri("http://localhost:4723"), options);
         }
