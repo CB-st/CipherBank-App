@@ -142,11 +142,14 @@ public static class MauiProgram
         // Error handler for ViewModel API error consolidation
         mauiAppBuilder.Services.AddSingleton<IErrorHandler, ErrorHandler>();
 
-        // Register mock services (always available for testing/development)
-        mauiAppBuilder.Services.AddSingleton<MockAuthService>();
-        mauiAppBuilder.Services.AddSingleton<MockCryptoApiService>();
-        mauiAppBuilder.Services.AddSingleton<MockWalletService>();
-        mauiAppBuilder.Services.AddSingleton<MockTransactionService>();
+        // Mock singletons are registered only when the host is configured to use them.
+        if (behavior.UseMockServices)
+        {
+            mauiAppBuilder.Services.AddSingleton<MockAuthService>();
+            mauiAppBuilder.Services.AddSingleton<MockCryptoApiService>();
+            mauiAppBuilder.Services.AddSingleton<MockWalletService>();
+            mauiAppBuilder.Services.AddSingleton<MockTransactionService>();
+        }
 
         // Auth Service - Factory pattern for mock/real switching
         mauiAppBuilder.Services.AddCipherBankHttpClient<AuthService>();
