@@ -9,8 +9,9 @@ same values through `network_security_config.xml`; update both together.
 ## Overview
 
 The CipherBank app implements certificate pinning on all platforms:
-- **iOS/Mac Catalyst**: `Platforms/iOS/CertificatePinningHandler.cs`
-- **Android**: `Platforms/Android/NetworkSecurityConfig.xml`
+- **iOS**: `Platforms/iOS/IosCertificatePinningHandler.cs`
+- **Mac Catalyst**: `Platforms/MacCatalyst/CertificatePinningHandler.cs`
+- **Android**: `Platforms/Android/Resources/xml/network_security_config.xml`
 - **Windows**: `Platforms/Windows/WindowsCertificatePinningHandler.cs`
 
 ## Prerequisites
@@ -73,21 +74,15 @@ openssl s_client -servername api.cipherbank.money -connect api.cipherbank.money:
 
 ## Updating Certificate Pins
 
-### iOS/Mac Catalyst
+C# pin values live on `CertificatePinPolicy`. These handlers consume that policy:
 
-Edit `CipherBank-app/Platforms/iOS/CertificatePinningHandler.cs`:
-
-```csharp
-private static readonly string[] PinnedPublicKeys = new[]
-{
-    "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=",  // Primary production pin
-    "sha256/BACKUP_PIN_HERE=",                                 // Backup pin for rotation
-};
-```
+- `CipherBank-app/Platforms/iOS/IosCertificatePinningHandler.cs`
+- `CipherBank-app/Platforms/MacCatalyst/CertificatePinningHandler.cs` (`MacCatalystCertificatePinningHandler`)
+- `CipherBank-app/Platforms/Windows/WindowsCertificatePinningHandler.cs`
 
 ### Android
 
-Edit `CipherBank-app/Platforms/Android/NetworkSecurityConfig.xml`:
+Edit `CipherBank-app/Platforms/Android/Resources/xml/network_security_config.xml`:
 
 ```xml
 <domain-config>
@@ -100,18 +95,6 @@ Edit `CipherBank-app/Platforms/Android/NetworkSecurityConfig.xml`:
 ```
 
 **Note**: Android pins do NOT include the `sha256/` prefix.
-
-### Windows
-
-Edit `CipherBank-app/Platforms/Windows/WindowsCertificatePinningHandler.cs`:
-
-```csharp
-private static readonly string[] PinnedPublicKeys = new[]
-{
-    "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=",  // Primary production pin
-    "sha256/BACKUP_PIN_HERE=",                                 // Backup pin for rotation
-};
-```
 
 ## Pin Expiration and Rotation
 
@@ -198,7 +181,7 @@ or on failure:
 
 ### Android-specific issues
 
-- Verify `NetworkSecurityConfig.xml` is in `Platforms/Android/` folder
+- Verify `network_security_config.xml` is in `Platforms/Android/Resources/xml/`
 - Check that pins are base64-encoded (without `sha256/` prefix)
 - Verify `AndroidManifest.xml` references the config correctly
 - Check logcat for network security errors
@@ -213,10 +196,11 @@ or on failure:
 
 | Platform | File | Description |
 |----------|------|-------------|
-| iOS/Mac | `Platforms/iOS/CertificatePinningHandler.cs` | NSUrlSessionHandler implementation |
-| Android | `Platforms/Android/NetworkSecurityConfig.xml` | Network security configuration |
+| iOS | `Platforms/iOS/IosCertificatePinningHandler.cs` | NSUrlSessionHandler implementation |
+| Mac Catalyst | `Platforms/MacCatalyst/CertificatePinningHandler.cs` | NSUrlSessionHandler implementation |
+| Android | `Platforms/Android/Resources/xml/network_security_config.xml` | Network security configuration |
 | Windows | `Platforms/Windows/WindowsCertificatePinningHandler.cs` | HttpClientHandler implementation |
-| Shared | `Services/PlatformHttpHandlerFactory.cs` | Factory for platform-specific handlers |
+| Shared | `Services/IPlatformHttpMessageHandlerFactory.cs` | Per-platform `*HttpMessageHandlerFactory` |
 
 ## Security Best Practices
 
