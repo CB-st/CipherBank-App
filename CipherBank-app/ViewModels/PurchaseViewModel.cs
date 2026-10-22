@@ -53,10 +53,6 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     [ObservableProperty]
     public partial CryptoCurrency? SelectedCrypto { get; set; }
 
-    /// <summary>Gets or sets the focused cryptocurrency card.</summary>
-    [ObservableProperty]
-    public partial CryptoCurrency? FocusedCrypto { get; set; }
-
     /// <summary>Gets or sets the optional payment note.</summary>
     [ObservableProperty]
     public partial string PaymentNote { get; set; } = string.Empty;
@@ -120,19 +116,6 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     partial void OnSelectedCryptoChanged(CryptoCurrency? value)
     {
         CalculateTotalCost();
-
-        if (value != null && !Equals(FocusedCrypto, value))
-        {
-            FocusedCrypto = value;
-        }
-    }
-
-    partial void OnFocusedCryptoChanged(CryptoCurrency? value)
-    {
-        if (value != null && !Equals(SelectedCrypto, value))
-        {
-            SelectedCrypto = value;
-        }
     }
 
     partial void OnAmountTextChanged(string value)
