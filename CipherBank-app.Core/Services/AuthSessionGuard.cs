@@ -35,16 +35,35 @@ public sealed class AuthSessionGuard : IDisposable
         }
     }
 
+    /// <summary>Captures the generation before reading and validating the supplied refresh token.</summary>
+    public async Task<int> CaptureRefreshAsync(
+        string refreshToken,
+        Func<Task<string?>> readRefreshToken,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(readRefreshToken);
+        int generation = await CaptureAsync(cancellationToken).ConfigureAwait(false);
+        string? stored = await readRefreshToken().ConfigureAwait(false);
+        if (string.IsNullOrEmpty(stored) || !string.Equals(stored, refreshToken, StringComparison.Ordinal))
+        {
+            throw new UnauthorizedAccessException("Invalid refresh token");
+        }
+
+        return generation;
+    }
+
     /// <summary>
     /// Persists tokens only when logout has not moved the generation since <paramref name="capturedGeneration"/>.
     /// </summary>
     /// <param name="capturedGeneration">The generation from <see cref="CaptureAsync"/>.</param>
     /// <param name="persist">Writes the tokens. It runs only when the generation still matches.</param>
+    /// <param name="startsSession">Advance the generation atomically with a successful login write.</param>
     /// <param name="cancellationToken">Cancels the wait for the storage gate.</param>
     /// <returns>True when <paramref name="persist"/> ran.</returns>
     public async Task<bool> TryPersistAsync(
         int capturedGeneration,
         Func<Task> persist,
+        bool startsSession = false,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(persist);
@@ -54,6 +73,11 @@ public sealed class AuthSessionGuard : IDisposable
             if (capturedGeneration != Volatile.Read(ref _generation))
             {
                 return false;
+            }
+
+            if (startsSession)
+            {
+                Interlocked.Increment(ref _generation);
             }
 
             await persist().ConfigureAwait(false);
@@ -71,13 +95,22 @@ public sealed class AuthSessionGuard : IDisposable
     /// and a refresh already inside <see cref="TryPersistAsync"/> finishes before the clear.
     /// </summary>
     /// <param name="clear">Removes the stored credentials.</param>
+    /// <param name="capturedGeneration">When supplied, clear only this session.</param>
     /// <param name="cancellationToken">Cancels the wait for the storage gate.</param>
-    public async Task InvalidateAndClearAsync(Func<Task> clear, CancellationToken cancellationToken = default)
+    public async Task InvalidateAndClearAsync(
+        Func<Task> clear,
+        int? capturedGeneration = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(clear);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (capturedGeneration.HasValue && capturedGeneration.Value != _generation)
+            {
+                return;
+            }
+
             Interlocked.Increment(ref _generation);
             await clear().ConfigureAwait(false);
         }

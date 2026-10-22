@@ -60,15 +60,14 @@ public sealed class ErrorHandler : IErrorHandler
 
     private async Task InvalidateSessionAndRedirectToLoginAsync()
     {
-        await _auth.LogoutAsync();
-
-        if (SessionExpiry.IsLoginRoute(_navigation.CurrentRoute) || !TryBeginLoginRedirect())
+        if (!TryBeginLoginRedirect())
         {
             return;
         }
 
         try
         {
+            await _auth.LogoutAsync();
             if (!SessionExpiry.IsLoginRoute(_navigation.CurrentRoute))
             {
                 await _navigation.GoToAsync(Routes.Login);

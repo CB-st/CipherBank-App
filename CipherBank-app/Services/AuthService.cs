@@ -32,7 +32,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
             throw new InvalidOperationException("Authentication failed: Unable to parse token from server response");
         }
 
-        await StoreTokenIfCurrentAsync(token, generation, cancellationToken);
+        await StoreTokenIfCurrentAsync(token, generation, cancellationToken, startsSession: true);
 
         LogUserAuthenticated(logger);
         return token;
@@ -40,7 +40,10 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task<AuthToken> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        int generation = await sessionGuard.CaptureAsync(cancellationToken);
+        int generation = await sessionGuard.CaptureRefreshAsync(
+            refreshToken,
+            () => SecureStorage.Default.GetAsync(RefreshTokenKey),
+            cancellationToken);
         HttpResponseMessage resp = await http.PostAsJsonAsync("auth/refresh", new { refreshToken }, cancellationToken);
         resp.EnsureSuccessStatusCode();
         AuthToken? token = await resp.Content.ReadFromJsonAsync<AuthToken>(cancellationToken: cancellationToken);
@@ -96,6 +99,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
 
     public async Task LogoutAsync()
     {
+        int generation = await sessionGuard.CaptureAsync();
         // Attempt to revoke token before clearing local storage
         try
         {
@@ -107,13 +111,15 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
             LogRevokeTokenDuringLogoutFailed(logger, ex);
         }
 
-        await sessionGuard.InvalidateAndClearAsync(() =>
-        {
-            SecureStorage.Default.Remove(AccessTokenKey);
-            SecureStorage.Default.Remove(RefreshTokenKey);
-            SecureStorage.Default.Remove(ExpiresUtcKey);
-            return Task.CompletedTask;
-        });
+        await sessionGuard.InvalidateAndClearAsync(
+            () =>
+            {
+                SecureStorage.Default.Remove(AccessTokenKey);
+                SecureStorage.Default.Remove(RefreshTokenKey);
+                SecureStorage.Default.Remove(ExpiresUtcKey);
+                return Task.CompletedTask;
+            },
+            capturedGeneration: generation);
         LogUserLoggedOut(logger);
     }
 
@@ -187,7 +193,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
     [LoggerMessage(Level = LogLevel.Error, Message = "Unexpected error during token revocation")]
     private static partial void LogUnexpectedErrorDuringRevocation(ILogger logger, Exception ex);
 
-    private async Task StoreTokenIfCurrentAsync(AuthToken token, int generation, CancellationToken cancellationToken)
+    private async Task StoreTokenIfCurrentAsync(AuthToken token, int generation, CancellationToken cancellationToken, bool startsSession = false)
     {
         bool stored = await sessionGuard.TryPersistAsync(
             generation,
@@ -197,6 +203,7 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
                 await SecureStorage.Default.SetAsync(RefreshTokenKey, token.RefreshToken);
                 await SecureStorage.Default.SetAsync(ExpiresUtcKey, token.ExpiresUtc.ToString("O"));
             },
+            startsSession,
             cancellationToken);
 
         if (!stored)

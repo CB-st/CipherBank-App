@@ -133,12 +133,15 @@ public sealed partial class MockAuthService : IAuthService
 
     public async Task LogoutAsync()
     {
+        int generation = await _sessionGuard.CaptureAsync();
         await RevokeTokenAsync();
-        await _sessionGuard.InvalidateAndClearAsync(() =>
-        {
-            _currentToken = null;
-            return Task.CompletedTask;
-        });
+        await _sessionGuard.InvalidateAndClearAsync(
+            () =>
+            {
+                _currentToken = null;
+                return Task.CompletedTask;
+            },
+            capturedGeneration: generation);
         LogUserLoggedOut(_logger);
     }
 
@@ -232,7 +235,8 @@ public sealed partial class MockAuthService : IAuthService
                 _currentToken = created;
                 return Task.CompletedTask;
             },
-            cancellationToken);
+            startsSession: true,
+            cancellationToken: cancellationToken);
 
         if (!stored)
         {

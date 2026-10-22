@@ -14,6 +14,34 @@ namespace CipherBank_app.Tests.Services;
 public class ErrorHandlerTests
 {
     [Fact]
+    public async Task HandleApiErrorsAsync_ConcurrentUnauthorizedDuringLogout_LogsOutOnce()
+    {
+        var navigation = new Mock<INavigationService>();
+        var auth = new Mock<IAuthService>();
+        var logoutEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseLogout = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        auth.Setup(service => service.LogoutAsync()).Returns(async () =>
+        {
+            logoutEntered.TrySetResult();
+            await releaseLogout.Task;
+        });
+        ErrorHandler handler = CreateHandler(navigation, auth);
+        navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(Task.CompletedTask);
+
+        Task<bool> first = handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
+        await logoutEntered.Task;
+        bool second = await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
+        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
+        releaseLogout.SetResult();
+
+        (await first).Should().BeFalse();
+        second.Should().BeFalse();
+        auth.Verify(service => service.LogoutAsync(), Times.Once);
+        navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
+    }
+
+    [Fact]
     public async Task HandleApiErrorsAsync_DirectUnauthorizedHttpRequest_ClearsSessionBeforeLoginRedirect()
     {
         var navigation = new Mock<INavigationService>();
@@ -173,7 +201,7 @@ public class ErrorHandlerTests
 
         result.Should().BeFalse();
         navigations.Should().Be(1);
-        auth.Verify(service => service.LogoutAsync(), Times.Exactly(2));
+        auth.Verify(service => service.LogoutAsync(), Times.Once);
         navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
     }
 
@@ -206,7 +234,7 @@ public class ErrorHandlerTests
         firstResult.Should().BeFalse();
         second.Should().BeFalse();
         navigations.Should().Be(1);
-        auth.Verify(service => service.LogoutAsync(), Times.Exactly(2));
+        auth.Verify(service => service.LogoutAsync(), Times.Once);
     }
 
     [Fact]
@@ -321,6 +349,10 @@ public class ErrorHandlerTests
 
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("storage failed");
         navigation.Verify(service => service.GoToAsync(It.IsAny<string>()), Times.Never);
+
+        // The redirect flag must be reset so a later 401 can still log out.
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("storage failed");
+        auth.Verify(service => service.LogoutAsync(), Times.Exactly(2));
     }
 
     [Fact]
