@@ -12,6 +12,7 @@ using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -142,8 +143,8 @@ public static class MauiProgram
 #if DEBUG
         mauiAppBuilder.Services.AddSingleton<IProductClient>(sp =>
         {
-            ISettingsService settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
+            HostBehaviorOptions behavior = sp.GetRequiredService<IOptions<HostBehaviorOptions>>().Value;
+            if (behavior.UseMockServices)
             {
                 Log.Debug("Using InMemoryProductClient (based on settings)");
                 return sp.GetRequiredService<InMemoryProductClient>();
