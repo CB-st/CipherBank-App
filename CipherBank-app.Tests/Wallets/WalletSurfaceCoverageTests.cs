@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Pos;
 using CipherBank_app.Wallets;
 using FluentAssertions;
@@ -62,11 +63,11 @@ public sealed class WalletSurfaceCoverageTests
         viaDispatch.Should().NotBeNull();
         viaDispatch!.Address.Should().StartWith("bc1");
 
-        DerivedAddress ltc = AddressDerive.DeriveLtc(KnownMnemonic, 0);
+        DerivedAddress ltc = AddressDerive.DeriveRequired(AssetSymbol.Ltc, KnownMnemonic, 0);
         ltc.Address.Should().NotBeNullOrWhiteSpace();
         ltc.Path.Should().Contain("84'/2'");
 
-        DerivedAddress doge = AddressDerive.DeriveDoge(KnownMnemonic, 0);
+        DerivedAddress doge = AddressDerive.DeriveRequired(AssetSymbol.Doge, KnownMnemonic, 0);
         doge.Address.Should().NotBeNullOrWhiteSpace();
         doge.Path.Should().Contain("44'/3'");
     }

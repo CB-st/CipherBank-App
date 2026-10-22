@@ -11,7 +11,7 @@ namespace CipherBank_app.Wallets;
 /// <inheritdoc />
 public sealed class LocalWalletSeeder : ILocalWalletSeeder
 {
-    private static readonly string[] DefaultSymbols = { "BTC", "ETH" };
+    private static readonly AssetSymbol[] DefaultSymbols = [AssetSymbol.Btc, AssetSymbol.Eth];
     private readonly IWalletRepository _wallets;
     private readonly TimeProvider _timeProvider;
 
@@ -29,7 +29,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     public Task EnsureDerivedAsync(string mnemonic)
         => EnsureDerivedAsync(mnemonic, DefaultSymbols);
 
-    public Task EnsureDerivedAsync(string mnemonic, IEnumerable<string> symbols)
+    public Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
     {
         ArgumentNullException.ThrowIfNull(symbols);
         return EnsureDerivedCoreAsync(mnemonic, symbols);
@@ -40,13 +40,13 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     /// already exists for the symbol but belongs to a different seed (restore/replace).
     /// Use: Medium (EnsureDerivedAsync / FinishCustodySetup). Scope: this seeder.
     /// </summary>
-    private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<string> symbols)
+    private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
     {
         IReadOnlyList<LocalWalletDescriptor> existing = await _wallets.ListAsync().ConfigureAwait(false);
         HashSet<AssetSymbol> seen = [];
-        foreach (string sym in symbols)
+        foreach (AssetSymbol symbol in symbols)
         {
-            AssetSymbol symbol = new(sym);
+            // AssetSymbol is normalized and value-equal, so "BTC" and " btc " collapse here.
             if (!seen.Add(symbol))
             {
                 continue;

@@ -17,7 +17,7 @@ public sealed class MoneroWalletModule : IWalletModule
         "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
     /// <inheritdoc />
-    public AssetSymbol Symbol { get; } = new("XMR");
+    public AssetSymbol Symbol => AssetSymbol.Xmr;
 
     /// <inheritdoc />
     public IReadOnlyList<WalletUiMode> AddModes { get; } =

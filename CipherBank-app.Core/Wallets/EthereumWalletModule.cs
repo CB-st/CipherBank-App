@@ -18,7 +18,7 @@ public sealed partial class EthereumWalletModule : IWalletModule
     private const int WeiDecimalPlaces = 18;
 
     /// <inheritdoc />
-    public AssetSymbol Symbol { get; } = new("ETH");
+    public AssetSymbol Symbol => AssetSymbol.Eth;
 
     /// <inheritdoc />
     public IReadOnlyList<WalletUiMode> AddModes { get; } = [WalletUiMode.Derive, WalletUiMode.Watch];

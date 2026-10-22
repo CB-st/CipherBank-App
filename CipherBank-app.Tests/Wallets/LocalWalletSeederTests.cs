@@ -58,6 +58,24 @@ public class LocalWalletSeederTests
         row.Address.Should().NotBeNullOrWhiteSpace();
     }
 
+    /// <summary>
+    /// Mixed-case duplicates across several assets seed one row per asset and skip non-derivable ones.
+    /// Use: Medium (seed). Scope: LocalWalletSeeder.
+    /// </summary>
+    [Fact]
+    public async Task EnsureDerivedAsync_DeduplicatesAcrossAssetsAndSkipsNonDerivable()
+    {
+        FakeWallets wallets = new FakeWallets();
+        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+        const string mnemonic =
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+        await seeder.EnsureDerivedAsync(mnemonic, ["btc", "ETH", "eth", "BTC", "xmr"]);
+        await seeder.EnsureDerivedAsync(mnemonic, ["BTC", "ETH"]);
+
+        wallets.Rows.Select(r => r.Symbol).Should().BeEquivalentTo([AssetSymbol.Btc, AssetSymbol.Eth]);
+    }
+
     private sealed class FakeWallets : IWalletRepository
     {
         public List<LocalWalletDescriptor> Rows { get; } = [];
