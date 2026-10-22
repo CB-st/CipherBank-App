@@ -44,15 +44,13 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **Dependencies**: `ILogger`, `IWalletService`, `ITransactionService`, `ICryptoApiService`, `IErrorHandler`, `INavigationService`, `IDialogService`
 
-**Properties**: Wallets, Transactions, SelectedWallet, TotalBalance, TotalBalanceUsd, IsLoading, IsLoadingTransactions, ErrorMessage, SendToAddress, SendAmount, IsSending
+**Properties**: Transactions, SelectedWallet, TotalBalance, TotalBalanceUsd, IsLoading, IsLoadingTransactions, ErrorMessage, SendToAddress, SendAmount, IsSending
 
 **Reactions**: `OnSelectedWalletChanged` – Loads transactions when wallet changes.
 
 **Commands**:
 - `LoadWalletsCommand` – Loads wallets, computes TotalBalanceUsd from prices.
-- `LoadTransactionsCommand` – Loads transactions for SelectedWallet.
 - `SendCryptoCommand` – Validates, confirms, sends via `SendCryptoAsync`, refreshes.
-- `CreateWalletCommand` – Creates wallet for symbol; parameter from command.
 
 **Methods**: `OnDisappearing()` – Cancels operations.
 
@@ -76,7 +74,6 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **Commands**:
 - `LoadAvailableCryptosCommand` – Loads cryptos for purchase.
-- `CalculateTotalCostCommand` – Computes Fee and TotalCost.
 - `PurchaseCryptoCommand` – Confirms, purchases, shows success, optionally navigates to WalletPage.
 - `SetPresetAmountCommand` – Sets amount from USD value (e.g. $25, $50).
 

@@ -43,10 +43,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         _dialog = dialog;
     }
 
-    /// <summary>Gets or sets the user's wallets.</summary>
-    [ObservableProperty]
-    public partial ObservableCollection<Wallet> Wallets { get; set; } = [];
-
     /// <summary>Gets or sets the transactions for the selected wallet.</summary>
     [ObservableProperty]
     public partial ObservableCollection<Transaction> Transactions { get; set; } = [];
@@ -166,14 +162,11 @@ public partial class WalletViewModel : ObservableObject, IDisposable
                     List<Wallet> walletList = await _walletService.GetWalletsAsync(_cts.Token);
 
                     var previousFocusId = FocusedWalletCard?.Wallet.Id;
-                    Wallets.Clear();
                     WalletCards.Clear();
                     decimal totalUsd = 0;
 
                     foreach (Wallet wallet in walletList)
                     {
-                        Wallets.Add(wallet);
-
                         WalletCardItem card;
                         try
                         {
@@ -238,7 +231,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Loads transaction history for the selected wallet.
     /// </summary>
-    [RelayCommand]
     private async Task LoadTransactionsAsync()
     {
         if (SelectedWallet == null || IsLoadingTransactions)
@@ -370,45 +362,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>
-    /// Creates a new wallet for a cryptocurrency.
-    /// </summary>
-    [RelayCommand]
-    private async Task CreateWalletAsync(string cryptoSymbol)
-    {
-        if (string.IsNullOrWhiteSpace(cryptoSymbol))
-        {
-            return;
-        }
-
-        try
-        {
-            LogCreatingWallet(_logger, cryptoSymbol);
-            Wallet wallet = await _walletService.CreateWalletAsync(cryptoSymbol);
-
-            Wallets.Add(wallet);
-            SelectedWallet = wallet;
-
-            await _dialog.ShowAlertAsync(
-                "Wallet Created",
-                $"New {wallet.CryptoName} wallet created!\nAddress: {wallet.Address}");
-
-            LogCreatedWallet(_logger, wallet.Id, cryptoSymbol);
-        }
-        catch (InvalidOperationException ex)
-        {
-            LogCouldNotCreateWallet(_logger, ex, ex.Message);
-            await _dialog.ShowAlertAsync("Error", ex.Message);
-        }
-        catch (Exception ex)
-        {
-            LogErrorCreatingWallet(_logger, ex);
-            await _dialog.ShowAlertAsync(
-                "Error",
-                "Failed to create wallet. Please try again.");
-        }
-    }
-
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
     [LoggerMessage(Level = LogLevel.Information, Message = "Loading wallets")]
     private static partial void LogLoadingWallets(ILogger logger);
@@ -451,18 +404,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Error sending crypto")]
     private static partial void LogErrorSendingCrypto(ILogger logger, Exception ex);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Creating wallet for {Symbol}")]
-    private static partial void LogCreatingWallet(ILogger logger, string symbol);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Created wallet {WalletId} for {Symbol}")]
-    private static partial void LogCreatedWallet(ILogger logger, string walletId, string symbol);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not create wallet: {Message}")]
-    private static partial void LogCouldNotCreateWallet(ILogger logger, Exception ex, string message);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Error creating wallet")]
-    private static partial void LogErrorCreatingWallet(ILogger logger, Exception ex);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Wallet page disappearing, operations cancelled")]
     private static partial void LogWalletDisappearing(ILogger logger);
