@@ -16,6 +16,8 @@ public sealed class MoneroWalletModule : IWalletModule
 
     private const int ChecksumLength = 4;
     private const int FullBlockChars = 11;
+    private const int Base58Radix = 58;
+    private const int BitsPerByte = 8;
 
     // Monero Base58 alphabet (Bitcoin-style; no 0/O/I/l).
     private const string Base58Alphabet =
@@ -105,11 +107,11 @@ public sealed class MoneroWalletModule : IWalletModule
                     return null;
                 }
 
-                value = (value * 58) + digit;
+                value = (value * Base58Radix) + digit;
             }
 
             // A block that overflows its byte width is not a valid encoding.
-            if (value >= BigInteger.One << (8 * byteCount))
+            if (value >= BigInteger.One << (BitsPerByte * byteCount))
             {
                 return null;
             }
