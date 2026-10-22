@@ -1,4 +1,4 @@
-// <copyright file="ICryptoAPIService.cs" company="CipherBank">
+// <copyright file="ICryptoApiService.cs" company="CipherBank">
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
