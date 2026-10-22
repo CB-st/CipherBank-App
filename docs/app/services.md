@@ -77,11 +77,11 @@ Implements `ISettingsService`. Uses `Preferences` for persistence.
 | Property | Default |
 |----------|---------|
 | CipherBankEndpointBase | https://api.sandbox.cipherbank.money |
-| ThemeMode | System | System |
-| NotificationsEnabled | true | true |
-| BiometricAuthEnabled | false | false |
-| AutoLockTimeoutMinutes | 5 | 5 |
-| DefaultCurrency | USD | USD |
+| ThemeMode | System |
+| NotificationsEnabled | true |
+| BiometricAuthEnabled | false |
+| AutoLockTimeoutMinutes | 5 |
+| DefaultCurrency | USD |
 
 ---
 
@@ -157,4 +157,4 @@ Static factory. Returns platform-specific handler:
 | MockWalletService.cs | IWalletService | Returns sample wallets |
 | MockTransactionService.cs | ITransactionService | Returns sample transactions |
 
-Mocks are used in DEBUG builds only (`#if DEBUG`). `ResetToDefaults()` exposed for Settings reset.
+Mocks are selected when `HostBehaviorOptions.UseMockServices` is true (`config/appsettings.Development.jsonc` true, `config/appsettings.jsonc` false). There is no `#if DEBUG` branch. `ResetToDefaults()` exposed for Settings reset.
