@@ -107,6 +107,9 @@ public sealed class CertificatePinPolicyTests
     [InlineData("sha256/REPLACE_WITH_PRODUCTION_PIN=", false)]
     [InlineData("sha256/AAAA", false)] // 3-byte digest
     [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2FuihgAAAA=", false)] // 35-byte digest
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=\n", false)] // trailing newline
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7 JKnbQG/uEtLMkBgFF2Fuihg=", false)] // embedded space
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihh=", false)] // non-canonical padding bits
     [InlineData("sha256/", false)]
     [InlineData("", false)]
     public void IsWellFormedSpkiSha256Pin_RequiresPrefixAndBase64Sha256Digest(string pin, bool expected) =>

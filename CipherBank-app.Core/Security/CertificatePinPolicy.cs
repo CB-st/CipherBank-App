@@ -65,7 +65,7 @@ public static class CertificatePinPolicy
 
     /// <summary>
     /// Returns true when <paramref name="pin"/> is <c>sha256/</c> followed by the
-    /// Base64 encoding of a 32-byte SHA-256 digest.
+    /// canonical Base64 encoding of a 32-byte SHA-256 digest (no whitespace).
     /// </summary>
     public static bool IsWellFormedSpkiSha256Pin(string pin)
     {
@@ -75,9 +75,12 @@ public static class CertificatePinPolicy
             return false;
         }
 
+        // Base64 decoding skips whitespace, so compare the canonical re-encoding to reject it.
+        string encoded = pin[SpkiSha256Prefix.Length..];
         Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
-        return Convert.TryFromBase64String(pin[SpkiSha256Prefix.Length..], digest, out int written)
-            && written == SHA256.HashSizeInBytes;
+        return Convert.TryFromBase64String(encoded, digest, out int written)
+            && written == SHA256.HashSizeInBytes
+            && string.Equals(Convert.ToBase64String(digest), encoded, StringComparison.Ordinal);
     }
 
     /// <summary>
