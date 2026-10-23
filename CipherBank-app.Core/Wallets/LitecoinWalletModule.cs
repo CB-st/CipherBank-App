@@ -12,7 +12,7 @@ namespace CipherBank_app.Wallets;
 public sealed class LitecoinWalletModule : IWalletModule
 {
     /// <inheritdoc />
-    public AssetSymbol Symbol { get; } = new("LTC");
+    public AssetSymbol Symbol => AssetSymbol.Ltc;
 
     /// <inheritdoc />
     public IReadOnlyList<WalletUiMode> AddModes { get; } = [WalletUiMode.Derive, WalletUiMode.Watch];

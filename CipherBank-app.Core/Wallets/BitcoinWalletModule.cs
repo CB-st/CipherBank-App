@@ -12,7 +12,7 @@ namespace CipherBank_app.Wallets;
 public sealed class BitcoinWalletModule : IWalletModule
 {
     /// <inheritdoc />
-    public AssetSymbol Symbol { get; } = new("BTC");
+    public AssetSymbol Symbol => AssetSymbol.Btc;
 
     /// <inheritdoc />
     public IReadOnlyList<WalletUiMode> AddModes { get; } = [WalletUiMode.Derive, WalletUiMode.Watch];

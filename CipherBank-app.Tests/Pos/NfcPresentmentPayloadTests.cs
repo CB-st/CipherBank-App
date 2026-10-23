@@ -59,4 +59,17 @@ public class NfcPresentmentPayloadTests
         parsed.SessionId.Should().Be("sess");
         parsed.TokenRef.Should().Be("tok");
     }
+
+    /// <summary>
+    /// Payloads where one identifier key is absent, null, or the wrong JSON type are malformed.
+    /// Use: Medium (NFC). Scope: NfcPresentmentPayload.TryParse.
+    /// </summary>
+    [Theory]
+    [InlineData("""{"v":1,"sessionId":"sess"}""")]
+    [InlineData("""{"v":1,"tokenRef":"tok"}""")]
+    [InlineData("""{"v":1,"sessionId":null,"tokenRef":"tok"}""")]
+    [InlineData("""{"v":1,"sessionId":"sess","tokenRef":null}""")]
+    [InlineData("""{"v":1,"sessionId":"\t","tokenRef":"tok"}""")]
+    public void TryParse_RejectsMissingOrNullIdentifier(string json)
+        => NfcPresentmentPayload.TryParse(json).Should().BeNull();
 }

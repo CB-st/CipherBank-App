@@ -16,7 +16,8 @@ namespace CipherBank_app.Custody;
 /// </summary>
 public static class CryptoBox
 {
-    public static byte[] DeriveKey(CryptographyOptions options, string pin, byte[] salt)
+    /// <summary>Derives the custody key into a buffer that zeroes itself on dispose.</summary>
+    public static SensitiveBuffer DeriveKey(CryptographyOptions options, string pin, byte[] salt)
         => Create(options).DeriveKey(pin, salt);
 
     public static string Seal(CryptographyOptions options, string plaintext, string pin)
