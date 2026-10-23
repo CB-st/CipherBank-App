@@ -37,4 +37,22 @@ public sealed class MoneroWalletModuleTests
 
         module.IsValidAddress(address).Should().Be(expected);
     }
+
+    // Upstream known-answer pair from monero-project tests/functional_tests/integrated_address.py:
+    // the mainnet standard address and its integrated form with payment ID 0123456789abcdef.
+    [Theory]
+    [InlineData("42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJQAWDm", true)]
+    [InlineData("4CMe2PUhs4J4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfSbLRB61BQVATzerHGj", true)]
+    [InlineData("4CMe2PUhs4J4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfSbLRB61BQVATzerHGk", false)]
+
+    // Same payloads with the prefixes swapped and checksums recomputed, so only the
+    // prefix/length pairing can reject them.
+    [InlineData("4CMe2PUhs4J4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfJJyYZna", false)]
+    [InlineData("42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfSbLRB61BQVAU44NfV5", false)]
+    public void IsValidAddress_MatchesUpstreamMainnetVectors(string address, bool expected)
+    {
+        MoneroWalletModule module = new MoneroWalletModule();
+
+        module.IsValidAddress(address).Should().Be(expected);
+    }
 }
