@@ -166,11 +166,18 @@ public static partial class AddressValidator
     /// </summary>
     private static bool IsValidBech32(string address)
     {
-        // Bech32 uses lowercase a-z and 0-9, excluding 1, b, i, o
-        var bech32Data = address.Substring(3); // Remove bc1 or tb1 prefix
-        const string bech32Alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+        // BIP-173: an address is all lowercase or all uppercase, never mixed case
+        if (address.Any(char.IsLower) && address.Any(char.IsUpper))
+        {
+            return false;
+        }
 
-        return bech32Data.All(c => bech32Alphabet.Contains(char.ToLowerInvariant(c)) || char.IsDigit(c));
+        // Bech32 uses ASCII a-z and 0-9, excluding 1, b, i, o (compared in uppercase).
+        // The ASCII check comes first so non-ASCII letters such as U+017F cannot case-map into the alphabet.
+        var bech32Data = address.Substring(3); // Remove bc1 or tb1 prefix
+        const string bech32Alphabet = "QPZRY9X8GF2TVDW0S3JN54KHCE6MUA7L";
+
+        return bech32Data.All(c => char.IsAscii(c) && bech32Alphabet.Contains(char.ToUpperInvariant(c)));
     }
 
     [GeneratedRegex("^0x[a-fA-F0-9]{40}$")]
