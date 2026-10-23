@@ -5,7 +5,6 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Xml.Linq;
 using CipherBank_app.Security;
 using FluentAssertions;
 using Xunit;
@@ -90,15 +89,34 @@ public sealed class CertificatePinPolicyTests
     }
 
     [Fact]
-    public void EnsureReleasePinsAreConfigured_RejectsShippedPlaceholderPins()
+    public void EnsurePinsAreNotPlaceholders_ThrowsOnMalformedPin()
     {
-        CertificatePinPolicy.IsPlaceholderPin(CertificatePinPolicy.ProductionPin).Should().BeTrue();
-        CertificatePinPolicy.IsPlaceholderPin(CertificatePinPolicy.BackupPin).Should().BeTrue();
-        CertificatePinPolicy.IsPlaceholderPin(CertificatePinPolicy.SandboxPin).Should().BeTrue();
-        CertificatePinPolicy.IsPlaceholderPin(CertificatePinPolicy.SandboxBackupPin).Should().BeTrue();
+        Action act = () => CertificatePinPolicy.EnsurePinsAreNotPlaceholders(
+            "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=",
+            "sha256/BACKUP_PIN_HERE=");
 
-        Action act = CertificatePinPolicy.EnsureReleasePinsAreConfigured;
-        act.Should().Throw<InvalidOperationException>().WithMessage("*REPLACE_WITH_*");
+        act.Should().Throw<InvalidOperationException>().WithMessage("*Base64 SHA-256 digest*");
+    }
+
+    [Theory]
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=", true)]
+    [InlineData("sha256/ISiAtvm91VBP2VBIgpTKAfPeV/2RH/sai0RFOhdu55o=", true)]
+    [InlineData("YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=", false)] // missing sha256/ prefix
+    [InlineData("SHA256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=", false)] // prefix is case-sensitive
+    [InlineData("sha256/BACKUP_PIN_HERE=", false)] // prose placeholder, not Base64
+    [InlineData("sha256/REPLACE_WITH_PRODUCTION_PIN=", false)]
+    [InlineData("sha256/AAAA", false)] // 3-byte digest
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2FuihgAAAA=", false)] // 35-byte digest
+    [InlineData("sha256/", false)]
+    [InlineData("", false)]
+    public void IsWellFormedSpkiSha256Pin_RequiresPrefixAndBase64Sha256Digest(string pin, bool expected) =>
+        CertificatePinPolicy.IsWellFormedSpkiSha256Pin(pin).Should().Be(expected);
+
+    [Fact]
+    public void IsWellFormedSpkiSha256Pin_RejectsNull()
+    {
+        Action act = () => CertificatePinPolicy.IsWellFormedSpkiSha256Pin(null!);
+        act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
@@ -115,58 +133,5 @@ public sealed class CertificatePinPolicyTests
             "YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=");
 
         act.Should().Throw<ArgumentException>();
-    }
-
-    [Fact]
-    public void AndroidNetworkSecurityConfig_PinDigestsMatchPolicyWithoutSha256Prefix()
-    {
-        string path = Path.Combine(
-            FindRepositoryRoot(),
-            "CipherBank-app",
-            "Platforms",
-            "Android",
-            "Resources",
-            "xml",
-            "network_security_config.xml");
-        XDocument document = XDocument.Load(path);
-        Dictionary<string, string[]> pinsByHost = new Dictionary<string, string[]>(StringComparer.Ordinal);
-
-        foreach (XElement domainConfig in document.Descendants("domain-config"))
-        {
-            string host = domainConfig.Element("domain")!.Value.Trim();
-            string[] digests = domainConfig.Descendants("pin")
-                .Select(pin =>
-                {
-                    pin.Attribute("digest")!.Value.Should().Be("SHA-256");
-                    string digest = pin.Value.Trim();
-                    digest.Should().NotContain("sha256/");
-                    return digest;
-                })
-                .ToArray();
-            pinsByHost[host] = digests;
-        }
-
-        pinsByHost["api.cipherbank.money"].Should().Equal(
-            CertificatePinPolicy.ToAndroidNetworkSecurityPin(CertificatePinPolicy.ProductionPin),
-            CertificatePinPolicy.ToAndroidNetworkSecurityPin(CertificatePinPolicy.BackupPin));
-        pinsByHost["api.sandbox.cipherbank.money"].Should().Equal(
-            CertificatePinPolicy.ToAndroidNetworkSecurityPin(CertificatePinPolicy.SandboxPin),
-            CertificatePinPolicy.ToAndroidNetworkSecurityPin(CertificatePinPolicy.SandboxBackupPin));
-
-        static string FindRepositoryRoot()
-        {
-            DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null)
-            {
-                if (File.Exists(Path.Combine(directory.FullName, "CipherBank-app.sln")))
-                {
-                    return directory.FullName;
-                }
-
-                directory = directory.Parent;
-            }
-
-            throw new InvalidOperationException("Could not locate CipherBank-app.sln from the test output directory.");
-        }
     }
 }

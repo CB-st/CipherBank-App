@@ -26,7 +26,8 @@ together.
 `MauiProgram` calls `CertificatePinPolicy.EnsureReleasePinsAreConfigured()`
 when the assembly configuration is not Debug. A Release start throws
 `InvalidOperationException` if any configured pin still contains
-`REPLACE_WITH_`. Debug startup leaves the placeholders in place so local
+`REPLACE_WITH_`, or is not `sha256/` followed by the Base64 encoding of a
+32-byte SHA-256 digest. Debug startup leaves the placeholders in place so local
 development can run.
 
 ## Overview
@@ -107,12 +108,14 @@ prefix. The platform handlers do not keep a separate `PinnedPublicKeys` array.
 ```csharp
 public static string ProductionPin { get; } = "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=";
 
-public static string BackupPin { get; } = "sha256/BACKUP_PIN_HERE=";
+public static string BackupPin { get; } = "sha256/ISiAtvm91VBP2VBIgpTKAfPeV/2RH/sai0RFOhdu55o=";
 ```
 
 Set `SandboxPin` and `SandboxBackupPin` the same way. Do not leave
 `REPLACE_WITH_` in any of those four properties in a Release build.
-`EnsureReleasePinsAreConfigured` throws at startup when the marker remains.
+`EnsureReleasePinsAreConfigured` throws at startup when the marker remains
+or when a pin is not a well-formed `sha256/` SPKI digest (the example digests
+above are samples; use your own certificates' SPKI hashes).
 
 ### Android
 
@@ -124,7 +127,7 @@ Use the same digest as the C# pin, without the `sha256/` prefix:
     <domain includeSubdomains="true">api.cipherbank.money</domain>
     <pin-set expiration="2027-12-31">
         <pin digest="SHA-256">YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=</pin>
-        <pin digest="SHA-256">BACKUP_PIN_HERE=</pin>
+        <pin digest="SHA-256">ISiAtvm91VBP2VBIgpTKAfPeV/2RH/sai0RFOhdu55o=</pin>
     </pin-set>
 </domain-config>
 ```

@@ -64,13 +64,33 @@ public static class CertificatePinPolicy
     }
 
     /// <summary>
-    /// Fails when any configured pin still contains <see cref="PlaceholderMarker"/>.
-    /// Release startup calls this so a build cannot ship with placeholder pins.
+    /// Returns true when <paramref name="pin"/> is <c>sha256/</c> followed by the
+    /// Base64 encoding of a 32-byte SHA-256 digest.
+    /// </summary>
+    public static bool IsWellFormedSpkiSha256Pin(string pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        if (!pin.StartsWith(SpkiSha256Prefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
+        return Convert.TryFromBase64String(pin[SpkiSha256Prefix.Length..], digest, out int written)
+            && written == SHA256.HashSizeInBytes;
+    }
+
+    /// <summary>
+    /// Fails when any configured pin is a placeholder or is not a well-formed SPKI SHA-256 pin.
+    /// Release startup calls this so a build cannot ship without real pins.
     /// </summary>
     public static void EnsureReleasePinsAreConfigured() =>
         EnsurePinsAreNotPlaceholders(ProductionPin, BackupPin, SandboxPin, SandboxBackupPin);
 
-    /// <summary>Fails when any supplied pin still contains <see cref="PlaceholderMarker"/>.</summary>
+    /// <summary>
+    /// Fails when any supplied pin still contains <see cref="PlaceholderMarker"/> or is not
+    /// <c>sha256/</c> followed by a Base64 SHA-256 digest (see <see cref="IsWellFormedSpkiSha256Pin"/>).
+    /// </summary>
     public static void EnsurePinsAreNotPlaceholders(params string[] pins)
     {
         ArgumentNullException.ThrowIfNull(pins);
@@ -78,6 +98,12 @@ public static class CertificatePinPolicy
         {
             throw new InvalidOperationException(
                 "Certificate pin configuration contains a REPLACE_WITH_ placeholder. Replace the production and sandbox pins before shipping a Release build.");
+        }
+
+        if (!Array.TrueForAll(pins, IsWellFormedSpkiSha256Pin))
+        {
+            throw new InvalidOperationException(
+                "Certificate pin configuration contains a pin that is not sha256/ followed by a Base64 SHA-256 digest. Replace it with a real SPKI pin before shipping a Release build.");
         }
     }
 
