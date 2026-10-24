@@ -1,6 +1,6 @@
 # CipherBank-App Architecture: Strict Three-Part Separation
 
-Status: proposed target architecture; current code and CI do not implement this yet. It applies to the `arch/strict-separation` stack and will supersede the layering in [../architecture.md](../architecture.md) once the separation lands. Components and controls described below (for example `CipherBank.Client.Api`, `CipherBank.Architecture.Tests`, the forbidden-package check, the PR checklist item and `src-ip-guard`) do not exist yet.
+Status: proposed target architecture; current code and CI do not implement this yet. It applies to the `arch/strict-separation` stack Whether it will replace [../architecture.md](../architecture.md) or sit alongside it as a companion to that overview is still open. Components and controls described below (for example `CipherBank.Client.Api`, `CipherBank.Architecture.Tests`, the forbidden-package check, the PR checklist item and `src-ip-guard`) do not exist yet.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ flowchart TB
 
 Reusable, UI-free code in isolated packages under the `CipherBank` root (`CipherBank.Client` for the API client and services, `CipherBank.Utils` for shared utilities). These packages live in this repo for now. It will contain the reusable client functionality someone needs to build their own CipherBank front end on any platform (each application supplies its own platform implementations and UI):
 
-- `CipherBank.Client.Api`: client code that will be generated from the published OpenAPI spec for the endpoints that really exist (checked in, with a planned CI job that regenerates it and fails on diff). The existing mocks are kept as hand-written sections alongside the generated code until their endpoints exist in the contract.
+- `CipherBank.Client.Api`: client code that will be generated from the published OpenAPI spec for the endpoints that really exist, with the generator tool still to be chosen (checked in, with a planned CI job that regenerates it and fails on diff). The existing mocks are kept as hand-written sections alongside the generated code until their endpoints exist in the contract.
 - Service abstractions and implementations (auth, wallet, transactions, quotes) built on the generated client.
 - Per-action challenge client, canonical parameter encoder, key custody abstractions (`ISecureStore`, `IUserKeyStore`). The published contract binds a challenge to a purpose (GRAB or OVERWRITE) and allows one live challenge per user, so the challenge client must run actions one at a time per user, through a per-user queue or lock. Cancellation stays in the MVVM layer: view models cancel queued or running actions, and the challenge client only honors the cancellation it is given. It defines no parameter hash yet, so the encoder stays provisional until the contract adds one.
 - Validation, rate limiting, log redaction, certificate pin policy, optional local persistence.
@@ -38,7 +38,7 @@ It must not reference any UI framework (MAUI, Avalonia, CommunityToolkit.Mvvm) o
 Unspecialized and cross-platform. It knows nothing about CipherBank.
 
 - **View models** that know how to render for a given view: base VM types, card/page/pop-up/feed VM contracts, navigation, dialog, motion and theme abstractions, animation math (`Cards.UI.Core`).
-- **Views** that accept those view models: cards, pages, pop-ups, feeds, plus controls, converters and generic style tokens (`Cards.UI.Maui`; other platform heads such as Avalonia later).
+- **Views** that accept those view models: cards, pages, pop-ups, feeds, plus controls, converters and generic style tokens (`Cards.UI.Maui` first). Part 2 will be kept platform-neutral so that other heads such as Avalonia can be added later; Avalonia is planned but not required now (pending maintainer confirmation).
 
 It must not reference anything in `CipherBank.*`.
 
