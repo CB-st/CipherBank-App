@@ -4,7 +4,7 @@ Status: proposed target architecture; current code and CI do not implement this 
 
 ## Purpose
 
-CipherBank-App is the **base-model reference client** for CipherBank and is intended to be the standard client. Other clients (other platforms, other front ends, third parties) are variants built from the same reusable pieces. To make that possible, the code is split into three parts with one-way dependencies.
+CipherBank-App is **one implementation of a CipherBank client, held as the standard one**. CipherBank-src is the backend that third parties use to build their own CipherBank-App-like applications and use CipherBank services for transactions. They reach it only through the published API contract, the same way this App will. Third-party clients may reuse parts 1 and 2 or write their own; the App gets no privileged access to the backend. To make this possible, the code is split into three parts with one-way dependencies.
 
 ```mermaid
 flowchart TB
@@ -72,6 +72,12 @@ Planned guards (not yet in place):
 
 - Every PR's review checklist will include: "src IP boundary: no src internals in App, Client package or spec beyond the API contract."
 - A CI check (`src-ip-guard`) will fail on src namespaces/identifiers, references to src assemblies, or spec content not present in the pinned published contract.
+
+## Branch role
+
+`arch/strict-separation` is main plus the strict separation of responsibilities, kept up to date with main. Main is the proof of concept, where some separation was set aside for expediency. Once the app is feature complete, this branch is the starting point for the production app.
+
+Client neutrality: the App is one implementation of a CipherBank client, held as the standard one, not a privileged client. The published OpenAPI spec exists so anyone can easily write their own CipherBank-App-like client and use CipherBank services for transactions. Part 1 should give them everything they need to do that on any platform. Nothing App-specific may appear in the spec or in part 1.
 
 ## Related documents
 
