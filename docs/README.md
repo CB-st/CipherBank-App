@@ -32,7 +32,7 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 | Document | Description |
 |----------|-------------|
 | [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
-| [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md) | Strict-separation architecture (three-part design, dependency rules, OpenAPI-only access) |
+| [architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md) | **Proposed:** strict-separation target architecture (three-part design, dependency rules, OpenAPI-only access) |
 | [agentic/MODULE_COMPOSITION.md](agentic/MODULE_COMPOSITION.md) | Explicit feature registration and ViewModel/platform boundaries |
 | [core/README.md](core/README.md) | Core library overview |
 | [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |

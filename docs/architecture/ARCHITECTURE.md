@@ -1,6 +1,6 @@
 # CipherBank-App Architecture: Strict Three-Part Separation
 
-Status: design (applies to `arch/strict-separation`). Supersedes the layering in [../architecture.md](../architecture.md) once the separation lands.
+Status: proposed target architecture; current code and CI do not implement this yet. It applies to the `arch/strict-separation` stack and will supersede the layering in [../architecture.md](../architecture.md) once the separation lands. Components and controls described below (for example `CipherBank.Client.Api`, `CipherBank.Architecture.Tests`, the forbidden-package check, the PR checklist item and `src-ip-guard`) do not exist yet.
 
 ## Purpose
 
@@ -21,9 +21,9 @@ flowchart TB
 
 ### 1. CipherBank package (`CipherBank.Client`)
 
-Reusable, UI-free code, to be ported to its own package later. It contains everything someone needs to build their own CipherBank front end on any platform:
+Reusable, UI-free code, to be ported to its own package later. It will contain everything someone needs to build their own CipherBank front end on any platform:
 
-- `CipherBank.Client.Api`: client code generated from the published OpenAPI spec (checked in, regenerated in CI, fails on diff).
+- `CipherBank.Client.Api`: client code that will be generated from the published OpenAPI spec (checked in, with a planned CI job that regenerates it and fails on diff).
 - Service abstractions and implementations (auth, wallet, transactions, quotes) built on the generated client.
 - Per-action challenge client, canonical parameter encoder, key custody abstractions (`ISecureStore`, `IUserKeyStore`).
 - Validation, rate limiting, log redaction, certificate pin policy, optional local persistence.
@@ -54,24 +54,24 @@ The CipherBank MAUI app. It **inherits from part 2** (its pages, cards and VMs d
 | 2 `Cards.UI.Maui` | `Cards.UI.Core`, MAUI | `CipherBank.*` |
 | 3 `CipherBank.App` | parts 1 and 2, MAUI | CipherBank-src |
 
-Enforced by project references, `CipherBank.Architecture.Tests` (assembly/namespace rules), analyzers in `CipherBank-app.Analyzers`, and a build-time check on forbidden package references. Suppressions (`#pragma`, `SuppressMessage`, `NoWarn`, severity downgrades) are not allowed.
+These rules will be enforced by project references, a planned `CipherBank.Architecture.Tests` project (assembly/namespace rules), new analyzer rules in `CipherBank-app.Analyzers` (the current analyzers do not enforce these boundaries), and a planned build-time check on forbidden package references. Suppressions (`#pragma`, `SuppressMessage`, `NoWarn`, severity downgrades) are not allowed.
 
 ## Backend access: OpenAPI only
 
-The application talks to the backend **only through the published OpenAPI spec**. Endpoints, schemas, action IDs and error codes come from the generated `CipherBank.Client.Api` types. There are no app-only headers, fields or side channels; if the client needs something, it is added to the spec first.
+Target state: the application will talk to the backend **only through the published OpenAPI spec**. Endpoints, schemas, action IDs and error codes will come from the generated `CipherBank.Client.Api` types. There will be no app-only headers, fields or side channels; if the client needs something, it must be added to the spec first. (Today the app uses its existing service and HTTP layers.)
 
 ## Parity without dependency
 
-The App and CipherBank-src aim for **feature parity**, but **neither depends on the other**: no project, package, submodule, shared-source or build references in either direction. The OpenAPI contract is the only shared artifact. A new feature is specified in the contract, then implemented independently on each side, and verified by contract tests (generated-client regen check, shared golden vectors for canonical encoding).
+The App and CipherBank-src aim for **feature parity**, but **neither depends on the other**: no project, package, submodule, shared-source or build references in either direction. The OpenAPI contract is the only shared artifact. A new feature is specified in the contract, then implemented independently on each side, and verified by planned contract tests (generated-client regen check, shared golden vectors for canonical encoding).
 
 ## src IP boundary
 
 CipherBank-src is protected IP; it holds our specialized operations for how the systems work. **Nothing from src internals** (algorithms, specialized operations, internal logic, non-contract types, internal names or comments) may appear in the App, the `CipherBank.Client` package or the public spec beyond the API contract. The spec states *what* the API does, never *how* the backend does it.
 
-Guards:
+Planned guards (not yet in place):
 
-- Every PR's review checklist includes: "src IP boundary: no src internals in App, Client package or spec beyond the API contract."
-- CI check (`src-ip-guard`) fails on src namespaces/identifiers, references to src assemblies, or spec content not present in the pinned published contract.
+- Every PR's review checklist will include: "src IP boundary: no src internals in App, Client package or spec beyond the API contract."
+- A CI check (`src-ip-guard`) will fail on src namespaces/identifiers, references to src assemblies, or spec content not present in the pinned published contract.
 
 ## Related documents
 
