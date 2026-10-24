@@ -62,7 +62,7 @@ Target state: the application will talk to the backend **only through the publis
 
 ## Parity without dependency
 
-The App and CipherBank-src aim for **feature parity**, but **neither depends on the other**: no project, package, submodule, shared-source or build references in either direction. The OpenAPI contract is the only shared artifact. A new feature is specified in the contract, then implemented independently on each side, and verified by planned contract tests (generated-client regen check, shared golden vectors for canonical encoding).
+The App and CipherBank-src aim for **feature parity**, but **neither depends on the other**: no project, package, submodule, shared-source or build references in either direction. The only shared artifacts are the OpenAPI contract and its published contract-level test vectors. A new feature is specified in the contract, then implemented independently on each side, and verified by planned contract tests (generated-client regen check, the published golden vectors for canonical encoding).
 
 ## src IP boundary
 
