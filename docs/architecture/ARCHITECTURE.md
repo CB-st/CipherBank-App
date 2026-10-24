@@ -1,6 +1,6 @@
 # CipherBank-App Architecture: Strict Three-Part Separation
 
-Status: proposed target architecture; current code and CI do not implement this yet. It applies to the `arch/strict-separation` stack Whether it will replace [../architecture.md](../architecture.md) or sit alongside it as a companion to that overview is still open. Components and controls described below (for example `CipherBank.Client.Api`, `CipherBank.Architecture.Tests`, the forbidden-package check, the PR checklist item and `src-ip-guard`) do not exist yet.
+Status: proposed target architecture; current code and CI do not implement this yet. It applies to the `arch/strict-separation` stack. Whether it will replace [../architecture.md](../architecture.md) or sit alongside it as a companion to that overview is still open. Components and controls described below (for example `CipherBank.Client.Api`, `CipherBank.Architecture.Tests`, the forbidden-package check, the PR checklist item and `src-ip-guard`) do not exist yet.
 
 ## Purpose
 
