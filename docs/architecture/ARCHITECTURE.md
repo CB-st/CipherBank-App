@@ -21,7 +21,7 @@ flowchart TB
 
 ### 1. CipherBank package (`CipherBank.Client`)
 
-Reusable, UI-free code, to be ported to its own package later. It will contain everything someone needs to build their own CipherBank front end on any platform:
+Reusable, UI-free code, to be ported to its own package later. It will contain the reusable client functionality someone needs to build their own CipherBank front end on any platform (each application supplies its own platform implementations and UI):
 
 - `CipherBank.Client.Api`: client code that will be generated from the published OpenAPI spec (checked in, with a planned CI job that regenerates it and fails on diff).
 - Service abstractions and implementations (auth, wallet, transactions, quotes) built on the generated client.
