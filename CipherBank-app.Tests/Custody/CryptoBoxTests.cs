@@ -66,7 +66,8 @@ public class CryptoBoxTests
             salt[0] = prefix;
         }
 
-        byte[] key = box.DeriveKey(pin, salt);
+        using SensitiveBuffer keyBuffer = box.DeriveKey(pin, salt);
+        byte[] key = keyBuffer.Span.ToArray();
         byte[] nonce = RandomNumberGenerator.GetBytes(options.NonceSizeBytes);
         byte[] plain = Encoding.UTF8.GetBytes(plaintext);
         byte[] cipher = new byte[plain.Length];

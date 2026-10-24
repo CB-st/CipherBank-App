@@ -18,7 +18,7 @@ public sealed partial class EthereumWalletModule : IWalletModule
     private const int WeiDecimalPlaces = 18;
 
     /// <inheritdoc />
-    public AssetSymbol Symbol { get; } = new("ETH");
+    public AssetSymbol Symbol => AssetSymbol.Eth;
 
     /// <inheritdoc />
     public IReadOnlyList<WalletUiMode> AddModes { get; } = [WalletUiMode.Derive, WalletUiMode.Watch];
@@ -114,10 +114,10 @@ public sealed partial class EthereumWalletModule : IWalletModule
     }
 
     private static bool ContainsAsciiDigit(string value)
-        => value.Where(static c => c is >= '0' and <= '9').Any();
+        => value.Any(static c => c is >= '0' and <= '9');
 
     private static bool IsAsciiDigits(string value)
-        => !value.Where(static c => c is < '0' or > '9').Any();
+        => !value.Any(static c => c is < '0' or > '9');
 
     [GeneratedRegex("^0x[0-9a-fA-F]{40}$", RegexOptions.Compiled)]
     private static partial Regex EthAddressRegex();

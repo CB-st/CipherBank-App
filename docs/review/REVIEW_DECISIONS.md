@@ -189,30 +189,28 @@ the durable rationale so future rounds do not relitigate settled questions.
 
 ## 12. Put the custody blob version and KDF sizes in options
 
-- **Ask:** move `BlobFormatVersion` into `CryptographyOptions`, and consider a
-  `StringBuilder` for the pack loop.
-- **Decision:** declined. The version byte is the on-disk envelope marker.
-  KDF sizes are already frozen by `MatchesPersistedProfile`, so a config edit
-  cannot change them without failing startup. Encoding them as tunable options
-  would let appsettings change a layout the blob does not store. The pack
-  stays a byte span: a `StringBuilder` would retain plaintext on the managed
-  heap and is the wrong type for ciphertext.
+- **Ask:** move `BlobFormatVersion` into `CryptographyOptions`, and wrap secret
+  byte arrays in a type that clears itself.
+- **Decision:** accepted (M3a). `CryptographyOptions.BlobFormatVersion` holds
+  the envelope byte. It is part of the frozen profile: `MatchesPersistedProfile`
+  compares the whole options record against `Default`, and `AesGcmCryptoBox`
+  (so also `CryptoBox`) rejects any other profile at construction, not only in
+  DI. `SensitiveBuffer` owns key and plaintext bytes and zeroes them on dispose.
+  The pack stays a byte span, not a `StringBuilder`.
 - **Evidence:**
   [AesGcm](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.aesgcm),
   [CryptographicOperations.ZeroMemory](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.cryptographicoperations.zeromemory).
-- **Forward guidance:** format bytes stay constants next to `Seal`/`Open`.
-  Zero key and plaintext bytes after use.
+- **Forward guidance:** a new envelope version is a migration, not a config
+  edit. Hold secrets in `SensitiveBuffer` with `using`.
 
 ## 13. `WalletUiMode` and `WalletSource` are the same enum
 
 - **Ask:** consolidate the two enums.
-- **Decision:** declined. `WalletUiMode` is the create action the UI offers
-  (`Derive`, `Watch`, `Managed`, `Unmanaged`). `WalletSource` is where the
-  portfolio row lives afterward (`Local`, `Watch`, `Server`). `Unmanaged` is
-  server-backed only when the module uses server wallets. `SourceFor` is the
-  only mapping.
-- **Forward guidance:** do not merge the enums. New assets implement
-  `IWalletModule` and keep the default `SourceFor` unless storage really differs.
+- **Decision:** accepted (M3a). `WalletSource` and `IWalletModule.SourceFor`
+  had no production caller, so they are removed. `WalletUiMode` is the one
+  enum; whether an unmanaged create is server-backed is
+  `IWalletModule.UsesServerWallets`.
+- **Forward guidance:** add a storage enum only when a persisted row needs it.
 
 ## 14. Receive-URI shorten lengths and BIP21 schemes in appsettings
 
@@ -233,20 +231,18 @@ the durable rationale so future rounds do not relitigate settled questions.
 - **Evidence:**
   [QRCoder](https://github.com/codebude/QRCoder).
 - **Forward guidance:** create the generator per call. Do not add
-  `System.Drawing` or `Microsoft.Maui.Graphics` to Core for this payload.
+  `System.Drawing` to Core for this payload.
 
 ## 16. Chart samples should be `Microsoft.Maui.Graphics` points
 
-- **Ask:** replace `ChartPoint` with MAUI graphics points behind an interface.
-- **Decision:** declined. `ChartPoint` is a time/value sample (`T`, `V`).
-  Screen coordinates already leave `ChartMath` as `System.Numerics.Vector2`.
-  `Microsoft.Maui.Graphics.Point` is a drawing coordinate and would couple
-  platform-neutral Core to a UI package. An interface around two doubles does
-  not add a seam.
+- **Ask:** replace `ChartPoint` with MAUI graphics points.
+- **Decision:** accepted (M3a). `ChartMath` takes `Microsoft.Maui.Graphics.Point`
+  samples (`X` = time, `Y` = value) and returns `PointF` screen coordinates.
+  `Microsoft.Maui.Graphics` is a standalone geometry/drawing package and does
+  not pull the MAUI controls stack into Core.
 - **Evidence:**
   [Microsoft.Maui.Graphics](https://learn.microsoft.com/en-us/dotnet/maui/user-interface/graphics/).
-- **Forward guidance:** map `Vector2` to a UI point in the MAUI chart view, not
-  in Core.
+- **Forward guidance:** an interface seam can wrap drawing later if needed.
 
 ## 17. `dotnet-ef` should float with SemVer minor updates
 

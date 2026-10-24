@@ -3,7 +3,7 @@
 // </copyright>
 
 using System.Globalization;
-using System.Numerics;
+using Microsoft.Maui.Graphics;
 
 namespace CipherBank_app.Charts;
 
@@ -18,11 +18,11 @@ public static class ChartMath
     /// Builds SVG line/area path data for a series using the default padding.
     /// Use: High (sparkline layout). Scope: ChartMath path builders.
     /// </summary>
-    /// <param name="series">Time/value points in display order.</param>
+    /// <param name="series">Samples in display order: <see cref="Point.X"/> is time, <see cref="Point.Y"/> is value.</param>
     /// <param name="width">Output width in device-independent pixels.</param>
     /// <param name="height">Output height in device-independent pixels.</param>
     public static ChartPathResult ToPath(
-        IReadOnlyCollection<ChartPoint> series,
+        IReadOnlyCollection<Point> series,
         double width,
         double height)
         => ToPath(series, width, height, DefaultPad);
@@ -31,12 +31,12 @@ public static class ChartMath
     /// Builds SVG line/area path data for a series using explicit padding and inferred value bounds.
     /// Automatically determines chart/point spacing from the series range.
     /// </summary>
-    /// <param name="series">Time/value points in display order.</param>
+    /// <param name="series">Samples in display order: <see cref="Point.X"/> is time, <see cref="Point.Y"/> is value.</param>
     /// <param name="width">Output width in device-independent pixels.</param>
     /// <param name="height">Output height in device-independent pixels.</param>
     /// <param name="padding">Vertical padding in device-independent pixels.</param>
     public static ChartPathResult ToPath(
-        IReadOnlyCollection<ChartPoint> series,
+        IReadOnlyCollection<Point> series,
         double width,
         double height,
         double padding)
@@ -45,14 +45,14 @@ public static class ChartMath
     /// <summary>
     /// Builds SVG line/area path data for a series using explicit padding and value bounds.
     /// </summary>
-    /// <param name="series">Time/value points in display order.</param>
+    /// <param name="series">Samples in display order: <see cref="Point.X"/> is time, <see cref="Point.Y"/> is value.</param>
     /// <param name="width">Output width in device-independent pixels.</param>
     /// <param name="height">Output height in device-independent pixels.</param>
     /// <param name="padding">Vertical padding in device-independent pixels.</param>
     /// <param name="min">Fixed minimum value for the vertical scale.</param>
     /// <param name="max">Fixed maximum value for the vertical scale.</param>
     public static ChartPathResult ToPath(
-        IReadOnlyCollection<ChartPoint> series,
+        IReadOnlyCollection<Point> series,
         double width,
         double height,
         double padding,
@@ -64,7 +64,7 @@ public static class ChartMath
     /// Converts absolute values into percent-change from the first point (index 0 baseline).
     /// </summary>
     /// <param name="series">Absolute value series; first non-empty point is the baseline.</param>
-    public static IReadOnlyList<ChartPoint> ToIndexed(IReadOnlyList<ChartPoint> series)
+    public static IReadOnlyList<Point> ToIndexed(IReadOnlyList<Point> series)
     {
         ArgumentNullException.ThrowIfNull(series);
         if (series.Count == 0)
@@ -72,20 +72,20 @@ public static class ChartMath
             return series;
         }
 
-        double baseline = series[0].V;
+        double baseline = series[0].Y;
         if (baseline == 0)
         {
             throw new InvalidOperationException(
                 $"A percent-change conversion requires a non-zero baseline in {nameof(series)}.");
         }
 
-        return series.Select(point => new ChartPoint(
-            point.T,
-            ((point.V / baseline) - 1) * PercentScale)).ToList();
+        return series.Select(point => new Point(
+            point.X,
+            ((point.Y / baseline) - 1) * PercentScale)).ToList();
     }
 
     private static ChartPathResult ToPathCore(
-        IReadOnlyCollection<ChartPoint> series,
+        IReadOnlyCollection<Point> series,
         double width,
         double height,
         double padding,
@@ -106,22 +106,22 @@ public static class ChartMath
             return new ChartPathResult();
         }
 
-        double x0 = series.Min(p => p.T);
-        double x1 = series.Max(p => p.T);
-        double lo = min ?? series.Min(p => p.V);
-        double hi = max ?? series.Max(p => p.V);
+        double x0 = series.Min(p => p.X);
+        double x1 = series.Max(p => p.X);
+        double lo = min ?? series.Min(p => p.Y);
+        double hi = max ?? series.Max(p => p.Y);
         double dx = x1 - x0;
         double dy = hi - lo;
 
         // A zero span has no scale. Center that dimension instead of substituting
         // an arbitrary span of 1, which would make near-zero and zero inputs jump.
-        List<Vector2> points = series.Select(point =>
+        List<PointF> points = series.Select(point =>
         {
-            double x = dx == 0 ? width / 2 : ((point.T - x0) / dx) * width;
+            double x = dx == 0 ? width / 2 : ((point.X - x0) / dx) * width;
             double y = dy == 0
                 ? height / 2
-                : (height - padding) - (((point.V - lo) / dy) * (height - (padding * PaddingSides)));
-            return new Vector2((float)x, (float)y);
+                : (height - padding) - (((point.Y - lo) / dy) * (height - (padding * PaddingSides)));
+            return new PointF((float)x, (float)y);
         }).ToList();
 
         string line = string.Join(
