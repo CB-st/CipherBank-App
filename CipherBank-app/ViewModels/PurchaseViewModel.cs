@@ -7,7 +7,7 @@ using System.Globalization;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
-using CipherBank_app.Services.Purchasing;
+using CipherBank.Presentation.Purchasing;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;

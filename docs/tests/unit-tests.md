@@ -32,6 +32,7 @@ CipherBank-app.Tests/
 ## Dependencies
 
 - **CipherBank-app.Core** – Models, interfaces
+- **CipherBank-app.Presentation** – Internal platform-neutral presentation helpers, including purchase request lifetime regression tests
 - **Moq** – Mocking
 - **FluentAssertions** – Assertions
 - **xUnit** – Test framework
