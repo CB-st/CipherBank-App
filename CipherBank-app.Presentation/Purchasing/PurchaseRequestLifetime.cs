@@ -14,13 +14,10 @@ internal sealed class PurchaseRequestLifetime : IDisposable
     private CancellationTokenSource? _purchase;
     private bool _disposed;
 
-    /// <inheritdoc/>
-    void IDisposable.Dispose() => Dispose();
-
     /// <summary>
     /// Releases the request cancellation sources.
     /// </summary>
-    internal void Dispose()
+    public void Dispose()
     {
         if (!_disposed)
         {
