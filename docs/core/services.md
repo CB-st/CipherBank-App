@@ -79,7 +79,7 @@ Client for the live public quote surface (`/currencies`, `/quote`, `/iquote`, `/
 | GetInverseQuoteAsync(inputSymbol, inputAmount, outputSymbol, ct) | Task<PublicQuote> | Output for a fixed input amount (`POST /iquote`) |
 | GetQuoteAsync(inputSymbol, outputAmount, outputSymbol, ct) | Task<PublicQuote> | Input required for a fixed output amount (`POST /quote`) |
 
-Each method also has a parameterless overload that passes `CancellationToken.None`.
+Each method also has an overload without a cancellation token that passes `CancellationToken.None`. The `GetInverseQuoteAsync` and `GetQuoteAsync` overloads retain their symbol and amount parameters.
 
 ---
 
