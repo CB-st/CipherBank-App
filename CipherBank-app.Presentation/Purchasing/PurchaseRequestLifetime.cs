@@ -2,20 +2,25 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-namespace CipherBank_app.Services.Purchasing;
+namespace CipherBank.Presentation.Purchasing;
 
 /// <summary>
 /// Cancellation for a Buy catalog reload and for the purchase request.
 /// A reload, a page return, or a new page instance must not cancel an in-flight purchase.
 /// </summary>
-public sealed class PurchaseRequestLifetime : IDisposable
+internal sealed class PurchaseRequestLifetime : IDisposable
 {
     private CancellationTokenSource? _load;
     private CancellationTokenSource? _purchase;
     private bool _disposed;
 
     /// <inheritdoc/>
-    public void Dispose()
+    void IDisposable.Dispose() => Dispose();
+
+    /// <summary>
+    /// Releases the request cancellation sources.
+    /// </summary>
+    internal void Dispose()
     {
         if (!_disposed)
         {
@@ -31,7 +36,7 @@ public sealed class PurchaseRequestLifetime : IDisposable
     /// Starts a catalog reload. Cancels only the previous reload.
     /// </summary>
     /// <returns>The token for this reload.</returns>
-    public CancellationToken BeginLoad()
+    internal CancellationToken BeginLoad()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         return Replace(ref _load);
@@ -41,7 +46,7 @@ public sealed class PurchaseRequestLifetime : IDisposable
     /// Starts a purchase. Cancels an in-flight reload and any previous purchase.
     /// </summary>
     /// <returns>The token for this purchase.</returns>
-    public CancellationToken BeginPurchase()
+    internal CancellationToken BeginPurchase()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         Retire(ref _load);
@@ -53,7 +58,7 @@ public sealed class PurchaseRequestLifetime : IDisposable
     /// The purchase is cancelled only when one is not in flight.
     /// </summary>
     /// <param name="purchaseInFlight">True while a purchase must keep running.</param>
-    public void CancelWhenPageDisappears(bool purchaseInFlight)
+    internal void CancelWhenPageDisappears(bool purchaseInFlight)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         _load?.Cancel();
