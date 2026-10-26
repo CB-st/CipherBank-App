@@ -97,7 +97,9 @@ public class ProductSessionCoordinatorTests
     public async Task StartAsync_CanceledRefresh_RollsBackSessionAndPropagatesCancellation()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
-        PrefsStore prefs = new PrefsStore(new LocalDb(new FileInfo(path)), CipherBank_app.Tests.Persist.TestPreferenceDefaults.Options);
+        LocalDb db = new LocalDb(new FileInfo(path));
+        await db.InitializeAsync();
+        PrefsStore prefs = new PrefsStore(db, CipherBank_app.Tests.Persist.TestPreferenceDefaults.Options);
         using CancellationTokenSource cancellation = new CancellationTokenSource();
         Mock<IProductClient> client = new Mock<IProductClient>(MockBehavior.Strict);
         client.Setup(c => c.CreateSessionAsync(It.IsAny<CancellationToken>()))

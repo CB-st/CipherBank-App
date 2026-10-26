@@ -141,7 +141,6 @@ public class AccountBootstrapServiceTests
     {
         public List<AchRecipientRow> Rows { get; } = [];
 
-
         public Task<IReadOnlyList<AchRecipientRow>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<AchRecipientRow>>(Rows);
 

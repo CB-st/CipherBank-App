@@ -2,8 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Models;
 using CipherBank_app.Custody;
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using CipherBank_app.Session;
 using CipherBank_app.V1;
@@ -216,7 +216,6 @@ public class AppSessionTests
     private sealed class MemRecipients : IRecipientRepository
     {
         public List<AchRecipientRow> Rows { get; } = [];
-
 
         public Task<IReadOnlyList<AchRecipientRow>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<AchRecipientRow>>(Rows);

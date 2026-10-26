@@ -36,8 +36,8 @@ public static class IndicativeQuoteMapper
 
         return new QuoteDto
         {
-            From = quote.InputCurrency,
-            To = quote.OutputCurrency,
+            From = quote.InputCurrency.Value,
+            To = quote.OutputCurrency.Value,
             Rate = quote.Rate.ToString(CultureInfo.InvariantCulture),
             ExpiresAt = nowMs + ttlMs,
         };
