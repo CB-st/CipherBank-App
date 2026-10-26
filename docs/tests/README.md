@@ -32,7 +32,7 @@ flowchart TB
 | Project | Framework | Assertions | Mocking |
 |---------|-----------|------------|---------|
 | CipherBank-app.Analyzers.Tests | xUnit | xUnit | Roslyn analyzer testing |
-| CipherBank-app.Tests | xUnit | FluentAssertions | Moq |
+| CipherBank-app.Tests | xUnit | FluentAssertions | None |
 | CipherBank-app.IntegrationTests | xUnit | FluentAssertions | WireMock |
 | CipherBank-app.E2ETests | xUnit | FluentAssertions | Appium |
 

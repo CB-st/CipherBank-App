@@ -28,7 +28,6 @@ CipherBank-app.Tests/
 ## Dependencies
 
 - **CipherBank-app.Core** – Models, interfaces
-- **Moq** – Mocking
 - **FluentAssertions** – Assertions
 - **xUnit** – Test framework
 - **coverlet** – Coverage
@@ -49,8 +48,8 @@ CipherBank-app.Tests/
 | AddressValidatorTests | IsValidAddress (BTC, ETH, SOL), format validation |
 | LogRedactionHelperTests | RedactUsername, RedactWalletId, RedactAddress, RedactToken, etc. |
 | RateLimiterTests | TryAcquireAsync, GetWaitTimeAsync, sliding window |
-| RateLimitingHandlerTests | 429 when rate limited, pass-through when allowed |
-| CertificatePinningTests | Certificate validation logic (if applicable) |
+| RateLimitingHandlerTests | RateLimiter permit limits, concurrent acquire counts, window expiry, and wait-time bounds |
+| CertificatePinningTests | HttpClientHandler construction returns a non-null HttpMessageHandler |
 
 ## Coverage Configuration
 
