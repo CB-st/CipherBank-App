@@ -2,6 +2,10 @@
 
 This guide explains how to configure certificate pinning for the CipherBank mobile app. Certificate pinning is a security technique that helps prevent man-in-the-middle (MITM) attacks by validating that the server's certificate matches a known, trusted certificate.
 
+Shared hostname and C# pin matching policy lives in
+`CipherBank-app.Core/Security/CertificatePinPolicy.cs`. Android enforces the
+same values through `network_security_config.xml`; update both together.
+
 ## Overview
 
 The CipherBank app implements certificate pinning on all platforms:

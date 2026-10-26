@@ -10,7 +10,7 @@ second rulebook that drifts from the live gate.
 
 ## CI's role: wait, then fail closed
 
-`.github/workflows/sonar.yml` runs the scanner, polls
+`.github/workflows/quality-gates-and-ai-review.yml` runs the scanner, polls
 `api/ce/task` + `api/qualitygates/project_status`, and fails the `sonar`
 job when the gate status is `ERROR`. Merge blocking is that job plus
 Sonar's own PR check (decoration).
@@ -23,21 +23,13 @@ Coverage for new code comes from Coverlet OpenCover produced by:
 Those reports are the coverage job's handoff into the scan. A missing
 OpenCover file leaves `new_coverage` at 0% and reds the gate.
 
-Scanner source and coverage exclusion lists live directly on the
-`dotnet sonarscanner begin` step in `.github/workflows/sonar.yml` — the
-workflow is the single source of truth; there is no second checked-in copy.
-Do not add `Persist/Migrations` or other product Core paths. Do not grow
+Scanner source, coverage, and CPD exclusion lists live in
+`config/sonar/exclusions.json`. The workflow reads that file directly and
+contains no mirrored values.
+Generator-owned `Persist/Migrations` artifacts are omitted from Sonar and
+verified by migration-integrity CI plus architecture/build tests. Do not grow
 `sonar.coverage.exclusions`; cover product code instead. Shrink only with an
 explicit policy change.
-
-Scanner source exclusions are limited to generated/build output, scanner reports,
-editor metadata, scripts, and the out-of-stack design handoff. Platform sources
-and MAUI resources remain visible to analysis. Platform adapters and tests are
-excluded from coverage calculation only; interfaces and production services are
-not CPD-excluded.
-
-Do not store `SONAR_TOKEN` here. Configure it as a repository secret; configure
-`SONAR_HOST_URL` and `SONAR_PROJECT_KEY` as repository variables.
 
 ## Local feedback: SonarQube for IDE, Connected Mode
 

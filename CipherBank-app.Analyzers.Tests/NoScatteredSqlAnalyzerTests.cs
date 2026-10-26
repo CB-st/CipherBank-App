@@ -11,7 +11,7 @@ namespace CipherBank_app.Analyzers.Tests;
 public sealed class NoScatteredSqlAnalyzerTests
 {
     [Fact]
-    public async Task ReportsCommandTextOutsideOwner()
+    public async Task ReportsCommandTextOutsideOwnerAsync()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
         {
@@ -35,7 +35,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsFromSqlRawOutsideOwner()
+    public async Task ReportsFromSqlRawOutsideOwnerAsync()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
         {
@@ -61,7 +61,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsCommandTextInPersistSqlFolder()
+    public async Task ReportsCommandTextInPersistSqlFolderAsync()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
         {
@@ -88,7 +88,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsCommandTextInPersistMigrationsFolder()
+    public async Task ReportsCommandTextInPersistMigrationsFolderAsync()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
         {
@@ -112,7 +112,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
-    public async Task IgnoresSqlOutsideCore()
+    public async Task IgnoresSqlOutsideCoreAsync()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
         {

@@ -10,13 +10,14 @@ namespace CipherBank_app.Services;
 /// </summary>
 public sealed class MauiAppThemeSetter : IAppThemeSetter
 {
-    /// <inheritdoc />
-    public void SetUserAppTheme(AppTheme theme)
+    private readonly Application _application;
+
+    public MauiAppThemeSetter(IApplication application)
     {
-        Application? app = Application.Current;
-        if (app is not null)
-        {
-            app.UserAppTheme = theme;
-        }
+        _application = application as Application
+            ?? throw new ArgumentException("The MAUI application must derive from Application.", nameof(application));
     }
+
+    /// <inheritdoc />
+    public void SetUserAppTheme(AppTheme theme) => _application.UserAppTheme = theme;
 }

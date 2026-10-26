@@ -24,7 +24,8 @@ Class: `IosCertificatePinningHandler` (NSUrlSessionHandler). Uses `TrustOverride
 
 **Validation**: SecTrust policy, leaf cert public key SHA256 hash compared to `PinnedPublicKeys` array. Placeholder pins must be replaced.
 
-**Note**: `CertificatePinningHandler.cs` defines `IosCertificatePinningHandler`; `PlatformHttpHandlerFactory` references `Platforms.iOS.IosCertificatePinningHandler`.
+The iOS platform feature registration binds this handler through
+`IPlatformHttpMessageHandlerFactory`.
 
 ---
 
@@ -44,7 +45,7 @@ Extends `HttpClientHandler`. Uses `ServerCertificateCustomValidationCallback` fo
 
 **File**: `Platforms/MacCatalyst/AppDelegate.cs`, `Program.cs`
 
-Uses iOS certificate pinning via `#if IOS || MACCATALYST` in `PlatformHttpHandlerFactory`; `IosCertificatePinningHandler` is shared.
+Uses its own `NSUrlSessionHandler` adapter and the shared Core pin policy.
 
 ---
 
@@ -52,4 +53,13 @@ Uses iOS certificate pinning via `#if IOS || MACCATALYST` in `PlatformHttpHandle
 
 **File**: `Platforms/Tizen/Main.cs`, `tizen-manifest.xml`
 
-Stub entry point. Certificate pinning not implemented; default handler would be used.
+Stub entry point. Platform registration fails closed until secure HTTP and blur
+adapters are implemented.
+
+## Shared platform boundaries
+
+Shared host code contains no platform preprocessor ladder. Each platform folder
+registers `IPlatformHttpMessageHandlerFactory`, `IMotionPreference`, and the
+appropriate `BlurBackdropView` handler. Apple uses native blur; Android and
+Windows register simulated material handlers. Unsupported targets never fall
+back to an unpinned HTTP handler.

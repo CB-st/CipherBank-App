@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Globalization;
+using CipherBank_app.Models;
 
 namespace CipherBank_app.Converters;
 
@@ -25,7 +26,7 @@ public class CoinColorConverter : IValueConverter
     public Color DefaultColor { get; set; } = Colors.Transparent;
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        (value as string)?.ToUpperInvariant() switch
+        (value as AssetSymbol)?.Value switch
         {
             "BTC" => BtcColor,
             "ETH" => EthColor,
@@ -43,7 +44,7 @@ public class CoinColorConverter : IValueConverter
 public class CoinGlyphConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        (value as string)?.ToUpperInvariant() switch
+        (value as AssetSymbol)?.Value switch
         {
             "BTC" => "₿",
             "ETH" => "◆",

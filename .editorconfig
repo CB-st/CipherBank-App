@@ -134,12 +134,16 @@ dotnet_diagnostic.SA1615.severity = warning
 dotnet_diagnostic.SA1623.severity = warning
 dotnet_diagnostic.SA1629.severity = warning
 
+# EF migration artifacts are generator-owned and verified by migration-integrity CI.
+[CipherBank-app.Core/Persist/Migrations/*.cs]
+generated_code = true
+
 # XML files
 [*.{xml,xaml,csproj,props,targets}]
 indent_size = 2
 
-# JSON files
-[*.json]
+# JSON and JSON-with-comments files
+[*.{json,jsonc}]
 indent_size = 2
 
 # YAML files

@@ -126,7 +126,7 @@ public class AccountBootstrapServiceTests
 
     private sealed class MemPrefs : IPrefsStore
     {
-        public UserPrefs Current { get; set; } = new();
+        public UserPrefs Current { get; set; } = new(CipherBank_app.Tests.Persist.TestPreferenceDefaults.Value);
 
         public Task<UserPrefs> LoadAsync(CancellationToken ct = default) => Task.FromResult(Current);
 
@@ -141,7 +141,6 @@ public class AccountBootstrapServiceTests
     {
         public List<AchRecipientRow> Rows { get; } = [];
 
-        public Task EnsureSchemaAsync(CancellationToken ct = default) => Task.CompletedTask;
 
         public Task<IReadOnlyList<AchRecipientRow>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<AchRecipientRow>>(Rows);

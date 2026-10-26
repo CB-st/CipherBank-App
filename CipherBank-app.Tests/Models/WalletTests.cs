@@ -1,10 +1,10 @@
 // <copyright file="WalletTests.cs" company="CipherBank">
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
-
-using CipherBank_app.Models;
 using FluentAssertions;
 using Xunit;
+
+using CipherBank_app.Models;
 
 namespace CipherBank_app.Tests.Models;
 

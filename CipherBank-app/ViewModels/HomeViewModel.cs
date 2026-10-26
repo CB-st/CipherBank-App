@@ -5,6 +5,7 @@
 using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Text.Json;
+using CipherBank_app.Models;
 using CipherBank_app.Charts;
 using CipherBank_app.Constants;
 using CipherBank_app.Controls;
@@ -20,11 +21,11 @@ namespace CipherBank_app.ViewModels;
 
 /// <summary>
 /// Home portfolio shell — F2 section prefs + hide balances.
-/// Rebase note: replace <c>p1-ohlc-{symbol}</c> with <c>PersistOhlcJobKey</c>
-/// and <c>p2-rates</c> with <c>RefreshRatesJobKey</c>; priority comes from the key.
+/// Typed sync keys retain per-asset persistence and process-wide rate-refresh coalescing.
 /// </summary>
 public partial class HomeViewModel : ObservableObject
 {
+    private readonly UserPreferenceDefaults _defaults;
     private readonly IProductClient _api;
     private readonly IPrefsStore _prefs;
     private readonly IWalletRepository _wallets;
@@ -41,7 +42,7 @@ public partial class HomeViewModel : ObservableObject
     private readonly Color _holdingsAccent;
     private readonly Color _localAccent;
     private readonly EventDebouncer _refreshDebounce = new(TimeSpan.FromSeconds(1));
-    private IReadOnlyCollection<string> _enabledCurrencies = UserPrefs.DefaultEnabledCurrencies;
+    private IReadOnlyCollection<string> _enabledCurrencies;
     private bool _streamHooked;
     private bool _lastPortfolioOk;
     private string _rawTotalUsd = "—";
@@ -64,8 +65,11 @@ public partial class HomeViewModel : ObservableObject
         MarketRateHydrator marketRateHydrator,
         IUiDispatcher dispatcher,
         IThemeColorProvider themeColors,
-        ICoraLineProvider coraLines)
+        ICoraLineProvider coraLines,
+        UserPreferenceDefaults defaults)
     {
+        _defaults = defaults;
+        _enabledCurrencies = defaults.EnabledCurrencies.Select(symbol => symbol.Value).ToArray();
         _api = api;
         _prefs = prefs;
         _wallets = wallets;
@@ -98,7 +102,7 @@ public partial class HomeViewModel : ObservableObject
 
     public ObservableCollection<HoldingDisplayVm> OtherHoldings { get; } = new();
 
-    public ObservableCollection<LocalWalletRow> LocalWallets { get; } = new();
+    public ObservableCollection<LocalWalletDescriptor> LocalWallets { get; } = new();
 
     public ObservableCollection<AssetRowVm> CombinedAssets { get; } = new();
 
@@ -464,7 +468,7 @@ public partial class HomeViewModel : ObservableObject
         VisibleHoldings.Clear();
         OtherHoldings.Clear();
 
-        HoldingVisibilityResult partition = HoldingVisibility.Split(Holdings, _enabledCurrencies);
+        HoldingVisibilityResult partition = HoldingVisibility.Split(Holdings, _enabledCurrencies, _defaults);
         foreach (var h in partition.Visible)
         {
             HoldingDisplayVm row = ToHoldingRow(h);
@@ -499,7 +503,7 @@ public partial class HomeViewModel : ObservableObject
         {
             CombinedAssets.Add(new AssetRowVm
             {
-                Symbol = w.Symbol,
+                Symbol = w.Symbol.Value,
                 Detail = w.Label ?? string.Empty,
                 Trailing = w.Kind,
                 Accent = _localAccent,
@@ -544,11 +548,11 @@ public partial class HomeViewModel : ObservableObject
             for (int i = 0; i < symbols.Length; i++)
             {
                 var pts = await _api.GetHistoryAsync(symbols[i], SelectedRange);
-                (long T, double V)[] ohlc = pts.Select(point => (point.T, point.V)).ToArray();
+                PricePoint[] ohlc = pts.Select(point => new PricePoint(
+                    DateTimeOffset.FromUnixTimeMilliseconds(point.T), (decimal)point.V, null)).ToArray();
                 string symbol = symbols[i];
                 await _syncJobScheduler.EnqueueAsync(
-                    $"p1-ohlc-{symbol.ToUpperInvariant()}",
-                    SyncPriority.Interactive,
+                    new PersistOhlcJobKey(symbol),
                     ct => _marketRepository.UpsertOhlcAsync(symbol, ohlc, ct));
                 var chartPts = pts.Select(p => new ChartPoint(p.T, p.V)).ToList();
                 if (i == 0)
@@ -596,17 +600,16 @@ public partial class HomeViewModel : ObservableObject
     {
         IReadOnlyList<string> enabled = prefs.EnabledCurrencies.Count > 0
             ? prefs.EnabledCurrencies
-            : UserPrefs.DefaultEnabledCurrencies;
+            : _defaults.EnabledCurrencies.Select(symbol => symbol.Value).ToArray();
         string[] heldEnabledSymbols = Holdings.Select(holding => holding.Symbol)
-            .Concat(LocalWallets.Select(wallet => wallet.Symbol))
+            .Concat(LocalWallets.Select(wallet => wallet.Symbol.Value))
             .Where(symbol => enabled.Contains(symbol, StringComparer.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
         return _syncJobScheduler.EnqueueAsync(
-            "p2-rates",
-            SyncPriority.Background,
-            ct => _marketRateHydrator.HydrateAndRefreshAsync(heldEnabledSymbols, ct));
+            new RefreshRatesJobKey(),
+            ct => _marketRateHydrator.HydrateAndRefreshAsync(heldEnabledSymbols.Select(AssetSymbol.Parse), ct));
     }
 
     /// <summary>
@@ -617,10 +620,10 @@ public partial class HomeViewModel : ObservableObject
     {
         IReadOnlyList<string> enabled = prefs.EnabledCurrencies.Count > 0
             ? prefs.EnabledCurrencies
-            : UserPrefs.DefaultEnabledCurrencies;
+            : _defaults.EnabledCurrencies.Select(symbol => symbol.Value).ToArray();
 
         var held = Holdings.Select(h => h.Symbol)
-            .Concat(LocalWallets.Select(w => w.Symbol))
+            .Concat(LocalWallets.Select(w => w.Symbol.Value))
             .Where(s => enabled.Contains(s, StringComparer.OrdinalIgnoreCase))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(3)
@@ -675,7 +678,7 @@ public partial class HomeViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task RemoveWalletAsync(LocalWalletRow? wallet)
+    private async Task RemoveWalletAsync(LocalWalletDescriptor? wallet)
     {
         if (wallet is null)
         {
@@ -694,9 +697,9 @@ public partial class HomeViewModel : ObservableObject
         }
     }
 
-    private async Task RemoveLocalWalletAsync(LocalWalletRow wallet)
+    private async Task RemoveLocalWalletAsync(LocalWalletDescriptor wallet)
     {
-        string walletName = string.IsNullOrWhiteSpace(wallet.Label) ? wallet.Symbol : wallet.Label;
+        string walletName = string.IsNullOrWhiteSpace(wallet.Label) ? wallet.Symbol.Value : wallet.Label;
         bool confirmed = await _dialogs.ShowConfirmAsync(
             "Remove local wallet",
             $"Remove {walletName} from this device?",

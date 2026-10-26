@@ -9,9 +9,9 @@ namespace CipherBank_app.Models;
 /// Not a server-honored lock until <c>/quote/lock</c> exists.
 /// </summary>
 public sealed record PublicQuote(
-    string InputCurrency,
+    AssetSymbol InputCurrency,
     decimal InputAmount,
-    string OutputCurrency,
+    AssetSymbol OutputCurrency,
     decimal OutputAmount)
 {
     /// <summary>

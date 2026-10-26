@@ -1,0 +1,6 @@
+// Windows overlay, applied after the environment overlay.
+{
+  "PersistenceOptions": {
+    "DatabaseName": "cipherbank.win.db"
+  }
+}

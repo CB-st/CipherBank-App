@@ -1,10 +1,10 @@
 # CipherBank documentation
 
-Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass M3 stack.
+Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass M6 stack.
 
 ## Overview
 
-CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. M3 adds the
+CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. The stack includes the
 onboarding/custody, portfolio, money-movement, vault, POS/NFC, product HTTP, and
 public quote surfaces over the M2 ChallengePass foundation.
 

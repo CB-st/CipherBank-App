@@ -9,7 +9,7 @@ namespace CipherBank_app.Views;
 /// <summary>
 /// Code-behind for the Dashboard page.
 /// </summary>
-public partial class DashboardPage : ContentPage
+public partial class DashboardPage
 {
     private readonly DashboardViewModel _viewModel;
 

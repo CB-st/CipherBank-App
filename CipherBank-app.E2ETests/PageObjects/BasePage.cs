@@ -66,7 +66,7 @@ public abstract class BasePage
     {
         return Wait.Until(driver =>
         {
-            var element = driver.FindElement(locator);
+            IWebElement element = driver.FindElement(locator);
             return element.Displayed ? element : null;
         }) ?? throw new NoSuchElementException($"Element not found: {locator}");
     }
@@ -76,7 +76,7 @@ public abstract class BasePage
     /// </summary>
     protected void ClickElement(By locator)
     {
-        var element = WaitForElement(locator);
+        IWebElement element = WaitForElement(locator);
         element.Click();
     }
 
@@ -85,7 +85,7 @@ public abstract class BasePage
     /// </summary>
     protected void EnterText(By locator, string text)
     {
-        var element = WaitForElement(locator);
+        IWebElement element = WaitForElement(locator);
         element.Clear();
         element.SendKeys(text);
     }

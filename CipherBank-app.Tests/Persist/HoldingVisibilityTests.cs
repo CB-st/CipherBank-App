@@ -21,7 +21,10 @@ public class HoldingVisibilityTests
             new HoldingDto { Symbol = "usd" },
         };
 
-        HoldingVisibilityResult result = HoldingVisibility.Split(holdings, ["BTC", "Usd"]);
+        HoldingVisibilityResult result = HoldingVisibility.Split(
+            holdings,
+            ["BTC", "Usd"],
+            TestPreferenceDefaults.Value);
 
         result.Visible.Select(holding => holding.Symbol).Should().Equal("btc", "usd");
         result.Other.Select(holding => holding.Symbol).Should().Equal("ETH");
@@ -38,7 +41,10 @@ public class HoldingVisibilityTests
             new HoldingDto { Symbol = "ETH" },
         };
 
-        HoldingVisibilityResult result = HoldingVisibility.Split(holdings, Array.Empty<string>());
+        HoldingVisibilityResult result = HoldingVisibility.Split(
+            holdings,
+            Array.Empty<string>(),
+            TestPreferenceDefaults.Value);
 
         result.Visible.Select(holding => holding.Symbol).Should().Equal("BTC", "XMR", "USD");
         result.Other.Select(holding => holding.Symbol).Should().Equal("ETH");

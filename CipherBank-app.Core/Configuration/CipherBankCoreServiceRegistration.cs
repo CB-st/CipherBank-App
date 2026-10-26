@@ -7,6 +7,8 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Pos;
 using CipherBank_app.V1;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -30,25 +32,33 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ICoraLineProvider, CoraLineProvider>();
         services.AddSingleton<IEmvExchangeSimulator, EmvExchangeSimulator>();
-        // Rebase note: register the typed scheduler facade with its singleton
-        // single-flight factory and prioritized dispatcher; do not inject TaskScheduler.
-        services.AddSingleton<ISyncJobScheduler>(static provider => new SyncJobScheduler(
-            TaskScheduler.Default,
-            provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value));
-        services.AddSingleton<ILocalDb>(provider =>
+        // FENCE: preserve startup ordering and short-lived repository contexts from main.
+        // Migration and seeding finish before the shell opens; repositories never initialize schema.
+        services.AddSingleton(provider => new FileInfo(Path.Combine(
+            databaseDirectory,
+            provider.GetRequiredService<IOptions<PersistenceOptions>>().Value.DatabaseName)));
+        services.AddDbContextFactory<CipherBankDbContext>((provider, options) =>
         {
-            PersistenceOptions options = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
-            return new LocalDb(new FileInfo(Path.Combine(databaseDirectory, options.DatabaseName)));
+            string connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = provider.GetRequiredService<FileInfo>().FullName,
+            }.ToString();
+            options.UseSqlite(connectionString);
         });
+        services.AddSingleton<ILocalDatabaseInitializer, LocalDatabaseInitializer>();
+        services.AddSingleton<AppStartupCoordinator>();
         services.AddSingleton<IMarketRepository, MarketRepository>();
         services.AddSingleton<IPrefsStore, PrefsStore>();
-        services.AddSingleton<IRatesCache, RatesCache>();
+        services.AddSingleton<IRateSnapshotStore, SqliteRateSnapshotStore>();
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
-        services.AddSingleton<IRecipientSeedInitializer>(provider => new RecipientSeedInitializer(
-            provider.GetRequiredService<ILocalDb>(),
-            provider.GetRequiredService<IOptions<PersistenceOptions>>().Value,
-            provider.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<IRecipientSeedInitializer, RecipientSeedInitializer>();
         services.AddSingleton<IWalletRepository, WalletRepository>();
+        services.AddSingleton(provider => UserPreferenceDefaults.FromOptions(
+            provider.GetRequiredService<IOptions<UserPreferenceDefaultsOptions>>().Value));
+        services.AddSingleton<ISingleFlightJobFactory, SingleFlightJobFactory>();
+        services.AddSingleton<IPrioritizedJobDispatcher, PrioritizedJobDispatcher>();
+        services.AddSingleton<ISyncJobScheduler, SyncJobScheduler>();
+        services.AddSingleton<MarketRateHydrator>();
 
         // Production product wire: host (MauiProgram) registers HttpProductClient on the
         // pinned/rate-limited pipeline. Isolated Core tests construct the client directly.

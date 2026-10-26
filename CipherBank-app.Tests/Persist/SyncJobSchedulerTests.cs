@@ -2,286 +2,272 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Collections.Concurrent;
 using CipherBank_app.Configuration;
 using CipherBank_app.Persist;
 using FluentAssertions;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CipherBank_app.Tests.Persist;
 
-public class SyncJobSchedulerTests
+public sealed class SyncJobSchedulerTests
 {
     [Fact]
-    public async Task Enqueue_P2ThenP1_P1RunsBeforeWaitingP2_WhenConcurrencyAllows()
+    public async Task EnqueueAsync_ComposesKeyPrioritySingleFlightAndDispatcher()
     {
-        SyncJobScheduler queue = new SyncJobScheduler(
-            TaskScheduler.Default,
-            new SyncSchedulerOptions { MaxConcurrency = 2 });
-        List<string> order = new List<string>();
-        TaskCompletionSource gate1 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        TaskCompletionSource gate2 = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        _ = queue.EnqueueAsync("p2-a", SyncPriority.Background, async ct =>
-        {
-            lock (order)
-            {
-                order.Add("p2-a-start");
-            }
-
-            await gate1.Task.WaitAsync(ct);
-            lock (order)
-            {
-                order.Add("p2-a-end");
-            }
-        });
-        _ = queue.EnqueueAsync("p2-b", SyncPriority.Background, async ct =>
-        {
-            lock (order)
-            {
-                order.Add("p2-b-start");
-            }
-
-            await gate2.Task.WaitAsync(ct);
-            lock (order)
-            {
-                order.Add("p2-b-end");
-            }
-        });
-
-        await WaitUntilAsync(() =>
-        {
-            lock (order)
-            {
-                return order.Count >= 2;
-            }
-        });
-
-        _ = queue.EnqueueAsync("p2-c", SyncPriority.Background, async ct =>
-        {
-            lock (order)
-            {
-                order.Add("p2-c-start");
-            }
-
-            await Task.Delay(10, ct);
-            lock (order)
-            {
-                order.Add("p2-c-end");
-            }
-        });
-        _ = queue.EnqueueAsync("p1-d", SyncPriority.Interactive, async ct =>
-        {
-            lock (order)
-            {
-                order.Add("p1-d-start");
-            }
-
-            await Task.Delay(10, ct);
-            lock (order)
-            {
-                order.Add("p1-d-end");
-            }
-        });
-
-        gate1.SetResult();
-        await WaitUntilAsync(() =>
-        {
-            lock (order)
-            {
-                return order.Contains("p1-d-start") && order.Contains("p2-c-start");
-            }
-        });
-
-        lock (order)
-        {
-            order.IndexOf("p1-d-start").Should().BeLessThan(order.IndexOf("p2-c-start"));
-        }
-
-        gate2.SetResult();
-        await queue.DrainAsync(default);
-    }
-
-    [Fact]
-    public async Task Enqueue_DuplicateKey_SkipsSecondWhileInFlight()
-    {
-        SyncJobScheduler queue = new SyncJobScheduler();
-        int runCount = 0;
-        TaskCompletionSource gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        Task first = queue.EnqueueAsync("btc", SyncPriority.Interactive, async ct =>
-        {
-            Interlocked.Increment(ref runCount);
-            await gate.Task.WaitAsync(ct);
-        });
-
-        await WaitUntilAsync(() => Volatile.Read(ref runCount) == 1);
-
-        Task duplicate = queue.EnqueueAsync("btc", SyncPriority.Interactive, async ct =>
-        {
-            Interlocked.Increment(ref runCount);
-            await Task.CompletedTask;
-        });
-
-        duplicate.Should().BeSameAs(first);
-        gate.SetResult();
-        await queue.DrainAsync(default);
-
-        runCount.Should().Be(1);
-    }
-
-    [Fact]
-    public async Task Enqueue_DispatchesThroughInjectedTaskScheduler()
-    {
-        RecordingTaskScheduler taskScheduler = new RecordingTaskScheduler();
-        SyncJobScheduler queue = new SyncJobScheduler(
-            taskScheduler,
-            new SyncSchedulerOptions { MaxConcurrency = 1 });
+        SingleFlightJobFactory singleFlight = new();
+        RecordingDispatcher dispatcher = new();
+        SyncJobScheduler scheduler = new(singleFlight, dispatcher);
+        PersistOhlcJobKey key = new(" btc ");
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int runs = 0;
 
-        _ = queue.EnqueueAsync("btc", SyncPriority.Interactive, _ =>
+        Task first = scheduler.EnqueueAsync(key, async _ =>
+        {
+            runs++;
+            await release.Task;
+        });
+        Task duplicate = scheduler.EnqueueAsync(new PersistOhlcJobKey("BTC"), _ =>
         {
             runs++;
             return Task.CompletedTask;
         });
-        await queue.DrainAsync(default);
+        duplicate.Should().BeSameAs(first);
+        release.SetResult();
+        await first;
 
         runs.Should().Be(1);
-        taskScheduler.QueuedTasks.Should().BeGreaterThan(0);
+        dispatcher.LastPriority.Should().Be(SyncPriority.Interactive);
     }
 
     [Fact]
-    public async Task EnqueueAsync_FaultedWork_ExposesFailureAndAllowsReenqueue()
+    public async Task DrainAsync_DelegatesToDispatcher()
     {
-        SyncJobScheduler queue = new SyncJobScheduler();
+        RecordingDispatcher dispatcher = new();
+        SyncJobScheduler scheduler = new(new SingleFlightJobFactory(), dispatcher);
+        using CancellationTokenSource cancellation = new();
 
-        Task failed = queue.EnqueueAsync(
-            "btc",
-            SyncPriority.Interactive,
-            _ => throw new NotSupportedException("quote failed"));
+        await scheduler.DrainAsync(cancellation.Token);
 
+        dispatcher.DrainToken.Should().Be(cancellation.Token);
+    }
+
+    [Fact]
+    public void JobKeys_DerivePriorityAndNormalizedIdentity()
+    {
+        PersistOhlcJobKey lower = new("btc");
+        PersistOhlcJobKey upper = new(" BTC ");
+
+        lower.Should().Be(upper);
+        lower.Priority.Should().Be(SyncPriority.Interactive);
+        new RefreshRatesJobKey().Priority.Should().Be(SyncPriority.Background);
+    }
+
+    [Fact]
+    public async Task EnqueueAsync_AfterSuccessfulCompletion_StartsFreshRunForSameKey()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        SyncJobScheduler scheduler = new(new SingleFlightJobFactory(), dispatcher);
+        PersistOhlcJobKey key = new("BTC");
+        int runs = 0;
+
+        Task first = scheduler.EnqueueAsync(key, _ =>
+        {
+            Interlocked.Increment(ref runs);
+            return Task.CompletedTask;
+        });
+        await first;
+
+        Task second = scheduler.EnqueueAsync(key, _ =>
+        {
+            Interlocked.Increment(ref runs);
+            return Task.CompletedTask;
+        });
+        second.Should().NotBeSameAs(first);
+        await second;
+
+        runs.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task EnqueueAsync_AfterFault_PropagatesFailureThenAllowsRetry()
+    {
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        SyncJobScheduler scheduler = new(new SingleFlightJobFactory(), dispatcher);
+        RefreshRatesJobKey key = new();
+
+        Task failed = scheduler.EnqueueAsync(
+            key,
+            _ => throw new InvalidOperationException("sync failed"));
         Func<Task> observeFailure = () => failed;
-        await observeFailure.Should().ThrowAsync<NotSupportedException>();
+        await observeFailure.Should().ThrowAsync<InvalidOperationException>();
 
-        Task retry = queue.EnqueueAsync("btc", SyncPriority.Interactive, _ => Task.CompletedTask);
+        Task retry = scheduler.EnqueueAsync(key, _ => Task.CompletedTask);
+        retry.Should().NotBeSameAs(failed);
         await retry;
     }
 
     [Fact]
-    public async Task EnqueueAsync_CallerCancellation_ReachesQueuedWork()
+    public async Task EnqueueAsync_ConcurrentDuplicateKey_ReturnsSameTaskAndRunsOnce()
     {
-        SyncJobScheduler queue = new SyncJobScheduler(
-            TaskScheduler.Default,
-            new SyncSchedulerOptions { MaxConcurrency = 1 });
-        TaskCompletionSource blocker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        _ = queue.EnqueueAsync("blocker", SyncPriority.Interactive, ct => blocker.Task.WaitAsync(ct));
-        using CancellationTokenSource cancellation = new CancellationTokenSource();
-        Task canceled = queue.EnqueueAsync(
-            "queued",
-            SyncPriority.Background,
-            async ct => await Task.Delay(Timeout.InfiniteTimeSpan, ct),
-            cancellation.Token);
+        using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
+        SyncJobScheduler scheduler = new(new SingleFlightJobFactory(), dispatcher);
+        PersistOhlcJobKey key = new("ETH");
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int runs = 0;
+        Task? shared = null;
+        Exception? fault = null;
+        ConcurrentBag<Task> enrollments = new();
+        using Barrier barrier = new(3);
+        using CountdownEvent registered = new(3);
 
-        await cancellation.CancelAsync();
-        blocker.SetResult();
-
-        Func<Task> observeCancellation = () => canceled;
-        await observeCancellation.Should().ThrowAsync<OperationCanceledException>();
-    }
-
-    [Fact]
-    public async Task Dispose_CancelsRunningWork()
-    {
-        SyncJobScheduler queue = new SyncJobScheduler();
-        Task started = queue.EnqueueAsync(
-            "running",
-            SyncPriority.Interactive,
-            async ct => await Task.Delay(Timeout.InfiniteTimeSpan, ct));
-
-        queue.Dispose();
-
-        Func<Task> observeCancellation = () => started;
-        await observeCancellation.Should().ThrowAsync<OperationCanceledException>();
-    }
-
-    [Fact]
-    public async Task Dispose_QueuedJob_IsCanceledAndNeverStarts()
-    {
-        SyncJobScheduler queue = new SyncJobScheduler(
-            TaskScheduler.Default,
-            new SyncSchedulerOptions { MaxConcurrency = 1 });
-        TaskCompletionSource blocker = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        int queuedRuns = 0;
-
-        // Occupies the single slot and ignores its cancellation token so it can
-        // finish after Dispose, exercising the completion-time dispatch path.
-        Task running = queue.EnqueueAsync("running", SyncPriority.Interactive, _ => blocker.Task);
-        Task queued = queue.EnqueueAsync("queued", SyncPriority.Background, _ =>
+        for (int i = 0; i < 3; i++)
         {
-            Interlocked.Increment(ref queuedRuns);
-            return Task.CompletedTask;
-        });
-
-        queue.Dispose();
-
-        // Queued-but-unstarted work completes as canceled synchronously at disposal.
-        queued.IsCanceled.Should().BeTrue();
-        Func<Task> observeQueuedCancellation = () => queued;
-        await observeQueuedCancellation.Should().ThrowAsync<TaskCanceledException>();
-
-        // The running job finishing after disposal must not dispatch drained work.
-        blocker.SetResult();
-        await running;
-        Volatile.Read(ref queuedRuns).Should().Be(0);
-    }
-
-    [Fact]
-    public void Enqueue_AfterDispose_Throws()
-    {
-        SyncJobScheduler queue = new SyncJobScheduler();
-        queue.Dispose();
-
-        Action enqueue = () => queue.EnqueueAsync("late", SyncPriority.Interactive, _ => Task.CompletedTask);
-        enqueue.Should().Throw<ObjectDisposedException>();
-    }
-
-    [Fact]
-    public void Unset_max_concurrency_resolves_to_half_processor_count()
-    {
-        SyncSchedulerOptions options = new SyncSchedulerOptions();
-        options.MaxConcurrency.Should().Be(0);
-        options.Resolve().Should().Be(
-            Math.Clamp(
-                (int)Math.Ceiling(Environment.ProcessorCount / 2.0),
-                SyncSchedulerOptions.MinConcurrency,
-                SyncSchedulerOptions.MaxAllowedConcurrency));
-    }
-
-    private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 5000)
-    {
-        long deadline = Environment.TickCount64 + timeoutMs;
-        while (!predicate())
-        {
-            if (Environment.TickCount64 >= deadline)
+            new Thread(_ =>
             {
-                throw new TimeoutException("Condition was not met within the timeout.");
-            }
+                try
+                {
+                    barrier.SignalAndWait();
+                    Task enqueued = scheduler.EnqueueAsync(key, async ct =>
+                    {
+                        Interlocked.Increment(ref runs);
+                        await release.Task.WaitAsync(ct);
+                    });
+                    enrollments.Add(enqueued);
+                    Interlocked.CompareExchange(ref shared, enqueued, null);
+                }
+                catch (Exception exception)
+                {
+                    fault = exception;
+                }
+                finally
+                {
+                    registered.Signal();
+                }
+            }).Start();
+        }
 
-            await Task.Delay(10);
+        registered.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue();
+        fault.Should().BeNull();
+        shared.Should().NotBeNull();
+        enrollments.Should().HaveCount(3);
+        enrollments.Should().OnlyContain(task => ReferenceEquals(task, shared));
+
+        release.SetResult();
+        await shared!;
+
+        Volatile.Read(ref runs).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task EnqueueAsync_ConcurrentDuplicateKey_EnqueuesDispatcherWorkOnce()
+    {
+        BlockingRecordingDispatcher dispatcher = new();
+        SyncJobScheduler scheduler = new(new SingleFlightJobFactory(), dispatcher);
+        PersistOhlcJobKey key = new("SOL");
+        int runs = 0;
+        Task? shared = null;
+        Exception? fault = null;
+        ConcurrentBag<Task> enrollments = new();
+        using Barrier barrier = new(2);
+        using CountdownEvent registered = new(2);
+
+        for (int i = 0; i < 2; i++)
+        {
+            new Thread(_ =>
+            {
+                try
+                {
+                    barrier.SignalAndWait();
+                    Task enqueued = scheduler.EnqueueAsync(key, async ct =>
+                    {
+                        Interlocked.Increment(ref runs);
+                        await dispatcher.ReleaseTask.WaitAsync(ct);
+                    });
+                    enrollments.Add(enqueued);
+                    Interlocked.CompareExchange(ref shared, enqueued, null);
+                }
+                catch (Exception exception)
+                {
+                    fault = exception;
+                }
+                finally
+                {
+                    registered.Signal();
+                }
+            }).Start();
+        }
+
+        registered.Wait(TimeSpan.FromSeconds(5)).Should().BeTrue();
+        fault.Should().BeNull();
+        shared.Should().NotBeNull();
+        enrollments.Should().HaveCount(2);
+        enrollments.Should().OnlyContain(task => ReferenceEquals(task, shared));
+        dispatcher.EnqueueCount.Should().Be(1);
+
+        dispatcher.Release();
+        await shared!;
+
+        Volatile.Read(ref runs).Should().Be(1);
+    }
+
+    private static PrioritizedJobDispatcher CreateDispatcher() =>
+        new(Options.Create(new SyncSchedulerOptions { MaxConcurrency = 1 }));
+
+    private sealed class RecordingDispatcher : IPrioritizedJobDispatcher
+    {
+        internal SyncPriority LastPriority { get; private set; }
+
+        internal CancellationToken DrainToken { get; private set; }
+
+        public Task EnqueueAsync(
+            SyncPriority priority,
+            Func<CancellationToken, Task> work,
+            CancellationToken cancellationToken)
+        {
+            LastPriority = priority;
+            return work(cancellationToken);
+        }
+
+        public Task DrainAsync(CancellationToken cancellationToken)
+        {
+            DrainToken = cancellationToken;
+            return Task.CompletedTask;
         }
     }
 
-    private sealed class RecordingTaskScheduler : TaskScheduler
+    private sealed class BlockingRecordingDispatcher : IPrioritizedJobDispatcher
     {
-        public int QueuedTasks { get; private set; }
+        private readonly TaskCompletionSource _release =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        protected override IEnumerable<Task>? GetScheduledTasks() => Array.Empty<Task>();
+        private int _enqueueCount;
 
-        protected override void QueueTask(Task task)
+        internal int EnqueueCount => Volatile.Read(ref _enqueueCount);
+
+        internal Task ReleaseTask => _release.Task;
+
+        public Task EnqueueAsync(
+            SyncPriority priority,
+            Func<CancellationToken, Task> work,
+            CancellationToken cancellationToken)
         {
-            QueuedTasks++;
-            TryExecuteTask(task).Should().BeTrue();
+            Interlocked.Increment(ref _enqueueCount);
+            return RunAsync(work, cancellationToken);
         }
 
-        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
+        public Task DrainAsync(CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        internal void Release() => _release.SetResult();
+
+        private async Task RunAsync(
+            Func<CancellationToken, Task> work,
+            CancellationToken cancellationToken)
+        {
+            await _release.Task.WaitAsync(cancellationToken);
+            await work(cancellationToken);
+        }
     }
 }

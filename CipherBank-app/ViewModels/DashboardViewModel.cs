@@ -30,23 +30,29 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
+    /// <summary>Gets or sets the cryptocurrencies shown on the dashboard.</summary>
     [ObservableProperty]
-    private ObservableCollection<CryptoCurrency> cryptocurrencies = [];
+    public partial ObservableCollection<CryptoCurrency> Cryptocurrencies { get; set; } = [];
 
+    /// <summary>Gets or sets the selected cryptocurrency.</summary>
     [ObservableProperty]
-    private CryptoCurrency? selectedCrypto;
+    public partial CryptoCurrency? SelectedCrypto { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether prices are loading.</summary>
     [ObservableProperty]
-    private bool isLoading;
+    public partial bool IsLoading { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether a refresh is in progress.</summary>
     [ObservableProperty]
-    private bool isRefreshing;
+    public partial bool IsRefreshing { get; set; }
 
+    /// <summary>Gets or sets the dashboard error message.</summary>
     [ObservableProperty]
-    private string? errorMessage;
+    public partial string? ErrorMessage { get; set; }
 
+    /// <summary>Gets or sets the total portfolio value.</summary>
     [ObservableProperty]
-    private decimal totalPortfolioValue;
+    public partial decimal TotalPortfolioValue { get; set; }
 
     public DashboardViewModel(
         ILogger<DashboardViewModel> logger,
@@ -191,7 +197,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol);
+        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol.Value);
         await _navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
     }
 
@@ -216,7 +222,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        LogViewingDetails(_logger, crypto.Symbol);
+        LogViewingDetails(_logger, crypto.Symbol.Value);
         SelectedCrypto = crypto;
 
         // Could navigate to a details page here

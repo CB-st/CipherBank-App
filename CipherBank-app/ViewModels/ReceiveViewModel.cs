@@ -5,6 +5,7 @@
 using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Text.Json;
+using CipherBank_app.Models;
 using CipherBank_app.Cora;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
@@ -131,7 +132,7 @@ public partial class ReceiveViewModel : ObservableObject
 
         // Prefer path from matching local wallet when present.
         var local = (await _wallets.ListAsync())
-            .FirstOrDefault(w => w.Symbol.Equals(Asset, StringComparison.OrdinalIgnoreCase)
+            .FirstOrDefault(w => w.Symbol == AssetSymbol.Parse(Asset)
                                  && !string.IsNullOrEmpty(w.Path));
         if (local is not null)
         {
@@ -192,9 +193,9 @@ public partial class ReceiveViewModel : ObservableObject
         }
 
         var existing = await _wallets.ListAsync();
-        int next = existing.Count(w => w.Symbol.Equals(Asset, StringComparison.OrdinalIgnoreCase));
+        int next = existing.Count(w => w.Symbol == AssetSymbol.Parse(Asset));
         var derived = AddressDerive.Derive(Asset, mnemonic, next)!;
-        await _wallets.UpsertAsync(new LocalWalletRow(
+        await _wallets.UpsertAsync(new LocalWalletDescriptor(
             Guid.NewGuid().ToString("N"),
             Asset,
             $"{Asset} #{next}",

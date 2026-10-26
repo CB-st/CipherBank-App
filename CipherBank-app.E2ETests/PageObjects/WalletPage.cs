@@ -15,19 +15,19 @@ namespace CipherBank_app.E2ETests.PageObjects;
 public class WalletPage : BasePage
 {
     // Element locators
-    private static readonly By WalletBalanceLabel = By.Id("WalletBalanceLabel");
-    private static readonly By WalletAddressLabel = By.Id("WalletAddressLabel");
-    private static readonly By SendButton = By.Id("SendButton");
-    private static readonly By ReceiveButton = By.Id("ReceiveButton");
-    private static readonly By TransactionHistoryList = By.Id("TransactionHistoryList");
-    private static readonly By CopyAddressButton = By.Id("CopyAddressButton");
-    private static readonly By BackButton = By.Id("BackButton");
+    private static readonly By _walletBalanceLabel = By.Id("WalletBalanceLabel");
+    private static readonly By _walletAddressLabel = By.Id("WalletAddressLabel");
+    private static readonly By _sendButton = By.Id("SendButton");
+    private static readonly By _receiveButton = By.Id("ReceiveButton");
+    private static readonly By _transactionHistoryList = By.Id("TransactionHistoryList");
+    private static readonly By _copyAddressButton = By.Id("CopyAddressButton");
+    private static readonly By _backButton = By.Id("BackButton");
 
     // Send transaction elements
-    private static readonly By RecipientAddressField = By.Id("RecipientAddressEntry");
-    private static readonly By SendAmountField = By.Id("SendAmountEntry");
-    private static readonly By ConfirmSendButton = By.Id("ConfirmSendButton");
-    private static readonly By CancelSendButton = By.Id("CancelSendButton");
+    private static readonly By _recipientAddressField = By.Id("RecipientAddressEntry");
+    private static readonly By _sendAmountField = By.Id("SendAmountEntry");
+    private static readonly By _confirmSendButton = By.Id("ConfirmSendButton");
+    private static readonly By _cancelSendButton = By.Id("CancelSendButton");
 
     public WalletPage(AppiumDriver driver)
         : base(driver)
@@ -39,7 +39,7 @@ public class WalletPage : BasePage
     /// </summary>
     public string GetBalance()
     {
-        return GetElementText(WalletBalanceLabel);
+        return GetElementText(_walletBalanceLabel);
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class WalletPage : BasePage
     /// </summary>
     public string GetWalletAddress()
     {
-        return GetElementText(WalletAddressLabel);
+        return GetElementText(_walletAddressLabel);
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public class WalletPage : BasePage
     /// </summary>
     public WalletPage CopyAddress()
     {
-        ClickElement(CopyAddressButton);
+        ClickElement(_copyAddressButton);
         return this;
     }
 
@@ -64,7 +64,7 @@ public class WalletPage : BasePage
     /// </summary>
     public WalletPage OpenSendDialog()
     {
-        ClickElement(SendButton);
+        ClickElement(_sendButton);
         return this;
     }
 
@@ -73,7 +73,7 @@ public class WalletPage : BasePage
     /// </summary>
     public WalletPage OpenReceiveDialog()
     {
-        ClickElement(ReceiveButton);
+        ClickElement(_receiveButton);
         return this;
     }
 
@@ -82,7 +82,7 @@ public class WalletPage : BasePage
     /// </summary>
     public WalletPage EnterRecipientAddress(string address)
     {
-        EnterText(RecipientAddressField, address);
+        EnterText(_recipientAddressField, address);
         return this;
     }
 
@@ -91,7 +91,7 @@ public class WalletPage : BasePage
     /// </summary>
     public WalletPage EnterSendAmount(decimal amount)
     {
-        EnterText(SendAmountField, amount.ToString(CultureInfo.InvariantCulture));
+        EnterText(_sendAmountField, amount.ToString(CultureInfo.InvariantCulture));
         return this;
     }
 
@@ -100,7 +100,7 @@ public class WalletPage : BasePage
     /// </summary>
     public WalletPage ConfirmSend()
     {
-        ClickElement(ConfirmSendButton);
+        ClickElement(_confirmSendButton);
         return this;
     }
 
@@ -109,7 +109,7 @@ public class WalletPage : BasePage
     /// </summary>
     public WalletPage CancelSend()
     {
-        ClickElement(CancelSendButton);
+        ClickElement(_cancelSendButton);
         return this;
     }
 
@@ -130,7 +130,7 @@ public class WalletPage : BasePage
     /// </summary>
     public bool HasTransactionHistory()
     {
-        return IsElementDisplayed(TransactionHistoryList);
+        return IsElementDisplayed(_transactionHistoryList);
     }
 
     /// <summary>
@@ -138,12 +138,12 @@ public class WalletPage : BasePage
     /// </summary>
     public DashboardPage GoBack()
     {
-        ClickElement(BackButton);
+        ClickElement(_backButton);
         return new DashboardPage(Driver);
     }
 
     public override void WaitForPageLoad()
     {
-        WaitForElement(WalletBalanceLabel);
+        WaitForElement(_walletBalanceLabel);
     }
 }

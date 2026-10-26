@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using ObjCRuntime;
 using UIKit;
 
 namespace CipherBank_app;

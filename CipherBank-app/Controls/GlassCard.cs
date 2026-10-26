@@ -43,9 +43,7 @@ public class GlassCard : ContentView
     private readonly Border _frame;
     private readonly ContentView _bodyHost;
     private readonly BoxView _tint;
-#if IOS || MACCATALYST
     private readonly BlurBackdropView _blur;
-#endif
 
     public GlassCard()
     {
@@ -54,10 +52,8 @@ public class GlassCard : ContentView
         _tint = new BoxView { InputTransparent = true };
         var layers = new Grid();
 
-#if IOS || MACCATALYST
         _blur = new BlurBackdropView { InputTransparent = true };
         layers.Children.Add(_blur);
-#endif
         layers.Children.Add(_tint);
         layers.Children.Add(_bodyHost);
 
@@ -77,11 +73,9 @@ public class GlassCard : ContentView
         Content = _frame;
         ApplySurface();
 
-#if IOS || MACCATALYST
         ApplyBlurMaterial();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
-#endif
     }
 
     public double CornerRadius
@@ -121,23 +115,15 @@ public class GlassCard : ContentView
 
         _frame.StrokeThickness = 1;
         _frame.Shadow = new Shadow { Brush = Brush.Black, Offset = new Point(0, 4), Radius = 12, Opacity = 0.18f };
-#if IOS || MACCATALYST
         _tint.SetAppThemeColor(
             BoxView.ColorProperty,
             ThemeTokens.Get("Surface").WithAlpha(0.40f),
             ThemeTokens.Get("SurfaceDark").WithAlpha(0.55f));
-#else
-        _tint.SetAppThemeColor(
-            BoxView.ColorProperty,
-            ThemeTokens.Get("Surface").WithAlpha(0.96f),
-            ThemeTokens.Get("SurfaceDark").WithAlpha(0.96f));
-#endif
     }
 
     private void UpdateCornerRadius() =>
         _frame.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(CornerRadius) };
 
-#if IOS || MACCATALYST
     private void OnLoaded(object? sender, EventArgs e)
     {
         if (Application.Current != null)
@@ -161,5 +147,4 @@ public class GlassCard : ContentView
 
     private void ApplyBlurMaterial() =>
         _blur.UseDarkMaterial = (Application.Current?.RequestedTheme ?? AppTheme.Light) == AppTheme.Dark;
-#endif
 }

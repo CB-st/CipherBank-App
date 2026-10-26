@@ -10,12 +10,12 @@ namespace CipherBank_app.Tests.Animations;
 
 public class CarouselMathTests
 {
-    private static readonly CarouselLayoutConfig Config = CarouselLayoutConfig.Default;
+    private static readonly CarouselLayoutConfig _config = CarouselLayoutConfig.Default;
 
     [Fact]
     public void ComputeCardTransform_AtCenter_IsNeutral()
     {
-        CardTransform t = CarouselMath.ComputeCardTransform(0, Config);
+        CardTransform t = CarouselMath.ComputeCardTransform(0, _config);
 
         t.TranslationX.Should().Be(0);
         t.TranslationY.Should().Be(0);
@@ -28,10 +28,10 @@ public class CarouselMathTests
     [Fact]
     public void ComputeCardTransform_RightNeighbor_TiltsAndRecedes()
     {
-        CardTransform t = CarouselMath.ComputeCardTransform(1, Config);
+        CardTransform t = CarouselMath.ComputeCardTransform(1, _config);
 
-        t.TranslationX.Should().BeApproximately(Config.Stride, 0.0001);
-        t.RotationY.Should().Be(-Config.MaxTilt);
+        t.TranslationX.Should().BeApproximately(_config.Stride, 0.0001);
+        t.RotationY.Should().Be(-_config.MaxTilt);
         t.Scale.Should().BeApproximately(0.82, 0.0001);
         t.ZIndex.Should().BeLessThan(0);
     }
@@ -39,18 +39,18 @@ public class CarouselMathTests
     [Fact]
     public void ComputeCardTransform_FarCard_ClampsScaleAndOpacityAndTilt()
     {
-        CardTransform t = CarouselMath.ComputeCardTransform(10, Config);
+        CardTransform t = CarouselMath.ComputeCardTransform(10, _config);
 
-        t.Scale.Should().Be(Config.MinScale);
-        t.Opacity.Should().Be(Config.MinOpacity);
-        t.RotationY.Should().Be(-Config.MaxTilt);
+        t.Scale.Should().Be(_config.MinScale);
+        t.Opacity.Should().Be(_config.MinOpacity);
+        t.RotationY.Should().Be(-_config.MaxTilt);
     }
 
     [Fact]
     public void ComputeCardTransform_IsSymmetricInTiltDirection()
     {
-        CardTransform left = CarouselMath.ComputeCardTransform(-1, Config);
-        CardTransform right = CarouselMath.ComputeCardTransform(1, Config);
+        CardTransform left = CarouselMath.ComputeCardTransform(-1, _config);
+        CardTransform right = CarouselMath.ComputeCardTransform(1, _config);
 
         left.RotationY.Should().Be(-right.RotationY);
         left.TranslationX.Should().Be(-right.TranslationX);
@@ -124,7 +124,7 @@ public class CarouselMathTests
         int steps,
         out double maxPosition)
     {
-        SpringState state = new SpringState(start, startVelocity);
+        var state = new SpringState(start, startVelocity);
         maxPosition = start;
         for (int i = 0; i < steps; i++)
         {

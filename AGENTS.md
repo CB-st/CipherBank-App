@@ -24,7 +24,7 @@ Dependencies point inward: MAUI and ChallengePass may depend on Core; Core never
 2. Assembly metadata lives in the owning `.csproj`. Do not add `Properties/AssemblyInfo.cs`.
 3. Constructor injection is the default. Depend on focused interfaces, not dependency bags, static service locators, or broad API objects.
 4. Use production names for production and stateful development implementations. `Mock*` is reserved for test doubles; prefer Moq for a small collaborator contract and `InMemory*` for behavior that intentionally keeps state.
-5. Bounded background dispatch uses an injected `TaskScheduler` and `PriorityQueue<TElement,TPriority>`. Do not hand-sort mutable work lists or call `Task.Run` inside domain services.
+5. Bounded background dispatch composes `SingleFlightJobFactory` with `PrioritizedJobDispatcher`. Typed keys derive queue priority; fixed asynchronous consumers await whole operations through the prioritized channel. Do not hand-sort mutable work lists or call `Task.Run` inside domain services.
 6. Routine database work uses `CipherBankDbContext` and EF Core `Migrate()`. Schema changes are a new EF migration plus a previous-migration upgrade test. Production code does not own SQL command text. Unmatched prototype SQLite files (no `__EFMigrationsHistory`) are wiped, not repaired.
 7. Prefer framework facilities (`ArgumentNullException.ThrowIfNull`, `TimeProvider`, `Math.Sign`, spans, cryptographic zeroization, options validation) over local substitutes.
 8. Repository-owned configuration is separated by theme under `config/`, documented by a neighboring `README.md`, represented by typed options, validated at startup, and free of secrets.

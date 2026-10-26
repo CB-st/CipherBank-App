@@ -8,7 +8,7 @@ namespace CipherBank_app.Models;
 /// Represents historical price data for a cryptocurrency.
 /// </summary>
 public record PriceHistory(
-    string Symbol,
+    AssetSymbol Symbol,
     List<PricePoint> PricePoints,
     DateTimeOffset StartDate,
     DateTimeOffset EndDate)

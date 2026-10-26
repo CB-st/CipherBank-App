@@ -7,18 +7,19 @@ namespace CipherBank_app.Configuration;
 /// <summary>Bounded dispatch settings for synchronization work.</summary>
 public sealed class SyncSchedulerOptions : IOptionsSection
 {
+    /// <summary>Gets the class-named configuration section used by the host.</summary>
+    public static string SectionName { get; } = nameof(SyncSchedulerOptions);
+
     /// <summary>Lower inclusive concurrency bound for validation and derived defaults.</summary>
     public static int MinConcurrency { get; } = 1;
 
     /// <summary>Upper inclusive concurrency bound for validation.</summary>
     public static int MaxAllowedConcurrency { get; } = 8;
 
-    public static string SectionName { get; } = "SyncScheduler";
-
     /// <summary>
     /// Dispatch width. Zero means unset: <see cref="Resolve"/> derives half the processor count
     /// (rounded up, clamped to <see cref="MinConcurrency"/>..<see cref="MaxAllowedConcurrency"/>).
-    /// Overlay <c>SyncScheduler:MaxConcurrency</c> to set an explicit value.
+    /// Overlay <c>SyncSchedulerOptions:MaxConcurrency</c> to set an explicit value.
     /// </summary>
     public int MaxConcurrency { get; set; }
 

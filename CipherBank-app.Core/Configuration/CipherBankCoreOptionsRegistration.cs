@@ -23,7 +23,7 @@ internal static class CipherBankCoreOptionsRegistration
             .Bind(configuration.GetSection(CryptographyOptions.SectionName))
             .Validate(
                 static options => options.IsValid() && options.MatchesPersistedProfile(),
-                ConfigurationValidationMessages.CryptographyUnsafe)
+                OptionsValidationMessages.CryptographyUnsafe)
             .ValidateOnStart();
         services.AddOptions<SyncSchedulerOptions>()
             .Bind(configuration.GetSection(SyncSchedulerOptions.SectionName))
@@ -31,19 +31,25 @@ internal static class CipherBankCoreOptionsRegistration
                 static options => options.MaxConcurrency == 0
                     || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
                         && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency),
-                ConfigurationValidationMessages.SyncConcurrencyOutOfRange)
+                OptionsValidationMessages.SyncConcurrencyOutOfRange)
             .ValidateOnStart();
         services.AddOptions<PersistenceOptions>()
             .Bind(configuration.GetSection(PersistenceOptions.SectionName))
             .Validate(
                 static options => !string.IsNullOrWhiteSpace(options.DatabaseName),
-                ConfigurationValidationMessages.DatabaseNameRequired)
+                OptionsValidationMessages.DatabaseNameRequired)
             .Validate(
                 static options => Path.GetFileName(options.DatabaseName) == options.DatabaseName,
-                ConfigurationValidationMessages.DatabaseNameMustBeFileName)
+                OptionsValidationMessages.DatabaseNameMustBeFileName)
             .Validate(
                 static options => options.AreDefaultRecipientsValid(),
-                ConfigurationValidationMessages.DefaultRecipientsInvalid)
+                OptionsValidationMessages.DefaultRecipientsInvalid)
+            .ValidateOnStart();
+        services.AddRequiredOptions(configuration, new UserPreferenceDefaultsOptions())
+            .Validate(static options => options.IsValid(), "User preference defaults are invalid.")
+            .ValidateOnStart();
+        services.AddRequiredOptions(configuration, new HostBehaviorOptions())
+            .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
             .ValidateOnStart();
         services.AddOptions<CoraOptions>()
             .Bind(configuration.GetSection(CoraOptions.SectionName));

@@ -86,7 +86,8 @@ public sealed class CipherBankDbContext : DbContext
             entity.HasKey(value => new { value.Symbol, value.Timestamp });
             entity.Property(value => value.Symbol).HasColumnName("symbol");
             entity.Property(value => value.Timestamp).HasColumnName("t");
-            entity.Property(value => value.Value).HasColumnName("v");
+            entity.Property(value => value.Price).HasColumnName("v");
+            entity.Property(value => value.Volume).HasColumnName("volume");
         });
 
         modelBuilder.Entity<RateSnapshotEntity>(entity =>

@@ -20,7 +20,7 @@ internal static class ProductTreeRepoRoot
 
     private const string MauiPackageReference = "<PackageReference Include=\"CommunityToolkit.Mvvm\" />";
 
-    private static readonly string[] UnbuiltProjectDirectories =
+    private static readonly string[] _unbuiltProjectDirectories =
     {
         "CipherBank-app",
         "CipherBank-app.IntegrationTests",
@@ -71,7 +71,7 @@ internal static class ProductTreeRepoRoot
     {
         string root = Find();
         List<(string RelativePath, string Content)> files = [];
-        foreach (string project in UnbuiltProjectDirectories)
+        foreach (string project in _unbuiltProjectDirectories)
         {
             string projectRoot = Path.Combine(root, project);
             foreach (string fullPath in Directory.EnumerateFiles(projectRoot, "*.cs", SearchOption.AllDirectories))

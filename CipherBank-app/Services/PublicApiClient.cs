@@ -40,7 +40,7 @@ public sealed partial class PublicApiClient : IPublicQuoteService
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<IReadOnlyList<string>> GetCurrenciesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<AssetSymbol>> GetCurrenciesAsync(CancellationToken cancellationToken = default)
     {
         using var response = await SendPublicPostAsync("/currencies", new { }, cancellationToken);
         await EnsureSuccessAsync(response, cancellationToken);
@@ -53,7 +53,7 @@ public sealed partial class PublicApiClient : IPublicQuoteService
             return [];
         }
 
-        List<string> result = new List<string>();
+        List<AssetSymbol> result = new();
         if (currenciesElement.ValueKind == JsonValueKind.Array)
         {
             foreach (var item in currenciesElement.EnumerateArray())
@@ -81,16 +81,16 @@ public sealed partial class PublicApiClient : IPublicQuoteService
     }
 
     public async Task<PublicQuote> GetInverseQuoteAsync(
-        string inputSymbol,
+        AssetSymbol inputSymbol,
         decimal inputAmount,
-        string outputSymbol,
+        AssetSymbol outputSymbol,
         CancellationToken cancellationToken = default)
     {
         Dictionary<string, object> body = new Dictionary<string, object>
         {
-            ["INPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(inputSymbol),
+            ["INPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(inputSymbol.Value),
             ["INPUT_AMOUNT"] = decimal.ToDouble(inputAmount),
-            ["OUTPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(outputSymbol),
+            ["OUTPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(outputSymbol.Value),
         };
 
         using var response = await SendPublicPostAsync("/iquote", body, cancellationToken);
@@ -99,16 +99,16 @@ public sealed partial class PublicApiClient : IPublicQuoteService
     }
 
     public async Task<PublicQuote> GetQuoteAsync(
-        string inputSymbol,
+        AssetSymbol inputSymbol,
         decimal outputAmount,
-        string outputSymbol,
+        AssetSymbol outputSymbol,
         CancellationToken cancellationToken = default)
     {
         Dictionary<string, object> body = new Dictionary<string, object>
         {
-            ["INPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(inputSymbol),
+            ["INPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(inputSymbol.Value),
             ["OUTPUT_AMOUNT"] = decimal.ToDouble(outputAmount),
-            ["OUTPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(outputSymbol),
+            ["OUTPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(outputSymbol.Value),
         };
 
         using var response = await SendPublicPostAsync("/quote", body, cancellationToken);

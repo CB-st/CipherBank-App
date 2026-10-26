@@ -11,7 +11,8 @@ public sealed class PersistenceOptions : IOptionsSection
     private const int RoutingNumberLength = 9;
     private const int MemoMaxLength = 140;
 
-    public static string SectionName { get; } = "Persistence";
+    /// <summary>Gets the class-named configuration section used by the host.</summary>
+    public static string SectionName { get; } = nameof(PersistenceOptions);
 
     public string DatabaseName { get; set; } = "cipherbank.db";
 
@@ -33,8 +34,8 @@ public sealed class PersistenceOptions : IOptionsSection
     /// </summary>
     public bool AreDefaultRecipientsValid()
     {
-        List<string> ids = new List<string>(DefaultRecipients.Count);
-        List<string> names = new List<string>(DefaultRecipients.Count);
+        List<string> ids = new(DefaultRecipients.Count);
+        List<string> names = new(DefaultRecipients.Count);
         foreach (DefaultRecipientOptions row in DefaultRecipients)
         {
             if (!IsRecipientValid(row))

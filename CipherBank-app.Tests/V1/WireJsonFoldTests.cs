@@ -18,7 +18,7 @@ public class WireJsonFoldTests
         const string json = """{"coraEnabled":false,"assetsLayout":"combined","appLockIdleSec":90}""";
         PrefsWireDto? dto = JsonSerializer.Deserialize<PrefsWireDto>(json);
         dto.Should().NotBeNull();
-        UserPrefs prefs = new UserPrefs();
+        UserPrefs prefs = new UserPrefs(CipherBank_app.Tests.Persist.TestPreferenceDefaults.Value);
         dto!.ApplyOnto(prefs);
         prefs.CoraEnabled.Should().BeFalse();
         prefs.AssetsLayout.Should().Be("combined");

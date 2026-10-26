@@ -19,7 +19,7 @@ public class ProductSessionCoordinatorTests
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
         LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
-        PrefsStore prefs = new PrefsStore(db);
+        PrefsStore prefs = new PrefsStore(db, CipherBank_app.Tests.Persist.TestPreferenceDefaults.Options);
         UserPrefs local = await prefs.LoadAsync();
         local.LockIdleSeconds = 180;
         await prefs.SaveAsync(local);
@@ -64,7 +64,7 @@ public class ProductSessionCoordinatorTests
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
         LocalDb db = new LocalDb(new FileInfo(path));
         await db.InitializeAsync();
-        PrefsStore prefs = new PrefsStore(db);
+        PrefsStore prefs = new PrefsStore(db, CipherBank_app.Tests.Persist.TestPreferenceDefaults.Options);
 
         Mock<IProductClient> client = new Mock<IProductClient>(MockBehavior.Strict);
         client.Setup(c => c.CreateSessionAsync(It.IsAny<CancellationToken>()))
@@ -97,7 +97,7 @@ public class ProductSessionCoordinatorTests
     public async Task StartAsync_CanceledRefresh_RollsBackSessionAndPropagatesCancellation()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
-        PrefsStore prefs = new PrefsStore(new LocalDb(new FileInfo(path)));
+        PrefsStore prefs = new PrefsStore(new LocalDb(new FileInfo(path)), CipherBank_app.Tests.Persist.TestPreferenceDefaults.Options);
         using CancellationTokenSource cancellation = new CancellationTokenSource();
         Mock<IProductClient> client = new Mock<IProductClient>(MockBehavior.Strict);
         client.Setup(c => c.CreateSessionAsync(It.IsAny<CancellationToken>()))

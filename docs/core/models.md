@@ -33,7 +33,7 @@ Represents a cryptocurrency with current market data.
 | PercentChange24h | decimal | Percentage change over 24h |
 | MarketCap | decimal | Market capitalization |
 | Volume24h | decimal | 24-hour trading volume |
-| IconUrl | string | URL for icon image |
+| IconUrl | Uri? | URL for icon image |
 
 **Computed properties**:
 

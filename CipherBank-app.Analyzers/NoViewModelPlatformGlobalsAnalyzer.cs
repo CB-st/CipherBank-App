@@ -21,7 +21,7 @@ namespace CipherBank_app.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
 {
-    private static readonly HashSet<string> ProhibitedRoots = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> _prohibitedRoots = new(StringComparer.Ordinal)
     {
         "Application",
         "Clipboard",
@@ -123,7 +123,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
             }
 
             string root = identifier.Identifier.ValueText;
-            if (!ProhibitedRoots.Contains(root))
+            if (!_prohibitedRoots.Contains(root))
             {
                 continue;
             }

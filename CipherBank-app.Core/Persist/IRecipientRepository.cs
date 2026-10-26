@@ -11,4 +11,4 @@ namespace CipherBank_app.Persist;
 /// ensured before the first payee read or write.
 /// </summary>
 public interface IRecipientRepository
-    : ISchemaBound, IListable<AchRecipientRow>, IUpsert<AchRecipientRow>, IDeleteById;
+    : IListable<AchRecipientRow>, IUpsert<AchRecipientRow>, IDeleteById;

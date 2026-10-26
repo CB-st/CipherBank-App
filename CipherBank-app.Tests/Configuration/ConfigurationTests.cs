@@ -55,7 +55,7 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Development");
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.dev.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.dev.db");
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Production");
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build(windowsOverlay: true);
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.win.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.win.db");
     }
 
     [Fact]
