@@ -52,8 +52,9 @@ sequenceDiagram
     View->>ViewModel: User action
     ViewModel->>Service: Command (e.g. GetCryptoPricesAsync)
     Service->>Handler: HTTP request
-    Handler->>Handler: AuthHeaderHandler (add Bearer)
     Handler->>Handler: RateLimitingHandler (check limit)
+    Handler->>Handler: AuthHeaderHandler (add Bearer)
+    Handler->>Handler: StandardResilienceHandler (resilience)
     Handler->>API: Request (certificate pinning)
     API-->>Handler: Response
     Handler-->>Service: HttpResponse

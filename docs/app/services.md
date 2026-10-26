@@ -152,7 +152,7 @@ Static factory. Returns platform-specific handler:
 
 | File | Implements | Description |
 |------|------------|-------------|
-| MockAuthService.cs | IAuthService | In-memory login; accepts any credentials |
+| MockAuthService.cs | IAuthService | In-memory login; requires configured test credentials and `UseMockServices` enabled |
 | MockCryptoAPIService.cs | ICryptoApiService | Returns sample BTC, ETH, SOL data |
 | MockWalletService.cs | IWalletService | Returns sample wallets |
 | MockTransactionService.cs | ITransactionService | Returns sample transactions |

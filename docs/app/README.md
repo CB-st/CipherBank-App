@@ -14,7 +14,7 @@ The CipherBank-app project is the main .NET MAUI application targeting Android, 
 1. **UseMauiApp<App>()** – Sets the application type.
 2. **ConfigureFonts()** – OpenSans-Regular, OpenSans-Semibold.
 3. **ConfigureLogging()** – Serilog; log level and file sink vary by build (see [config/README.md](../config/README.md)).
-4. **RegisterServices()** – All services via `AddCipherBankHttpClient<T>` extension; mock or real by `HostBehaviorOptions.UseMockServices`.
+4. **RegisterServices()** – Registers application services; only typed real API clients use `AddCipherBankHttpClient<T>`. Mock or real services are selected by `HostBehaviorOptions.UseMockServices`.
 5. **RegisterViewModels()** – ViewModels for DI.
 6. **RegisterViews()** – Pages for DI.
 
