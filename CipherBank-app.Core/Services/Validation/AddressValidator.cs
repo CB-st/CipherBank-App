@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Collections.Frozen;
 using System.Text.RegularExpressions;
 using CipherBank_app.Models;
 
@@ -14,7 +15,11 @@ namespace CipherBank_app.Services.Validation;
 public static partial class AddressValidator
 {
     // Base58 alphabet used by Bitcoin and Solana
-    private const string Base58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    private static readonly FrozenSet<char> _base58Alphabet =
+        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".ToFrozenSet();
+
+    private static readonly FrozenSet<char> _bech32Alphabet =
+        "qpzry9x8gf2tvdw0s3jn54khce6mua7l".ToFrozenSet();
 
     /// <summary>
     /// Validates a cryptocurrency address for the specified symbol.
@@ -158,7 +163,7 @@ public static partial class AddressValidator
     /// </summary>
     private static bool IsValidBase58(string value)
     {
-        return !string.IsNullOrEmpty(value) && value.All(c => Base58Alphabet.Contains(c));
+        return !string.IsNullOrEmpty(value) && value.All(c => _base58Alphabet.Contains(c));
     }
 
     /// <summary>
@@ -172,12 +177,10 @@ public static partial class AddressValidator
             return false;
         }
 
-        // Bech32 uses ASCII a-z and 0-9, excluding 1, b, i, o (compared in uppercase).
+        // Bech32 uses ASCII a-z and 0-9, excluding 1, b, i, o (compared in lowercase).
         // The ASCII check comes first so non-ASCII letters such as U+017F cannot case-map into the alphabet.
         var bech32Data = address.Substring(3); // Remove bc1 or tb1 prefix
-        const string bech32Alphabet = "QPZRY9X8GF2TVDW0S3JN54KHCE6MUA7L";
-
-        return bech32Data.All(c => char.IsAscii(c) && bech32Alphabet.Contains(char.ToUpperInvariant(c)));
+        return bech32Data.All(c => char.IsAscii(c) && _bech32Alphabet.Contains(char.ToLowerInvariant(c)));
     }
 
     [GeneratedRegex("^0x[a-fA-F0-9]{40}$")]

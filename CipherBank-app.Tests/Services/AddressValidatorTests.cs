@@ -74,6 +74,44 @@ public class AddressValidatorTests
         result.Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData('1')]
+    [InlineData('b')]
+    [InlineData('i')]
+    [InlineData('o')]
+    public void IsValidBitcoinAddress_InvalidBech32Character_ReturnsFalse(char invalidCharacter)
+    {
+        var address = "bc1" + new string('q', 38) + invalidCharacter;
+
+        AddressValidator.IsValidBitcoinAddress(address).Should().BeFalse();
+        AddressValidator.IsValidBitcoinAddress(address.ToUpperInvariant()).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData('\u017F')]
+    [InlineData('\u00E9')]
+    [InlineData('\uFF51')]
+    public void IsValidBitcoinAddress_NonAsciiBech32Character_ReturnsFalse(char invalidCharacter)
+    {
+        var address = "bc1" + new string('q', 38) + invalidCharacter;
+
+        AddressValidator.IsValidBitcoinAddress(address).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData('0')]
+    [InlineData('O')]
+    [InlineData('I')]
+    [InlineData('l')]
+    public void IsValidAddress_InvalidBase58Character_ReturnsFalse(char invalidCharacter)
+    {
+        var bitcoinAddress = "1" + new string('A', 24) + invalidCharacter;
+        var solanaAddress = new string('A', 31) + invalidCharacter;
+
+        AddressValidator.IsValidBitcoinAddress(bitcoinAddress).Should().BeFalse();
+        AddressValidator.IsValidSolanaAddress(solanaAddress).Should().BeFalse();
+    }
+
     [Fact]
     public void IsValidBitcoinAddress_TestnetAddress_ReturnsTrue()
     {
