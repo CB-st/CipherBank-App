@@ -51,6 +51,10 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     [InlineData("_ = {|CB1005:Task.Factory?.StartNew(() => 1).ContinueWith(t => t)|};")]
     [InlineData("_ = {|CB1005:Task.Factory?.StartNew(() => 1)?.ContinueWith(t => t)|};")]
     [InlineData("_ = {|CB1005:Task.Factory?.StartNew(() => 1)!.ContinueWith(t => t)|};")]
+    [InlineData("_ = {|CB1005:(Application).Current|};")]
+    [InlineData("_ = {|CB1005:((Application))?.Current|};")]
+    [InlineData("_ = {|CB1005:(Task.Factory).StartNew|}(() => 1);")]
+    [InlineData("_ = {|CB1005:((Task).Factory)?.StartNew(() => 1)|};")]
     public async Task ReportsQualifiedAndConditionalPlatformGlobalsFromViewModelAsync(string statement)
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
@@ -90,6 +94,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                         class DelayViewModel
                         {
                             object Wait() => Task.Delay(1);
+                            object WaitParenthesized() => ((Task)).Delay(1);
                         }
                         """),
                 },
@@ -146,8 +151,15 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
         await test.RunAsync();
     }
 
-    [Fact]
-    public async Task ReportsPlatformGlobalFromViewModelAdditionalFileAsync()
+    [Theory]
+    [InlineData("{|CB1005:Application.Current|}.UserAppTheme = 1;")]
+    [InlineData("_ = {|CB1005:(Application).Current|};")]
+    [InlineData("_ = {|CB1005:((Application))?.Current|};")]
+    [InlineData("_ = {|CB1005:(Microsoft.Maui.Controls.Application).Current|};")]
+    [InlineData("_ = {|CB1005:(Task.Factory).StartNew|}(() => 1);")]
+    [InlineData("_ = {|CB1005:((Task).Factory)?.StartNew(() => 1)|};")]
+    [InlineData("_ = {|CB1005:((global::System.Threading.Tasks.Task).Factory).StartNew|}(() => 1);")]
+    public async Task ReportsPlatformGlobalFromViewModelAdditionalFileAsync(string statement)
     {
         // CI structure builds compile only Core/Tests/Analyzers; the MAUI host
         // arrives as AdditionalFiles, so CB1005 must also scan that surface.
@@ -159,12 +171,13 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
             {
                 AdditionalFiles =
                 {
-                    ("CipherBank-app/ViewModels/SettingsViewModel.cs", """
+                    ("CipherBank-app/ViewModels/SettingsViewModel.cs", $$"""
                         class SettingsViewModel
                         {
                             void Apply()
                             {
-                                {|CB1005:Application.Current|}.UserAppTheme = 1;
+                                {{statement}}
+                                _ = ((Task)).Delay(1);
                             }
                         }
                         """),
@@ -261,6 +274,8 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                                 _ = this.Preferences.Get("theme", "system");
                                 _ = Application.Name;
                                 _ = Preferences.Get("theme", "system");
+                                _ = (Application).Name;
+                                _ = (Preferences).Get("theme", "system");
                             }
 
                             void ReadLocal()
@@ -358,6 +373,10 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     [InlineData("_ = {|CB1005:Work.Factory?.StartNew(() => 1).ContinueWith(t => t)|};")]
     [InlineData("_ = {|CB1005:Work.Factory?.StartNew(() => 1)?.ContinueWith(t => t)|};")]
     [InlineData("_ = {|CB1005:Work.Factory?.StartNew(() => 1)!.ContinueWith(t => t)|};")]
+    [InlineData("_ = {|CB1005:(Application).Current|};")]
+    [InlineData("_ = {|CB1005:((MauiApplication)).Current|};")]
+    [InlineData("_ = {|CB1005:(Work.Factory).StartNew|}(() => 1);")]
+    [InlineData("_ = {|CB1005:((Work).Factory)?.StartNew(() => 1)|};")]
     public async Task ReportsSymbolResolvedPlatformGlobalsFromViewModelAsync(string statement)
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()

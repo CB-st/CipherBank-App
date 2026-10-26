@@ -134,9 +134,9 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Yields each member access whose receiver is a prohibited platform global,
-    /// reporting once per chain at the root reference. <c>Task</c> only bans <c>Run</c>
-    /// so cancellable helpers such as <c>Task.Delay</c> remain available.
+    /// Yields each member or conditional access whose receiver is a prohibited platform global,
+    /// reporting once per chain at the root reference. <c>Task.Run</c> and <c>Task.Factory.StartNew</c>
+    /// are prohibited; cancellable helpers such as <c>Task.Delay</c> remain allowed.
     /// Use: High (every ViewModel tree). Scope: this analyzer.
     /// </summary>
     private static IEnumerable<(SyntaxNode Access, string Root)> ProhibitedAccesses(
@@ -271,6 +271,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         SemanticModel? model,
         CancellationToken cancellationToken)
     {
+        expression = UnwrapParentheses(expression);
         if (expression is not MemberAccessExpressionSyntax factory
             || !string.Equals(factory.Name.Identifier.ValueText, "Factory", StringComparison.Ordinal))
         {
@@ -300,6 +301,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         SemanticModel? model,
         CancellationToken cancellationToken)
     {
+        expression = UnwrapParentheses(expression);
         if (model is not null
             && TryResolveBoundRoot(model, expression, cancellationToken, out string? boundRoot))
         {
@@ -307,6 +309,22 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         }
 
         return SyntacticQualificationName(expression);
+    }
+
+    /// <summary>
+    /// Removes parentheses surrounding a receiver before classifying it.
+    /// Use: High (each member receiver). Scope: this analyzer.
+    /// </summary>
+    /// <param name="expression">Receiver expression.</param>
+    /// <returns>The innermost expression.</returns>
+    private static ExpressionSyntax UnwrapParentheses(ExpressionSyntax expression)
+    {
+        while (expression is ParenthesizedExpressionSyntax parenthesized)
+        {
+            expression = parenthesized.Expression;
+        }
+
+        return expression;
     }
 
     /// <summary>
