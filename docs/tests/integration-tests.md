@@ -19,6 +19,12 @@ CipherBank-app.IntegrationTests/
 - **FluentAssertions** – Assertions
 - **xUnit** – Test framework
 
+## Coverage
+
+The project does not enable automatic coverage collection or configure a local
+coverage threshold. The `dotnet test CipherBank-app.IntegrationTests` command runs
+tests without collecting coverage; coverage collection requires explicit opt-in.
+
 ## MockServerFixture
 
 `IClassFixture<MockServerFixture>` provides a shared WireMock server and HttpClient.
