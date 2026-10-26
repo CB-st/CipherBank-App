@@ -38,7 +38,7 @@ public sealed record AchRecipientRow(
             seed.Bank,
             seed.Routing,
             seed.Account,
-            seed.AccountType,
+            seed.AccountType.Trim().ToLowerInvariant(),
             seed.Memo,
             null,
             null,
