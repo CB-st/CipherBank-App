@@ -19,7 +19,7 @@ public static partial class AddressValidator
         "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".ToFrozenSet();
 
     private static readonly FrozenSet<char> _bech32Alphabet =
-        "qpzry9x8gf2tvdw0s3jn54khce6mua7l".ToFrozenSet();
+        ("qpzry9x8gf2tvdw0s3jn54khce6mua7l" + "QPZRY9X8GF2TVDW0S3JN54KHCE6MUA7L").ToFrozenSet();
 
     /// <summary>
     /// Validates a cryptocurrency address for the specified symbol.
@@ -162,9 +162,7 @@ public static partial class AddressValidator
     /// Checks if a string contains only valid Base58 characters.
     /// </summary>
     private static bool IsValidBase58(string value)
-    {
-        return !string.IsNullOrEmpty(value) && value.All(c => _base58Alphabet.Contains(c));
-    }
+        => !string.IsNullOrEmpty(value) && value.All(c => _base58Alphabet.Contains(c));
 
     /// <summary>
     /// Validates Bech32 address format (simplified validation).
@@ -177,10 +175,10 @@ public static partial class AddressValidator
             return false;
         }
 
-        // Bech32 uses ASCII a-z and 0-9, excluding 1, b, i, o (compared in lowercase).
-        // The ASCII check comes first so non-ASCII letters such as U+017F cannot case-map into the alphabet.
-        var bech32Data = address.Substring(3); // Remove bc1 or tb1 prefix
-        return bech32Data.All(c => char.IsAscii(c) && _bech32Alphabet.Contains(char.ToLowerInvariant(c)));
+        // Bech32 uses ASCII a-z and 0-9, excluding 1, b, i, o in either case.
+        // The alphabet set contains ASCII characters only, so non-ASCII lookalikes cannot match.
+        string bech32Data = address.Substring(3); // Remove bc1 or tb1 prefix
+        return bech32Data.All(c => _bech32Alphabet.Contains(c));
     }
 
     [GeneratedRegex("^0x[a-fA-F0-9]{40}$")]

@@ -81,7 +81,7 @@ public class AddressValidatorTests
     [InlineData('o')]
     public void IsValidBitcoinAddress_InvalidBech32Character_ReturnsFalse(char invalidCharacter)
     {
-        var address = "bc1" + new string('q', 38) + invalidCharacter;
+        string address = "bc1" + new string('q', 38) + invalidCharacter;
 
         AddressValidator.IsValidBitcoinAddress(address).Should().BeFalse();
         AddressValidator.IsValidBitcoinAddress(address.ToUpperInvariant()).Should().BeFalse();
@@ -93,7 +93,16 @@ public class AddressValidatorTests
     [InlineData('\uFF51')]
     public void IsValidBitcoinAddress_NonAsciiBech32Character_ReturnsFalse(char invalidCharacter)
     {
-        var address = "bc1" + new string('q', 38) + invalidCharacter;
+        string address = "bc1" + new string('q', 38) + invalidCharacter;
+
+        AddressValidator.IsValidBitcoinAddress(address).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValidBitcoinAddress_UppercaseBech32WithKelvinSign_ReturnsFalse()
+    {
+        // Kelvin sign is an uppercase letter, so this host does not trip the mixed-case rule.
+        string address = "BC1" + new string('Q', 38) + '\u212A';
 
         AddressValidator.IsValidBitcoinAddress(address).Should().BeFalse();
     }
@@ -105,8 +114,8 @@ public class AddressValidatorTests
     [InlineData('l')]
     public void IsValidAddress_InvalidBase58Character_ReturnsFalse(char invalidCharacter)
     {
-        var bitcoinAddress = "1" + new string('A', 24) + invalidCharacter;
-        var solanaAddress = new string('A', 31) + invalidCharacter;
+        string bitcoinAddress = "1" + new string('A', 24) + invalidCharacter;
+        string solanaAddress = new string('A', 31) + invalidCharacter;
 
         AddressValidator.IsValidBitcoinAddress(bitcoinAddress).Should().BeFalse();
         AddressValidator.IsValidSolanaAddress(solanaAddress).Should().BeFalse();
