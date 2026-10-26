@@ -74,7 +74,8 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
                 discard = !applied.Any();
             }
         }
-        catch (SqliteException)
+        catch (SqliteException exception)
+            when (exception.SqliteErrorCode == SQLitePCL.raw.SQLITE_NOTADB)
         {
             discard = true;
         }
