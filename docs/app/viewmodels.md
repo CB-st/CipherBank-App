@@ -44,7 +44,9 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **Dependencies**: `ILogger`, `IWalletService`, `ITransactionService`, `ICryptoApiService`, `IErrorHandler`, `INavigationService`, `IDialogService`
 
-**Properties**: Transactions, SelectedWallet, TotalBalance, TotalBalanceUsd, IsLoading, IsLoadingTransactions, ErrorMessage, SendToAddress, SendAmount, IsSending
+**Properties**: Transactions, SelectedWallet, WalletCards, FocusedWalletCard, TotalBalance, TotalBalanceUsd, IsLoading, IsLoadingTransactions, ErrorMessage, SendToAddress, SendAmount, IsSending
+
+**WalletPage deck bindings**: `WalletCards` supplies the items; `FocusedWalletCard` tracks the focused card (two-way).
 
 **Reactions**: `OnSelectedWalletChanged` – Loads transactions when wallet changes.
 
