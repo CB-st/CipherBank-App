@@ -11,14 +11,24 @@ namespace CipherBank_app.Tests.Services;
 public class AuthSessionGuardTests
 {
     [Fact]
+    public void CaptureRefreshAsync_NullDelegate_ThrowsSynchronously()
+    {
+        using AuthSessionGuard guard = new();
+        Func<Task<string?>>? readRefreshToken = null;
+        Action act = () => guard.CaptureRefreshAsync("refresh", readRefreshToken!);
+
+        Assert.Throws<ArgumentNullException>(act);
+    }
+
+    [Fact]
     public async Task CaptureLogoutAsync_LoginDuringTokenRead_CapturesOnlyOwnedToken()
     {
-        using var guard = new AuthSessionGuard();
+        using AuthSessionGuard guard = new();
         string stored = "session-a";
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         int generation = await guard.CaptureAsync();
-        var capture = guard.CaptureLogoutAsync(
+        Task<(int Generation, string? RefreshToken)?> capture = guard.CaptureLogoutAsync(
             async () =>
             {
                 entered.SetResult();
@@ -37,7 +47,7 @@ public class AuthSessionGuardTests
             startsSession: true);
         login.IsCompleted.Should().BeFalse();
         release.SetResult();
-        var session = await capture;
+        (int Generation, string? RefreshToken)? session = await capture;
         (await login).Should().BeTrue();
 
         session.Should().NotBeNull();
@@ -57,9 +67,9 @@ public class AuthSessionGuardTests
     [Fact]
     public async Task CaptureRefreshAsync_LogoutDuringTokenRead_DoesNotRestoreSession()
     {
-        using var guard = new AuthSessionGuard();
-        var readEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseRead = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using AuthSessionGuard guard = new();
+        TaskCompletionSource readEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseRead = new(TaskCreationOptions.RunContinuationsAsynchronously);
         Task<int> capture = guard.CaptureRefreshAsync("old-refresh", async () =>
         {
             readEntered.SetResult();
@@ -84,7 +94,7 @@ public class AuthSessionGuardTests
     [Fact]
     public async Task CaptureRefreshAsync_OldTokenPresentedAfterLogout_RejectsToken()
     {
-        using var guard = new AuthSessionGuard();
+        using AuthSessionGuard guard = new();
         await guard.InvalidateAndClearAsync(() => Task.CompletedTask);
 
         Func<Task> act = () => guard.CaptureRefreshAsync("old-refresh", () => Task.FromResult<string?>(null));
@@ -95,9 +105,9 @@ public class AuthSessionGuardTests
     [Fact]
     public async Task TryPersistAsync_LoginInvalidatesInFlightRefresh()
     {
-        using var guard = new AuthSessionGuard();
-        var refreshEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseRefresh = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using AuthSessionGuard guard = new();
+        TaskCompletionSource refreshEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseRefresh = new(TaskCreationOptions.RunContinuationsAsynchronously);
         string storedToken = "old";
         async Task<bool> RefreshAsync()
         {
@@ -131,9 +141,9 @@ public class AuthSessionGuardTests
     [Fact]
     public async Task InvalidateAndClearAsync_SlowLogoutCannotClearNewLogin()
     {
-        using var guard = new AuthSessionGuard();
-        var revokeEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseRevoke = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using AuthSessionGuard guard = new();
+        TaskCompletionSource revokeEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseRevoke = new(TaskCreationOptions.RunContinuationsAsynchronously);
         bool cleared = false;
         async Task LogoutAsync()
         {
@@ -162,7 +172,7 @@ public class AuthSessionGuardTests
     [Fact]
     public async Task TryPersistAsync_GenerationCapturedBeforeLogout_DoesNotWrite()
     {
-        using var guard = new AuthSessionGuard();
+        using AuthSessionGuard guard = new();
         int generation = await guard.CaptureAsync();
         bool cleared = false;
         await guard.InvalidateAndClearAsync(() =>
@@ -186,7 +196,7 @@ public class AuthSessionGuardTests
     [Fact]
     public async Task TryPersistAsync_GenerationCapturedAfterLogout_Writes()
     {
-        using var guard = new AuthSessionGuard();
+        using AuthSessionGuard guard = new();
         await guard.InvalidateAndClearAsync(() => Task.CompletedTask);
         int generation = await guard.CaptureAsync();
         bool wrote = false;
@@ -204,11 +214,11 @@ public class AuthSessionGuardTests
     [Fact]
     public async Task TryPersistAsync_WriteStartedBeforeLogout_FinishesBeforeClearAndBlocksStaleReplay()
     {
-        using var guard = new AuthSessionGuard();
+        using AuthSessionGuard guard = new();
         int generation = await guard.CaptureAsync();
-        var writeEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseWrite = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var order = new List<string>();
+        TaskCompletionSource writeEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseWrite = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        List<string> order = new();
 
         Task<bool> persist = guard.TryPersistAsync(generation, async () =>
         {

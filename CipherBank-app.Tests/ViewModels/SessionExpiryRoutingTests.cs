@@ -69,7 +69,7 @@ public class SessionExpiryRoutingTests
     public async Task LoadTransactions_WrappedUnauthorized_ClearsSessionAndRedirects()
     {
         Wallet wallet = SampleWallet();
-        var redirected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource redirected = new(TaskCreationOptions.RunContinuationsAsynchronously);
         (WalletViewModel viewModel, Mock<INavigationService> navigation, Mock<IAuthService> auth, _) = CreateWalletViewModel(
             transactions: transactions => transactions
                 .Setup(service => service.GetTransactionHistoryAsync(wallet.Id, It.IsAny<CancellationToken>()))
@@ -190,7 +190,7 @@ public class SessionExpiryRoutingTests
     [Fact]
     public async Task PurchaseCrypto_WrappedUnauthorized_ClearsSessionWithoutFailureAlert()
     {
-        var crypto = new CryptoCurrency("BTC", "Bitcoin", 100m, 1m, 1m, 1m, 1m, null);
+        CryptoCurrency crypto = new("BTC", "Bitcoin", 100m, 1m, 1m, 1m, 1m, null);
         (PurchaseViewModel viewModel, Mock<INavigationService> navigation, Mock<IAuthService> auth, Mock<IDialogService> dialog) =
             CreatePurchaseViewModel(transactions => transactions
                 .Setup(service => service.PurchaseCryptoAsync(
@@ -227,12 +227,12 @@ public class SessionExpiryRoutingTests
         Action<Mock<ITransactionService>>? transactions = null,
         Action<Mock<ICryptoApiService>>? crypto = null)
     {
-        var walletService = new Mock<IWalletService>();
-        var transactionService = new Mock<ITransactionService>();
-        var cryptoService = new Mock<ICryptoApiService>();
-        var navigation = new Mock<INavigationService>();
-        var auth = new Mock<IAuthService>();
-        var dialog = new Mock<IDialogService>();
+        Mock<IWalletService> walletService = new();
+        Mock<ITransactionService> transactionService = new();
+        Mock<ICryptoApiService> cryptoService = new();
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
+        Mock<IDialogService> dialog = new();
         wallets?.Invoke(walletService);
         transactions?.Invoke(transactionService);
         crypto?.Invoke(cryptoService);
@@ -255,10 +255,10 @@ public class SessionExpiryRoutingTests
         Mock<IAuthService> Auth,
         Mock<IDialogService> Dialog) CreatePurchaseViewModel(Action<Mock<ITransactionService>> transactions)
     {
-        var transactionService = new Mock<ITransactionService>();
-        var navigation = new Mock<INavigationService>();
-        var auth = new Mock<IAuthService>();
-        var dialog = new Mock<IDialogService>();
+        Mock<ITransactionService> transactionService = new();
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
+        Mock<IDialogService> dialog = new();
         transactions(transactionService);
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);

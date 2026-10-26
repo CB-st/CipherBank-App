@@ -16,10 +16,10 @@ public class ErrorHandlerTests
     [Fact]
     public async Task HandleApiErrorsAsync_ConcurrentUnauthorizedDuringLogout_LogsOutOnce()
     {
-        var navigation = new Mock<INavigationService>();
-        var auth = new Mock<IAuthService>();
-        var logoutEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseLogout = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
+        TaskCompletionSource logoutEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseLogout = new(TaskCreationOptions.RunContinuationsAsynchronously);
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).Returns(async () =>
         {
             logoutEntered.TrySetResult();
@@ -45,10 +45,10 @@ public class ErrorHandlerTests
     [Fact]
     public async Task HandleApiErrorsAsync_DirectUnauthorizedHttpRequest_ClearsSessionBeforeLoginRedirect()
     {
-        var navigation = new Mock<INavigationService>();
-        var auth = new Mock<IAuthService>();
-        var logout = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var navigatedBeforeLogout = false;
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
+        TaskCompletionSource logout = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        bool navigatedBeforeLogout = false;
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).Returns(async () =>
         {
             await logout.Task;
@@ -84,7 +84,7 @@ public class ErrorHandlerTests
     public async Task HandleApiErrorsAsync_WrappedUnauthorized_ClearsSessionThenNavigates()
     {
         (ErrorHandler handler, Mock<INavigationService> navigation, Mock<IAuthService> auth) = CreateReadyHandler();
-        var order = new List<string>();
+        List<string> order = new();
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).Returns(() =>
         {
             order.Add("logout");
@@ -123,7 +123,7 @@ public class ErrorHandlerTests
     public async Task HandleApiErrorsAsync_AggregateContainingUnauthorized_ClearsSessionThenNavigates()
     {
         (ErrorHandler handler, Mock<INavigationService> navigation, Mock<IAuthService> auth) = CreateReadyHandler();
-        var aggregate = new AggregateException(
+        AggregateException aggregate = new(
             new InvalidOperationException("unrelated"),
             new IOException("wrapped", Unauthorized()));
 
@@ -190,12 +190,12 @@ public class ErrorHandlerTests
     [Fact]
     public async Task HandleApiErrorsAsync_ReentrantUnauthorizedDuringRedirect_NavigatesOnce()
     {
-        var navigation = new Mock<INavigationService>();
-        var auth = new Mock<IAuthService>();
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.SetupGet(service => service.CurrentRoute).Returns((string?)null);
         ErrorHandler handler = new(navigation.Object, auth.Object);
-        var navigations = 0;
+        int navigations = 0;
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(() =>
         {
             navigations++;
@@ -213,11 +213,11 @@ public class ErrorHandlerTests
     [Fact]
     public async Task HandleApiErrorsAsync_ConcurrentUnauthorized_NavigatesOnce()
     {
-        var navigation = new Mock<INavigationService>();
-        var auth = new Mock<IAuthService>();
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var navigations = 0;
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int navigations = 0;
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.SetupGet(service => service.CurrentRoute).Returns((string?)null);
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(async () =>
@@ -245,9 +245,9 @@ public class ErrorHandlerTests
     [Fact]
     public async Task HandleApiErrorsAsync_AfterRedirectReachesLogin_SecondUnauthorizedDoesNotNavigate()
     {
-        var route = "//DashboardPage";
-        var navigation = new Mock<INavigationService>();
-        var auth = new Mock<IAuthService>();
+        string route = "//DashboardPage";
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.SetupGet(service => service.CurrentRoute).Returns(() => route);
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(() =>
@@ -285,7 +285,7 @@ public class ErrorHandlerTests
     public async Task HandleApiErrorsAsync_WrappedNonUnauthorized_PropagatesWithoutClearingSession()
     {
         (ErrorHandler handler, Mock<INavigationService> navigation, Mock<IAuthService> auth) = CreateReadyHandler();
-        var failure = new InvalidOperationException(
+        InvalidOperationException failure = new(
             "prices failed",
             new HttpRequestException("error", null, HttpStatusCode.InternalServerError));
 
@@ -377,9 +377,9 @@ public class ErrorHandlerTests
     [InlineData(true, false)]
     public async Task HandleApiErrorsAsync_DelayedUnauthorized_DoesNotLogoutAgain(bool logoutBeforeLogin, bool newLogin)
     {
-        using var guard = new AuthSessionGuard();
-        var auth = new Mock<IAuthService>();
-        var navigation = new Mock<INavigationService>();
+        using AuthSessionGuard guard = new();
+        Mock<IAuthService> auth = new();
+        Mock<INavigationService> navigation = new();
         auth.Setup(service => service.CaptureSessionAsync()).Returns(() => guard.CaptureAsync());
         int logoutCount = 0;
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).Returns((int generation) =>
@@ -391,9 +391,9 @@ public class ErrorHandlerTests
                 },
                 capturedGeneration: generation));
         navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
-        var handler = new ErrorHandler(navigation.Object, auth.Object);
-        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        ErrorHandler handler = new(navigation.Object, auth.Object);
+        TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         Task<bool> delayed = handler.HandleApiErrorsAsync(
             async () =>
             {
@@ -424,8 +424,8 @@ public class ErrorHandlerTests
 
     private static (ErrorHandler Handler, Mock<INavigationService> Navigation, Mock<IAuthService> Auth) CreateReadyHandler(string? route = null)
     {
-        var navigation = new Mock<INavigationService>();
-        var auth = new Mock<IAuthService>();
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
         navigation.SetupGet(service => service.CurrentRoute).Returns(route);
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);

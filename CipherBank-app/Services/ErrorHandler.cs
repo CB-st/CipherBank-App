@@ -94,8 +94,8 @@ public sealed class ErrorHandler : IErrorHandler
     {
         public static bool IsExpired(Exception exception)
         {
-            var pending = new Stack<Exception>();
-            var seen = new HashSet<Exception>(ReferenceEqualityComparer.Instance);
+            Stack<Exception> pending = new();
+            HashSet<Exception> seen = new(ReferenceEqualityComparer.Instance);
             pending.Push(exception);
 
             while (pending.TryPop(out Exception? current))
