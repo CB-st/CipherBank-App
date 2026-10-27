@@ -112,6 +112,7 @@ public class AddressValidatorTests
     [InlineData('O')]
     [InlineData('I')]
     [InlineData('l')]
+    [InlineData('\u0131')]
     public void IsValidAddress_InvalidBase58Character_ReturnsFalse(char invalidCharacter)
     {
         string bitcoinAddress = "1" + new string('A', 24) + invalidCharacter;
