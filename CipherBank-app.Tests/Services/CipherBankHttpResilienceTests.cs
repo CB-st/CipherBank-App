@@ -47,7 +47,7 @@ public class CipherBankHttpResilienceTests
             settings => settings.CipherBankEndpointBase == "http://127.0.0.1/"));
         services.AddSingleton(Mock.Of<IPlatformHttpMessageHandlerFactory>(
             factory => factory.CreateHandler() == handler));
-        services.AddSingleton<RateLimiter>();
+        services.AddSingleton(sp => new RateLimiter(null, sp.GetRequiredService<TimeProvider>()));
         IHttpClientBuilder builder = services.AddCipherBankHttpClient<TestHttpClient>(
             (_, client) => client.Timeout = competingTimeout);
         services.Configure<HttpStandardResilienceOptions>(
@@ -71,8 +71,8 @@ public class CipherBankHttpResilienceTests
             configuredClient.Timeout.Should().Be(Timeout.InfiniteTimeSpan);
         }
 
-        // Three controlled 11s attempts cross the competing client deadline while
-        // each attempt stays under 15s and the entire request stays under 60s.
+        // Three controlled 11s attempts exceed the configured competing timeout;
+        // the property assertions above prove the real client is configured as infinite.
         long started = clock.GetTimestamp();
         using HttpResponseMessage response = await client.GetAsync(new Uri("/", UriKind.Relative));
         TimeSpan elapsed = clock.GetElapsedTime(started);
