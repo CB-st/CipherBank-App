@@ -121,20 +121,4 @@ public sealed class CertificatePinPolicyTests
         Action act = () => CertificatePinPolicy.IsWellFormedSpkiSha256Pin(null!);
         act.Should().Throw<ArgumentNullException>();
     }
-
-    [Fact]
-    public void ToAndroidNetworkSecurityPin_StripsSha256Prefix() =>
-        CertificatePinPolicy.ToAndroidNetworkSecurityPin(
-                "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=")
-            .Should()
-            .Be("YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=");
-
-    [Fact]
-    public void ToAndroidNetworkSecurityPin_RejectsDigestThatOmitsThePrefix()
-    {
-        Action act = () => CertificatePinPolicy.ToAndroidNetworkSecurityPin(
-            "YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=");
-
-        act.Should().Throw<ArgumentException>();
-    }
 }

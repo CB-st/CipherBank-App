@@ -110,23 +110,6 @@ public static class CertificatePinPolicy
         }
     }
 
-    /// <summary>
-    /// Converts a C# <c>sha256/</c> pin to the base64 digest Android's
-    /// <c>network_security_config.xml</c> pin element expects.
-    /// </summary>
-    public static string ToAndroidNetworkSecurityPin(string policyPin)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(policyPin);
-        if (!policyPin.StartsWith(SpkiSha256Prefix, StringComparison.Ordinal))
-        {
-            throw new ArgumentException(
-                "C# SPKI pins must start with sha256/. Android network_security_config.xml stores only the base64 digest because digest=\"SHA-256\" already names the algorithm.",
-                nameof(policyPin));
-        }
-
-        return policyPin[SpkiSha256Prefix.Length..];
-    }
-
     public static bool TryComputeSpkiSha256PinFromCertificateDer(
         ReadOnlySpan<byte> certificateDer,
         [NotNullWhen(true)] out string? pin)

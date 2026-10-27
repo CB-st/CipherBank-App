@@ -19,9 +19,10 @@ which `Platforms/Android/AndroidManifest.xml` references as
 The `digest="SHA-256"` attribute names the algorithm. Omitting `sha256/` is
 the Android network security config format: adding the prefix to the XML
 would not match. Each XML pin body must equal the matching
-`CertificatePinPolicy` pin with the `sha256/` prefix removed
-(`CertificatePinPolicy.ToAndroidNetworkSecurityPin`). Update both sources
-together.
+`CertificatePinPolicy` pin with the `sha256/` prefix removed.
+Update both sources together. Run `AndroidCertificatePinContractTests` before
+packaging to check the embedded XML resource against the policy pins. The test
+also runs from staged test artifacts without needing the source checkout.
 
 `MauiProgram` calls `CertificatePinPolicy.EnsureReleasePinsAreConfigured()`
 when the assembly configuration is not Debug. A Release start throws
