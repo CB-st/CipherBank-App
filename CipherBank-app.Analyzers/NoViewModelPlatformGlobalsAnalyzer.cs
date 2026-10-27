@@ -33,6 +33,17 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         "Task",
     };
 
+    private static readonly Dictionary<string, string> _platformNamespaces = new(StringComparer.Ordinal)
+    {
+        ["Application"] = "Microsoft.Maui.Controls",
+        ["Clipboard"] = "Microsoft.Maui.ApplicationModel.DataTransfer",
+        ["MainThread"] = "Microsoft.Maui.ApplicationModel",
+        ["Preferences"] = "Microsoft.Maui.Storage",
+        ["SecureStorage"] = "Microsoft.Maui.Storage",
+        ["Shell"] = "Microsoft.Maui.Controls",
+        ["Task"] = "System.Threading.Tasks",
+    };
+
     /// <summary>
     /// Leftmost identifiers of a namespace qualification. Used only when a receiver
     /// does not bind, so <c>Microsoft.Maui.Controls.Application</c> still matches and
@@ -409,30 +420,23 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         }
 
         string name = type.Name;
-        bool match = name switch
-        {
-            "Application" or "Shell" => HasExactNamespace(type, "Microsoft.Maui.Controls"),
-            "Clipboard" => HasExactNamespace(type, "Microsoft.Maui.ApplicationModel.DataTransfer"),
-            "MainThread" => HasExactNamespace(type, "Microsoft.Maui.ApplicationModel"),
-            "Preferences" or "SecureStorage" => HasExactNamespace(type, "Microsoft.Maui.Storage"),
-            "Task" => HasExactNamespace(type, "System.Threading.Tasks"),
-            _ => false,
-        };
+        bool match = _platformNamespaces.TryGetValue(name, out string? namespaceName)
+            && HasExactNamespace(type, namespaceName);
 
         return match ? name : null;
     }
 
     /// <summary>
-    /// True when <paramref name="type"/> sits directly in <paramref name="namespaceName"/>.
+    /// True when <paramref name="symbol"/> sits directly in <paramref name="namespaceName"/>.
     /// Use: High (each bound platform-type check). Scope: this analyzer.
     /// </summary>
-    /// <param name="type">Candidate platform type.</param>
+    /// <param name="symbol">Candidate platform symbol.</param>
     /// <param name="namespaceName">Expected dotted namespace.</param>
     /// <returns>True when the containing namespace matches exactly.</returns>
-    private static bool HasExactNamespace(INamedTypeSymbol type, string namespaceName)
+    private static bool HasExactNamespace(ISymbol symbol, string namespaceName)
     {
         int end = namespaceName.Length;
-        INamespaceSymbol? ns = type.ContainingNamespace;
+        INamespaceSymbol? ns = symbol.ContainingNamespace;
         while (ns is not null && !ns.IsGlobalNamespace)
         {
             string name = ns.Name;
