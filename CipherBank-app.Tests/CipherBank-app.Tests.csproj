@@ -30,6 +30,8 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Microsoft.Maui.Essentials" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <!-- Desktop e_sqlite3 pin (NU1903); Android uses sqlitepclraw.lib.e_sqlite3.android from Core -->
@@ -53,8 +55,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Using Include="Microsoft.Maui.Devices" />
     <!-- Host resilience policy lives on the MAUI project, which this net10.0 suite cannot reference. -->
     <Compile Include="..\CipherBank-app\Extensions\CipherBankHttpResilience.cs" Link="Extensions\CipherBankHttpResilience.cs" />
+    <Compile Include="..\CipherBank-app\Extensions\HttpClientExtensions.cs" Link="Extensions\HttpClientExtensions.cs" />
+    <Compile Include="..\CipherBank-app\Services\ISettingsService.cs" Link="Services\ISettingsService.cs" />
+    <Compile Include="..\CipherBank-app\Services\IPlatformHttpMessageHandlerFactory.cs" Link="Services\IPlatformHttpMessageHandlerFactory.cs" />
+    <Compile Include="..\CipherBank-app\Services\IHealthCheckClient.cs" Link="Services\IHealthCheckClient.cs" />
+    <Compile Include="..\CipherBank-app\Services\HealthCheckClient.cs" Link="Services\HealthCheckClient.cs" />
+    <Compile Include="..\CipherBank-app\Services\Handlers\AuthHeaderHandler.cs" Link="Services\Handlers\AuthHeaderHandler.cs" />
+    <Compile Include="..\CipherBank-app\Services\Handlers\RateLimitingHandler.cs" Link="Services\Handlers\RateLimitingHandler.cs" />
   </ItemGroup>
 
 </Project>

@@ -2,12 +2,16 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Diagnostics;
 using System.Net;
 using CipherBank_app.Extensions;
+using CipherBank_app.Services;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
+using Moq;
 using Polly;
 using Polly.Retry;
 using Xunit;
@@ -34,28 +38,49 @@ public class CipherBankHttpResilienceTests
     [Fact]
     public async Task SlowAttempts_RetryInsideSixtySecondTotalBudget()
     {
-        // Two 11s 503 responses plus one 11s success exceed the old 30s HttpClient.Timeout
-        // and stay inside the 60s total request budget. Each attempt stays under the 15s attempt timeout.
-        SlowUnavailableHandler handler = new(TimeSpan.FromSeconds(11));
+        FakeTimeProvider clock = new();
+        TimeSpan competingTimeout = TimeSpan.FromSeconds(30);
+        SlowUnavailableHandler handler = new(TimeSpan.FromSeconds(11), clock);
         ServiceCollection services = new();
-        services.AddHttpClient(
-                "cipherbank",
-                static client => client.BaseAddress = new Uri("http://127.0.0.1/"))
-            .ConfigurePrimaryHttpMessageHandler(() => handler)
-            .AddCipherBankResilience();
+        services.AddSingleton<TimeProvider>(clock);
+        services.AddSingleton(Mock.Of<ISettingsService>(
+            settings => settings.CipherBankEndpointBase == "http://127.0.0.1/"));
+        services.AddSingleton(Mock.Of<IPlatformHttpMessageHandlerFactory>(
+            factory => factory.CreateHandler() == handler));
+        services.AddSingleton<RateLimiter>();
+        IHttpClientBuilder builder = services.AddCipherBankHttpClient<TestHttpClient>(
+            (_, client) => client.Timeout = competingTimeout);
+        services.Configure<HttpStandardResilienceOptions>(
+            $"{builder.Name}-standard",
+            static options => options.Retry.DelayGenerator = static _ => ValueTask.FromResult<TimeSpan?>(TimeSpan.Zero));
 
         await using ServiceProvider provider = services.BuildServiceProvider();
-        HttpClient client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("cipherbank");
+        HttpClient client = provider.GetRequiredService<TestHttpClient>().Client;
         client.Timeout.Should().Be(Timeout.InfiniteTimeSpan);
 
-        Stopwatch stopwatch = Stopwatch.StartNew();
+        // Both the standard handler and our final callback must override a finite timeout.
+        // Checking both also detects removal of the explicit final callback.
+        HttpClientFactoryOptions clientOptions = provider.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>()
+            .Get(builder.Name);
+        clientOptions.HttpClientActions.Count.Should().BeGreaterThanOrEqualTo(2);
+        foreach (Action<HttpClient> configureClient in clientOptions.HttpClientActions.TakeLast(2))
+        {
+            using HttpClient configuredClient = new();
+            configuredClient.Timeout = competingTimeout;
+            configureClient(configuredClient);
+            configuredClient.Timeout.Should().Be(Timeout.InfiniteTimeSpan);
+        }
+
+        // Three controlled 11s attempts cross the competing client deadline while
+        // each attempt stays under 15s and the entire request stays under 60s.
+        long started = clock.GetTimestamp();
         using HttpResponseMessage response = await client.GetAsync(new Uri("/", UriKind.Relative));
-        stopwatch.Stop();
+        TimeSpan elapsed = clock.GetElapsedTime(started);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         handler.Attempts.Should().Be(3);
-        stopwatch.Elapsed.Should().BeGreaterThan(TimeSpan.FromSeconds(30));
-        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(60));
+        elapsed.Should().BeGreaterThan(competingTimeout);
+        elapsed.Should().BeLessThan(TimeSpan.FromSeconds(60));
     }
 
     [Theory]
@@ -107,7 +132,12 @@ public class CipherBankHttpResilienceTests
         }
     }
 
-    private sealed class SlowUnavailableHandler(TimeSpan attemptDelay) : HttpMessageHandler
+    public sealed class TestHttpClient(HttpClient client)
+    {
+        public HttpClient Client { get; } = client;
+    }
+
+    private sealed class SlowUnavailableHandler(TimeSpan attemptDelay, FakeTimeProvider clock) : HttpMessageHandler
     {
         private int _attempts;
 
@@ -118,7 +148,9 @@ public class CipherBankHttpResilienceTests
             CancellationToken cancellationToken)
         {
             int attempt = Interlocked.Increment(ref _attempts);
-            await Task.Delay(attemptDelay, cancellationToken);
+            Task delay = Task.Delay(attemptDelay, clock, cancellationToken);
+            clock.Advance(attemptDelay);
+            await delay;
             HttpStatusCode status = attempt < 3
                 ? HttpStatusCode.ServiceUnavailable
                 : HttpStatusCode.OK;
