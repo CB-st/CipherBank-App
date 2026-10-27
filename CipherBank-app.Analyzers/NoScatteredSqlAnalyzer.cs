@@ -228,7 +228,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     /// Use: High (every candidate method). Scope: this analyzer.
     /// </summary>
     /// <param name="method">Original method definition.</param>
-    private static bool IsRawSqlDefinition(IMethodSymbol method)
+    private static bool IsRawSqlDefinition(ISymbol method)
     {
         if (!_rawSqlMethods.Contains(method.Name))
         {
@@ -281,6 +281,26 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
                 return methodReference.Method.Name;
             case IParenthesizedOperation parenthesized:
                 return RawSqlMethodName(parenthesized.Operand, state, depth + 1, cancellationToken);
+            case IAssignmentOperation assignment:
+                return RawSqlMethodName(assignment.Value, state, depth + 1, cancellationToken);
+            default:
+                return RawSqlBranchName(operation, state, depth, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Traces alternate values in their original evaluation order.
+    /// Use: High (delegate alias tracing). Scope: conditional and coalescing operations.
+    /// </summary>
+    /// <param name="operation">Operation whose possible values are inspected.</param>
+    /// <param name="state">Symbols already traced, and available semantic models.</param>
+    /// <param name="depth">Current alias depth.</param>
+    /// <param name="cancellationToken">Cancellation token for syntax and semantic lookups.</param>
+    /// <returns>The raw-SQL method name, or null when none is found.</returns>
+    private static string? RawSqlBranchName(IOperation operation, FlowState state, int depth, CancellationToken cancellationToken)
+    {
+        switch (operation)
+        {
             case IConditionalAccessOperation conditional:
                 return RawSqlMethodName(conditional.WhenNotNull, state, depth + 1, cancellationToken)
                     ?? RawSqlMethodName(conditional.Operation, state, depth + 1, cancellationToken);
@@ -290,8 +310,28 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
             case ICoalesceOperation coalesce:
                 return RawSqlMethodName(coalesce.Value, state, depth + 1, cancellationToken)
                     ?? RawSqlMethodName(coalesce.WhenNull, state, depth + 1, cancellationToken);
-            case IAssignmentOperation assignment:
-                return RawSqlMethodName(assignment.Value, state, depth + 1, cancellationToken);
+            default:
+                return RawSqlReferenceName(operation, state, depth, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Traces reference and invocation operations after the value wrappers have been considered.
+    /// Use: High (delegate alias tracing). Scope: this analyzer.
+    /// </summary>
+    /// <param name="operation">Reference or invocation to trace.</param>
+    /// <param name="state">Symbols already traced, and available semantic models.</param>
+    /// <param name="depth">Current alias depth.</param>
+    /// <param name="cancellationToken">Cancellation token for syntax and semantic lookups.</param>
+    /// <returns>The raw-SQL method name, or null when none is found.</returns>
+    private static string? RawSqlReferenceName(
+        IOperation operation,
+        FlowState state,
+        int depth,
+        CancellationToken cancellationToken)
+    {
+        switch (operation)
+        {
             case ILocalReferenceOperation local:
                 return SymbolFlowsFromRawSql(local.Local, state, depth + 1, cancellationToken);
             case IParameterReferenceOperation parameter:
@@ -328,6 +368,33 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
             return null;
         }
 
+        // Initializers precede writes so the first match and visited-symbol state remain unchanged.
+        string? name = InitializerFlowsFromRawSql(symbol, state, depth, cancellationToken)
+            ?? AssignmentFlowsFromRawSql(symbol, state, depth, cancellationToken);
+        if (name is not null)
+        {
+            return name;
+        }
+
+        if (symbol is IParameterSymbol parameter)
+        {
+            return ArgumentFlowsFromRawSql(parameter, state, depth, cancellationToken);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Traces delegate initializers in declaration order.
+    /// Use: Medium (delegate alias tracing). Scope: the symbol declarations.
+    /// </summary>
+    /// <param name="symbol">Delegate symbol to trace.</param>
+    /// <param name="state">Symbols already traced, and available semantic models.</param>
+    /// <param name="depth">Current alias depth.</param>
+    /// <param name="cancellationToken">Cancellation token for syntax and semantic lookups.</param>
+    /// <returns>The raw-SQL method name, or null when none is found.</returns>
+    private static string? InitializerFlowsFromRawSql(ISymbol symbol, FlowState state, int depth, CancellationToken cancellationToken)
+    {
         foreach (SyntaxReference reference in symbol.DeclaringSyntaxReferences)
         {
             SyntaxNode syntax = reference.GetSyntax(cancellationToken);
@@ -344,6 +411,20 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
             }
         }
 
+        return null;
+    }
+
+    /// <summary>
+    /// Traces assignments to a delegate symbol in scope order.
+    /// Use: Medium (delegate alias tracing). Scope: the symbol assignment scopes.
+    /// </summary>
+    /// <param name="symbol">Delegate symbol to trace.</param>
+    /// <param name="state">Symbols already traced, and available semantic models.</param>
+    /// <param name="depth">Current alias depth.</param>
+    /// <param name="cancellationToken">Cancellation token for syntax and semantic lookups.</param>
+    /// <returns>The raw-SQL method name, or null when none is found.</returns>
+    private static string? AssignmentFlowsFromRawSql(ISymbol symbol, FlowState state, int depth, CancellationToken cancellationToken)
+    {
         foreach (SyntaxNode scope in AssignmentScopes(symbol, cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -366,11 +447,6 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
                     return name;
                 }
             }
-        }
-
-        if (symbol is IParameterSymbol parameter)
-        {
-            return ArgumentFlowsFromRawSql(parameter, state, depth, cancellationToken);
         }
 
         return null;
@@ -412,19 +488,41 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
                     continue;
                 }
 
-                foreach (IArgumentOperation argument in call.Arguments)
+                string? name = CallArgumentFlowsFromRawSql(call, parameter, state, depth, cancellationToken);
+                if (name is not null)
                 {
-                    if (!SymbolEqualityComparer.Default.Equals(argument.Parameter?.OriginalDefinition, parameter.OriginalDefinition))
-                    {
-                        continue;
-                    }
-
-                    string? name = RawSqlMethodName(argument.Value, state, depth + 1, cancellationToken);
-                    if (name is not null)
-                    {
-                        return name;
-                    }
+                    return name;
                 }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Traces the matching arguments of a call in order.
+    /// Use: Medium (delegate alias tracing). Scope: one invocation.
+    /// </summary>
+    /// <param name="call">Invocation whose arguments are inspected.</param>
+    /// <param name="parameter">Delegate parameter to match.</param>
+    /// <param name="state">Symbols already traced, and available semantic models.</param>
+    /// <param name="depth">Current alias depth.</param>
+    /// <param name="cancellationToken">Cancellation token for semantic lookups.</param>
+    /// <returns>The raw-SQL method name, or null when none is found.</returns>
+    private static string? CallArgumentFlowsFromRawSql(
+        IInvocationOperation call, IParameterSymbol parameter, FlowState state, int depth, CancellationToken cancellationToken)
+    {
+        foreach (IArgumentOperation argument in call.Arguments)
+        {
+            if (!SymbolEqualityComparer.Default.Equals(argument.Parameter?.OriginalDefinition, parameter.OriginalDefinition))
+            {
+                continue;
+            }
+
+            string? name = RawSqlMethodName(argument.Value, state, depth + 1, cancellationToken);
+            if (name is not null)
+            {
+                return name;
             }
         }
 
@@ -453,32 +551,10 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
         foreach (SyntaxReference reference in method.DeclaringSyntaxReferences)
         {
-            SyntaxNode syntax = reference.GetSyntax(cancellationToken);
-            ExpressionSyntax? expressionBody = syntax switch
-            {
-                MethodDeclarationSyntax declaration => declaration.ExpressionBody?.Expression,
-                LocalFunctionStatementSyntax localFunction => localFunction.ExpressionBody?.Expression,
-                AccessorDeclarationSyntax accessor => accessor.ExpressionBody?.Expression,
-                _ => null,
-            };
-            string? name = ValueFlowsFromRawSql(expressionBody, state, depth, cancellationToken);
+            string? name = DeclarationReturnsRawSql(reference.GetSyntax(cancellationToken), state, depth, cancellationToken);
             if (name is not null)
             {
                 return name;
-            }
-
-            foreach (ReturnStatementSyntax returnStatement in syntax.DescendantNodes().OfType<ReturnStatementSyntax>())
-            {
-                if (returnStatement.Expression is null || !BelongsToMethod(returnStatement, syntax))
-                {
-                    continue;
-                }
-
-                name = ValueFlowsFromRawSql(returnStatement.Expression, state, depth, cancellationToken);
-                if (name is not null)
-                {
-                    return name;
-                }
             }
         }
 
@@ -486,12 +562,62 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
+    /// Traces the expression body and return statements of a declaration.
+    /// Use: Medium (delegate alias tracing). Scope: one method declaration.
+    /// </summary>
+    /// <param name="syntax">Method declaration to inspect.</param>
+    /// <param name="state">Symbols already traced, and available semantic models.</param>
+    /// <param name="depth">Current alias depth.</param>
+    /// <param name="cancellationToken">Cancellation token for semantic lookups.</param>
+    /// <returns>The raw-SQL method name, or null when none is found.</returns>
+    private static string? DeclarationReturnsRawSql(SyntaxNode syntax, FlowState state, int depth, CancellationToken cancellationToken)
+    {
+        ExpressionSyntax? expressionBody = MethodExpressionBody(syntax);
+        string? name = ValueFlowsFromRawSql(expressionBody, state, depth, cancellationToken);
+        if (name is not null)
+        {
+            return name;
+        }
+
+        foreach (ReturnStatementSyntax returnStatement in syntax.DescendantNodes().OfType<ReturnStatementSyntax>())
+        {
+            if (returnStatement.Expression is null || !BelongsToMethod(returnStatement, syntax))
+            {
+                continue;
+            }
+
+            name = ValueFlowsFromRawSql(returnStatement.Expression, state, depth, cancellationToken);
+            if (name is not null)
+            {
+                return name;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Finds the expression body of a method declaration, local function, or accessor.
+    /// Use: Medium (return tracing). Scope: one method declaration.
+    /// </summary>
+    /// <param name="syntax">Declaration to inspect.</param>
+    /// <returns>The expression body, or null when none is present.</returns>
+    private static ExpressionSyntax? MethodExpressionBody(SyntaxNode syntax)
+        => syntax switch
+        {
+            MethodDeclarationSyntax declaration => declaration.ExpressionBody?.Expression,
+            LocalFunctionStatementSyntax localFunction => localFunction.ExpressionBody?.Expression,
+            AccessorDeclarationSyntax accessor => accessor.ExpressionBody?.Expression,
+            _ => null,
+        };
+
+    /// <summary>
     /// True when <paramref name="returnStatement"/> returns from <paramref name="methodSyntax"/> itself.
     /// Use: Medium (return tracing). Scope: one method declaration.
     /// </summary>
     /// <param name="returnStatement">Return statement found under the method.</param>
     /// <param name="methodSyntax">Syntax that declares the method being traced.</param>
-    private static bool BelongsToMethod(ReturnStatementSyntax returnStatement, SyntaxNode methodSyntax)
+    private static bool BelongsToMethod(SyntaxNode returnStatement, SyntaxNode methodSyntax)
     {
         LocalFunctionStatementSyntax? localFunction = returnStatement.Ancestors().OfType<LocalFunctionStatementSyntax>().FirstOrDefault();
         if (localFunction is not null && localFunction != methodSyntax)
@@ -511,7 +637,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     /// <param name="depth">Remaining alias hops.</param>
     /// <param name="cancellationToken">Cancellation token for semantic lookups.</param>
     private static string? ValueFlowsFromRawSql(
-        ExpressionSyntax? expression,
+        SyntaxNode? expression,
         FlowState state,
         int depth,
         CancellationToken cancellationToken)
@@ -559,21 +685,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     {
         if (symbol is ILocalSymbol or IParameterSymbol)
         {
-            SyntaxNode? scope = symbol.DeclaringSyntaxReferences
-                .FirstOrDefault()
-                ?.GetSyntax(cancellationToken)
-                .AncestorsAndSelf()
-                .FirstOrDefault(static node => node is
-                    BaseMethodDeclarationSyntax
-                    or LocalFunctionStatementSyntax
-                    or AnonymousFunctionExpressionSyntax
-                    or AccessorDeclarationSyntax
-                    or CompilationUnitSyntax);
-            if (scope is LocalFunctionStatementSyntax or AnonymousFunctionExpressionSyntax)
-            {
-                SyntaxNode? outer = scope.Ancestors().FirstOrDefault(static node => node is BaseMethodDeclarationSyntax or AccessorDeclarationSyntax);
-                scope = outer ?? scope;
-            }
+            SyntaxNode? scope = LocalAssignmentScope(symbol, cancellationToken);
 
             if (scope is not null)
             {
@@ -588,6 +700,46 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
             yield return scope;
         }
     }
+
+    /// <summary>
+    /// Finds the assignment scope for a local or parameter, including its enclosing method when nested.
+    /// Use: Medium (alias tracing). Scope: one symbol declaration.
+    /// </summary>
+    /// <param name="symbol">Local or parameter whose writes are searched.</param>
+    /// <param name="cancellationToken">Cancellation token for syntax lookups.</param>
+    /// <returns>The assignment scope, or null when no declaration is available.</returns>
+    private static SyntaxNode? LocalAssignmentScope(ISymbol symbol, CancellationToken cancellationToken)
+    {
+        SyntaxNode? scope = symbol.DeclaringSyntaxReferences
+            .FirstOrDefault()
+            ?.GetSyntax(cancellationToken)
+            .AncestorsAndSelf()
+            .FirstOrDefault(IsAssignmentScope);
+        if (scope is LocalFunctionStatementSyntax or AnonymousFunctionExpressionSyntax)
+        {
+            SyntaxNode? outer = scope.Ancestors().FirstOrDefault(static node => node is BaseMethodDeclarationSyntax or AccessorDeclarationSyntax);
+            scope = outer ?? scope;
+        }
+
+        return scope;
+    }
+
+    /// <summary>
+    /// Identifies a syntax scope that can contain local or parameter assignments.
+    /// Use: Medium (alias tracing). Scope: ancestors of a symbol declaration.
+    /// </summary>
+    /// <param name="node">Ancestor to inspect.</param>
+    /// <returns>True when the node is an assignment scope.</returns>
+    private static bool IsAssignmentScope(SyntaxNode node)
+        => node switch
+        {
+            BaseMethodDeclarationSyntax => true,
+            LocalFunctionStatementSyntax => true,
+            AnonymousFunctionExpressionSyntax => true,
+            AccessorDeclarationSyntax => true,
+            CompilationUnitSyntax => true,
+            _ => false,
+        };
 
     /// <summary>
     /// True when <paramref name="operation"/> refers to <paramref name="symbol"/>.
@@ -703,7 +855,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     /// <summary>
     /// An invocation whose delegate target may be assigned in another partial-class part.
     /// </summary>
-    private readonly struct DeferredInvoke
+    private readonly struct DeferredInvoke : IEquatable<DeferredInvoke>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="DeferredInvoke"/> struct.
@@ -721,6 +873,36 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
         /// <summary>Gets the invocation location to report when the alias is raw SQL.</summary>
         public Location Location { get; }
+
+        /// <summary>Compares two deferred invocations for equality.</summary>
+        /// <param name="left">First invocation.</param>
+        /// <param name="right">Second invocation.</param>
+        /// <returns>True when both stored values are equal.</returns>
+        public static bool operator ==(DeferredInvoke left, DeferredInvoke right) => left.Equals(right);
+
+        /// <summary>Compares two deferred invocations for inequality.</summary>
+        /// <param name="left">First invocation.</param>
+        /// <param name="right">Second invocation.</param>
+        /// <returns>True when either stored value differs.</returns>
+        public static bool operator !=(DeferredInvoke left, DeferredInvoke right) => !left.Equals(right);
+
+        /// <inheritdoc />
+        public bool Equals(DeferredInvoke other)
+            => EqualityComparer<IOperation>.Default.Equals(Instance, other.Instance)
+                && EqualityComparer<Location>.Default.Equals(Location, other.Location);
+
+        /// <inheritdoc />
+        public override bool Equals(object? obj) => obj is DeferredInvoke other && Equals(other);
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = Instance is null ? 0 : EqualityComparer<IOperation>.Default.GetHashCode(Instance);
+                return (hash * 31) + (Location is null ? 0 : EqualityComparer<Location>.Default.GetHashCode(Location));
+            }
+        }
     }
 
     /// <summary>
