@@ -22,6 +22,7 @@ CipherBank-app.Tests/
     ├── AuthServiceTests.cs
     ├── CertificatePinningTests.cs
     ├── CryptoAPIServiceTests.cs
+    ├── LogRedactionHelperTests.cs
     ├── RateLimiterTests.cs
     ├── RateLimitingHandlerTests.cs
     ├── TransactionServiceTests.cs
@@ -56,6 +57,7 @@ Tests mock the interface (e.g. `Mock<IAuthService>`) and verify behavior when th
 | WalletServiceTests | GetWalletsAsync, GetWalletAsync, CreateWalletAsync |
 | TransactionServiceTests | GetTransactionHistoryAsync, PurchaseCryptoAsync, SendCryptoAsync |
 | AddressValidatorTests | IsValidAddress (BTC, ETH, SOL), format validation |
+| LogRedactionHelperTests | RedactUsername, RedactWalletId, RedactAddress, RedactToken, etc. |
 | RateLimiterTests | TryAcquireAsync, GetWaitTimeAsync, sliding window |
 | RateLimitingHandlerTests | 429 when rate limited, pass-through when allowed |
 | CertificatePinningTests | Certificate validation logic (if applicable) |
