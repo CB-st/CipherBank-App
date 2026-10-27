@@ -874,18 +874,6 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
         /// <summary>Gets the invocation location to report when the alias is raw SQL.</summary>
         public Location Location { get; }
 
-        /// <summary>Compares two deferred invocations for equality.</summary>
-        /// <param name="left">First invocation.</param>
-        /// <param name="right">Second invocation.</param>
-        /// <returns>True when both stored values are equal.</returns>
-        public static bool operator ==(DeferredInvoke left, DeferredInvoke right) => left.Equals(right);
-
-        /// <summary>Compares two deferred invocations for inequality.</summary>
-        /// <param name="left">First invocation.</param>
-        /// <param name="right">Second invocation.</param>
-        /// <returns>True when either stored value differs.</returns>
-        public static bool operator !=(DeferredInvoke left, DeferredInvoke right) => !left.Equals(right);
-
         /// <inheritdoc />
         public bool Equals(DeferredInvoke other)
             => EqualityComparer<IOperation>.Default.Equals(Instance, other.Instance)

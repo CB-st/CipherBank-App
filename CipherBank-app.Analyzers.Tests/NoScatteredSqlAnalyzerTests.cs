@@ -500,6 +500,196 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
+    public async Task ReportsPropertyLocalAndParameterAssignmentsAsync()
+    {
+        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        {
+            TestState =
+            {
+                ReferenceAssemblies = _efCoreReferences,
+                Sources =
+                {
+                    ("CipherBank-app.Core/Persist/DelegateWrites.cs", """
+                        using System;
+                        using Microsoft.EntityFrameworkCore;
+                        using Microsoft.EntityFrameworkCore.Infrastructure;
+
+                        class DelegateWrites
+                        {
+                            Func<FormattableString, int> Command { get; set; } = static _ => 0;
+
+                            void Arm(DatabaseFacade database, Func<FormattableString, int> parameter)
+                            {
+                                Func<FormattableString, int> local = static _ => 0;
+                                local = {|CB1003:database.ExecuteSqlInterpolated|};
+                                {|CB1003:local($"SELECT 1")|};
+                                parameter = {|CB1003:database.ExecuteSqlInterpolated|};
+                                {|CB1003:parameter($"SELECT 1")|};
+                                Command = {|CB1003:database.ExecuteSqlInterpolated|};
+                                {|CB1003:Command($"SELECT 1")|};
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReportsCoalescedAndConditionalDelegateAliasesAsync()
+    {
+        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        {
+            TestState =
+            {
+                ReferenceAssemblies = _efCoreReferences,
+                Sources =
+                {
+                    ("CipherBank-app.Core/Persist/DelegateChoices.cs", """
+                        using System;
+                        using Microsoft.EntityFrameworkCore;
+                        using Microsoft.EntityFrameworkCore.Infrastructure;
+
+                        class DelegateChoices
+                        {
+                            void Run(DatabaseFacade database, bool choose, Func<FormattableString, int> fallback)
+                            {
+                                Func<FormattableString, int> raw = {|CB1003:database.ExecuteSqlInterpolated|};
+                                Func<FormattableString, int> coalesced = fallback ?? raw;
+                                {|CB1003:coalesced($"SELECT 1")|};
+                                Func<FormattableString, int> conditional = choose ? fallback : raw;
+                                {|CB1003:conditional($"SELECT 1")|};
+                                Func<FormattableString, int> safe = fallback ?? (static _ => 0);
+                                safe($"SELECT 1");
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReportsDelegatesReturnedFromBlockAndLocalFunctionsAsync()
+    {
+        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        {
+            TestState =
+            {
+                ReferenceAssemblies = _efCoreReferences,
+                Sources =
+                {
+                    ("CipherBank-app.Core/Persist/DelegateReturns.cs", """
+                        using System;
+                        using Microsoft.EntityFrameworkCore;
+                        using Microsoft.EntityFrameworkCore.Infrastructure;
+
+                        class DelegateReturns
+                        {
+                            Func<FormattableString, int> Get(DatabaseFacade database)
+                            {
+                                return {|CB1003:database.ExecuteSqlInterpolated|};
+                            }
+
+                            void Run(DatabaseFacade database)
+                            {
+                                Func<FormattableString, int> Local() => {|CB1003:database.ExecuteSqlInterpolated|};
+                                {|CB1003:Get(database)($"SELECT 1")|};
+                                {|CB1003:Local()($"SELECT 1")|};
+                            }
+
+                            Func<FormattableString, int> Safe(DatabaseFacade database)
+                            {
+                                Func<FormattableString, int> Nested() { return {|CB1003:database.ExecuteSqlInterpolated|}; }
+                                Func<Func<FormattableString, int>> nestedLambda = () => { return {|CB1003:database.ExecuteSqlInterpolated|}; };
+                                _ = Nested();
+                                _ = nestedLambda();
+                                return static _ => 0;
+                            }
+
+                            void RunSafe(DatabaseFacade database) => Safe(database)($"SELECT 1");
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReportsPropertyInitializerAndAccessorLocalAsync()
+    {
+        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        {
+            TestState =
+            {
+                ReferenceAssemblies = _efCoreReferences,
+                Sources =
+                {
+                    ("CipherBank-app.Core/Persist/DelegateProperty.cs", """
+                        using System;
+                        using Microsoft.EntityFrameworkCore;
+                        using Microsoft.EntityFrameworkCore.Infrastructure;
+
+                        class DelegateProperty
+                        {
+                            static Func<DatabaseFacade, FormattableString, int> Command { get; } =
+                                {|CB1003:RelationalDatabaseFacadeExtensions.ExecuteSqlInterpolated|};
+
+                            DatabaseFacade Database { get; set; }
+
+                            int Result
+                            {
+                                get
+                                {
+                                    Func<FormattableString, int> local = static _ => 0;
+                                    local = {|CB1003:Database.ExecuteSqlInterpolated|};
+                                    return {|CB1003:local($"SELECT 1")|};
+                                }
+                            }
+
+                            void Run(DatabaseFacade database) => {|CB1003:Command(database, $"SELECT 1")|};
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task IgnoresCyclicHarmlessAliasesAsync()
+    {
+        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        {
+            TestState =
+            {
+                Sources =
+                {
+                    ("CipherBank-app.Core/Persist/CyclicAliases.cs", """
+                        using System;
+                        class CyclicAliases
+                        {
+                            Func<string, int> first = static _ => 0;
+                            Func<string, int> second = static _ => 0;
+
+                            void Run()
+                            {
+                                first = second;
+                                second = first;
+                                first("SELECT 1");
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
     public async Task IgnoresSqlNamesThatAreNotInvocationsOrAssignmentsAsync()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
