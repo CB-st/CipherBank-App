@@ -13,15 +13,15 @@ namespace CipherBank_app.Services;
 public sealed class ErrorHandler : IErrorHandler
 {
     private readonly INavigationService _navigation;
-    private readonly IAuthService _auth;
+    private readonly Func<IAuthService> _createAuth;
     private int _loginRedirectInProgress;
 
-    public ErrorHandler(INavigationService navigation, IAuthService auth)
+    public ErrorHandler(INavigationService navigation, Func<IAuthService> createAuth)
     {
         ArgumentNullException.ThrowIfNull(navigation);
-        ArgumentNullException.ThrowIfNull(auth);
+        ArgumentNullException.ThrowIfNull(createAuth);
         _navigation = navigation;
-        _auth = auth;
+        _createAuth = createAuth;
     }
 
     public async Task<bool> HandleApiErrorsAsync(
@@ -29,7 +29,8 @@ public sealed class ErrorHandler : IErrorHandler
         Action<string?> setErrorMessage,
         string? networkErrorMessage = null)
     {
-        int generation = await _auth.CaptureSessionAsync();
+        IAuthService auth = _createAuth();
+        int generation = await auth.CaptureSessionAsync();
         try
         {
             await operation();
@@ -38,7 +39,7 @@ public sealed class ErrorHandler : IErrorHandler
         catch (Exception ex) when (SessionExpiry.IsExpired(ex))
         {
             setErrorMessage("Session expired. Please log in again.");
-            await InvalidateSessionAndRedirectToLoginAsync(generation);
+            await InvalidateSessionAndRedirectToLoginAsync(auth, generation);
             return false;
         }
         catch (OperationCanceledException)
@@ -59,7 +60,7 @@ public sealed class ErrorHandler : IErrorHandler
         return SessionExpiry.IsExpired(exception);
     }
 
-    private async Task InvalidateSessionAndRedirectToLoginAsync(int generation)
+    private async Task InvalidateSessionAndRedirectToLoginAsync(IAuthService auth, int generation)
     {
         if (!TryBeginLoginRedirect())
         {
@@ -68,7 +69,7 @@ public sealed class ErrorHandler : IErrorHandler
 
         try
         {
-            if (!await _auth.LogoutAsync(generation))
+            if (!await auth.LogoutAsync(generation))
             {
                 return;
             }

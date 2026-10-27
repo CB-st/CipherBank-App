@@ -21,6 +21,27 @@ public class AuthSessionGuardTests
     }
 
     [Fact]
+    public async Task InvalidateAndClearAsync_NamedCancellationToken_CancelsWithoutClearing()
+    {
+        using AuthSessionGuard guard = new();
+        using CancellationTokenSource cancellation = new();
+        cancellation.Cancel();
+        bool cleared = false;
+
+        Func<Task> act = () => guard.InvalidateAndClearAsync(
+            () =>
+            {
+                cleared = true;
+                return Task.CompletedTask;
+            },
+            cancellationToken: cancellation.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        cleared.Should().BeFalse();
+        (await guard.CaptureAsync()).Should().Be(0);
+    }
+
+    [Fact]
     public async Task CaptureLogoutAsync_LoginDuringTokenRead_CapturesOnlyOwnedToken()
     {
         using AuthSessionGuard guard = new();

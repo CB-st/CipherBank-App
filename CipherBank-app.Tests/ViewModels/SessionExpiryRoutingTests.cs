@@ -243,7 +243,7 @@ public class SessionExpiryRoutingTests
             walletService.Object,
             transactionService.Object,
             cryptoService.Object,
-            new ErrorHandler(navigation.Object, auth.Object),
+            new ErrorHandler(navigation.Object, () => auth.Object),
             navigation.Object,
             dialog.Object);
         return (viewModel, navigation, auth, dialog);
@@ -266,7 +266,7 @@ public class SessionExpiryRoutingTests
             NullLogger<PurchaseViewModel>.Instance,
             new Mock<ICryptoApiService>().Object,
             transactionService.Object,
-            new ErrorHandler(navigation.Object, auth.Object),
+            new ErrorHandler(navigation.Object, () => auth.Object),
             navigation.Object,
             dialog.Object);
         return (viewModel, navigation, auth, dialog);

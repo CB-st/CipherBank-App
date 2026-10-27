@@ -88,6 +88,10 @@ public sealed class AuthSessionGuard : IDisposable
     public Task<bool> InvalidateAndClearAsync(Func<Task> clear)
         => InvalidateAndClearAsync(clear, null, CancellationToken.None);
 
+    /// <summary>Invalidates and clears while honoring cancellation for the storage gate wait.</summary>
+    public Task<bool> InvalidateAndClearAsync(Func<Task> clear, CancellationToken cancellationToken)
+        => InvalidateAndClearAsync(clear, null, cancellationToken);
+
     /// <summary>Invalidates and clears only the supplied session.</summary>
     public Task<bool> InvalidateAndClearAsync(Func<Task> clear, int? capturedGeneration)
         => InvalidateAndClearAsync(clear, capturedGeneration, CancellationToken.None);

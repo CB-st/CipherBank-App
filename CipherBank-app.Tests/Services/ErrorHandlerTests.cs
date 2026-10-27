@@ -14,6 +14,29 @@ namespace CipherBank_app.Tests.Services;
 public class ErrorHandlerTests
 {
     [Fact]
+    public async Task HandleApiErrorsAsync_ResolvesAuthForEachOperation()
+    {
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> first = new();
+        Mock<IAuthService> second = new();
+        first.Setup(service => service.CaptureSessionAsync()).ReturnsAsync(1);
+        second.Setup(service => service.CaptureSessionAsync()).ReturnsAsync(2);
+        second.Setup(service => service.LogoutAsync(2)).ReturnsAsync(true);
+        navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(Task.CompletedTask);
+        int resolutions = 0;
+        ErrorHandler handler = new(navigation.Object, () => ++resolutions == 1 ? first.Object : second.Object);
+
+        resolutions.Should().Be(0);
+        (await handler.HandleApiErrorsAsync(() => Task.CompletedTask, _ => { })).Should().BeTrue();
+        (await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { })).Should().BeFalse();
+
+        resolutions.Should().Be(2);
+        first.Verify(service => service.CaptureSessionAsync(), Times.Once);
+        second.Verify(service => service.CaptureSessionAsync(), Times.Once);
+        second.Verify(service => service.LogoutAsync(2), Times.Once);
+    }
+
+    [Fact]
     public async Task HandleApiErrorsAsync_ConcurrentUnauthorizedDuringLogout_LogsOutOnce()
     {
         Mock<INavigationService> navigation = new();
@@ -194,7 +217,7 @@ public class ErrorHandlerTests
         Mock<IAuthService> auth = new();
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.SetupGet(service => service.CurrentRoute).Returns((string?)null);
-        ErrorHandler handler = new(navigation.Object, auth.Object);
+        ErrorHandler handler = new(navigation.Object, () => auth.Object);
         int navigations = 0;
         navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(() =>
         {
@@ -228,7 +251,7 @@ public class ErrorHandlerTests
                 await release.Task;
             }
         });
-        ErrorHandler handler = new(navigation.Object, auth.Object);
+        ErrorHandler handler = new(navigation.Object, () => auth.Object);
 
         Task<bool> first = handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
         await started.Task;
@@ -255,7 +278,7 @@ public class ErrorHandlerTests
             route = Routes.Login;
             return Task.CompletedTask;
         });
-        ErrorHandler handler = new(navigation.Object, auth.Object);
+        ErrorHandler handler = new(navigation.Object, () => auth.Object);
 
         await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
         await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
@@ -391,7 +414,7 @@ public class ErrorHandlerTests
                 },
                 capturedGeneration: generation));
         navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
-        ErrorHandler handler = new(navigation.Object, auth.Object);
+        ErrorHandler handler = new(navigation.Object, () => auth.Object);
         TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
         TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         Task<bool> delayed = handler.HandleApiErrorsAsync(
@@ -429,13 +452,13 @@ public class ErrorHandlerTests
         navigation.SetupGet(service => service.CurrentRoute).Returns(route);
         auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
         navigation.Setup(service => service.GoToAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
-        return (new ErrorHandler(navigation.Object, auth.Object), navigation, auth);
+        return (new ErrorHandler(navigation.Object, () => auth.Object), navigation, auth);
     }
 
     private static ErrorHandler CreateHandler(Mock<INavigationService> navigation, Mock<IAuthService> auth)
     {
         navigation.SetupGet(service => service.CurrentRoute).Returns((string?)null);
-        return new ErrorHandler(navigation.Object, auth.Object);
+        return new ErrorHandler(navigation.Object, () => auth.Object);
     }
 
     private static HttpRequestException Unauthorized(Exception? inner = null)
