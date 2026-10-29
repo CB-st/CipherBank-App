@@ -177,8 +177,16 @@ public static partial class AddressValidator
 
         // Bech32 uses ASCII a-z and 0-9, excluding 1, b, i, o in either case.
         // The alphabet set contains ASCII characters only, so non-ASCII lookalikes cannot match.
-        string bech32Data = address.Substring(3); // Remove bc1 or tb1 prefix
-        return bech32Data.All(c => _bech32Alphabet.Contains(c));
+        // Skip the bc1/tb1 prefix; callers check it and the 42-62 length.
+        foreach (char character in address.AsSpan(3))
+        {
+            if (!_bech32Alphabet.Contains(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     [GeneratedRegex("^0x[a-fA-F0-9]{40}$")]
