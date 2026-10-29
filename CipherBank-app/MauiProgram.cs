@@ -7,11 +7,12 @@ using System.Reflection;
 using CipherBank_app.Configuration;
 using CipherBank_app.Extensions;
 using CipherBank_app.Services;
-using CipherBank_app.Services.Mocks;
+using CipherBank_app.V1;
 using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -109,10 +110,6 @@ public static class MauiProgram
     public static MauiAppBuilder RegisterServices(this MauiAppBuilder mauiAppBuilder)
     {
         mauiAppBuilder.Services.AddPlatformFeatures();
-        HostBehaviorOptions behavior = mauiAppBuilder.Configuration
-            .GetRequiredSection(nameof(HostBehaviorOptions))
-            .Get<HostBehaviorOptions>()
-            ?? throw new InvalidOperationException("Host behavior configuration is missing.");
         mauiAppBuilder.Services.AddRequiredOptions(
                 mauiAppBuilder.Configuration,
                 new HostBehaviorOptions())
@@ -123,15 +120,10 @@ public static class MauiProgram
             mauiAppBuilder.Configuration,
             new DirectoryInfo(FileSystem.Current.AppDataDirectory));
         mauiAppBuilder.Services.AddCustodyFeature(mauiAppBuilder.Configuration);
+        mauiAppBuilder.Services.AddProductSessionServices();
 
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
-
-        // Rate Limiter (singleton)
-        mauiAppBuilder.Services.AddSingleton<RateLimiter>(static sp =>
-            new RateLimiter(
-                sp.GetService<ILogger<RateLimiter>>(),
-                sp.GetRequiredService<TimeProvider>()));
 
         // Navigation and dialogs
         mauiAppBuilder.Services.AddSingleton<INavigationService, ShellNavigationService>();
@@ -146,71 +138,24 @@ public static class MauiProgram
         // Error handler for ViewModel API error consolidation
         mauiAppBuilder.Services.AddSingleton<IErrorHandler, ErrorHandler>();
 
-        // Register mock services (always available for testing/development)
-        mauiAppBuilder.Services.AddSingleton<MockAuthService>();
-        mauiAppBuilder.Services.AddSingleton<MockCryptoApiService>();
-        mauiAppBuilder.Services.AddSingleton<MockWalletService>();
-        mauiAppBuilder.Services.AddSingleton<MockTransactionService>();
-
-        // Auth Service - Factory pattern for mock/real switching
-        mauiAppBuilder.Services.AddCipherBankHttpClient<AuthService>();
-
-        mauiAppBuilder.Services.AddTransient<IAuthService>(sp =>
+        mauiAppBuilder.Services.AddSingleton<InMemoryProductClient>();
+        mauiAppBuilder.Services.AddCipherBankHttpClient<HttpProductClient>();
+#if DEBUG
+        mauiAppBuilder.Services.AddSingleton<IProductClient>(sp =>
         {
+            HostBehaviorOptions behavior = sp.GetRequiredService<IOptions<HostBehaviorOptions>>().Value;
             if (behavior.UseMockServices)
             {
-                Log.Debug("Using MockAuthService (based on settings)");
-                return sp.GetRequiredService<MockAuthService>();
+                Log.Debug("Using InMemoryProductClient (based on settings)");
+                return sp.GetRequiredService<InMemoryProductClient>();
             }
 
-            Log.Debug("Using AuthService (real API)");
-            return sp.GetRequiredService<AuthService>();
+            Log.Debug("Using HttpProductClient (live /v1)");
+            return sp.GetRequiredService<HttpProductClient>();
         });
-
-        // Crypto API Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<CryptoApiService>();
-
-        mauiAppBuilder.Services.AddTransient<ICryptoApiService>(sp =>
-        {
-            if (behavior.UseMockServices)
-            {
-                Log.Debug("Using MockCryptoApiService (based on settings)");
-                return sp.GetRequiredService<MockCryptoApiService>();
-            }
-
-            Log.Debug("Using CryptoApiService (real API)");
-            return sp.GetRequiredService<CryptoApiService>();
-        });
-
-        // Wallet Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<WalletService>();
-
-        mauiAppBuilder.Services.AddTransient<IWalletService>(sp =>
-        {
-            if (behavior.UseMockServices)
-            {
-                Log.Debug("Using MockWalletService (based on settings)");
-                return sp.GetRequiredService<MockWalletService>();
-            }
-
-            Log.Debug("Using WalletService (real API)");
-            return sp.GetRequiredService<WalletService>();
-        });
-
-        // Transaction Service
-        mauiAppBuilder.Services.AddCipherBankHttpClient<TransactionService>();
-
-        mauiAppBuilder.Services.AddTransient<ITransactionService>(sp =>
-        {
-            if (behavior.UseMockServices)
-            {
-                Log.Debug("Using MockTransactionService (based on settings)");
-                return sp.GetRequiredService<MockTransactionService>();
-            }
-
-            Log.Debug("Using TransactionService (real API)");
-            return sp.GetRequiredService<TransactionService>();
-        });
+#else
+        mauiAppBuilder.Services.AddSingleton<IProductClient>(sp => sp.GetRequiredService<HttpProductClient>());
+#endif
 
         Log.Information("Services registered successfully");
         return mauiAppBuilder;

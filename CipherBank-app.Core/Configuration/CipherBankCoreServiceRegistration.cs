@@ -17,7 +17,7 @@ internal static class CipherBankCoreServiceRegistration
     // LocalWalletDescriptor, PricePoint persistence, and SqliteRateSnapshotStore.
 
     /// <summary>
-    /// Registers crypto, persistence, sync dispatch, Cora copy, and EMV simulation services.
+    /// Registers crypto, persistence, sync dispatch, Cora copy, EMV simulation, and product session services.
     /// Use: Low (host startup). Scope: Core DI.
     /// </summary>
     internal static void AddCipherBankCoreServices(
@@ -32,5 +32,6 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton<IEmvExchangeSimulator, EmvExchangeSimulator>();
         services.AddCipherBankPersistence(databaseDirectory);
         services.AddCipherBankSync();
+        services.AddProductSessionServices();
     }
 }
