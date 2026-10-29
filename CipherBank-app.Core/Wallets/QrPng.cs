@@ -8,5 +8,5 @@ namespace CipherBank_app.Wallets;
 public readonly record struct QrPng(ReadOnlyMemory<byte> Bytes)
 {
     /// <summary>Media type for the payload in <see cref="Bytes"/>.</summary>
-    public const string MediaType = "image/png";
+    public static string MediaType => "image/png";
 }

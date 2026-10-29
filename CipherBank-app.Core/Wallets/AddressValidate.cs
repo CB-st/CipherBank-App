@@ -14,13 +14,7 @@ public static class AddressValidate
     /// Use: High (add-watch / send paths). Scope: AddressValidate helpers.
     /// </summary>
     public static bool IsValid(string symbol, string address)
-    {
-        string addr = address.Trim();
-        if (string.IsNullOrEmpty(addr) || !AssetSymbol.TryParse(symbol, out AssetSymbol? parsed))
-        {
-            return false;
-        }
-
-        return WalletRegistry.Get(parsed).IsValidAddress(addr);
-    }
+        => !string.IsNullOrWhiteSpace(address)
+            && AssetSymbol.TryParse(symbol, out AssetSymbol? parsed)
+            && WalletRegistry.Get(parsed).IsValidAddress(address.Trim());
 }

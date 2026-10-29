@@ -21,33 +21,25 @@ public interface IWalletModule
     /// <summary>Gets whether an on-device BIP39 seed can derive a receive address.</summary>
     bool CanDerive { get; }
 
-    /// <summary>Gets whether managed and unmanaged creates are server wallets.</summary>
+    /// <summary>
+    /// Gets whether managed and unmanaged creates are server wallets. When false,
+    /// <see cref="WalletUiMode.Unmanaged"/> stays on the device.
+    /// </summary>
     bool UsesServerWallets { get; }
 
     /// <summary>Gets optional operator notes for the module.</summary>
     string? Notes { get; }
 
-    /// <summary>
-    /// Maps a create action to where the portfolio row lives.
-    /// <see cref="WalletUiMode"/> is the action; <see cref="WalletSource"/> is the storage outcome.
-    /// Unmanaged is server-backed only when <see cref="UsesServerWallets"/> is true.
-    /// </summary>
-    WalletSource SourceFor(WalletUiMode mode)
-        => mode switch
-        {
-            WalletUiMode.Watch => WalletSource.Watch,
-            WalletUiMode.Managed => WalletSource.Server,
-            WalletUiMode.Unmanaged => UsesServerWallets ? WalletSource.Server : WalletSource.Local,
-            _ => WalletSource.Local,
-        };
-
     /// <summary>Returns true when <paramref name="address"/> is an acceptable watch destination.</summary>
     bool IsValidAddress(string address);
+
+    /// <summary>Derives account 0, or null when this module cannot derive.</summary>
+    DerivedAddress? TryDerive(string mnemonic) => TryDerive(mnemonic, 0);
 
     /// <summary>
     /// Derives the account address, or null when this module cannot derive.
     /// </summary>
-    DerivedAddress? TryDerive(string mnemonic, int accountIndex = 0);
+    DerivedAddress? TryDerive(string mnemonic, int accountIndex);
 
     /// <summary>Builds the receive URI for a non-empty address.</summary>
     Uri BuildReceiveUri(string address, string? amount, string? label, string? message);

@@ -37,4 +37,26 @@ public class MnemonicTests
         byte[] b = MnemonicHelper.Entropy("  " + phrase.ToUpperInvariant() + "  ");
         a.Should().Equal(b);
     }
+
+    /// <summary>
+    /// Trezor BIP39 English vectors (non-zero bit patterns catch bit-order bugs).
+    /// Use: High (custody). Scope: MnemonicHelper.Entropy.
+    /// </summary>
+    [Theory]
+    [InlineData("legal winner thank year wave sausage worth useful legal winner thank yellow", "7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f")]
+    [InlineData("letter advice cage absurd amount doctor acoustic avoid letter advice cage above", "80808080808080808080808080808080")]
+    [InlineData("zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong", "ffffffffffffffffffffffffffffffff")]
+    [InlineData("scheme spot photo card baby mountain device kick cradle pact join borrow", "c0ba5a8e914111210f2bd131f3d5e08d")]
+    [InlineData(
+        "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+        "0000000000000000000000000000000000000000000000000000000000000000")]
+    public void Entropy_MatchesKnownAnswer(string phrase, string entropyHex)
+    {
+        MnemonicHelper.Validate(phrase).Should().BeTrue();
+        Convert.ToHexStringLower(MnemonicHelper.Entropy(phrase)).Should().Be(entropyHex);
+    }
+
+    [Fact]
+    public void Validate_RejectsBadChecksum()
+        => MnemonicHelper.Validate("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon").Should().BeFalse();
 }

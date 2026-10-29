@@ -4,7 +4,6 @@
 
 using System.Net.Http.Headers;
 using CipherBank_app.V1;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Services.Handlers;

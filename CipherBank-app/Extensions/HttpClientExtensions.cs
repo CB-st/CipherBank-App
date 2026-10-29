@@ -8,7 +8,6 @@ using System.Threading.RateLimiting;
 using CipherBank_app.Configuration;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Handlers;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using Polly;

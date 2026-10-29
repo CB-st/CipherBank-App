@@ -37,6 +37,42 @@ public sealed class ConfigurationTests
             SyncSchedulerOptions.MaxAllowedConcurrency);
     }
 
+    /// <summary>
+    /// Each field that IsValid rejects, plus the AES-192 size that must stay accepted.
+    /// Use: Medium. Scope: CryptographyOptions.IsValid.
+    /// </summary>
+    [Fact]
+    public void CryptographyOptions_IsValid_RejectsEachUnsafeField()
+    {
+        CryptographyOptions wrongNonce = CryptographyOptions.Default;
+        wrongNonce.NonceSizeBytes = CryptographyOptions.AesGcmNonceSizeBytes + 4;
+        wrongNonce.IsValid().Should().BeFalse();
+
+        CryptographyOptions shortTag = CryptographyOptions.Default;
+        shortTag.TagSizeBytes = CryptographyOptions.MinTagSizeBytes - 1;
+        shortTag.IsValid().Should().BeFalse();
+
+        CryptographyOptions longTag = CryptographyOptions.Default;
+        longTag.TagSizeBytes = CryptographyOptions.MaxTagSizeBytes + 1;
+        longTag.IsValid().Should().BeFalse();
+
+        CryptographyOptions badKey = CryptographyOptions.Default;
+        badKey.KeySizeBytes = 20;
+        badKey.IsValid().Should().BeFalse();
+
+        CryptographyOptions aes192 = CryptographyOptions.Default;
+        aes192.KeySizeBytes = CryptographyOptions.Aes192KeySizeBytes;
+        aes192.IsValid().Should().BeTrue();
+
+        CryptographyOptions shortSalt = CryptographyOptions.Default;
+        shortSalt.SaltSizeBytes = CryptographyOptions.MinSaltSizeBytes - 1;
+        shortSalt.IsValid().Should().BeFalse();
+
+        CryptographyOptions fewIterations = CryptographyOptions.Default;
+        fewIterations.Pbkdf2Iterations = CryptographyOptions.MinPbkdf2Iterations - 1;
+        fewIterations.IsValid().Should().BeFalse();
+    }
+
     [Fact]
     public void CryptographyOptions_NonDefaultKeySize_DoesNotMatchPersistedProfile()
     {
@@ -99,9 +135,9 @@ public sealed class ConfigurationTests
 
         configuration.GetSection(nameof(CoraOptions)).Get<CoraOptions>()!.Fallback.Should().Be("CipherBank.");
         configuration.GetSection(nameof(CarouselLayoutConfig)).Get<CarouselLayoutConfig>()!.Stride.Should().Be(220);
-        CryptographyOptions.SectionName.Should().Be(nameof(CryptographyOptions));
-        CoraOptions.SectionName.Should().Be(nameof(CoraOptions));
-        CarouselLayoutConfig.SectionName.Should().Be(nameof(CarouselLayoutConfig));
+        new CryptographyOptions().SectionName.Should().Be(nameof(CryptographyOptions));
+        new CoraOptions().SectionName.Should().Be(nameof(CoraOptions));
+        new CarouselLayoutConfig().SectionName.Should().Be(nameof(CarouselLayoutConfig));
         new CarouselLayoutConfig().Should().Be(CarouselLayoutConfig.Default);
         configuration.GetSection("Cora").Exists().Should().BeFalse();
         configuration.GetSection("Carousel").Exists().Should().BeFalse();

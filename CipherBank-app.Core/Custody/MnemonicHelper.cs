@@ -29,8 +29,8 @@ public static class MnemonicHelper
     {
         try
         {
-            _ = new Mnemonic(Normalize(phrase), Wordlist.English);
-            return true;
+            // NBitcoin's constructor checks words only; the BIP39 checksum is a separate flag.
+            return new Mnemonic(Normalize(phrase), Wordlist.English).IsValidChecksum;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException)
         {
@@ -58,6 +58,10 @@ public static class MnemonicHelper
     public static byte[] Entropy(string phrase)
     {
         int[] indices = Parse(phrase).Indices;
+
+        // Each English word is an 11-bit wordlist index (2048 words = 2^11). The concatenated
+        // bits are ENT entropy bits plus a CS checksum, with CS = ENT/32, so CS = totalBits/33.
+        // 12 words: 132 bits = 128 entropy + 4 checksum. 24 words: 264 = 256 + 8.
         int totalBits = indices.Length * BitsPerWordIndex;
         int checksumBits = totalBits / ChecksumDivisor;
         int entropyBits = totalBits - checksumBits;
@@ -66,11 +70,20 @@ public static class MnemonicHelper
         int bitPos = 0;
         foreach (int index in indices)
         {
-            // Word index bits are stored big-endian; bit 10 is the high bit of the 11-bit group.
+            // Bit order, not byte order: BIP39 defines the bit stream MSB-first, and this
+            // loop reads bits with shifts on an int value. Shifts act on the value, not on
+            // its in-memory bytes, so the result is the same on little- and big-endian CPUs.
+            // No BitConverter or Array.Reverse is needed because no integer is ever
+            // serialized to bytes. The inner loop walks bit 10 (MSB) down to bit 0 of the
+            // word index, and the bit-position guard stops before the trailing checksum bits.
+            // Example: eleven words "abandon" (index 0) and a final "about" (index 3) give
+            // 128 zero entropy bits followed by the 4 checksum bits 0011.
             for (int i = HighestWordBitIndex; i >= 0 && bitPos < entropyBits; i--)
             {
                 if (((index >> i) & 1) == 1)
                 {
+                    // bitPos / 8 picks the output byte; 7 - (bitPos % 8) picks the bit inside it,
+                    // so the first stream bit lands in bit 7 (MSB) of entropy[0].
                     entropy[bitPos / BitsPerByte] |= (byte)(1 << (HighestBitInByte - (bitPos % BitsPerByte)));
                 }
 

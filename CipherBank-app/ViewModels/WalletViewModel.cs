@@ -2,14 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Linq;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
 using CipherBank_app.V1;
@@ -302,7 +296,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
         try
         {
-            LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol, SendToAddress);
+            LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol.Value, SendToAddress);
 
             MoneyMoveDto move = await _product.TransferAsync(
                 SendToAddress,

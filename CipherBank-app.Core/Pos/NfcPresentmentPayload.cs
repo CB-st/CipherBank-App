@@ -9,7 +9,10 @@ namespace CipherBank_app.Pos;
 /// <summary>NDEF presentment payload (tokenRef only — no PAN).</summary>
 public sealed class NfcPresentmentPayload
 {
-    public int V { get; set; } = 1;
+    /// <summary>Payload version this parser accepts.</summary>
+    public static int SupportedVersion => 1;
+
+    public int V { get; set; } = SupportedVersion;
 
     public string SessionId { get; set; } = string.Empty;
 
@@ -26,14 +29,7 @@ public sealed class NfcPresentmentPayload
         try
         {
             using JsonDocument doc = JsonDocument.Parse(json);
-            JsonElement root = doc.RootElement;
-            return new NfcPresentmentPayload
-            {
-                V = root.TryGetProperty("v", out JsonElement v) ? v.GetInt32() : 1,
-                SessionId = root.TryGetProperty("sessionId", out JsonElement s) ? s.GetString() ?? string.Empty : string.Empty,
-                TokenRef = root.TryGetProperty("tokenRef", out JsonElement t) ? t.GetString() ?? string.Empty : string.Empty,
-                MerchantId = root.TryGetProperty("merchantId", out JsonElement m) ? m.GetString() : null,
-            };
+            return ReadPayload(doc.RootElement);
         }
         catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException or FormatException)
         {
@@ -50,4 +46,54 @@ public sealed class NfcPresentmentPayload
             ["tokenRef"] = TokenRef,
             ["merchantId"] = MerchantId,
         });
+
+    private static NfcPresentmentPayload? ReadPayload(JsonElement root)
+    {
+        if (!TryReadVersion(root, out int version)
+            || !TryReadIdentifiers(root, out string sessionId, out string tokenRef))
+        {
+            return null;
+        }
+
+        return new NfcPresentmentPayload
+        {
+            V = version,
+            SessionId = sessionId,
+            TokenRef = tokenRef,
+            MerchantId = ReadOptionalString(root, "merchantId"),
+        };
+    }
+
+    private static bool TryReadVersion(JsonElement root, out int version)
+    {
+        if (!root.TryGetProperty("v", out JsonElement value))
+        {
+            version = SupportedVersion;
+            return true;
+        }
+
+        version = value.GetInt32();
+        return version == SupportedVersion;
+    }
+
+    private static bool TryReadIdentifiers(JsonElement root, out string sessionId, out string tokenRef)
+    {
+        sessionId = ReadRequiredString(root, "sessionId");
+        tokenRef = ReadRequiredString(root, "tokenRef");
+        return !string.IsNullOrWhiteSpace(sessionId)
+            && !string.IsNullOrWhiteSpace(tokenRef);
+    }
+
+    private static string ReadRequiredString(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out JsonElement value))
+        {
+            return string.Empty;
+        }
+
+        return value.GetString() ?? string.Empty;
+    }
+
+    private static string? ReadOptionalString(JsonElement root, string name)
+        => root.TryGetProperty(name, out JsonElement value) ? value.GetString() : null;
 }
