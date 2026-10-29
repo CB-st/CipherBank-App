@@ -14,6 +14,8 @@ namespace CipherBank_app.Services.Validation;
 /// </summary>
 public static partial class AddressValidator
 {
+    private const int Bech32PrefixLength = 3;
+
     // Base58 alphabet used by Bitcoin and Solana
     private static readonly FrozenSet<char> _base58Alphabet =
         "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".ToFrozenSet();
@@ -177,8 +179,8 @@ public static partial class AddressValidator
 
         // Bech32 uses ASCII a-z and 0-9, excluding 1, b, i, o in either case.
         // The alphabet set contains ASCII characters only, so non-ASCII lookalikes cannot match.
-        // Skip the bc1/tb1 prefix; callers check it and the 42-62 length.
-        foreach (char character in address.AsSpan(3))
+        // Callers check the bc1/tb1 prefix and the 42-62 length.
+        foreach (char character in address.AsSpan(Bech32PrefixLength))
         {
             if (!_bech32Alphabet.Contains(character))
             {
