@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.AddWalletPage"
+             Title="Add wallet"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="12">
+            <Label Text="Asset" FontAttributes="Bold" />
+            <Picker Title="Symbol" ItemsSource="{Binding AvailableSymbols}" SelectedItem="{Binding Symbol}" />
+            <Label Text="Mode" FontAttributes="Bold" />
+            <Picker Title="Mode" ItemsSource="{Binding ModeLabels}" SelectedItem="{Binding SelectedMode}" />
+            <Entry Text="{Binding Label}" Placeholder="Label (optional)" />
+            <Entry Text="{Binding WatchAddress}" Placeholder="Watch address (if watch/XMR)" />
+            <Button Text="Save wallet" Command="{Binding SaveCommand}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

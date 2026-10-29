@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.PayPage"
+             Title="Pay"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
+  <ScrollView>
+    <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
+      <controls:CoraBar ScreenKey="pay" Line="{Binding CoraLine}" />
+      <controls:GlassCard UseDeepPurple="True" CornerRadius="18">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="6">
+            <Label Text="Privacy" Style="{StaticResource PrivacyLabel}" />
+            <Label Text="Payments stay private by default. Funding mix never exposes card PAN — token refs only."
+                   Style="{StaticResource OnDarkBody}"
+                   LineBreakMode="WordWrap" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="{Binding RecipientLabel}" Style="{StaticResource BodyStrong}" />
+            <Entry Text="{Binding Amount}" Placeholder="Bill amount" Keyboard="Numeric" />
+            <Entry Text="{Binding UsdShare}" Placeholder="USD %" Keyboard="Numeric" />
+            <Entry Text="{Binding CryptoShare}" Placeholder="Crypto %" Keyboard="Numeric" />
+            <Entry Text="{Binding CryptoSymbol}" Placeholder="Crypto symbol" />
+            <Label Text="{Binding MixError}" TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
+            <controls:FundingMixBar x:Name="MixBar" Total="{Binding MixTotal}" />
+            <Button Text="Pay" Command="{Binding PayCommand}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+  <controls:CoraFab ScreenKey="pay" Line="{Binding CoraLine}" AutomationId="CoraFab" />
+  </Grid>
+</ContentPage>

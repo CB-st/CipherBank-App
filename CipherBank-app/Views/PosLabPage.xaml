@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.PosLabPage"
+             Title="POS Lab"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <ScrollView>
+    <VerticalStackLayout Padding="20" Spacing="14">
+      <Label Text="{Binding CoraLine}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Label Text="Session" Style="{StaticResource SectionHeader}" />
+            <Label Text="{Binding Status}" FontAttributes="Bold" />
+            <Label Text="{Binding ActiveCardLabel}" FontSize="12" />
+            <Label Text="{Binding SessionId}" FontSize="11" LineBreakMode="CharacterWrap" />
+            <Label Text="{Binding TokenRef}" FontSize="11" LineBreakMode="CharacterWrap" />
+            <HorizontalStackLayout Spacing="12">
+              <Label Text="{Binding Brand}" />
+              <Label Text="{Binding Last4, StringFormat='•••• {0}'}" />
+              <Label Text="{Binding TtlText}" />
+            </HorizontalStackLayout>
+            <Label Text="{Binding PlatformHint}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+            <Label Text="{Binding PresentError}" TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}" />
+            <Button Text="Start session" Command="{Binding StartSessionCommand}" AutomationId="PosStartSessionButton" />
+            <Button Text="Present NFC" Command="{Binding PresentNfcCommand}" IsEnabled="{Binding NfcSupported}" AutomationId="PosPresentNfcButton" />
+            <Button Text="Simulate exchange" Command="{Binding SimulateCommand}" AutomationId="PosSimulateButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Label Text="EMV lab stages" Style="{StaticResource SectionHeader}" />
+            <CollectionView ItemsSource="{Binding Stages}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Border StrokeThickness="1" Padding="10,8" Margin="0,4"
+                          Stroke="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <Label Text="{Binding Text}" />
+                      <Label Grid.Column="1" Text="{Binding StatusLabel}" FontSize="11" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>
