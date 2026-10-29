@@ -93,7 +93,7 @@ public class ArcCardDeck : ContentView
         _config = BuildConfig();
         Content = _layout;
 
-        var pan = new PanGestureRecognizer();
+        PanGestureRecognizer pan = new PanGestureRecognizer();
         pan.PanUpdated += OnPanUpdated;
         GestureRecognizers.Add(pan);
     }
