@@ -3,6 +3,7 @@
 // </copyright>
 
 using CipherBank_app.Custody;
+using CipherBank_app.Models;
 using CipherBank_app.Wallets;
 using FluentAssertions;
 using Xunit;
@@ -34,7 +35,7 @@ public class WalletRegistryTests
     {
         const string mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
         MnemonicHelper.Validate(mnemonic).Should().BeTrue();
-        DerivedAddress btc = AddressDerive.DeriveBtc(mnemonic, 0);
+        DerivedAddress btc = AddressDerive.DeriveRequired(AssetSymbol.Btc, mnemonic, 0);
         btc.Address.Should().StartWith("bc1");
         btc.Path.Should().Be("m/84'/0'/0'/0/0");
     }
@@ -43,7 +44,7 @@ public class WalletRegistryTests
     public void DeriveEth_IsChecksummed()
     {
         const string mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-        DerivedAddress eth = AddressDerive.DeriveEth(mnemonic, 0);
+        DerivedAddress eth = AddressDerive.DeriveRequired(AssetSymbol.Eth, mnemonic, 0);
         eth.Address.Should().StartWith("0x");
         eth.Address.Length.Should().Be(42);
     }

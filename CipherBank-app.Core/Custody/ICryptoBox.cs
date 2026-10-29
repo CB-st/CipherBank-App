@@ -9,10 +9,10 @@ public interface ICryptoBox
 {
     /// <summary>
     /// Derives the custody key from <paramref name="pin"/> and <paramref name="salt"/> (PBKDF2 under
-    /// the frozen persisted profile). Caller owns the returned buffer and must zero it after use.
+    /// the frozen persisted profile). Caller owns the returned buffer and must dispose it, which zeroes the key.
     /// Use: Medium (seal / unlock). Scope: custody blobs on this device.
     /// </summary>
-    byte[] DeriveKey(string pin, byte[] salt);
+    SensitiveBuffer DeriveKey(string pin, byte[] salt);
 
     /// <summary>
     /// Encrypts <paramref name="plaintext"/> under <paramref name="pin"/> and returns the Base64

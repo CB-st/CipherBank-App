@@ -12,7 +12,7 @@ namespace CipherBank_app.Wallets;
 public sealed class DogecoinWalletModule : IWalletModule
 {
     /// <inheritdoc />
-    public AssetSymbol Symbol { get; } = new("DOGE");
+    public AssetSymbol Symbol => AssetSymbol.Doge;
 
     /// <inheritdoc />
     public IReadOnlyList<WalletUiMode> AddModes { get; } = [WalletUiMode.Derive, WalletUiMode.Watch];

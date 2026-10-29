@@ -38,6 +38,19 @@ public class LocalWalletSeederTests
         row.Kind.Should().Be("derived");
     }
 
+    /// <summary>A null symbol is rejected before any wallet is written. Use: Medium. Scope: LocalWalletSeeder.</summary>
+    [Fact]
+    public async Task EnsureDerivedAsync_RejectsNullSymbol()
+    {
+        FakeWallets wallets = new FakeWallets();
+        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+
+        Func<Task> act = () => seeder.EnsureDerivedAsync("abandon about", [new AssetSymbol("BTC"), null!]);
+
+        await act.Should().ThrowAsync<ArgumentException>().WithParameterName("symbols");
+        wallets.Rows.Should().BeEmpty();
+    }
+
     /// <summary>
     /// BTC and btc are one normalized symbol, so seeding inserts a single derived row.
     /// Use: Medium (seed). Scope: LocalWalletSeeder.
@@ -56,6 +69,24 @@ public class LocalWalletSeederTests
         row.Symbol.Should().Be(new AssetSymbol("BTC"));
         row.Kind.Should().Be("derived");
         row.Address.Should().NotBeNullOrWhiteSpace();
+    }
+
+    /// <summary>
+    /// Mixed-case duplicates across several assets seed one row per asset and skip non-derivable ones.
+    /// Use: Medium (seed). Scope: LocalWalletSeeder.
+    /// </summary>
+    [Fact]
+    public async Task EnsureDerivedAsync_DeduplicatesAcrossAssetsAndSkipsNonDerivable()
+    {
+        FakeWallets wallets = new FakeWallets();
+        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+        const string mnemonic =
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+        await seeder.EnsureDerivedAsync(mnemonic, ["btc", "ETH", "eth", "BTC", "xmr"]);
+        await seeder.EnsureDerivedAsync(mnemonic, ["BTC", "ETH"]);
+
+        wallets.Rows.Select(r => r.Symbol).Should().BeEquivalentTo([AssetSymbol.Btc, AssetSymbol.Eth]);
     }
 
     private sealed class FakeWallets : IWalletRepository
