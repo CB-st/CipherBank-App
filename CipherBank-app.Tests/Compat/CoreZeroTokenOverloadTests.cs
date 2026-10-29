@@ -7,6 +7,7 @@ using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using CipherBank_app.Pos;
 using CipherBank_app.Services;
+using CipherBank_app.Tests.Persist;
 using CipherBank_app.V1;
 using FluentAssertions;
 using Xunit;
@@ -72,7 +73,7 @@ public class CoreZeroTokenOverloadTests
         RecordingPrefsSync prefs = new RecordingPrefsSync();
         IPrefsSyncService prefsApi = prefs;
         await prefsApi.PullMergeAsync();
-        await prefsApi.SaveAndPushAsync(new UserPrefs(CipherBank_app.Tests.Persist.TestPreferenceDefaults.Value));
+        await prefsApi.SaveAndPushAsync(new UserPrefs(TestPreferenceDefaults.Value));
 
         quotes.Seen.Should().HaveCount(4).And.OnlyContain(t => t == CancellationToken.None);
         prefs.Seen.Should().HaveCount(2).And.OnlyContain(t => t == CancellationToken.None);
@@ -232,10 +233,18 @@ public class CoreZeroTokenOverloadTests
         public Task<IReadOnlyList<AssetSymbol>> GetCurrenciesAsync(CancellationToken cancellationToken)
             => Record<IReadOnlyList<AssetSymbol>>(cancellationToken);
 
-        public Task<PublicQuote> GetInverseQuoteAsync(AssetSymbol inputSymbol, decimal inputAmount, AssetSymbol outputSymbol, CancellationToken cancellationToken)
+        public Task<PublicQuote> GetInverseQuoteAsync(
+            AssetSymbol inputSymbol,
+            decimal inputAmount,
+            AssetSymbol outputSymbol,
+            CancellationToken cancellationToken)
             => Record<PublicQuote>(cancellationToken);
 
-        public Task<PublicQuote> GetQuoteAsync(AssetSymbol inputSymbol, decimal outputAmount, AssetSymbol outputSymbol, CancellationToken cancellationToken)
+        public Task<PublicQuote> GetQuoteAsync(
+            AssetSymbol inputSymbol,
+            decimal outputAmount,
+            AssetSymbol outputSymbol,
+            CancellationToken cancellationToken)
             => Record<PublicQuote>(cancellationToken);
     }
 

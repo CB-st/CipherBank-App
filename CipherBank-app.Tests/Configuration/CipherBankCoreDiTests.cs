@@ -8,9 +8,11 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Pos;
 using CipherBank_app.V1;
+using CipherBank_app.Wallets;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace CipherBank_app.Tests.Configuration;
@@ -35,8 +37,6 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<ICoraLineProvider>().Should().BeOfType<CoraLineProvider>();
         provider.GetRequiredService<IEmvExchangeSimulator>().Should().BeOfType<EmvExchangeSimulator>();
         FileInfo databaseFile = provider.GetRequiredService<FileInfo>();
-        provider.GetRequiredService<ILocalDatabaseInitializer>().Should().BeOfType<LocalDatabaseInitializer>();
-        provider.GetRequiredService<AppStartupCoordinator>().Should().NotBeNull();
         PersistenceOptions persistence = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
         databaseFile.Name.Should().Be(persistence.DatabaseName);
         persistence.DefaultRecipients.Select(row => row.Id).Should().Equal(
@@ -47,7 +47,11 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<IRecipientSeedInitializer>().Should().BeOfType<RecipientSeedInitializer>();
         provider.GetRequiredService<IMarketRepository>().Should().BeOfType<MarketRepository>();
         provider.GetRequiredService<IPrefsStore>().Should().BeOfType<PrefsStore>();
+        provider.GetRequiredService<ILocalDatabaseInitializer>().Should().BeOfType<LocalDatabaseInitializer>();
+        provider.GetRequiredService<AppStartupCoordinator>().Should().BeOfType<AppStartupCoordinator>();
         provider.GetRequiredService<IRateSnapshotStore>().Should().BeOfType<SqliteRateSnapshotStore>();
+        provider.GetRequiredService<ISingleFlightJobFactory>().Should().BeOfType<SingleFlightJobFactory>();
+        provider.GetRequiredService<IPrioritizedJobDispatcher>().Should().BeOfType<PrioritizedJobDispatcher>();
         provider.GetRequiredService<ISyncJobScheduler>().Should().BeOfType<SyncJobScheduler>();
         provider.GetRequiredService<ISessionProofBuilder>().Should().BeOfType<LabSessionProofBuilder>();
         provider.GetRequiredService<IProductSessionStore>().Should().BeOfType<InMemoryProductSessionStore>();
@@ -68,5 +72,28 @@ public class CipherBankCoreDiTests
 
         nullConfig.Should().Throw<ArgumentNullException>();
         blankDir.Should().Throw<ArgumentException>();
+    }
+
+    /// <summary>
+    /// Resolves each custody service after the host ports are registered.
+    /// Use: Medium (DI smoke). Scope: AddCustodyServices.
+    /// </summary>
+    [Fact]
+    public void AddCustodyServices_ResolvesEachCustodyService()
+    {
+        ServiceCollection services = new ServiceCollection();
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(Mock.Of<ISecureStore>());
+        services.AddSingleton(Mock.Of<IStepUpChallenges>());
+        services.AddSingleton(Mock.Of<IWalletRepository>());
+        services.AddCustodyServices(CipherBankDefaultsConfiguration.Build("Development"));
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<ICryptoBox>().Should().BeOfType<AesGcmCryptoBox>();
+        provider.GetRequiredService<IPinService>().Should().BeOfType<PinService>();
+        provider.GetRequiredService<ICustodyService>().Should().BeOfType<CustodyService>();
+        provider.GetRequiredService<IMnemonicBackupService>().Should().BeOfType<MnemonicBackupService>();
+        provider.GetRequiredService<IStepUpAuth>().Should().BeOfType<StepUpAuthService>();
+        provider.GetRequiredService<ILocalWalletSeeder>().Should().BeOfType<LocalWalletSeeder>();
     }
 }

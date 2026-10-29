@@ -5,17 +5,18 @@
 using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Text.Json;
-using CipherBank_app.Models;
 using CipherBank_app.Charts;
 using CipherBank_app.Constants;
 using CipherBank_app.Controls;
 using CipherBank_app.Cora;
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
 using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.Graphics;
 
 namespace CipherBank_app.ViewModels;
 
@@ -106,7 +107,7 @@ public partial class HomeViewModel : ObservableObject
 
     public ObservableCollection<AssetRowVm> CombinedAssets { get; } = new();
 
-    public ObservableCollection<ChartPoint> Sparkline { get; } = new();
+    public ObservableCollection<Point> Sparkline { get; } = new();
 
     public ObservableCollection<ChartSeries> CompareSeries { get; } = new();
 
@@ -554,7 +555,7 @@ public partial class HomeViewModel : ObservableObject
                 await _syncJobScheduler.EnqueueAsync(
                     new PersistOhlcJobKey(symbol),
                     ct => _marketRepository.UpsertOhlcAsync(symbol, ohlc, ct));
-                var chartPts = pts.Select(p => new ChartPoint(p.T, p.V)).ToList();
+                var chartPts = pts.Select(p => new Point(p.T, p.V)).ToList();
                 if (i == 0)
                 {
                     foreach (var p in chartPts)

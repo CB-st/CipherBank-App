@@ -52,12 +52,12 @@ public partial class ReceiveViewModel : ObservableObject
 
         foreach (var mod in WalletRegistry.All())
         {
-            if (AssetChips.Any(c => c.Symbol.Equals(mod.Symbol, StringComparison.OrdinalIgnoreCase)))
+            if (AssetChips.Any(c => c.Symbol.Equals(mod.Symbol.Value, StringComparison.OrdinalIgnoreCase)))
             {
                 continue;
             }
 
-            AssetChips.Add(new AssetChip(mod.Symbol, false));
+            AssetChips.Add(new AssetChip(mod.Symbol.Value, false));
         }
     }
 
@@ -235,7 +235,7 @@ public partial class ReceiveViewModel : ObservableObject
         }
 
         UriText = PaymentUri.Build(Asset, Address, string.IsNullOrWhiteSpace(Amount) ? null : Amount);
-        byte[] png = QrCodeGenerator.ToPngBytes(UriText);
+        byte[] png = QrCodeGenerator.ToPng(UriText).Bytes.ToArray();
         QrImage = ImageSource.FromStream(() => new MemoryStream(png));
     }
 }

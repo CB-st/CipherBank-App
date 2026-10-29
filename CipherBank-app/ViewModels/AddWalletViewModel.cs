@@ -34,7 +34,7 @@ public partial class AddWalletViewModel : ObservableObject
         _wallets = wallets;
         _dialogs = dialogs;
         _api = api;
-        AvailableSymbols = WalletRegistry.All().Select(m => m.Symbol).ToList();
+        AvailableSymbols = WalletRegistry.All().Select(m => m.Symbol.Value).ToList();
         Symbol = AvailableSymbols.Count > 0 ? AvailableSymbols[0] : "BTC";
         RefreshModes();
     }

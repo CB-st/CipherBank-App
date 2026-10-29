@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Resources;
+
 namespace CipherBank_app.Custody;
 
 /// <inheritdoc />
@@ -38,13 +40,13 @@ public sealed class StepUpAuthService : IStepUpAuth
 
     private static string PromptFor(AuthReason reason) => reason switch
     {
-        AuthReason.Payment => "Confirm payment",
-        AuthReason.Convert => "Confirm conversion",
-        AuthReason.PosAuthorize => "Authorize POS session",
-        AuthReason.PosPresent => "Present payment credential",
-        AuthReason.RevealKeys => "Reveal recovery phrase",
-        AuthReason.Derive => "Derive wallet keys",
-        AuthReason.BackupExport => "Export recovery file",
-        _ => "Confirm action",
+        AuthReason.Payment => UserFacingStrings.StepUpPayment,
+        AuthReason.Convert => UserFacingStrings.StepUpConvert,
+        AuthReason.PosAuthorize => UserFacingStrings.StepUpPosAuthorize,
+        AuthReason.PosPresent => UserFacingStrings.StepUpPosPresent,
+        AuthReason.RevealKeys => UserFacingStrings.StepUpRevealKeys,
+        AuthReason.Derive => UserFacingStrings.StepUpDerive,
+        AuthReason.BackupExport => UserFacingStrings.StepUpBackupExport,
+        _ => UserFacingStrings.StepUpConfirmAction,
     };
 }

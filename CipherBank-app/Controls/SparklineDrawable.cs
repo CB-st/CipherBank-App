@@ -10,7 +10,7 @@ namespace CipherBank_app.Controls;
 /// <summary>GraphicsView drawable for a single sparkline series.</summary>
 public sealed class SparklineDrawable : IDrawable
 {
-    public IReadOnlyList<ChartPoint> Series { get; set; } = Array.Empty<ChartPoint>();
+    public IReadOnlyList<Point> Series { get; set; } = Array.Empty<Point>();
 
     public Color Stroke { get; set; } = ThemeTokens.Get("Gold");
 

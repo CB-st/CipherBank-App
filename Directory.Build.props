@@ -33,6 +33,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
 
+    <!-- Security analyzers -->
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+
     <!-- Opt-in local parity with the C# rules executed by SonarQube. -->
     <PackageReference Include="SonarAnalyzer.CSharp" Condition="'$(EnableSonarAnalyzers)' == 'true'">
       <PrivateAssets>all</PrivateAssets>

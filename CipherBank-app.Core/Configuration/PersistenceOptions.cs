@@ -5,14 +5,11 @@
 namespace CipherBank_app.Configuration;
 
 /// <summary>Settings for the on-device EF Core database.</summary>
-public sealed class PersistenceOptions : IOptionsSection
+public sealed class PersistenceOptions
 {
     private const int AccountNumberMinLength = 4;
     private const int RoutingNumberLength = 9;
     private const int MemoMaxLength = 140;
-
-    /// <summary>Gets the class-named configuration section used by the host.</summary>
-    public static string SectionName { get; } = nameof(PersistenceOptions);
 
     public string DatabaseName { get; set; } = "cipherbank.db";
 

@@ -3,6 +3,7 @@
 // </copyright>
 
 using CipherBank_app.Persist;
+using CipherBank_app.Tests.Persist;
 using CipherBank_app.V1;
 using FluentAssertions;
 using Xunit;
@@ -126,7 +127,7 @@ public class AccountBootstrapServiceTests
 
     private sealed class MemPrefs : IPrefsStore
     {
-        public UserPrefs Current { get; set; } = new(CipherBank_app.Tests.Persist.TestPreferenceDefaults.Value);
+        public UserPrefs Current { get; set; } = new(TestPreferenceDefaults.Value);
 
         public Task<UserPrefs> LoadAsync(CancellationToken ct = default) => Task.FromResult(Current);
 

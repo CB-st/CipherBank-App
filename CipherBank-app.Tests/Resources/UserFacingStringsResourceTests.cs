@@ -17,5 +17,7 @@ public sealed class UserFacingStringsResourceTests
         UserFacingStrings.AchRoutingNumberMustBeDigits(9).Should().Contain("9");
         UserFacingStrings.PinChangeTooShort(6).Should().Contain("6");
         UserFacingStrings.PinChangeSuccess.Should().Contain("PIN");
+        UserFacingStrings.StepUpPayment.Should().Be("Confirm payment");
+        UserFacingStrings.StepUpConfirmAction.Should().Be("Confirm action");
     }
 }

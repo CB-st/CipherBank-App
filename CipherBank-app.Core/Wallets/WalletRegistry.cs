@@ -2,73 +2,38 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Wallets;
 
-/// <summary>Modular wallet registry.</summary>
+/// <summary>Modular wallet registry. Each supported asset is its own <see cref="IWalletModule"/>.</summary>
 public static class WalletRegistry
 {
-    private static readonly Dictionary<string, WalletModule> Modules = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["BTC"] = new WalletModule
-        {
-            Symbol = "BTC",
-            AddModes = new[] { WalletUiMode.Derive, WalletUiMode.Watch },
-            CanDerive = true,
-            UsesServerWallets = false,
-            Notes = "BIP84 native segwit from on-device BIP39",
-        },
-        ["ETH"] = new WalletModule
-        {
-            Symbol = "ETH",
-            AddModes = new[] { WalletUiMode.Derive, WalletUiMode.Watch },
-            CanDerive = true,
-            UsesServerWallets = false,
-            Notes = "BIP44 m/44'/60'/0'/0/i from on-device BIP39",
-        },
-        ["LTC"] = new WalletModule
-        {
-            Symbol = "LTC",
-            AddModes = new[] { WalletUiMode.Derive, WalletUiMode.Watch },
-            CanDerive = true,
-            UsesServerWallets = false,
-            Notes = "BIP84 native segwit m/84'/2'/0'/0/i",
-        },
-        ["DOGE"] = new WalletModule
-        {
-            Symbol = "DOGE",
-            AddModes = new[] { WalletUiMode.Derive, WalletUiMode.Watch },
-            CanDerive = true,
-            UsesServerWallets = false,
-            Notes = "BIP44 m/44'/3'/0'/0/i P2PKH",
-        },
-        ["XMR"] = new WalletModule
-        {
-            Symbol = "XMR",
-            AddModes = new[] { WalletUiMode.Managed, WalletUiMode.Unmanaged, WalletUiMode.Watch },
-            CanDerive = false,
-            UsesServerWallets = true,
-            Notes = "Hybrid: managed/unmanaged via /wallets API — native derive deferred",
-        },
-    };
+    private static readonly IWalletModule[] Modules =
+    [
+        new BitcoinWalletModule(),
+        new EthereumWalletModule(),
+        new LitecoinWalletModule(),
+        new DogecoinWalletModule(),
+        new MoneroWalletModule(),
+    ];
 
-    public static WalletModule Get(string symbol)
+    /// <summary>Returns the module for <paramref name="symbol"/>, or a watch-only fallback.</summary>
+    public static IWalletModule Get(AssetSymbol symbol)
     {
-        string sym = symbol.ToUpperInvariant();
-        if (Modules.TryGetValue(sym, out WalletModule? mod))
+        ArgumentNullException.ThrowIfNull(symbol);
+        foreach (IWalletModule module in Modules)
         {
-            return mod;
+            if (module.Symbol == symbol)
+            {
+                return module;
+            }
         }
 
-        return new WalletModule
-        {
-            Symbol = sym,
-            AddModes = new[] { WalletUiMode.Watch },
-            CanDerive = AddressDerive.IsDerivable(sym),
-            UsesServerWallets = false,
-            Notes = "No dedicated module — watch address only",
-        };
+        return new FallbackWalletModule(symbol);
     }
 
-    public static IReadOnlyList<WalletModule> All()
-        => Modules.Values.OrderBy(m => m.Symbol).ToList();
+    /// <summary>Returns dedicated modules in ticker order. Fallbacks are not included.</summary>
+    public static IReadOnlyList<IWalletModule> All()
+        => Modules.OrderBy(module => module.Symbol.Value, StringComparer.Ordinal).ToList();
 }

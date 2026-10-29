@@ -33,7 +33,7 @@ public sealed class CompareChartDrawable : IDrawable
             return (s.Label, Pts: pts, Stroke: s.Stroke);
         }).ToList();
 
-        var all = indexed.SelectMany(s => s.Pts).Select(p => p.V).ToList();
+        var all = indexed.SelectMany(s => s.Pts).Select(p => p.Y).ToList();
         if (all.Count < 2)
         {
             return;

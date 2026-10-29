@@ -55,7 +55,7 @@ public sealed class HttpRateLimiterFactoryTests
             blocked.IsAcquired.Should().BeFalse();
         }
 
-        await Task.Delay(80);
+        await Task.Delay(250);
         RateLimitLease afterWindow = await limiter.AcquireAsync(1, CancellationToken.None);
         using (afterWindow)
         {

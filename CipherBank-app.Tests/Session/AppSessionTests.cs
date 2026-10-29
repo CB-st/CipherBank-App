@@ -6,6 +6,7 @@ using CipherBank_app.Custody;
 using CipherBank_app.Models;
 using CipherBank_app.Persist;
 using CipherBank_app.Session;
+using CipherBank_app.Tests.Persist;
 using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using FluentAssertions;
@@ -202,7 +203,7 @@ public class AppSessionTests
 
     private sealed class FakePrefs : IPrefsStore
     {
-        public UserPrefs Current { get; set; } = new(CipherBank_app.Tests.Persist.TestPreferenceDefaults.Value) { LockIdleSeconds = 1 };
+        public UserPrefs Current { get; set; } = new(TestPreferenceDefaults.Value) { LockIdleSeconds = 1 };
 
         public Task<UserPrefs> LoadAsync(CancellationToken ct = default) => Task.FromResult(Current);
 

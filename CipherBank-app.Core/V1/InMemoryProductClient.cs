@@ -6,7 +6,11 @@ using System.Globalization;
 
 namespace CipherBank_app.V1;
 
-/// <summary>Stateful in-memory product client for development and integration fixtures.</summary>
+/// <summary>
+/// Stateful in-memory product client for development and integration fixtures.
+/// Rebase note: parse asset fields through <c>AssetSymbol</c> at this V1 boundary,
+/// while preserving the existing string wire representation.
+/// </summary>
 public sealed class InMemoryProductClient : IProductClient
 {
     // --- Fixture constants ---

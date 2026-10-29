@@ -30,7 +30,7 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 
 | Document | Description |
 |----------|-------------|
-| [../AGENTS.md](../AGENTS.md) | **Day-to-day agent rules**, including Sonar typology, Stage 1–3 order, Shell compile gate, common missteps |
+| [../AGENTS.md](../AGENTS.md) | Repository architecture, coding, security, UI, and verification contract |
 | [BUILD_LOG.md](BUILD_LOG.md) | Condensed prototype map: what shipped, where it lives, connections |
 | [SONAR_GATE.md](SONAR_GATE.md) | Sonar quality-gate policy: what we fix vs soften (with reasons) |
 | [LOCAL_LINT.md](LOCAL_LINT.md) | Pre-push local lint (`./scripts/lint.sh`: C# + shell) |

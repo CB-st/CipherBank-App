@@ -12,7 +12,7 @@ public sealed class ChartSeries
 {
     public string Label { get; set; } = string.Empty;
 
-    public IReadOnlyList<ChartPoint> Points { get; set; } = Array.Empty<ChartPoint>();
+    public IReadOnlyList<Point> Points { get; set; } = Array.Empty<Point>();
 
     public Color Stroke { get; set; } = ThemeTokens.Get("Gold");
 }

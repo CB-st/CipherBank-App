@@ -2,7 +2,7 @@
 
 Sonar is the only source of truth for the quality gate. There is no
 checked-in copy for CI to verify against, and no repo-side script that
-pushes conditions to the server..
+pushes conditions to the server.
 
 The earlier `quality-gate.yaml` + Python verifier, and later
 `provision_quality_gate.py`, were retired so this repo does not keep a
@@ -30,6 +30,15 @@ Generator-owned `Persist/Migrations` artifacts are omitted from Sonar and
 verified by migration-integrity CI plus architecture/build tests. Do not grow
 `sonar.coverage.exclusions`; cover product code instead. Shrink only with an
 explicit policy change.
+
+Scanner source exclusions are limited to generated/build output, scanner reports,
+editor metadata, scripts, and the out-of-stack design handoff. Platform sources
+and MAUI resources remain visible to analysis. Platform adapters and tests are
+excluded from coverage calculation only; interfaces and production services are
+not CPD-excluded.
+
+Do not store `SONAR_TOKEN` here. Configure it as a repository secret; configure
+`SONAR_HOST_URL` and `SONAR_PROJECT_KEY` as repository variables.
 
 ## Local feedback: SonarQube for IDE, Connected Mode
 

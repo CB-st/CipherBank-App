@@ -9,7 +9,7 @@ Windows, in that order.
 
 | File / directory | Section | Controls |
 | --- | --- | --- |
-| `appsettings.jsonc` | `Cryptography`, `PersistenceOptions`, `SyncSchedulerOptions`, `UserPreferenceDefaultsOptions`, `HostBehaviorOptions`, `Cora`, `Carousel` | Custody AES-GCM/PBKDF2, on-device DB name, sync dispatch, first-run preferences, host behavior, Cora copy, carousel layout |
+| `appsettings.jsonc` | `CryptographyOptions`, `PersistenceOptions`, `SyncSchedulerOptions`, `UserPreferenceDefaultsOptions`, `HostBehaviorOptions`, `CoraOptions`, `CarouselLayoutConfig` | Custody AES-GCM/PBKDF2, on-device DB name, sync dispatch, first-run preferences, host behavior, Cora copy, carousel layout |
 | `challenge-pass/` | `ChallengePass` | Installed session suite selection (non-secret identifiers only) |
 | `network/` | `Network` | Product API and WebSocket endpoints by environment |
 | `sonar/` | server quality gate | New-code quality thresholds and project assignment contract |

@@ -76,7 +76,7 @@ public sealed class MarketRateHydrator
 
         long nowMs = now.ToUnixTimeMilliseconds();
         List<RateRow> refreshedRows = new(requestedSymbols.Length);
-        AssetSymbol usd = new("USD");
+        AssetSymbol usd = AssetSymbol.Usd;
         foreach (AssetSymbol symbol in requestedSymbols)
         {
             PublicQuote quote = await _publicQuotes

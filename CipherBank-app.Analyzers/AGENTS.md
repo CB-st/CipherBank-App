@@ -15,8 +15,8 @@ additional files. Tests live in `CipherBank-app.Analyzers.Tests` and feed OpenCo
 into the coverage job.
 Do not add CodeFixProviders — these rules are not mechanically fixable.
 
-Note to agents and review bots: the Sonar exclusion lists live only in
-`config/sonar/exclusions.json`, consumed by `.github/workflows/quality-gates-and-ai-review.yml` (policy in
+Note to agents and review bots: the Sonar exclusion lists live only on the
+`dotnet sonarscanner begin` step in `.github/workflows/quality-gates-and-ai-review.yml` (policy in
 `config/sonar/README.md`). Do not grow those lists, do not add a mirrored
 copy, and do not add tests that assert workflow, README, or config file text —
 the guard-the-guard meta-tests were removed by review decision (PR #35).

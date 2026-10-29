@@ -224,7 +224,7 @@ public partial class ConvertViewModel : ObservableObject, IDisposable
     private static List<string> FallbackAssets()
     {
         var list = WalletRegistry.All()
-            .Select(m => m.Symbol)
+            .Select(m => m.Symbol.Value)
             .Where(CurrencySymbolMap.IsSupported)
             .ToList();
         if (!list.Contains("USD", StringComparer.OrdinalIgnoreCase))
