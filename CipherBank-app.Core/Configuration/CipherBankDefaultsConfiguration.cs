@@ -45,6 +45,7 @@ public static class CipherBankDefaultsConfiguration
         Assembly assembly = typeof(CipherBankDefaultsConfiguration).Assembly;
         ConfigurationBuilder builder = new();
         builder.AddJsonStream(OpenRequiredResource(assembly, BaseResourceName));
+        builder.AddJsonStream(OpenRequiredResource(assembly, "CipherBank_app.Config.network.endpoints.json"));
         if (!string.IsNullOrWhiteSpace(environment))
         {
             TryAddOptionalResource(

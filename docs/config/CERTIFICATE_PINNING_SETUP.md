@@ -141,6 +141,45 @@ If pins need to be changed urgently:
 2. Push an expedited app update
 3. Consider temporarily disabling pinning (not recommended for production)
 
+## CI secret gate and the public-fork contract
+
+This is a public repository; the pins and the pipeline's backend credentials
+are the org's secret — the committed tree must work for anyone against any
+conforming backend.
+
+### Org pipeline (CB-st)
+
+- Real pins live only in the GitHub secret `ANDROID_CERT_PINS`
+  (`<current>,<backup>` base64 SHA-256 SPKI hashes; both required).
+- `.github/workflows/android-release.yml` stamps that secret into
+  `network_security_config.xml` via `scripts/stamp-android-cert-pins.sh` and
+  **fails the org release when the secret is missing or malformed** — an org
+  release cannot ship unpinned, and the tree never carries fake digests.
+- Pipeline wallet-backup testing targets the **Sandbox** environment
+  (`config/network/endpoints.json`, the default). Production endpoints are
+  reserved for real profile backups; never point automated tests at them.
+- Backend credentials used by pinned pipeline runs (test PINs, recovery
+  passwords, any sandbox tokens) are likewise GitHub secrets mapped to the
+  documented environment variables. GitHub does not expose secrets to forks,
+  so cloning the repo never grants access to the org's sandbox database.
+
+### Forks and third parties
+
+- Everything credential-bound is presence-gated: with no environment values
+  set, the pin stamp is skipped (system CAs), the release lane does not run
+  (repository guard in `android-release.yml`), and device E2E credentials
+  fail closed with a clear message instead of using embedded defaults.
+- To run the full pinned pipeline against **your own** backend:
+  1. Point `config/network/endpoints.json` at your API hosts.
+  2. Compute your own current+backup SPKI pins (recipe above) and set your
+     repository secret `ANDROID_CERT_PINS`.
+  3. Adjust the `if: github.repository == …` guard in
+     `android-release.yml` to your repository.
+  4. Supply your own harness credentials per
+     `docs/tests/e2e-local.env.example` (local) or repository secrets (CI).
+- The application is config-driven by design: many databases, many devices,
+  no org-specific values in code.
+
 ## Testing Certificate Pinning
 
 ### Using a Proxy (Should Fail)

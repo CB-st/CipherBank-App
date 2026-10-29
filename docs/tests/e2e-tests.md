@@ -4,18 +4,24 @@
 
 End-to-end tests for critical user journeys using Appium. Requires a running Appium server and a device or emulator.
 
+**Coding standards** for E2E and Shell work: repo-root [AGENTS.md](../../AGENTS.md) — Function documentation (Use High/Medium/Low + Scope), Object ownership & process boundaries, Complexity limits (max 2 loop layers; prefer ternary / dictionary dispatch).
+
 ## Structure
 
 ```
 CipherBank-app.E2ETests/
 ├── PageObjects/
-│   ├── BasePage.cs         # Common wait/click/enter helpers
-│   ├── LoginPage.cs
-│   ├── DashboardPage.cs
-│   ├── WalletPage.cs
-│   └── PurchasePage.cs
+│   ├── BasePage.cs
+│   ├── UnlockPage.cs
+│   ├── HomePage.cs
+│   ├── ConvertPage.cs
+│   ├── SendPage.cs
+│   ├── ReceivePage.cs
+│   ├── PosLabPage.cs
+│   └── … (legacy Login/Dashboard/Wallet/Purchase)
 └── Tests/
-    └── CriticalUserJourneyTests.cs
+    ├── CoraShellSmokeTests.cs   # preferred
+    └── CriticalUserJourneyTests.cs  # legacy (skipped when Cora Shell is primary)
 ```
 
 ## Dependencies
@@ -42,61 +48,66 @@ CipherBank-app.E2ETests/
 | IOS_APP_PATH | Path to .app | /path/to/CipherBank.app |
 | IOS_DEVICE | Simulator/device name | iPhone 15 |
 | IOS_VERSION | iOS version | 17.0 |
+| E2E_TEST_PIN | Unlock PIN for sealed test wallet | *(required — see Harness credentials)* |
+| E2E_TEST_PIN_ALT | Alternate PIN for change-PIN stories | *(required)* |
+| E2E_RECOVERY_PASSWORD | Recovery-file password (CB-ACCOUNT-002) | *(required)* |
 
-## Page Object Model
+## Harness credentials (debug only)
 
-### BasePage
+PIN, alternate PIN, and recovery-file password used by Appium stories are **synthetic lab values for local/CI emulator diagnosis**. They are not product secrets and must not live as string literals in shipping or harness **source**. Journals that record them flush under gitignored `artifacts/` only.
 
-- `WaitForElement(By)` – Wait for visible element
-- `ClickElement(By)` – Click element
-- `EnterText(By, string)` – Clear and type
-- `GetElementText(By)` – Get text
-- `IsElementDisplayed(By)` – Visibility check
-- `WaitForPageLoad()` – Override in subclasses
+**Setup (once per machine):**
 
-### LoginPage
+```bash
+cp docs/tests/e2e-local.env.example artifacts/e2e-local.env
+# edit artifacts/e2e-local.env — fill the three values
+```
 
-- `EnterUsername`, `EnterPassword` – Input
-- `ClickLogin` – Click Sign In
-- `LoginAs(username, password)` – Full login → DashboardPage
-- `IsErrorDisplayed`, `GetErrorMessage` – Error state
-- `LoginWithBiometric` – Biometric login (if available)
+Or export `E2E_TEST_PIN`, `E2E_TEST_PIN_ALT`, and `E2E_RECOVERY_PASSWORD` in the shell / CI job.
 
-**Element IDs**: UsernameEntry, PasswordEntry, LoginButton, ErrorLabel, BiometricLoginButton
+**Suggested local lab values** (CipherBank_API34 debugging reference — copy into the gitignored file, do not commit):
 
-### DashboardPage
+| Variable | Suggested lab value |
+|----------|---------------------|
+| `E2E_TEST_PIN` | `246810` |
+| `E2E_TEST_PIN_ALT` | `135791` |
+| `E2E_RECOVERY_PASSWORD` | `Cb-Emu-Recovery-2026` (12+ chars as the app requires) |
 
-- `GetWelcomeMessage`, `GetTotalBalance` – Displayed data
-- `GoToWallet` → WalletPage
-- `GoToPurchase` → PurchasePage
-- `GoToSettings` – Navigate to settings
-- `Logout` → LoginPage
-- `Refresh` – Refresh data
-- `IsLoggedIn`, `HasRecentTransactions` – State checks
+Committed template (placeholders only): [`e2e-local.env.example`](e2e-local.env.example).  
+Never commit `artifacts/e2e-local.env`, `artifacts/e2e-journal/`, or recovery pulls.
 
-**Element IDs**: WelcomeLabel, TotalBalanceLabel, WalletButton, PurchaseButton, SettingsButton, LogoutButton, RefreshButton, RecentTransactionsList
+## Local Android harness (`scripts/e2e-android.sh`)
 
-### WalletPage
+Wave 0 one-shot runner for `CipherBank_API34`. Boots the AVD if not already
+attached, builds the MAUI app (`-f net10.0-android -c Debug
+-p:EmbedAssembliesIntoApk=true`), installs the APK, starts Appium on `:4723`
+if it isn't already up, then runs the requested slice of
+`CipherBank-app.E2ETests`.
 
-- `SendCrypto(address, amount)` – Send flow
-- `HasTransactionHistory` – Transaction list visible
+```bash
+./scripts/e2e-android.sh --story CB-ACCOUNT-001   # one story
+./scripts/e2e-android.sh --wave account           # one wave (account|market|wallets|fund|pay|cards)
+./scripts/e2e-android.sh --all                    # full suite
+./scripts/e2e-android.sh --help                   # usage
+```
 
-### PurchasePage
+`--wave account` runs every Wave 0–1 account/onboarding Fact in `AccountStories.cs`: `CB-ACCOUNT-001`,
+`US-ONB-03`, `US-ONB-04`, `CB-ACCOUNT-PIN-CHANGE`, `CB-ACCOUNT-002` — not only the `CB_ACCOUNT_*`-named
+methods, since the two negative Facts (`US-ONB-03`/`04`) keep a `US_ONB_*` method-name prefix. See
+`WAVE_STORIES` map in `scripts/e2e-android.sh`.
 
-- `CompletePurchase(symbol, usdAmount)` – Purchase flow
-- `IsPurchaseSuccessful`, `GetSuccessMessage` – Result
-- `GoBack` – Navigate back
+Env/path setup (`ANDROID_HOME`, `ANDROID_SDK_ROOT`, `DOTNET_ROOT`, `CB_MAUI_PACKAGE`,
+`CB_AVD`) lives in `scripts/lib/android-env.sh` and is sourced automatically.
+MAUI package id for this harness: `com.companyname.cipherbankapp` (not Expo's
+`com.cipherbank.app` — see repo-root [AGENTS.md](../../AGENTS.md)).
 
-## CriticalUserJourneyTests
+## CoraShellSmokeTests
 
 | Test | Flow |
 |------|------|
-| LoginFlow_WithValidCredentials_ShouldShowDashboard | Login → verify dashboard |
-| LoginFlow_WithInvalidCredentials_ShouldShowError | Invalid login → error |
-| PurchaseFlow_CompletePurchase_ShouldSucceed | Login → Purchase → complete BTC purchase |
-| SendFlow_CompleteSend_ShouldSucceed | Login → Wallet → send crypto |
-| LogoutFlow_ShouldReturnToLogin | Login → Logout → login page |
-| CriticalPath_LoginPurchaseLogout_ShouldComplete | Login → Purchase ETH → Wallet → Logout |
+| `US_LCK_01_CNV_01_RCV_01_Unlock_ConvertQuote_ReceiveQr` | Unlock → Convert lock → Receive QR |
+| `US_HOM_05_SND_01_HomeChart_ConvertPickers_SendAch` | Home chips + hide → Convert pickers → Send ACH fields |
+| `US_POS_01_CB_PAY_003_PosLabSimulate` | PosLab start + simulate (fails with gap note if unreachable) |
 
 ## AutomationId Requirements
 
@@ -104,9 +115,17 @@ Page objects use `By.Id()` which maps to `AutomationId` in MAUI. All interactive
 
 | Page | Required AutomationIds |
 |------|-------------------------|
-| LoginPage | UsernameEntry, PasswordEntry, LoginButton, ErrorLabel |
-| DashboardPage | WelcomeLabel, TotalBalanceLabel, WalletButton, PurchaseButton, RefreshButton, ErrorLabel, RecentTransactionsList |
-| WalletPage | WalletBalanceLabel, WalletAddressLabel, RecipientAddressEntry, SendAmountEntry, SendButton, TransactionHistoryList, ErrorLabel |
-| PurchasePage | CryptoSelector, AmountEntry, PurchaseButton, FeeLabel, ErrorLabel |
+| UnlockPage | UnlockPinEntry, UnlockButton, UnlockErrorLabel |
+| HomePage | HomeTotalUsdLabel, HomeHideBalancesButton, HomeRange1dButton, HomeRange1wButton, HomeRange1mButton, HomeRange1yButton, HomeConvertButton, HomeSendButton, HomeReceiveButton, HomePayButton |
+| ConvertPage | ConvertFromPicker, ConvertToPicker, ConvertAmountEntry, ConvertLockQuoteButton, ConvertSubmitButton |
+| SendPage | SendSavedPayeesPicker, SendRecipientEntry, SendAchPayeeNameEntry, SendAchHolderEntry, SendAchBankEntry, SendAchRoutingEntry, SendAchAccountEntry, SendAchAccountTypePicker, SendAchMemoEntry, SendAchSavePayeeButton, SendAmountEntry, SendSpeedPicker, SendSubmitButton |
+| ReceivePage | ReceiveRefreshButton, ReceiveQrImage, ReceiveAddressLabel |
+| PosLabPage | PosStartSessionButton, PosSimulateButton |
+| ProfilePage | ProfileChangePinButton, ProfileLockButton, ProfileBackupPasswordEntry, ProfileBackupPasswordConfirmEntry, ProfileBackupHintEntry, ProfileExportBackupButton, ProfileRevealPinEntry, ProfileRevealMnemonicButton, ProfileMnemonicRevealLabel |
+| RestoreBackupPage | RestoreBackupPickFileButton, RestoreBackupFileStatusLabel, RestoreBackupPasswordEntry, RestoreBackupOpenButton, RestoreBackupErrorLabel |
+| LoginPage (legacy) | UsernameEntry, PasswordEntry, LoginButton, ErrorLabel |
+| DashboardPage (legacy) | WelcomeLabel, TotalBalanceLabel, WalletButton, PurchaseButton, RefreshButton, ErrorLabel, RecentTransactionsList |
+| WalletPage (legacy) | WalletBalanceLabel, WalletAddressLabel, RecipientAddressEntry, SendAmountEntry, SendButton, TransactionHistoryList, ErrorLabel |
+| PurchasePage (legacy) | CryptoSelector, AmountEntry, PurchaseButton, FeeLabel, ErrorLabel |
 
 When adding new UI elements used by E2E flows, add the corresponding `AutomationId` and update PageObjects.
