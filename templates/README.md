@@ -11,3 +11,9 @@ change. Templates are scaffolds, not generated source and are excluded from buil
 | `service/ServiceTests.cs.template` | Moq-based behavior test |
 | `config/Options.cs.template` | Typed options with a stable section name |
 | `config/theme.json.template` | Commented configuration theme |
+| `ui/Page.xaml.template` | Token-based MAUI page structure |
+| `ui/ViewModel.cs.template` | Constructor-injected page state |
+| `ui/TEMPLATE.md` | UI copy procedure and definition of done |
+| `repository/AGENTS.md.template` | Subtree ownership contract |
+| `repository/README.md.template` | Bounded-layer documentation |
+| `repository/TEMPLATE.md` | New layer/feature checklist |
