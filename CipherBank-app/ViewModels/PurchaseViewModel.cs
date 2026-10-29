@@ -2,13 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Linq;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
@@ -146,7 +141,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         await LoadAvailableCryptosAsync();
 
         var crypto = AvailableCryptos.FirstOrDefault(c =>
-            c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+            AssetSymbol.TryParse(symbol, out AssetSymbol? wanted) && c.Symbol == wanted);
 
         if (crypto != null)
         {
@@ -238,7 +233,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         Fee = subtotal * FeePercentage;
         TotalCost = subtotal + Fee;
 
-        LogCalculatedPurchase(_logger, Amount, SelectedCrypto.Symbol, subtotal, Fee, TotalCost);
+        LogCalculatedPurchase(_logger, Amount, SelectedCrypto.Symbol.Value, subtotal, Fee, TotalCost);
     }
 
     /// <summary>
@@ -290,11 +285,11 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
         try
         {
-            LogPurchasing(_logger, Amount, SelectedCrypto.Symbol);
+            LogPurchasing(_logger, Amount, SelectedCrypto.Symbol.Value);
 
             MoneyMoveDto move = await _product.ConvertAsync(
                 "USD",
-                SelectedCrypto.Symbol,
+                SelectedCrypto.Symbol.Value,
                 Amount.ToString(CultureInfo.InvariantCulture),
                 Guid.NewGuid().ToString("N"),
                 _cts.Token);
@@ -371,7 +366,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         AmountText = Amount.ToString("F8", CultureInfo.CurrentCulture);
         CalculateTotalCost();
 
-        LogSetPresetAmount(_logger, usdAmount, Amount, SelectedCrypto.Symbol);
+        LogSetPresetAmount(_logger, usdAmount, Amount, SelectedCrypto.Symbol.Value);
     }
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators

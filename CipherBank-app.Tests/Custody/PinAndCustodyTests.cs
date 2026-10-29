@@ -145,7 +145,8 @@ public class PinAndCustodyTests
         // Build a legacy-layout blob whose first salt byte is 0x01 (version marker collision).
         byte[] salt = RandomNumberGenerator.GetBytes(options.SaltSizeBytes);
         salt[0] = 0x01;
-        byte[] key = box.DeriveKey(pin, salt);
+        using SensitiveBuffer keyBuffer = box.DeriveKey(pin, salt);
+        byte[] key = keyBuffer.Span.ToArray();
         byte[] nonce = RandomNumberGenerator.GetBytes(options.NonceSizeBytes);
         byte[] plain = Encoding.UTF8.GetBytes(mnemonic);
         byte[] cipher = new byte[plain.Length];

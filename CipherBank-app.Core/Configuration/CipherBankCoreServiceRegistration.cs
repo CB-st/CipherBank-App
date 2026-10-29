@@ -4,13 +4,8 @@
 
 using CipherBank_app.Cora;
 using CipherBank_app.Custody;
-using CipherBank_app.Persist;
 using CipherBank_app.Pos;
-using CipherBank_app.V1;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Configuration;
 
@@ -29,40 +24,14 @@ internal static class CipherBankCoreServiceRegistration
         this IServiceCollection services,
         string databaseDirectory)
     {
+        // Full custody registration, including this box, is AddCustodyFeature at the MAUI root.
+        // This test root only needs the box; pin and step-up require platform ports.
         services.AddSingleton<ICryptoBox, AesGcmCryptoBox>();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ICoraLineProvider, CoraLineProvider>();
         services.AddSingleton<IEmvExchangeSimulator, EmvExchangeSimulator>();
-        services.AddSingleton(provider =>
-        {
-            PersistenceOptions options = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
-            return new FileInfo(Path.Combine(databaseDirectory, options.DatabaseName));
-        });
-        services.AddDbContextFactory<CipherBankDbContext>((provider, options) =>
-        {
-            string connectionString = new SqliteConnectionStringBuilder
-            {
-                DataSource = provider.GetRequiredService<FileInfo>().FullName,
-            }.ToString();
-            options.UseSqlite(connectionString);
-        });
-        services.AddSingleton<ILocalDatabaseInitializer, LocalDatabaseInitializer>();
-        services.AddSingleton<IRecipientSeedInitializer, RecipientSeedInitializer>();
-        services.AddSingleton<AppStartupCoordinator>();
-        services.AddSingleton<IMarketRepository, MarketRepository>();
-        services.AddSingleton<IPrefsStore, PrefsStore>();
-        services.AddSingleton<IRateSnapshotStore, SqliteRateSnapshotStore>();
-        services.AddSingleton<IRecipientRepository, RecipientRepository>();
-        services.AddSingleton<IWalletRepository, WalletRepository>();
-        services.AddSingleton<ISingleFlightJobFactory, SingleFlightJobFactory>();
-        services.AddSingleton<IPrioritizedJobDispatcher, PrioritizedJobDispatcher>();
-        services.AddSingleton<ISyncJobScheduler, SyncJobScheduler>();
-        services.AddSingleton<MarketRateHydrator>();
-
-        // Production product wire: host (MauiProgram) registers HttpProductClient on the
-        // pinned/rate-limited pipeline. Isolated Core tests construct the client directly.
-        services.AddSingleton<ISessionProofBuilder, LabSessionProofBuilder>();
-        services.AddSingleton<IProductSessionStore, InMemoryProductSessionStore>();
-        services.AddTransient<ProductAuthHeaderHandler>();
+        services.AddCipherBankPersistence(databaseDirectory);
+        services.AddCipherBankSync();
+        services.AddProductSessionServices();
     }
 }

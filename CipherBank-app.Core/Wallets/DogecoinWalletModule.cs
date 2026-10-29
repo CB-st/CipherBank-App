@@ -12,7 +12,7 @@ namespace CipherBank_app.Wallets;
 public sealed class DogecoinWalletModule : IWalletModule
 {
     /// <inheritdoc />
-    public AssetSymbol Symbol { get; } = new("DOGE");
+    public AssetSymbol Symbol => AssetSymbol.Doge;
 
     /// <inheritdoc />
     public IReadOnlyList<WalletUiMode> AddModes { get; } = [WalletUiMode.Derive, WalletUiMode.Watch];
@@ -40,7 +40,7 @@ public sealed class DogecoinWalletModule : IWalletModule
     }
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex = 0)
+    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
     {
         Mnemonic parsed = MnemonicHelper.Parse(mnemonic);
         ExtKey root = parsed.DeriveExtKey();

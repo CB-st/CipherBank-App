@@ -2,11 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Collections.ObjectModel;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
@@ -191,7 +187,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol);
+        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol.Value);
         await _navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
     }
 
@@ -216,7 +212,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        LogViewingDetails(_logger, crypto.Symbol);
+        LogViewingDetails(_logger, crypto.Symbol.Value);
         SelectedCrypto = crypto;
 
         // Could navigate to a details page here

@@ -12,6 +12,7 @@ using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -114,9 +115,12 @@ public static class MauiProgram
                 new HostBehaviorOptions())
             .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
             .ValidateOnStart();
-        mauiAppBuilder.Services.AddCipherBankCore(
+        mauiAppBuilder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+        mauiAppBuilder.Services.AddPersistenceFeature(
             mauiAppBuilder.Configuration,
-            FileSystem.Current.AppDataDirectory);
+            new DirectoryInfo(FileSystem.Current.AppDataDirectory));
+        mauiAppBuilder.Services.AddCustodyFeature(mauiAppBuilder.Configuration);
+        mauiAppBuilder.Services.AddProductSessionServices();
 
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
@@ -139,8 +143,8 @@ public static class MauiProgram
 #if DEBUG
         mauiAppBuilder.Services.AddSingleton<IProductClient>(sp =>
         {
-            ISettingsService settings = sp.GetRequiredService<ISettingsService>();
-            if (settings.UseMockServices)
+            HostBehaviorOptions behavior = sp.GetRequiredService<IOptions<HostBehaviorOptions>>().Value;
+            if (behavior.UseMockServices)
             {
                 Log.Debug("Using InMemoryProductClient (based on settings)");
                 return sp.GetRequiredService<InMemoryProductClient>();

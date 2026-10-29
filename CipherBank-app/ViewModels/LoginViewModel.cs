@@ -2,17 +2,15 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System;
 using System.Globalization;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
+using CipherBank_app.Configuration;
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
 using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.ViewModels;
 
@@ -27,6 +25,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     private readonly IDialogService _dialog;
 #if DEBUG
     private readonly ISettingsService _settings;
+    private readonly bool _useMockServices;
 #endif
     private CancellationTokenSource? _cts;
     private bool _disposed;
@@ -60,13 +59,15 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         IProductClient product,
         INavigationService navigation,
         IDialogService dialog,
-        ISettingsService settings)
+        ISettingsService settings,
+        IOptions<HostBehaviorOptions> hostBehavior)
     {
         _logger = logger;
         _product = product;
         _navigation = navigation;
         _dialog = dialog;
         _settings = settings;
+        _useMockServices = hostBehavior.Value.UseMockServices;
 
         // Check if we're in a test environment
         UpdateEnvironmentIndicator();
@@ -167,7 +168,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task UseTestCredentialsAsync()
     {
-        if (_settings.UseMockServices)
+        if (_useMockServices)
         {
             Username = "testuser";
             Password = "password123";
@@ -188,9 +189,9 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 
     private void UpdateEnvironmentIndicator()
     {
-        IsTestEnvironment = _settings.UseMockServices || _settings.Environment != "Production";
+        IsTestEnvironment = _useMockServices || _settings.Environment != "Production";
 
-        if (_settings.UseMockServices)
+        if (_useMockServices)
         {
             EnvironmentBadge = "MOCK SERVICES";
         }

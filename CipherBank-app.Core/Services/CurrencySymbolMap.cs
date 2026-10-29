@@ -13,23 +13,25 @@ namespace CipherBank_app.Services;
 /// </summary>
 public static class CurrencySymbolMap
 {
-    private const string ApiBitcoin = "BITCOIN";
-    private const string ApiMonero = "MONERO";
+    private static readonly AssetSymbol ApiBitcoin = new("BITCOIN");
+    private static readonly AssetSymbol ApiMonero = new("MONERO");
 
-    private static readonly Dictionary<string, string> AppToApi = new(StringComparer.OrdinalIgnoreCase)
+    // Keyed by AssetSymbol: record equality on the normalized ticker replaces the
+    // case-insensitive string comparer.
+    private static readonly Dictionary<AssetSymbol, AssetSymbol> AppToApi = new()
     {
-        ["BTC"] = ApiBitcoin,
+        [AssetSymbol.Btc] = ApiBitcoin,
         [ApiBitcoin] = ApiBitcoin,
-        ["XMR"] = ApiMonero,
+        [AssetSymbol.Xmr] = ApiMonero,
         [ApiMonero] = ApiMonero,
-        ["USD"] = "USD",
+        [AssetSymbol.Usd] = AssetSymbol.Usd,
     };
 
-    private static readonly Dictionary<string, string> ApiToApp = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<AssetSymbol, AssetSymbol> ApiToApp = new()
     {
-        [ApiBitcoin] = "BTC",
-        [ApiMonero] = "XMR",
-        ["USD"] = "USD",
+        [ApiBitcoin] = AssetSymbol.Btc,
+        [ApiMonero] = AssetSymbol.Xmr,
+        [AssetSymbol.Usd] = AssetSymbol.Usd,
     };
 
     /// <summary>
@@ -41,9 +43,9 @@ public static class CurrencySymbolMap
     public static string ToApiCurrency(AssetSymbol appSymbol)
     {
         ArgumentNullException.ThrowIfNull(appSymbol);
-        if (AppToApi.TryGetValue(appSymbol.Value, out string? api))
+        if (AppToApi.TryGetValue(appSymbol, out AssetSymbol? api))
         {
-            return api;
+            return api.Value;
         }
 
         throw new ArgumentException($"Unsupported currency symbol '{appSymbol.Value}'.", nameof(appSymbol));
@@ -66,8 +68,7 @@ public static class CurrencySymbolMap
     public static AssetSymbol ToAppSymbol(AssetSymbol apiCurrency)
     {
         ArgumentNullException.ThrowIfNull(apiCurrency);
-        string ticker = ApiToApp.TryGetValue(apiCurrency.Value, out string? app) ? app : apiCurrency.Value;
-        return new AssetSymbol(ticker);
+        return ApiToApp.TryGetValue(apiCurrency, out AssetSymbol? app) ? app : apiCurrency;
     }
 
     /// <summary>
@@ -86,5 +87,5 @@ public static class CurrencySymbolMap
     /// <param name="symbol">App or API symbol.</param>
     /// <returns>True when mapped.</returns>
     public static bool IsSupported(string? symbol)
-        => AssetSymbol.TryParse(symbol, out AssetSymbol? parsed) && AppToApi.ContainsKey(parsed.Value);
+        => AssetSymbol.TryParse(symbol, out AssetSymbol? parsed) && AppToApi.ContainsKey(parsed);
 }

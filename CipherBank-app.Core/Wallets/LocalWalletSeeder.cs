@@ -11,7 +11,7 @@ namespace CipherBank_app.Wallets;
 /// <inheritdoc />
 public sealed class LocalWalletSeeder : ILocalWalletSeeder
 {
-    private static readonly string[] DefaultSymbols = { "BTC", "ETH" };
+    private static readonly AssetSymbol[] DefaultSymbols = [AssetSymbol.Btc, AssetSymbol.Eth];
     private readonly IWalletRepository _wallets;
     private readonly TimeProvider _timeProvider;
 
@@ -29,10 +29,16 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     public Task EnsureDerivedAsync(string mnemonic)
         => EnsureDerivedAsync(mnemonic, DefaultSymbols);
 
-    public Task EnsureDerivedAsync(string mnemonic, IEnumerable<string> symbols)
+    public Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
     {
         ArgumentNullException.ThrowIfNull(symbols);
-        return EnsureDerivedCoreAsync(mnemonic, symbols);
+        AssetSymbol[] list = [.. symbols];
+        if (Array.Exists(list, symbol => symbol is null))
+        {
+            throw new ArgumentException("Symbols must not contain null entries.", nameof(symbols));
+        }
+
+        return EnsureDerivedCoreAsync(mnemonic, list);
     }
 
     /// <summary>
@@ -40,18 +46,24 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     /// already exists for the symbol but belongs to a different seed (restore/replace).
     /// Use: Medium (EnsureDerivedAsync / FinishCustodySetup). Scope: this seeder.
     /// </summary>
-    private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<string> symbols)
+    private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
     {
         IReadOnlyList<LocalWalletDescriptor> existing = await _wallets.ListAsync().ConfigureAwait(false);
-        foreach (string sym in symbols)
+        HashSet<AssetSymbol> seen = [];
+        foreach (AssetSymbol symbol in symbols)
         {
-            // CanDerive and a null derive are the same gate. TryDerive is the one check.
-            if (WalletRegistry.Get(sym).TryDerive(mnemonic) is not DerivedAddress derived)
+            // AssetSymbol is normalized and value-equal, so "BTC" and " btc " collapse here.
+            if (!seen.Add(symbol))
             {
                 continue;
             }
 
-            AssetSymbol symbol = new(sym);
+            // CanDerive and a null derive are the same gate. TryDerive is the one check.
+            if (WalletRegistry.Get(symbol).TryDerive(mnemonic) is not DerivedAddress derived)
+            {
+                continue;
+            }
+
             LocalWalletDescriptor? existingDerived = existing.FirstOrDefault(w =>
                 w.Symbol == symbol
                 && w.Kind.Equals("derived", StringComparison.OrdinalIgnoreCase));

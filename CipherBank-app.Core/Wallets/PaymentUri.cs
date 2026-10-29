@@ -15,12 +15,24 @@ public static class PaymentUri
     private static readonly HashSet<string> FiatCurrencies = ["USD", "EUR", "JPY"];
 
     /// <summary>Builds a receive URI. Empty addresses return an empty string.</summary>
+    public static string Build(string symbol, string address)
+        => Build(symbol, address, null, null, null);
+
+    /// <summary>Builds a receive URI with an amount. Empty addresses return an empty string.</summary>
+    public static string Build(string symbol, string address, string? amount)
+        => Build(symbol, address, amount, null, null);
+
+    /// <summary>Builds a receive URI with an amount and label. Empty addresses return an empty string.</summary>
+    public static string Build(string symbol, string address, string? amount, string? label)
+        => Build(symbol, address, amount, label, null);
+
+    /// <summary>Builds a receive URI. Empty addresses return an empty string.</summary>
     public static string Build(
         string symbol,
         string address,
-        string? amount = null,
-        string? label = null,
-        string? message = null)
+        string? amount,
+        string? label,
+        string? message)
     {
         string addr = address.Trim();
         if (string.IsNullOrEmpty(addr) || !AssetSymbol.TryParse(symbol, out AssetSymbol? parsed))
