@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CipherBank_app.Views.WelcomePage"
+             Title="Welcome"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource DeepPurple}"
+             AutomationId="WelcomePage">
+  <ScrollView>
+    <VerticalStackLayout Padding="24,48,24,32" Spacing="18">
+
+      <Label Style="{StaticResource BrandWordmark}" HorizontalOptions="Start">
+        <Label.FormattedText>
+          <FormattedString>
+            <Span Text="cipher" Style="{StaticResource BrandWordmarkSpan}" />
+            <Span Text="bank" Style="{StaticResource BrandAccentSpan}" />
+          </FormattedString>
+        </Label.FormattedText>
+      </Label>
+
+      <Border BackgroundColor="{StaticResource WelcomeFrame}"
+              StrokeThickness="0"
+              StrokeShape="RoundRectangle 24"
+              HeightRequest="220"
+              Margin="0,8,0,0">
+        <Label Text="CORA"
+               Style="{StaticResource WelcomeAvatarPlaceholder}"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"
+               Opacity="0.55" />
+      </Border>
+
+      <Label Style="{StaticResource CoraEyebrowGold}"
+             Text="CORA BYTE · YOUR DIGITAL TELLER"
+             Margin="0,8,0,0" />
+
+      <Label Text="Banking that feels like a conversation."
+             Style="{StaticResource WelcomeHeadline}"
+             LineBreakMode="WordWrap" />
+
+      <Label Text="{Binding CoraLine}"
+             Style="{StaticResource CoraMuted}"
+             TextColor="{StaticResource OnDarkMuted}" />
+
+      <Button Text="Create wallet"
+              Command="{Binding CreateWalletCommand}"
+              AutomationId="WelcomeCreateWalletButton"
+              Margin="0,12,0,0" />
+      <Button Text="I already have a wallet"
+              Command="{Binding ReturningCommand}"
+              Style="{StaticResource GhostButton}"
+              AutomationId="WelcomeReturningButton" />
+      <Button Text="Restore from backup file"
+              Command="{Binding RestoreFromBackupCommand}"
+              Style="{StaticResource GhostButton}"
+              AutomationId="WelcomeRestoreFromBackupButton" />
+
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

@@ -2,15 +2,12 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Globalization;
-using CipherBank_app.Configuration;
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
 using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.ViewModels;
 
@@ -23,68 +20,61 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     private readonly IProductClient _product;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
-#if DEBUG
     private readonly ISettingsService _settings;
+    private readonly bool _showDevelopmentIndicators;
     private readonly bool _useMockServices;
-#endif
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private string username = string.Empty;
-
-    [ObservableProperty]
-    private string password = string.Empty;
-
-    [ObservableProperty]
-    private bool isBusy;
-
-    [ObservableProperty]
-    private string? errorMessage;
-
-#if DEBUG
-    [ObservableProperty]
-    private bool isTestEnvironment;
-
-    [ObservableProperty]
-    private string? environmentBadge;
-
-    [ObservableProperty]
-    private string? statusMessage;
-#endif
-
-#if DEBUG
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
         IProductClient product,
         INavigationService navigation,
         IDialogService dialog,
         ISettingsService settings,
-        IOptions<HostBehaviorOptions> hostBehavior)
+        Microsoft.Extensions.Options.IOptions<CipherBank_app.Configuration.HostBehaviorOptions> hostBehavior)
     {
         _logger = logger;
         _product = product;
         _navigation = navigation;
         _dialog = dialog;
         _settings = settings;
-        _useMockServices = hostBehavior.Value.UseMockServices;
+        _showDevelopmentIndicators = hostBehavior.Value.ShowDevelopmentIndicators;
+        _useMockServices = settings.UseMockServices;
 
-        // Check if we're in a test environment
-        UpdateEnvironmentIndicator();
+        if (_showDevelopmentIndicators)
+        {
+            UpdateEnvironmentIndicator();
+        }
     }
-#else
-    public LoginViewModel(
-        ILogger<LoginViewModel> logger,
-        IProductClient product,
-        INavigationService navigation,
-        IDialogService dialog)
-    {
-        _logger = logger;
-        _product = product;
-        _navigation = navigation;
-        _dialog = dialog;
-    }
-#endif
+
+    /// <summary>Gets or sets the login username.</summary>
+    [ObservableProperty]
+    public partial string Username { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the login password.</summary>
+    [ObservableProperty]
+    public partial string Password { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether a login is in progress.</summary>
+    [ObservableProperty]
+    public partial bool IsBusy { get; set; }
+
+    /// <summary>Gets or sets the login error message.</summary>
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the app is using the test environment.</summary>
+    [ObservableProperty]
+    public partial bool IsTestEnvironment { get; set; }
+
+    /// <summary>Gets or sets the environment badge text.</summary>
+    [ObservableProperty]
+    public partial string? EnvironmentBadge { get; set; }
+
+    /// <summary>Gets or sets the login status message.</summary>
+    [ObservableProperty]
+    public partial string? StatusMessage { get; set; }
 
     /// <summary>
     /// Cancels the current login operation.
@@ -139,7 +129,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         {
             LogNetworkError(_logger, ex);
             ErrorMessage = "Network error. Please check your connection and try again.";
-            await _dialog.ShowAlertAsync("Connection Error", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Connection Error", ErrorMessage);
         }
         catch (OperationCanceledException)
         {
@@ -150,13 +140,13 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         {
             LogInvalidOperation(_logger, ex);
             ErrorMessage = "Invalid credentials or server error";
-            await _dialog.ShowAlertAsync("Login Failed", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Login Failed", ErrorMessage);
         }
         catch (Exception ex)
         {
             LogUnexpectedError(_logger, ex);
             ErrorMessage = "An unexpected error occurred. Please try again.";
-            await _dialog.ShowAlertAsync("Error", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Error", ErrorMessage);
         }
         finally
         {
@@ -164,10 +154,14 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         }
     }
 
-#if DEBUG
     [RelayCommand]
     private async Task UseTestCredentialsAsync()
     {
+        if (!_showDevelopmentIndicators)
+        {
+            return;
+        }
+
         if (_useMockServices)
         {
             Username = "testuser";
@@ -182,8 +176,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         {
             await _dialog.ShowAlertAsync(
                 "Not Available",
-                "Test credentials are only available when using mock services.",
-                "OK");
+                "Test credentials are only available when using mock services.");
         }
     }
 
@@ -197,7 +190,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         }
         else
         {
-            EnvironmentBadge = _settings.Environment.ToUpper(CultureInfo.InvariantCulture) switch
+            EnvironmentBadge = _settings.Environment.ToUpper(System.Globalization.CultureInfo.InvariantCulture) switch
             {
                 "SANDBOX" => "SANDBOX",
                 "DEVELOPMENT" => "DEV",
@@ -206,7 +199,6 @@ public partial class LoginViewModel : ObservableObject, IDisposable
             };
         }
     }
-#endif
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
     [LoggerMessage(Level = LogLevel.Information, Message = "Attempting login for user: {Username}")]
@@ -227,10 +219,8 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     [LoggerMessage(Level = LogLevel.Error, Message = "Unexpected error during login")]
     private static partial void LogUnexpectedError(ILogger logger, Exception ex);
 
-#if DEBUG
     [LoggerMessage(Level = LogLevel.Information, Message = "Test credentials used for quick login")]
     private static partial void LogTestCredentialsUsed(ILogger logger);
-#endif
 #pragma warning restore SA1204 // Static members should appear before non-static members
 
     private void Dispose(bool disposing)
