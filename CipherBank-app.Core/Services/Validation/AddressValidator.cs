@@ -15,14 +15,6 @@ namespace CipherBank_app.Services.Validation;
 public static partial class AddressValidator
 {
     private const int Bech32PrefixLength = 3;
-
-    // Base58 alphabet used by Bitcoin and Solana
-    private static readonly FrozenSet<char> _base58Alphabet =
-        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".ToFrozenSet();
-
-    private static readonly FrozenSet<char> _bech32Alphabet =
-        ("qpzry9x8gf2tvdw0s3jn54khce6mua7l" + "QPZRY9X8GF2TVDW0S3JN54KHCE6MUA7L").ToFrozenSet();
-
     private const int Base58LegacyMinLength = 26;
     private const int Base58LegacyMaxLength = 35;
     private const int Bech32MinLength = 42;
@@ -32,6 +24,13 @@ public static partial class AddressValidator
     private const int SolanaMaxLength = 44;
     private const int GenericMinLength = 20;
     private const int GenericMaxLength = 100;
+
+    // Base58 alphabet used by Bitcoin and Solana
+    private static readonly FrozenSet<char> _base58Alphabet =
+        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".ToFrozenSet();
+
+    private static readonly FrozenSet<char> _bech32Alphabet =
+        ("qpzry9x8gf2tvdw0s3jn54khce6mua7l" + "QPZRY9X8GF2TVDW0S3JN54KHCE6MUA7L").ToFrozenSet();
 
     /// <summary>
     /// Validates a cryptocurrency address for the specified symbol.
