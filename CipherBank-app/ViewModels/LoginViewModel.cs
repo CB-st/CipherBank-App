@@ -34,30 +34,6 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private string username = string.Empty;
-
-    [ObservableProperty]
-    private string password = string.Empty;
-
-    [ObservableProperty]
-    private bool isBusy;
-
-    [ObservableProperty]
-    private string? errorMessage;
-
-#if DEBUG
-    [ObservableProperty]
-    private bool isTestEnvironment;
-
-    [ObservableProperty]
-    private string? environmentBadge;
-
-    [ObservableProperty]
-    private string? statusMessage;
-#endif
-
-#if DEBUG
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
         IProductClient product,
@@ -76,6 +52,31 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         // Check if we're in a test environment
         UpdateEnvironmentIndicator();
     }
+
+    [ObservableProperty]
+    public partial string Username { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string Password { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool IsBusy { get; set; }
+
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+#if DEBUG
+    [ObservableProperty]
+    public partial bool IsTestEnvironment { get; set; }
+
+    [ObservableProperty]
+    public partial string? EnvironmentBadge { get; set; }
+
+    [ObservableProperty]
+    public partial string? StatusMessage { get; set; }
+#endif
+
+#if DEBUG
 #else
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
