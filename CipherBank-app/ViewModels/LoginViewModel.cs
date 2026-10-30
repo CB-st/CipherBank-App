@@ -34,6 +34,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
+#if DEBUG
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
         IProductClient product,
@@ -52,6 +53,19 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         // Check if we're in a test environment
         UpdateEnvironmentIndicator();
     }
+#else
+    public LoginViewModel(
+        ILogger<LoginViewModel> logger,
+        IProductClient product,
+        INavigationService navigation,
+        IDialogService dialog)
+    {
+        _logger = logger;
+        _product = product;
+        _navigation = navigation;
+        _dialog = dialog;
+    }
+#endif
 
     [ObservableProperty]
     public partial string Username { get; set; } = string.Empty;
@@ -74,21 +88,6 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
-#endif
-
-#if DEBUG
-#else
-    public LoginViewModel(
-        ILogger<LoginViewModel> logger,
-        IProductClient product,
-        INavigationService navigation,
-        IDialogService dialog)
-    {
-        _logger = logger;
-        _product = product;
-        _navigation = navigation;
-        _dialog = dialog;
-    }
 #endif
 
     /// <summary>
