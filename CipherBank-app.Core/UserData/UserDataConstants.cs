@@ -5,7 +5,7 @@
 namespace CipherBank_app.UserData;
 
 /// <summary>Format and algorithm constants for cipherbank-userdata-pack-v1.</summary>
-public static class UserDataConstants
+internal static class UserDataConstants
 {
     public const string PackFormat = "cipherbank-userdata-pack-v1";
 
