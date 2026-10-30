@@ -208,11 +208,10 @@ public sealed class CustodyService : ICustodyService
 
     public string? ExportMnemonic()
     {
-        DateTimeOffset now = _timeProvider.GetUtcNow();
-        // Order the live-session check and snapshot against Lock() (CB43-2).
+        // Order the clock read, live-session check and snapshot against Lock() (CB43-2).
         lock (_sessionGate)
         {
-            if (_mnemonic is not null && _expires > now)
+            if (_mnemonic is not null && _expires > _timeProvider.GetUtcNow())
             {
                 return _mnemonic;
             }

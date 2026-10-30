@@ -106,7 +106,7 @@ public class PinAndCustodyTests
     }
 
     [Fact]
-    public async Task Custody_ExportMnemonic_LockDuringLivenessCheck_ReturnsNullAndStaysLocked()
+    public async Task Custody_ExportMnemonic_LockWaitsForInFlightExportAndLocksAfter()
     {
         Mock<TimeProvider> time = new();
         time.Setup(clock => clock.GetUtcNow()).Returns(DateTimeOffset.UnixEpoch);
@@ -130,20 +130,25 @@ public class PinAndCustodyTests
             return DateTimeOffset.UnixEpoch;
         });
 
-        // Pause at the clock seam where the old implementation had already copied the mnemonic.
-        Task<bool> exporting = Task.Run(() => custody.ExportMnemonic() is null);
+        // Pause export at its clock read, which now happens inside the session gate.
+        Task<bool> exporting = Task.Run(() => custody.ExportMnemonic() is not null);
+        Task locking;
         try
         {
             await clockReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
-            custody.Lock();
+            locking = Task.Run(custody.Lock);
+            // Lock() must not complete while the export holds the gate.
+            (await Task.WhenAny(locking, Task.Delay(200))).Should().NotBe(locking);
         }
         finally
         {
             continueClockRead.Set();
         }
 
-        // Lock has returned before export resumes. Assert only presence to avoid disclosing the phrase.
+        // The export is ordered before the lock; once Lock() returns, nothing is exported.
         (await exporting.WaitAsync(TimeSpan.FromSeconds(10))).Should().BeTrue();
+        await locking.WaitAsync(TimeSpan.FromSeconds(10));
+        time.Setup(clock => clock.GetUtcNow()).Returns(DateTimeOffset.UnixEpoch);
         custody.IsUnlocked.Should().BeFalse();
         custody.SessionExpiresAt.Should().BeNull();
         custody.ExportMnemonic().Should().BeNull();
