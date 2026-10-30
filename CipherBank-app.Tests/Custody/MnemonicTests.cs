@@ -4,6 +4,7 @@
 
 using CipherBank_app.Custody;
 using FluentAssertions;
+using NBitcoin;
 using Xunit;
 
 namespace CipherBank_app.Tests.Custody;
@@ -59,4 +60,22 @@ public class MnemonicTests
     [Fact]
     public void Validate_RejectsBadChecksum()
         => MnemonicHelper.Validate("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon").Should().BeFalse();
+
+    /// <summary>
+    /// Entropy is the exact inverse of NBitcoin's entropy-to-mnemonic encoder for 12- and 24-word phrases.
+    /// Use: High (custody A1/A2 key input stability). Scope: MnemonicHelper.Entropy.
+    /// </summary>
+    [Theory]
+    [InlineData(16)]
+    [InlineData(32)]
+    public void Entropy_RoundTripsThroughNBitcoinEncoder(int entropyBytes)
+    {
+        for (int i = 0; i < 64; i++)
+        {
+            byte[] expected = System.Security.Cryptography.RandomNumberGenerator.GetBytes(entropyBytes);
+            string phrase = new Mnemonic(Wordlist.English, expected).ToString();
+
+            MnemonicHelper.Entropy(phrase).Should().Equal(expected);
+        }
+    }
 }
