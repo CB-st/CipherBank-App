@@ -63,6 +63,24 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     };
 
     /// <summary>
+    /// Node types whose declarations are not visible after them.
+    /// </summary>
+    private static readonly Type[] _ownScopeNodeTypes =
+    [
+        typeof(BlockSyntax),
+        typeof(AnonymousFunctionExpressionSyntax),
+        typeof(LocalFunctionStatementSyntax),
+        typeof(CommonForEachStatementSyntax),
+        typeof(ForStatementSyntax),
+        typeof(WhileStatementSyntax),
+        typeof(DoStatementSyntax),
+        typeof(UsingStatementSyntax),
+        typeof(FixedStatementSyntax),
+        typeof(LockStatementSyntax),
+        typeof(SwitchStatementSyntax),
+    ];
+
+    /// <summary>
     /// Namespace paths a using directive can open for a partial root in additional files.
     /// </summary>
     private static readonly HashSet<string> _knownPlatformNamespaces = new(StringComparer.Ordinal)
@@ -613,20 +631,49 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// Use: Medium (additional-file fallback only). Scope: this analyzer.
     /// </summary>
     private static bool ScopeDeclaresValue(SyntaxNode scope, string name)
+        => scope is TypeDeclarationSyntax type
+            ? TypeDeclaresValue(type, name)
+            : FunctionDeclaresParameter(scope, name) || StatementScopeDeclaresValue(scope, name);
+
+    /// <summary>
+    /// True when a method, local function or lambda declares a parameter with that name.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool FunctionDeclaresParameter(SyntaxNode scope, string name)
         => scope switch
         {
-            TypeDeclarationSyntax type => TypeDeclaresValue(type, name),
             BaseMethodDeclarationSyntax method => HasParameter(method.ParameterList, name),
             LocalFunctionStatementSyntax local => HasParameter(local.ParameterList, name),
             ParenthesizedLambdaExpressionSyntax lambda => HasParameter(lambda.ParameterList, name),
             SimpleLambdaExpressionSyntax lambda => lambda.Parameter.Identifier.ValueText == name,
-            AnonymousMethodExpressionSyntax anonymous => anonymous.ParameterList is not null
-                && HasParameter(anonymous.ParameterList, name),
+            AnonymousMethodExpressionSyntax { ParameterList: { } parameters } => HasParameter(parameters, name),
+            _ => false,
+        };
+
+    /// <summary>
+    /// True when a block, switch section or loop/using/fixed statement declares a local with that
+    /// name that is visible inside it. Variables a <c>for</c>, <c>foreach</c>, <c>using</c> or
+    /// <c>fixed</c> statement declares are visible only inside that statement.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool StatementScopeDeclaresValue(SyntaxNode scope, string name)
+        => scope switch
+        {
             ForEachStatementSyntax loop => loop.Identifier.ValueText == name,
+            ForStatementSyntax { Declaration: { } declaration } => DeclaresVariable(declaration, name),
+            UsingStatementSyntax { Declaration: { } declaration } => DeclaresVariable(declaration, name),
+            FixedStatementSyntax fixedStatement => DeclaresVariable(fixedStatement.Declaration, name),
             BlockSyntax block => block.Statements.Any(statement => StatementDeclaresValue(statement, name)),
             SwitchSectionSyntax section => section.Statements.Any(statement => StatementDeclaresValue(statement, name)),
             _ => false,
         };
+
+    /// <summary>
+    /// True when a variable declaration declares that name.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool DeclaresVariable(VariableDeclarationSyntax declaration, string name)
+        => declaration.Variables.Any(variable => variable.Identifier.ValueText == name);
 
     /// <summary>
     /// True when a type declares a field, property, event or primary-constructor parameter with that name.
@@ -647,10 +694,10 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// looking into nested blocks or lambdas, which have their own scopes.
     /// Use: Medium (additional-file fallback only). Scope: this analyzer.
     /// </summary>
-    private static bool StatementDeclaresValue(StatementSyntax statement, string name)
-        => statement
-            .DescendantNodesAndSelf(child => child == statement
-                || child is not (BlockSyntax or AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+    private static bool StatementDeclaresValue(SyntaxNode statement, string name)
+        => !IsOwnScopeStatement(statement)
+            && statement
+            .DescendantNodesAndSelf(child => child == statement || !IsOwnScopeStatement(child))
             .Any(declaration => declaration switch
             {
                 VariableDeclaratorSyntax variable => variable.Identifier.ValueText == name,
@@ -658,6 +705,14 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
                 LocalFunctionStatementSyntax function => function.Identifier.ValueText == name,
                 _ => false,
             });
+
+    /// <summary>
+    /// True for nodes whose declarations stay inside them: nested blocks, lambdas, local functions,
+    /// and loop, using, fixed, lock and switch statements.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool IsOwnScopeStatement(SyntaxNode node)
+        => Array.Exists(_ownScopeNodeTypes, type => type.IsInstanceOfType(node));
 
     /// <summary>
     /// True when a parameter list declares a parameter with that name.

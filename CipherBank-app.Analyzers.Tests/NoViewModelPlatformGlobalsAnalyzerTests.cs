@@ -495,6 +495,21 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                             {
                                 _ = {|CB1005:Tasks.Task<int>.Run|}(() => 1);
                             }
+
+                            void LoopLocalStopsAtLoop()
+                            {
+                                for (var Tasks = new Theme(); Tasks is not null; Tasks = null)
+                                {
+                                    _ = Tasks.Task.Name;
+                                }
+
+                                foreach (var Tasks in new Theme[0])
+                                {
+                                    _ = Tasks.Task.Name;
+                                }
+
+                                _ = {|CB1005:Tasks.Task<int>.Run|}(() => 1);
+                            }
                         }
                         """),
                 },
