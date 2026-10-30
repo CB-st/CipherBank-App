@@ -447,6 +447,8 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                                 _ = _settings.Preferences.Get("theme", "system");
                                 _ = settings.Preferences.Get("theme", "system");
                                 _ = account.Application.Name;
+                                _ = Controls.Application.Current;
+                                _ = Storage.Preferences.Get("theme", "system");
                                 {|CB1005:Application.Current|}.UserAppTheme = 1;
                             }
                         }
@@ -556,8 +558,8 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                                 _ = {|CB1005:System.Threading.Tasks.Task<int>.Run|}(() => 1);
                                 _ = {|CB1005:global::Task<int>.Run|}(() => 1);
                                 _ = {|CB1005:global::System.Threading.Tasks.Task<int>.Run|}(() => 1);
-                                _ = {|CB1005:Tasks.Task<int>.Run|}(() => 1);
-                                _ = {|CB1005:Threading.Tasks.Task<int>.Run|}(() => 1);
+                                _ = Tasks.Task<int>.Run(() => 1);
+                                _ = Threading.Tasks.Task<int>.Run(() => 1);
                                 _ = {|CB1005:Task<int>.Factory.StartNew|}(() => 1);
                                 _ = _scheduler.Task<int>.Run(() => 1);
                                 _ = Widget<int>.Current;

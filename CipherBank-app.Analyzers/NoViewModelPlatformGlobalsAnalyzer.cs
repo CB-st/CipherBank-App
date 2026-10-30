@@ -62,6 +62,15 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         "Threading",
     };
 
+    /// <summary>
+    /// Roots accepted in additional files, where nothing binds: only fully qualified namespaces.
+    /// </summary>
+    private static readonly HashSet<string> _fullyQualifiedRoots = new(StringComparer.Ordinal)
+    {
+        "Microsoft",
+        "System",
+    };
+
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         => ImmutableArray.Create(CipherBankDiagnostics.ViewModelPlatformGlobal);
@@ -319,7 +328,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
             return boundRoot;
         }
 
-        return SyntacticQualificationName(expression);
+        return SyntacticQualificationName(expression, fullyQualifiedRootsOnly: model is null);
     }
 
     /// <summary>
@@ -477,7 +486,12 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// the name after <c>::</c>, or the rightmost identifier of a namespace qualification
     /// such as <c>System.Threading.Tasks.Task&lt;int&gt;</c>. Instance member chains return null.
     /// </returns>
-    private static string? SyntacticQualificationName(ExpressionSyntax expression)
+    /// <param name="fullyQualifiedRootsOnly">
+    /// True for additional files (no semantic model): only <c>global::</c>, <c>Microsoft</c> and
+    /// <c>System</c> roots count, because partial roots such as <c>Controls</c> are ambiguous with
+    /// instance chains like <c>Controls.Application.Current</c>.
+    /// </param>
+    private static string? SyntacticQualificationName(ExpressionSyntax expression, bool fullyQualifiedRootsOnly)
     {
         if (expression is IdentifierNameSyntax identifier)
         {
@@ -495,7 +509,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
             return alias.Name.Identifier.ValueText;
         }
 
-        if (expression is MemberAccessExpressionSyntax member && IsNamespaceOrTypeQualification(member))
+        if (expression is MemberAccessExpressionSyntax member && IsNamespaceOrTypeQualification(member, fullyQualifiedRootsOnly))
         {
             return member.Name.Identifier.ValueText;
         }
@@ -508,8 +522,9 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// Use: High (each unbound member receiver). Scope: this analyzer.
     /// </summary>
     /// <param name="qualification">Member-access receiver such as <c>Microsoft.Maui.Controls.Application</c>.</param>
+    /// <param name="fullyQualifiedRootsOnly">When true, accept only <c>global::</c> and fully qualified roots.</param>
     /// <returns>True for <c>global::</c> and known namespace roots; false for <c>_account.Application</c>.</returns>
-    private static bool IsNamespaceOrTypeQualification(MemberAccessExpressionSyntax qualification)
+    private static bool IsNamespaceOrTypeQualification(MemberAccessExpressionSyntax qualification, bool fullyQualifiedRootsOnly)
     {
         ExpressionSyntax current = qualification;
         while (current is MemberAccessExpressionSyntax access)
@@ -525,7 +540,9 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         return current switch
         {
             AliasQualifiedNameSyntax => true,
-            IdentifierNameSyntax identifier => _namespaceRoots.Contains(identifier.Identifier.ValueText),
+            IdentifierNameSyntax identifier => fullyQualifiedRootsOnly
+                ? _fullyQualifiedRoots.Contains(identifier.Identifier.ValueText)
+                : _namespaceRoots.Contains(identifier.Identifier.ValueText),
             _ => false,
         };
     }
