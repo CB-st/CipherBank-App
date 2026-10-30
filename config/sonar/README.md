@@ -8,12 +8,19 @@ The earlier `quality-gate.yaml` + Python verifier, and later
 `provision_quality_gate.py`, were retired so this repo does not keep a
 second rulebook that drifts from the live gate.
 
-## CI's role: wait, then fail closed
+## CI's role: wait, then report
 
-`.github/workflows/quality-gates-and-ai-review.yml` runs the scanner, polls
-`api/ce/task` + `api/qualitygates/project_status`, and fails the `sonar`
-job when the gate status is `ERROR`. Merge blocking is that job plus
-Sonar's own PR check (decoration).
+`.github/workflows/quality-gates-and-ai-review.yml` runs the scanner and polls
+`api/ce/task` + `api/qualitygates/project_status`. The step named "Report
+quality gate outcome" (about lines 635-654) exits 0 for the recognized
+statuses `OK`, `NONE`, `WARN`, and `ERROR`. `OK` and `NONE` print a pass
+line; `WARN` and `ERROR` print a notice. Among recognized gate statuses, only
+an unrecognized value fails that step. The same job still fails earlier: an
+unset or unreachable `SONAR_HOST_URL` (Probe SonarQube reachability), missing
+coverage artifacts (Verify coverage report), scanner or build failures, a
+malformed `report-task.txt`, a CE task failure or timeout, and Sonar API
+errors (Poll Sonar API and normalise results, roughly lines 483-560). Sonar's
+own PR check remains the merge gate for `ERROR`.
 
 Coverage for new code comes from Coverlet OpenCover produced by:
 
