@@ -12,22 +12,33 @@ public sealed class SecureStorageStore : ISecureStore
     /// <inheritdoc />
     public Task SetAsync(string key, string value)
     {
-        ArgumentException.ThrowIfNullOrEmpty(key);
-        ArgumentNullException.ThrowIfNull(value);
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key must not be empty.", nameof(key));
+        }
+
         return SecureStorage.Default.SetAsync(key, value);
     }
 
     /// <inheritdoc />
     public Task<string?> GetAsync(string key)
     {
-        ArgumentException.ThrowIfNullOrEmpty(key);
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key must not be empty.", nameof(key));
+        }
+
         return SecureStorage.Default.GetAsync(key);
     }
 
     /// <inheritdoc />
     public Task RemoveAsync(string key)
     {
-        ArgumentException.ThrowIfNullOrEmpty(key);
+        if (key.Length == 0)
+        {
+            throw new ArgumentException("Key must not be empty.", nameof(key));
+        }
+
         SecureStorage.Default.Remove(key);
         return Task.CompletedTask;
     }

@@ -14,7 +14,6 @@ internal sealed class CryptographyOptionsValidator : IValidateOptions<Cryptograp
     /// <inheritdoc />
     public ValidateOptionsResult Validate(string? name, CryptographyOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
         if (options.IsValid() && options.MatchesPersistedProfile())
         {
             return ValidateOptionsResult.Success;

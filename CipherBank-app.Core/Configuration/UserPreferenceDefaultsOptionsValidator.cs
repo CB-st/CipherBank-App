@@ -12,7 +12,6 @@ internal sealed class UserPreferenceDefaultsOptionsValidator : IValidateOptions<
     /// <inheritdoc />
     public ValidateOptionsResult Validate(string? name, UserPreferenceDefaultsOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
         if (options.IsValid())
         {
             return ValidateOptionsResult.Success;
