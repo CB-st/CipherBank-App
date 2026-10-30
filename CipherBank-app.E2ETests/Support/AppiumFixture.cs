@@ -81,8 +81,10 @@ public sealed class AppiumFixture : IDisposable
     }
 
     /// <summary>
-    /// Leaves the sealed session on Unlock: already Unlock, Profile→Lock from Shell, or Fresh+seal+Lock when
-    /// Welcome appeared (wallet missing despite the sealed profile request).
+    /// Leaves the sealed session on Unlock: already Unlock, Profile→Lock from Shell, or otherwise Fresh+seal+Lock.
+    /// The fallback covers Welcome (wallet missing despite the sealed profile request) and onboarding screens such
+    /// as BackupQuiz or SetPin left behind by negative onboarding Facts: SealedAsync clears app data first, so
+    /// the handoff always starts from a known fresh state.
     /// Use: High (sealed profile CreateOrThrow). Scope: this fixture session.
     /// </summary>
     private void EnsureSealedUnlockOrThrow()
@@ -94,28 +96,20 @@ public sealed class AppiumFixture : IDisposable
         }
 
         WelcomePage welcome = new WelcomePage(Driver);
-        if (welcome.IsLoaded())
-        {
-            DeviceState device = new DeviceState(Driver, Journal);
-            HomePage home = device.SealedAsync().GetAwaiter().GetResult();
-            UnlockPage locked = home.GoToProfileTab().LockApp();
-            locked.WaitForPageLoad();
-            if (!locked.IsLoaded())
-            {
-                throw new InvalidOperationException(
-                    "E2E_DEVICE_PROFILE=sealed: sealed after Welcome but Profile→Lock did not land on Unlock.");
-            }
-
-            return;
-        }
-
-        if (TryLockFromShell(out unlock) && unlock.IsLoaded())
+        if (!welcome.IsLoaded() && TryLockFromShell(out unlock) && unlock.IsLoaded())
         {
             return;
         }
 
-        throw new InvalidOperationException(
-            "E2E_DEVICE_PROFILE=sealed requires Unlock (or Welcome→seal); neither Unlock nor a lockable Shell was visible.");
+        DeviceState device = new DeviceState(Driver, Journal);
+        HomePage home = device.SealedAsync().GetAwaiter().GetResult();
+        UnlockPage locked = home.GoToProfileTab().LockApp();
+        locked.WaitForPageLoad();
+        if (!locked.IsLoaded())
+        {
+            throw new InvalidOperationException(
+                "E2E_DEVICE_PROFILE=sealed: reset+seal completed but Profile→Lock did not land on Unlock.");
+        }
     }
 
     /// <summary>
