@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Configuration;
 using CipherBank_app.Persist;
 using CipherBank_app.Tests.Configuration;
 using FluentAssertions;
@@ -12,6 +13,29 @@ namespace CipherBank_app.Tests.Persist;
 
 public sealed class RecipientSeedInitializerTests
 {
+    [Theory]
+    [InlineData(" checking ", "checking")]
+    [InlineData(" ChEcKiNg ", "checking")]
+    [InlineData(" savings ", "savings")]
+    [InlineData(" SaViNgS ", "savings")]
+    public async Task InitializeAsync_PaddedAccountType_PersistsCanonicalValue(string accountType, string expected)
+    {
+        PersistenceOptions options = EmbeddedAppSettings.BindPersistence("Development");
+        DefaultRecipientOptions seed = options.DefaultRecipients[0];
+        seed.AccountType = accountType;
+        options.AreDefaultRecipientsValid().Should().BeTrue();
+        string path = Path.Combine(Path.GetTempPath(), "cb-seed-" + Guid.NewGuid().ToString("N") + ".db");
+        LocalDb db = new(new FileInfo(path));
+        RecipientSeedInitializer initializer = new(db, Options.Create(options), TimeProvider.System);
+
+        await db.InitializeAsync();
+        await initializer.InitializeAsync(default);
+
+        RecipientRepository repository = new(db);
+        IReadOnlyList<AchRecipientRow> rows = await repository.ListAsync();
+        rows.Should().ContainSingle(row => row.Id == seed.Id).Which.AccountType.Should().Be(expected);
+    }
+
     [Fact]
     public async Task InitializeAsync_UsesConfiguredStableIds()
     {

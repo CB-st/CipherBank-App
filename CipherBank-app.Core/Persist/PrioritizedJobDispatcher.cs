@@ -168,6 +168,8 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
         private readonly TaskCompletionSource _completion =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        private int _completing;
+
         internal QueuedWork(
             SyncPriority priority,
             long sequence,
@@ -213,6 +215,14 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
 
         private void Complete(Exception? failure = null, bool canceled = false)
         {
+            // Dispose and the queue consumer can both cancel the same job. Only the
+            // first caller completes it and disposes the source; any other returns
+            // before it reads the token of a disposed source.
+            if (Interlocked.Exchange(ref _completing, 1) != 0)
+            {
+                return;
+            }
+
             bool completed;
 
             if (canceled)
