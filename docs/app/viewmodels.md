@@ -42,9 +42,9 @@ All ViewModels use CommunityToolkit.Mvvm (`[ObservableProperty]`, `[RelayCommand
 
 **File**: `ViewModels/WalletViewModel.cs`
 
-**Dependencies**: `ILogger`, `IWalletService`, `ITransactionService`, `ICryptoApiService`, `IErrorHandler`, `INavigationService`, `IDialogService`
+**Dependencies**: `ILogger`, `IWalletService`, `ITransactionService`, `ICryptoApiService`, `IErrorHandler`, `IDialogService`
 
-**Properties**: Wallets, Transactions, SelectedWallet, TotalBalance, TotalBalanceUsd, IsLoading, IsLoadingTransactions, ErrorMessage, SendToAddress, SendAmount, IsSending
+**Properties**: Wallets, Transactions, SelectedWallet, TotalBalanceUsd, IsLoading, IsLoadingTransactions, ErrorMessage, SendToAddress, SendAmount, IsSending
 
 **Reactions**: `OnSelectedWalletChanged` – Loads transactions when wallet changes.
 

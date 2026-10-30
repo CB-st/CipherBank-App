@@ -16,7 +16,7 @@ public static class PlatformFeatureRegistration
     public static IServiceCollection AddPlatformFeatures(this IServiceCollection services)
     {
         services.AddSingleton<IPlatformHttpMessageHandlerFactory, AndroidHttpMessageHandlerFactory>();
-        services.AddSingleton<IMotionPreference, AndroidMotionPreference>();
+        services.AddSingleton<IMotionPreference, DefaultMotionPreference>();
         services.AddSingleton<INfcPresentmentService, CipherBank_app.Platforms.Android.Nfc.AndroidNdefPresentmentService>();
         return services;
     }
