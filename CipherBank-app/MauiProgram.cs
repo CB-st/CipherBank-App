@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Reflection;
 using CipherBank_app.Configuration;
 using CipherBank_app.Extensions;
+using CipherBank_app.Security;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Mocks;
 using CipherBank_app.ViewModels;
@@ -30,6 +31,11 @@ public static class MauiProgram
             .GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration
             ?? "Release";
         bool isDevelopment = string.Equals(configuration, "Debug", StringComparison.OrdinalIgnoreCase);
+        if (!isDevelopment)
+        {
+            CertificatePinPolicy.EnsureReleasePinsAreConfigured();
+        }
+
         MauiAppBuilder builder = MauiApp.CreateBuilder();
         builder.Configuration.AddConfiguration(CipherBankDefaultsConfiguration.BuildForHost(
             isDevelopment,
