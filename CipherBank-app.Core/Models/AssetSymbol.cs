@@ -31,6 +31,12 @@ public sealed record AssetSymbol
     /// <summary>US dollar quote currency.</summary>
     public static readonly AssetSymbol Usd = new("USD");
 
+    /// <summary>Euro quote currency.</summary>
+    public static readonly AssetSymbol Eur = new("EUR");
+
+    /// <summary>Japanese yen quote currency.</summary>
+    public static readonly AssetSymbol Jpy = new("JPY");
+
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetSymbol"/> class.
     /// </summary>

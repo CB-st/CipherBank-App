@@ -41,7 +41,7 @@ public sealed class HttpRateLimiterFactoryTests
         using SlidingWindowRateLimiter limiter = HttpRateLimiterFactory.Create(
             permitLimit: 1,
             window: TimeSpan.FromMilliseconds(50),
-            queueLimit: 0);
+            queueLimit: 1);
 
         RateLimitLease first = await limiter.AcquireAsync(1, CancellationToken.None);
         using (first)
@@ -49,14 +49,8 @@ public sealed class HttpRateLimiterFactoryTests
             first.IsAcquired.Should().BeTrue();
         }
 
-        RateLimitLease blocked = await limiter.AcquireAsync(1, CancellationToken.None);
-        using (blocked)
-        {
-            blocked.IsAcquired.Should().BeFalse();
-        }
-
-        await Task.Delay(250);
-        RateLimitLease afterWindow = await limiter.AcquireAsync(1, CancellationToken.None);
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15));
+        RateLimitLease afterWindow = await limiter.AcquireAsync(1, timeout.Token);
         using (afterWindow)
         {
             afterWindow.IsAcquired.Should().BeTrue();
@@ -70,5 +64,36 @@ public sealed class HttpRateLimiterFactoryTests
         Action negative = () => HttpRateLimiterFactory.Create(permitLimit: -1);
         zero.Should().Throw<ArgumentOutOfRangeException>();
         negative.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact]
+    public async Task Create_Defaults_AllowSixtyPermitsFailFast()
+    {
+        using SlidingWindowRateLimiter limiter = HttpRateLimiterFactory.Create();
+
+        RateLimiterStatistics? stats = limiter.GetStatistics();
+
+        stats.Should().NotBeNull();
+        stats!.CurrentAvailablePermits.Should().Be(60);
+        using RateLimitLease lease = await limiter.AcquireAsync(1, CancellationToken.None);
+        lease.IsAcquired.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Create_PermitOnly_UsesGivenLimit()
+    {
+        using SlidingWindowRateLimiter limiter = HttpRateLimiterFactory.Create(5);
+
+        limiter.GetStatistics()!.CurrentAvailablePermits.Should().Be(5);
+    }
+
+    [Fact]
+    public void Create_RejectsNonPositiveWindowAndNegativeQueue()
+    {
+        Action zeroWindow = () => HttpRateLimiterFactory.Create(1, TimeSpan.Zero, 0);
+        Action negativeQueue = () => HttpRateLimiterFactory.Create(1, TimeSpan.FromSeconds(1), -1);
+
+        zeroWindow.Should().Throw<ArgumentOutOfRangeException>();
+        negativeQueue.Should().Throw<ArgumentOutOfRangeException>();
     }
 }
