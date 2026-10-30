@@ -63,6 +63,20 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     };
 
     /// <summary>
+    /// Namespace paths a using directive can open for a partial root in additional files.
+    /// </summary>
+    private static readonly HashSet<string> _knownPlatformNamespaces = new(StringComparer.Ordinal)
+    {
+        "Microsoft.Maui",
+        "Microsoft.Maui.ApplicationModel",
+        "Microsoft.Maui.ApplicationModel.DataTransfer",
+        "Microsoft.Maui.Controls",
+        "Microsoft.Maui.Storage",
+        "System.Threading",
+        "System.Threading.Tasks",
+    };
+
+    /// <summary>
     /// Roots accepted in additional files, where nothing binds: only fully qualified namespaces.
     /// </summary>
     private static readonly HashSet<string> _fullyQualifiedRoots = new(StringComparer.Ordinal)
@@ -542,9 +556,54 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
             AliasQualifiedNameSyntax => true,
             IdentifierNameSyntax identifier => fullyQualifiedRootsOnly
                 ? _fullyQualifiedRoots.Contains(identifier.Identifier.ValueText)
+                    || IsImportedNamespaceRoot(identifier)
                 : _namespaceRoots.Contains(identifier.Identifier.ValueText),
             _ => false,
         };
+    }
+
+    /// <summary>
+    /// True when a using directive in scope turns <paramref name="root"/> into a known platform
+    /// namespace path, such as <c>Controls</c> under <c>using Microsoft.Maui;</c>.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    /// <param name="root">Leftmost identifier of a member-access receiver.</param>
+    /// <returns>False for member-rooted chains such as <c>Controls.Application</c> with no matching import.</returns>
+    private static bool IsImportedNamespaceRoot(IdentifierNameSyntax root)
+    {
+        string name = root.Identifier.ValueText;
+        foreach (SyntaxNode scope in root.Ancestors())
+        {
+            SyntaxList<UsingDirectiveSyntax> usings = scope switch
+            {
+                CompilationUnitSyntax unit => unit.Usings,
+                BaseNamespaceDeclarationSyntax ns => ns.Usings,
+                _ => default,
+            };
+            foreach (UsingDirectiveSyntax directive in usings)
+            {
+                if (directive.Alias is null
+                    && directive.StaticKeyword.IsKind(SyntaxKind.None)
+                    && directive.Name is not null
+                    && _knownPlatformNamespaces.Contains(ImportedNamespace(directive.Name) + "." + name))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Text of a using directive name without a leading <c>global::</c> alias.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static string ImportedNamespace(NameSyntax name)
+    {
+        const string GlobalPrefix = "global::";
+        string text = name.ToString();
+        return text.StartsWith(GlobalPrefix, StringComparison.Ordinal) ? text.Substring(GlobalPrefix.Length) : text;
     }
 
     /// <summary>

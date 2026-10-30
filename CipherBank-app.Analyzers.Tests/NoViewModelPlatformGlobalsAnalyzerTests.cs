@@ -460,6 +460,39 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
         await test.RunAsync();
     }
 
+    [Fact]
+    public async Task ReportsImportedNamespacePathsInAdditionalViewModelFileAsync()
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestCode = "class Anchor { }",
+            TestState =
+            {
+                AdditionalFiles =
+                {
+                    ("CipherBank-app/ViewModels/ImportedRootsViewModel.cs", """
+                        using Microsoft.Maui;
+                        using global::System;
+
+                        class ImportedRootsViewModel
+                        {
+                            void Read()
+                            {
+                                _ = {|CB1005:Controls.Application.Current|};
+                                _ = {|CB1005:Storage.Preferences.Get|}("theme", "system");
+                                _ = {|CB1005:Threading.Tasks.Task<int>.Run|}(() => 1);
+                                _ = _account.Application.Name;
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+
+        await test.RunAsync();
+    }
+
     [Theory]
     [InlineData("_ = {|CB1005:Task<int>.Run|}(() => 1);")]
     [InlineData("_ = {|CB1005:System.Threading.Tasks.Task<int>.Run|}(() => 1);")]
