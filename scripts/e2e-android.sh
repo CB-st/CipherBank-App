@@ -48,6 +48,21 @@ declare -A SEALED_SMOKE_WAVES=(
   [pay]=1
 )
 
+# Story IDs carried by CoraShellSmokeTests Facts. A single --story selection of one of these
+# needs the sealed device profile (noReset) just like its wave, otherwise the fresh reset lands
+# on Welcome and EnsureUnlockScreen aborts before the story runs.
+declare -A SEALED_SMOKE_STORIES=(
+  [US-LCK-01]=1
+  [US-CNV-01]=1
+  [US-RCV-01]=1
+  [CB-FUND-001]=1
+  [US-HOM-05]=1
+  [CB-MARKET-001]=1
+  [US-SND-01]=1
+  [US-POS-01]=1
+  [CB-PAY-003]=1
+)
+
 # Explicit executable M7 catalog. --all never drops its filter and therefore
 # cannot select legacy tests that do not carry a Story trait.
 ALL_STORIES="CB-ACCOUNT-001 CB-ACCOUNT-002 CB-ACCOUNT-PIN-CHANGE US-ONB-01 US-ONB-02 US-ONB-03 US-ONB-04 US-LCK-01 US-CNV-01 US-RCV-01 CB-FUND-001 US-HOM-05 CB-MARKET-001 US-SND-01 US-POS-01 CB-PAY-003"
@@ -536,6 +551,9 @@ main() {
     if [[ "$MODE" == "wave" && -n "${SEALED_SMOKE_WAVES[$MODE_VALUE]:-}" ]]; then
       export E2E_DEVICE_PROFILE=sealed
       log "Wave '$MODE_VALUE' uses E2E_DEVICE_PROFILE=sealed (CoraShellSmoke Facts)"
+    elif [[ "$MODE" == "story" && -n "${SEALED_SMOKE_STORIES[$MODE_VALUE]:-}" ]]; then
+      export E2E_DEVICE_PROFILE=sealed
+      log "Story '$MODE_VALUE' uses E2E_DEVICE_PROFILE=sealed (CoraShellSmoke Fact)"
     fi
     run_e2e_tests "$apk" "$filter"
   fi
