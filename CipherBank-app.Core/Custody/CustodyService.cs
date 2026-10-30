@@ -208,13 +208,18 @@ public sealed class CustodyService : ICustodyService
 
     public string? ExportMnemonic()
     {
-        if (!SessionIsLive(out string? mnemonic))
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        // Order the live-session check and snapshot against Lock() (CB43-2).
+        lock (_sessionGate)
         {
-            CloseIfExpired();
-            return null;
+            if (_mnemonic is not null && _expires > now)
+            {
+                return _mnemonic;
+            }
         }
 
-        return mnemonic;
+        CloseIfExpired();
+        return null;
     }
 
     private static string CreateDeviceSecret()

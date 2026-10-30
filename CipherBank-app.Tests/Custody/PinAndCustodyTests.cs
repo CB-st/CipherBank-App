@@ -7,6 +7,7 @@ using System.Text;
 using CipherBank_app.Configuration;
 using CipherBank_app.Custody;
 using FluentAssertions;
+using Moq;
 using Xunit;
 
 namespace CipherBank_app.Tests.Custody;
@@ -102,6 +103,51 @@ public class PinAndCustodyTests
         (await custody.UnlockAsync("000000")).Should().BeFalse();
         locked.Should().Be(1);
         custody.IsUnlocked.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Custody_ExportMnemonic_LockDuringLivenessCheck_ReturnsNullAndStaysLocked()
+    {
+        Mock<TimeProvider> time = new();
+        time.Setup(clock => clock.GetUtcNow()).Returns(DateTimeOffset.UnixEpoch);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin, time.Object);
+        await custody.SealAsync(MnemonicHelper.Generate(), "123456");
+        int locked = 0;
+        custody.Locked += (_, _) => locked++;
+
+        TaskCompletionSource clockReadStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        using ManualResetEventSlim continueClockRead = new(false);
+        time.Setup(clock => clock.GetUtcNow()).Returns(() =>
+        {
+            clockReadStarted.TrySetResult();
+            if (!continueClockRead.Wait(TimeSpan.FromSeconds(10)))
+            {
+                throw new TimeoutException("Export clock read was not released.");
+            }
+
+            return DateTimeOffset.UnixEpoch;
+        });
+
+        // Pause at the clock seam where the old implementation had already copied the mnemonic.
+        Task<bool> exporting = Task.Run(() => custody.ExportMnemonic() is null);
+        try
+        {
+            await clockReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            custody.Lock();
+        }
+        finally
+        {
+            continueClockRead.Set();
+        }
+
+        // Lock has returned before export resumes. Assert only presence to avoid disclosing the phrase.
+        (await exporting.WaitAsync(TimeSpan.FromSeconds(10))).Should().BeTrue();
+        custody.IsUnlocked.Should().BeFalse();
+        custody.SessionExpiresAt.Should().BeNull();
+        custody.ExportMnemonic().Should().BeNull();
+        locked.Should().Be(1);
     }
 
     [Fact]
