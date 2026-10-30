@@ -38,8 +38,24 @@ public class UserDataPackCodecTests
         pack.UsernameHashPrefix.Should().Be("2bd806c9");
         pack.Blocks.Should().HaveCount(1);
 
-        Dictionary<string, string> opened = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
+        IReadOnlyDictionary<string, string> opened = UserDataPackCodec.OpenPack(pack, Username, keys.Kek).Blocks;
         opened[UserDataBlockTypes.Prefs].Should().Be(prefsJson);
+    }
+
+    [Fact]
+    public void OpenPack_AllBlocksAuthenticate_IsComplete()
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        UserDataPackWire pack = UserDataPackCodec.SealPack(
+            Username,
+            contentVersion: 1,
+            keys.Kek,
+            [new UserDataPlainBlock(UserDataBlockTypes.Prefs, UserDataBlockTypes.Prefs, "{}")]);
+
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
+
+        result.IsComplete.Should().BeTrue();
+        result.FailedBlocks.Should().BeEmpty();
     }
 
     [Fact]
@@ -56,7 +72,7 @@ public class UserDataPackCodecTests
         UserDataPackWire parsed = UserDataPackCodec.DecodeBlob(blob);
 
         parsed.ContentVersion.Should().Be(1u);
-        UserDataPackCodec.OpenPack(parsed, Username, keys.Kek)["prefs"].Should().Be("{}");
+        UserDataPackCodec.OpenPack(parsed, Username, keys.Kek).Blocks["prefs"].Should().Be("{}");
     }
 
     [Fact]
@@ -90,10 +106,14 @@ public class UserDataPackCodecTests
         cipher[0] ^= 0xFF;
         pack.Blocks[1].CiphertextBase64 = Convert.ToBase64String(cipher);
 
-        Dictionary<string, string> opened = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
+        IReadOnlyDictionary<string, string> opened = result.Blocks;
         opened.Should().ContainKey(UserDataBlockTypes.Prefs);
         opened[UserDataBlockTypes.Prefs].Should().Be("""{"ok":true}""");
         opened.Should().NotContainKey(UserDataBlockTypes.AppConfig);
+        result.IsComplete.Should().BeFalse();
+        result.FailedBlocks.Should().ContainSingle().Which.Should().Be(
+            new UserDataBlockFailure(UserDataBlockTypes.AppConfig, UserDataBlockTypes.AppConfig, UserDataBlockFailureReason.AuthenticationFailed));
     }
 
     [Fact]
@@ -111,10 +131,14 @@ public class UserDataPackCodecTests
 
         pack.Blocks[1].NonceBase64 = "not-base64";
 
-        Dictionary<string, string> opened = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
+        IReadOnlyDictionary<string, string> opened = result.Blocks;
         opened.Should().ContainKey(UserDataBlockTypes.Prefs);
         opened[UserDataBlockTypes.Prefs].Should().Be("""{"ok":true}""");
         opened.Should().NotContainKey(UserDataBlockTypes.AppConfig);
+        result.IsComplete.Should().BeFalse();
+        result.FailedBlocks.Should().ContainSingle().Which.Should().Be(
+            new UserDataBlockFailure(UserDataBlockTypes.AppConfig, UserDataBlockTypes.AppConfig, UserDataBlockFailureReason.Malformed));
     }
 
     [Fact]
