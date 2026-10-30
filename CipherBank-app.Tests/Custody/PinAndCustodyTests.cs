@@ -84,6 +84,28 @@ public class PinAndCustodyTests
     }
 
     [Fact]
+    public async Task Custody_IsUnlocked_DoesNotLockWhenSessionExpires()
+    {
+        ManualTime time = new ManualTime();
+        MemStore store = new MemStore();
+        PinService pin = new PinService(store);
+        CustodyService custody = new CustodyService(store, pin, time);
+        await custody.SealAsync(MnemonicHelper.Generate(), "123456");
+        (await custody.UnlockAsync("123456")).Should().BeTrue();
+        int locked = 0;
+        custody.Locked += (_, _) => locked++;
+
+        time.UtcNow = time.UtcNow.AddMinutes(6);
+
+        custody.IsUnlocked.Should().BeFalse();
+        locked.Should().Be(0);
+        custody.ExportMnemonic().Should().BeNull();
+        locked.Should().Be(1);
+        custody.ExportMnemonic().Should().BeNull();
+        locked.Should().Be(1);
+    }
+
+    [Fact]
     public async Task Custody_Unlock_MissingBlob_ClearsExistingSessionAndRaisesLocked()
     {
         MemStore store = new MemStore();
@@ -123,7 +145,8 @@ public class PinAndCustodyTests
         // Build a legacy-layout blob whose first salt byte is 0x01 (version marker collision).
         byte[] salt = RandomNumberGenerator.GetBytes(options.SaltSizeBytes);
         salt[0] = 0x01;
-        byte[] key = box.DeriveKey(pin, salt);
+        using SensitiveBuffer keyBuffer = box.DeriveKey(pin, salt);
+        byte[] key = keyBuffer.Span.ToArray();
         byte[] nonce = RandomNumberGenerator.GetBytes(options.NonceSizeBytes);
         byte[] plain = Encoding.UTF8.GetBytes(mnemonic);
         byte[] cipher = new byte[plain.Length];
@@ -173,7 +196,9 @@ public class PinAndCustodyTests
         // old promoted secret still present.
         string stagedSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
         await store.SetAsync(CustodyService.StagingDeviceSecretKey, stagedSecret);
-        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, stagedSecret));
+        await store.SetAsync(
+            CustodyService.BlobKey,
+            CryptoBox.Seal(CryptographyOptions.Default, mnemonic, stagedSecret));
 
         (await custody.UnlockWithDeviceSecretAsync()).Should().BeTrue();
         custody.ExportMnemonic().Should().Be(mnemonic);
@@ -199,5 +224,12 @@ public class PinAndCustodyTests
             _data.Remove(key);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class ManualTime : TimeProvider
+    {
+        public DateTimeOffset UtcNow { get; set; } = DateTimeOffset.UnixEpoch;
+
+        public override DateTimeOffset GetUtcNow() => UtcNow;
     }
 }

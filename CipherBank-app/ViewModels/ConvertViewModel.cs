@@ -5,6 +5,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CipherBank_app.Cora;
+using CipherBank_app.Models;
 using CipherBank_app.Custody;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
@@ -96,7 +97,7 @@ public partial class ConvertViewModel : ObservableObject, IDisposable
 
         try
         {
-            IReadOnlyList<string> currencies = await _publicQuotes.GetCurrenciesAsync();
+            IReadOnlyList<AssetSymbol> currencies = await _publicQuotes.GetCurrenciesAsync();
             if (currencies.Count == 0)
             {
                 return;
@@ -105,7 +106,7 @@ public partial class ConvertViewModel : ObservableObject, IDisposable
             void Apply()
             {
                 Assets.Clear();
-                foreach (string symbol in currencies.OrderBy(s => s, StringComparer.OrdinalIgnoreCase))
+                foreach (string symbol in currencies.Select(s => s.Value).OrderBy(s => s, StringComparer.OrdinalIgnoreCase))
                 {
                     Assets.Add(symbol);
                 }
@@ -223,7 +224,7 @@ public partial class ConvertViewModel : ObservableObject, IDisposable
     private static List<string> FallbackAssets()
     {
         var list = WalletRegistry.All()
-            .Select(m => m.Symbol)
+            .Select(m => m.Symbol.Value)
             .Where(CurrencySymbolMap.IsSupported)
             .ToList();
         if (!list.Contains("USD", StringComparer.OrdinalIgnoreCase))

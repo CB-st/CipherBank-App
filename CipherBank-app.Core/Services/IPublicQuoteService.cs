@@ -27,10 +27,10 @@ public interface IPublicQuoteService
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Ordered app symbols.</returns>
-    Task<IReadOnlyList<string>> GetCurrenciesAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<AssetSymbol>> GetCurrenciesAsync(CancellationToken cancellationToken);
 
     /// <summary>Currency list for callers with no ambient token. Use: Medium (Convert load). Scope: IPublicQuoteService consumers.</summary>
-    Task<IReadOnlyList<string>> GetCurrenciesAsync() => GetCurrenciesAsync(CancellationToken.None);
+    Task<IReadOnlyList<AssetSymbol>> GetCurrenciesAsync() => GetCurrenciesAsync(CancellationToken.None);
 
     /// <summary>
     /// Calculates output for a fixed input amount (<c>POST /iquote</c>).
@@ -41,13 +41,13 @@ public interface IPublicQuoteService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Indicative quote.</returns>
     Task<PublicQuote> GetInverseQuoteAsync(
-        string inputSymbol,
+        AssetSymbol inputSymbol,
         decimal inputAmount,
-        string outputSymbol,
+        AssetSymbol outputSymbol,
         CancellationToken cancellationToken);
 
     /// <summary>Fixed-input quote for callers with no ambient token. Use: High (Convert typing). Scope: IPublicQuoteService consumers.</summary>
-    Task<PublicQuote> GetInverseQuoteAsync(string inputSymbol, decimal inputAmount, string outputSymbol)
+    Task<PublicQuote> GetInverseQuoteAsync(AssetSymbol inputSymbol, decimal inputAmount, AssetSymbol outputSymbol)
         => GetInverseQuoteAsync(inputSymbol, inputAmount, outputSymbol, CancellationToken.None);
 
     /// <summary>
@@ -59,12 +59,12 @@ public interface IPublicQuoteService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Indicative quote.</returns>
     Task<PublicQuote> GetQuoteAsync(
-        string inputSymbol,
+        AssetSymbol inputSymbol,
         decimal outputAmount,
-        string outputSymbol,
+        AssetSymbol outputSymbol,
         CancellationToken cancellationToken);
 
     /// <summary>Fixed-output quote for callers with no ambient token. Use: High (Convert typing). Scope: IPublicQuoteService consumers.</summary>
-    Task<PublicQuote> GetQuoteAsync(string inputSymbol, decimal outputAmount, string outputSymbol)
+    Task<PublicQuote> GetQuoteAsync(AssetSymbol inputSymbol, decimal outputAmount, AssetSymbol outputSymbol)
         => GetQuoteAsync(inputSymbol, outputAmount, outputSymbol, CancellationToken.None);
 }

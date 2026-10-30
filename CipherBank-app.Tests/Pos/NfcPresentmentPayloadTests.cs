@@ -38,4 +38,38 @@ public class NfcPresentmentPayloadTests
         NfcPresentmentPayload.TryParse("""{"v":"1"}""").Should().BeNull();
         NfcPresentmentPayload.TryParse("""{"tokenRef":42}""").Should().BeNull();
     }
+
+    /// <summary>
+    /// Empty objects, unsupported versions, and blank identifiers are malformed.
+    /// Use: Medium (NFC). Scope: NfcPresentmentPayload.TryParse.
+    /// </summary>
+    [Fact]
+    public void TryParse_RejectsMissingIdentifiersAndUnsupportedVersion()
+    {
+        NfcPresentmentPayload.TryParse("{}").Should().BeNull();
+        NfcPresentmentPayload.TryParse("""{"v":2}""").Should().BeNull();
+        NfcPresentmentPayload.TryParse("""{"v":2,"sessionId":"sess","tokenRef":"tok"}""").Should().BeNull();
+        NfcPresentmentPayload.TryParse("""{"v":1,"sessionId":"","tokenRef":"tok"}""").Should().BeNull();
+        NfcPresentmentPayload.TryParse("""{"v":1,"sessionId":"sess","tokenRef":" "}""").Should().BeNull();
+
+        NfcPresentmentPayload? parsed = NfcPresentmentPayload.TryParse(
+            """{"sessionId":"sess","tokenRef":"tok"}""");
+        parsed.Should().NotBeNull();
+        parsed!.V.Should().Be(NfcPresentmentPayload.SupportedVersion);
+        parsed.SessionId.Should().Be("sess");
+        parsed.TokenRef.Should().Be("tok");
+    }
+
+    /// <summary>
+    /// Payloads where one identifier key is absent, null, or the wrong JSON type are malformed.
+    /// Use: Medium (NFC). Scope: NfcPresentmentPayload.TryParse.
+    /// </summary>
+    [Theory]
+    [InlineData("""{"v":1,"sessionId":"sess"}""")]
+    [InlineData("""{"v":1,"tokenRef":"tok"}""")]
+    [InlineData("""{"v":1,"sessionId":null,"tokenRef":"tok"}""")]
+    [InlineData("""{"v":1,"sessionId":"sess","tokenRef":null}""")]
+    [InlineData("""{"v":1,"sessionId":"\t","tokenRef":"tok"}""")]
+    public void TryParse_RejectsMissingOrNullIdentifier(string json)
+        => NfcPresentmentPayload.TryParse(json).Should().BeNull();
 }

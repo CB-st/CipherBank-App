@@ -31,47 +31,61 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
+    /// <summary>Gets or sets the user's wallets.</summary>
     [ObservableProperty]
-    private ObservableCollection<Wallet> wallets = [];
+    public partial ObservableCollection<Wallet> Wallets { get; set; } = [];
 
+    /// <summary>Gets or sets the transactions for the selected wallet.</summary>
     [ObservableProperty]
-    private ObservableCollection<Transaction> transactions = [];
+    public partial ObservableCollection<Transaction> Transactions { get; set; } = [];
 
+    /// <summary>Gets or sets the selected wallet.</summary>
     [ObservableProperty]
-    private Wallet? selectedWallet;
+    public partial Wallet? SelectedWallet { get; set; }
 
+    /// <summary>Gets or sets the wallet cards shown in the deck.</summary>
     [ObservableProperty]
-    private ObservableCollection<WalletCardItem> walletCards = [];
+    public partial ObservableCollection<WalletCardItem> WalletCards { get; set; } = [];
 
+    /// <summary>Gets or sets the focused wallet card.</summary>
     [ObservableProperty]
-    private WalletCardItem? focusedWalletCard;
+    public partial WalletCardItem? FocusedWalletCard { get; set; }
 
+    /// <summary>Gets or sets the total wallet balance.</summary>
     [ObservableProperty]
-    private decimal totalBalance;
+    public partial decimal TotalBalance { get; set; }
 
+    /// <summary>Gets or sets the total wallet balance in USD.</summary>
     [ObservableProperty]
-    private decimal totalBalanceUsd;
+    public partial decimal TotalBalanceUsd { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether wallets are loading.</summary>
     [ObservableProperty]
-    private bool isLoading;
+    public partial bool IsLoading { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether transactions are loading.</summary>
     [ObservableProperty]
-    private bool isLoadingTransactions;
+    public partial bool IsLoadingTransactions { get; set; }
 
+    /// <summary>Gets or sets the wallet error message.</summary>
     [ObservableProperty]
-    private string? errorMessage;
+    public partial string? ErrorMessage { get; set; }
 
+    /// <summary>Gets or sets the send destination address.</summary>
     [ObservableProperty]
-    private string sendToAddress = string.Empty;
+    public partial string SendToAddress { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the send amount.</summary>
     [ObservableProperty]
-    private decimal sendAmount;
+    public partial decimal SendAmount { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether a refresh is in progress.</summary>
     [ObservableProperty]
-    private bool isRefreshing;
+    public partial bool IsRefreshing { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether a send is in progress.</summary>
     [ObservableProperty]
-    private bool isSending;
+    public partial bool IsSending { get; set; }
 
     public WalletViewModel(
         ILogger<WalletViewModel> logger,
@@ -302,7 +316,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
         try
         {
-            LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol, SendToAddress);
+            LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol.Value, SendToAddress);
 
             MoneyMoveDto move = await _product.TransferAsync(
                 SendToAddress,

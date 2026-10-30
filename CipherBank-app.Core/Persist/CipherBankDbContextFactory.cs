@@ -16,7 +16,7 @@ public sealed class CipherBankDbContextFactory : IDesignTimeDbContextFactory<Cip
     {
         // IDesignTimeDbContextFactory requires args; dotnet ef passes an empty array when unused.
         _ = args;
-        string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "cipherbank-design.db");
+        string path = Path.Combine(Path.GetTempPath(), "cipherbank-design.db");
         string connectionString = new SqliteConnectionStringBuilder { DataSource = path }.ToString();
         DbContextOptionsBuilder<CipherBankDbContext> builder = new();
         builder.UseSqlite(connectionString);

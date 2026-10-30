@@ -74,7 +74,7 @@ E2E_RUN=1 TEST_PLATFORM=android ANDROID_APK_PATH=path/to/app.apk \
 
 ## Coverage
 
-The coverage job in `.github/workflows/sonar.yml` publishes OpenCover for
+The coverage job in `.github/workflows/quality-gates-and-ai-review.yml` publishes OpenCover for
 Sonar (`new_coverage`) and Cobertura for tooling:
 
 - **Analyzer tests**: Coverlet OpenCover on `CipherBank-app.Analyzers`

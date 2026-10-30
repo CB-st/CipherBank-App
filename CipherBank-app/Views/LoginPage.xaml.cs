@@ -2,48 +2,46 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Configuration;
 using CipherBank_app.ViewModels;
-#if DEBUG
+using Microsoft.Extensions.Options;
 using Microsoft.Maui.Controls.Shapes;
-#endif
 
 namespace CipherBank_app.Views;
 
 /// <summary>
 /// Code-behind for the Login page.
 /// </summary>
-public partial class LoginPage : ContentPage
+public partial class LoginPage
 {
     private readonly LoginViewModel _viewModel;
 
-    public LoginPage(LoginViewModel viewModel)
+    public LoginPage(
+        LoginViewModel viewModel,
+        IOptions<HostBehaviorOptions> hostBehavior)
     {
         InitializeComponent();
         _viewModel = viewModel;
         BindingContext = viewModel;
 
-#if DEBUG
-        AddDeveloperControls();
-#endif
-    }
-
-    private void OnUsernameCompleted(object? sender, EventArgs e)
-    {
-        // Move focus to password field when Enter is pressed on username
-        PasswordEntry.Focus();
-    }
-
-    private void OnPasswordCompleted(object? sender, EventArgs e)
-    {
-        // Submit login when Enter is pressed on password field
-        if (_viewModel.SignInCommand.CanExecute(null))
+        if (hostBehavior.Value.ShowDevelopmentIndicators)
         {
-            _viewModel.SignInCommand.Execute(null);
+            AddDeveloperControls();
         }
     }
 
-#if DEBUG
-    // Developer-only affordances are built in code so they are not compiled into Release builds.
+    private static void ApplyThemeColor(VisualElement element, BindableProperty property, string lightKey, string darkKey) =>
+        element.SetAppThemeColor(property, GetColor(lightKey), GetColor(darkKey));
+
+    private static Color GetColor(string key) =>
+        Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
+            ? color
+            : Colors.Transparent;
+
+    private static Style? GetStyle(string key) =>
+        Application.Current?.Resources.TryGetValue(key, out var value) == true ? value as Style : null;
+
+    // Development affordances remain analyzable and are enabled by configuration.
     private void AddDeveloperControls()
     {
         // Environment badge overlay, shown only in test/non-production environments.
@@ -86,15 +84,18 @@ public partial class LoginPage : ContentPage
         LoginFormLayout.Children.Insert(insertIndex, testCredentials);
     }
 
-    private static void ApplyThemeColor(VisualElement element, BindableProperty property, string lightKey, string darkKey) =>
-        element.SetAppThemeColor(property, GetColor(lightKey), GetColor(darkKey));
+    private void OnUsernameCompleted(object? sender, EventArgs e)
+    {
+        // Move focus to password field when Enter is pressed on username
+        PasswordEntry.Focus();
+    }
 
-    private static Color GetColor(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
-            ? color
-            : Colors.Transparent;
-
-    private static Style? GetStyle(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true ? value as Style : null;
-#endif
+    private void OnPasswordCompleted(object? sender, EventArgs e)
+    {
+        // Submit login when Enter is pressed on password field
+        if (_viewModel.SignInCommand.CanExecute(null))
+        {
+            _viewModel.SignInCommand.Execute(null);
+        }
+    }
 }

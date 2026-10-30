@@ -24,7 +24,7 @@ public sealed class HealthCheckClient : IHealthCheckClient
 
     public async Task<bool> CheckHealthAsync(string baseUrl, CancellationToken cancellationToken = default)
     {
-        var client = _httpClientFactory.CreateClient("HealthCheck");
+        HttpClient client = _httpClientFactory.CreateClient("HealthCheck");
         client.Timeout = TimeSpan.FromSeconds(10);
 
         Uri baseUri = new Uri(baseUrl.TrimEnd('/') + "/");
@@ -35,7 +35,7 @@ public sealed class HealthCheckClient : IHealthCheckClient
         request.Headers.Date = _timeProvider.GetUtcNow();
         request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
 
-        var response = await client.SendAsync(request, cancellationToken);
+        using HttpResponseMessage response = await client.SendAsync(request, cancellationToken);
         return response.IsSuccessStatusCode;
     }
 }

@@ -12,12 +12,6 @@ namespace CipherBank_app.Custody;
 /// <summary>AES-GCM custody box with configuration-backed PBKDF2 parameters.</summary>
 public sealed class AesGcmCryptoBox : ICryptoBox
 {
-    /// <summary>
-    /// Current packed-blob version. Follow-up: encode salt/tag/key/iteration sizes in-band when
-    /// CryptographyOptions may diverge across releases.
-    /// </summary>
-    private const byte BlobFormatVersion = 0x01;
-
     private readonly CryptographyOptions _options;
 
     public AesGcmCryptoBox(IOptions<CryptographyOptions> options)
@@ -28,72 +22,81 @@ public sealed class AesGcmCryptoBox : ICryptoBox
     public AesGcmCryptoBox(CryptographyOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (!options.IsValid())
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "Cryptography parameters are unsafe or incompatible.");
-        }
 
-        _options = options;
+        // Keep a private copy: the caller's instance is mutable and must not change this box later.
+        _options = new CryptographyOptions
+        {
+            NonceSizeBytes = options.NonceSizeBytes,
+            TagSizeBytes = options.TagSizeBytes,
+            KeySizeBytes = options.KeySizeBytes,
+            SaltSizeBytes = options.SaltSizeBytes,
+            Pbkdf2Iterations = options.Pbkdf2Iterations,
+            BlobFormatVersion = options.BlobFormatVersion,
+        };
+
+        // Freeze the profile at the box boundary, not only in DI: a box built from any other
+        // profile could seal a blob the host cannot open.
+        if (!_options.MatchesPersistedProfile())
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "Cryptography parameters do not match the persisted custody profile.");
+        }
     }
 
-    public byte[] DeriveKey(string pin, byte[] salt)
-        => Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(pin),
-            salt,
-            _options.Pbkdf2Iterations,
-            HashAlgorithmName.SHA256,
-            _options.KeySizeBytes);
+    public SensitiveBuffer DeriveKey(string pin, byte[] salt)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        using SensitiveBuffer password = new(Encoding.UTF8.GetBytes(pin));
+        byte[] key = new byte[_options.KeySizeBytes];
+        Rfc2898DeriveBytes.Pbkdf2(password.Span, salt, key, _options.Pbkdf2Iterations, HashAlgorithmName.SHA256);
+        return new SensitiveBuffer(key);
+    }
 
     public string Seal(string plaintext, string pin)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(_options.SaltSizeBytes);
-        byte[] key = DeriveKey(pin, salt);
+        using SensitiveBuffer key = DeriveKey(pin, salt);
+        using SensitiveBuffer plain = new(Encoding.UTF8.GetBytes(plaintext));
         byte[] nonce = RandomNumberGenerator.GetBytes(_options.NonceSizeBytes);
-        byte[] plain = Encoding.UTF8.GetBytes(plaintext);
         byte[] cipher = new byte[plain.Length];
         byte[] tag = new byte[_options.TagSizeBytes];
-        try
-        {
-            using AesGcm aes = new AesGcm(key, _options.TagSizeBytes);
-            aes.Encrypt(nonce, plain, cipher, tag);
+        using AesGcm aes = new AesGcm(key.Span, _options.TagSizeBytes);
+        aes.Encrypt(nonce, plain.Span, cipher, tag);
 
-            // v1: [version][salt][nonce][tag][cipher] — version documents the packing layout.
-            byte[] packed = new byte[1 + salt.Length + nonce.Length + tag.Length + cipher.Length];
-            int offset = 0;
-            packed[offset++] = BlobFormatVersion;
-            Buffer.BlockCopy(salt, 0, packed, offset, salt.Length);
-            offset += salt.Length;
-            Buffer.BlockCopy(nonce, 0, packed, offset, nonce.Length);
-            offset += nonce.Length;
-            Buffer.BlockCopy(tag, 0, packed, offset, tag.Length);
-            offset += tag.Length;
-            Buffer.BlockCopy(cipher, 0, packed, offset, cipher.Length);
-            return Convert.ToBase64String(packed);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(key);
-            CryptographicOperations.ZeroMemory(plain);
-        }
+        // v1: [version][salt][nonce][tag][cipher]. Bytes, not a StringBuilder:
+        // the buffer holds key-derived ciphertext and must be able to be zeroed.
+        byte[] packed = new byte[1 + salt.Length + nonce.Length + tag.Length + cipher.Length];
+        Span<byte> destination = packed;
+        destination[0] = _options.BlobFormatVersion;
+        destination = destination[1..];
+        salt.CopyTo(destination);
+        destination = destination[salt.Length..];
+        nonce.CopyTo(destination);
+        destination = destination[nonce.Length..];
+        tag.CopyTo(destination);
+        destination = destination[tag.Length..];
+        cipher.CopyTo(destination);
+        return Convert.ToBase64String(packed);
     }
 
     public string Open(string sealedB64, string pin)
     {
         byte[] packed = Convert.FromBase64String(sealedB64);
 
-        // Prefer legacy layout first: a random salt may begin with 0x01 (~1/256), so treating that
-        // as a version marker would mis-slice fields. Versioned blobs still decrypt on fallback.
-        if (TryOpenAt(packed, dataOffset: 0, pin, out string? legacy) && legacy is not null)
-        {
-            return legacy;
-        }
-
+        // Every Seal blob starts with 0x01. Try that layout first so a normal unlock pays one KDF.
+        // A legacy salt can also start with 0x01. If the versioned tag does not authenticate, the
+        // legacy layout is the other candidate; it is accepted only when its own tag authenticates.
+        // The marker is a public format byte. Tag comparison stays inside AesGcm.
         if (packed.Length > 0
-            && packed[0] == BlobFormatVersion
+            && packed[0] == _options.BlobFormatVersion
             && TryOpenAt(packed, dataOffset: 1, pin, out string? versioned)
             && versioned is not null)
         {
             return versioned;
+        }
+
+        if (TryOpenAt(packed, dataOffset: 0, pin, out string? legacy) && legacy is not null)
+        {
+            return legacy;
         }
 
         throw new CryptographicException("Invalid sealed blob.");
@@ -115,24 +118,19 @@ public sealed class AesGcmCryptoBox : ICryptoBox
         offset += nonce.Length;
         byte[] tag = packed.AsSpan(offset, _options.TagSizeBytes).ToArray();
         offset += tag.Length;
-        byte[] cipher = packed.AsSpan(offset).ToArray();
-        byte[] key = DeriveKey(pin, salt);
-        byte[] plain = new byte[cipher.Length];
+        using SensitiveBuffer cipher = new(packed.AsSpan(offset).ToArray());
+        using SensitiveBuffer key = DeriveKey(pin, salt);
+        using SensitiveBuffer plain = new(new byte[cipher.Length]);
         try
         {
-            using AesGcm aes = new AesGcm(key, _options.TagSizeBytes);
-            aes.Decrypt(nonce, cipher, tag, plain);
-            plaintext = Encoding.UTF8.GetString(plain);
+            using AesGcm aes = new AesGcm(key.Span, _options.TagSizeBytes);
+            aes.Decrypt(nonce, cipher.Span, tag, plain.Span);
+            plaintext = Encoding.UTF8.GetString(plain.Span);
             return true;
         }
         catch (CryptographicException)
         {
             return false;
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(key);
-            CryptographicOperations.ZeroMemory(plain);
         }
     }
 }

@@ -9,18 +9,18 @@ using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Tests.Configuration;
 
-/// <summary>Binds Core's embedded appsettings.json for persist unit tests.</summary>
+/// <summary>Binds Core's embedded appsettings JSONC resources for persist unit tests.</summary>
 internal static class EmbeddedAppSettings
 {
     internal static PersistenceOptions BindPersistence(string? environment = null)
         => BindOptions<PersistenceOptions>(environment);
 
     internal static T BindOptions<T>(string? environment = null)
-        where T : class, IOptionsSection, new()
+        where T : class
     {
         IConfigurationRoot config = Load(environment);
-        ServiceCollection services = new ServiceCollection();
-        services.AddOptions<T>().Bind(config.GetSection(T.SectionName));
+        ServiceCollection services = new();
+        services.AddRequiredOptions(config, Activator.CreateInstance<T>());
         using ServiceProvider provider = services.BuildServiceProvider();
         return provider.GetRequiredService<IOptions<T>>().Value;
     }

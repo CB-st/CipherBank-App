@@ -26,7 +26,7 @@ public sealed class ConfigSeedPayeeIdTests
             AllowTrailingCommas = true,
         };
         using JsonDocument document = JsonDocument.Parse(json, options);
-        JsonElement rows = document.RootElement.GetProperty("Persistence").GetProperty("DefaultRecipients");
+        JsonElement rows = document.RootElement.GetProperty("PersistenceOptions").GetProperty("DefaultRecipients");
         string[] ids = rows.EnumerateArray()
             .Select(row => row.GetProperty("Id").GetString() ?? string.Empty)
             .ToArray();
@@ -42,7 +42,7 @@ public sealed class ConfigSeedPayeeIdTests
         DirectoryInfo? directory = new(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            string candidate = Path.Combine(directory.FullName, "config", "appsettings.Development.json");
+            string candidate = Path.Combine(directory.FullName, "config", "appsettings.Development.jsonc");
             if (File.Exists(candidate) && File.Exists(Path.Combine(directory.FullName, "CipherBank-app.sln")))
             {
                 return candidate;
@@ -52,6 +52,6 @@ public sealed class ConfigSeedPayeeIdTests
         }
 
         throw new InvalidOperationException(
-            "Could not locate config/appsettings.Development.json from the E2E test assembly.");
+            "Could not locate config/appsettings.Development.jsonc from the E2E test assembly.");
     }
 }

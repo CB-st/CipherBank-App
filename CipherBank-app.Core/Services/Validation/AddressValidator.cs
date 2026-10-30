@@ -2,7 +2,9 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Collections.Frozen;
 using System.Text.RegularExpressions;
+using CipherBank_app.Models;
 
 namespace CipherBank_app.Services.Validation;
 
@@ -12,9 +14,7 @@ namespace CipherBank_app.Services.Validation;
 /// </summary>
 public static partial class AddressValidator
 {
-    // Base58 alphabet used by Bitcoin and Solana
-    private const string Base58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
+    private const int Bech32PrefixLength = 3;
     private const int Base58LegacyMinLength = 26;
     private const int Base58LegacyMaxLength = 35;
     private const int Bech32MinLength = 42;
@@ -24,7 +24,13 @@ public static partial class AddressValidator
     private const int SolanaMaxLength = 44;
     private const int GenericMinLength = 20;
     private const int GenericMaxLength = 100;
-    private const int Bech32HrpLength = 3;
+
+    // Base58 alphabet used by Bitcoin and Solana
+    private static readonly FrozenSet<char> _base58Alphabet =
+        "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".ToFrozenSet();
+
+    private static readonly FrozenSet<char> _bech32Alphabet =
+        ("qpzry9x8gf2tvdw0s3jn54khce6mua7l" + "QPZRY9X8GF2TVDW0S3JN54KHCE6MUA7L").ToFrozenSet();
 
     /// <summary>
     /// Validates a cryptocurrency address for the specified symbol.
@@ -34,12 +40,22 @@ public static partial class AddressValidator
     /// <returns>True if the address format is valid, false otherwise</returns>
     public static bool IsValidAddress(string address, string symbol)
     {
-        if (string.IsNullOrWhiteSpace(address) || string.IsNullOrWhiteSpace(symbol))
+        return AssetSymbol.TryParse(symbol, out AssetSymbol? parsed)
+            && IsValidAddress(address, parsed);
+    }
+
+    /// <summary>Validates an address for a normalized asset symbol.</summary>
+    /// <param name="address">The address to validate.</param>
+    /// <param name="symbol">The normalized asset symbol.</param>
+    /// <returns>True if the address format is valid, false otherwise.</returns>
+    public static bool IsValidAddress(string address, AssetSymbol symbol)
+    {
+        if (string.IsNullOrWhiteSpace(address) || symbol is null)
         {
             return false;
         }
 
-        return symbol.ToUpperInvariant() switch
+        return symbol.Value switch
         {
             "BTC" => IsValidBitcoinAddress(address),
             "ETH" => IsValidEthereumAddress(address),
@@ -158,18 +174,32 @@ public static partial class AddressValidator
     /// <summary>
     /// Checks if a string contains only valid Base58 characters.
     /// </summary>
-    private static bool IsValidBase58(string value) => !string.IsNullOrEmpty(value) && value.All(c => Base58Alphabet.Contains(c));
+    private static bool IsValidBase58(string value)
+        => !string.IsNullOrEmpty(value) && value.All(c => _base58Alphabet.Contains(c));
 
     /// <summary>
     /// Validates Bech32 address format (simplified validation).
     /// </summary>
     private static bool IsValidBech32(string address)
     {
-        // Bech32 uses lowercase a-z and 0-9, excluding 1, b, i, o
-        string bech32Data = address.Substring(Bech32HrpLength); // Remove bc1 or tb1 prefix
-        const string bech32Alphabet = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+        // BIP-173: an address is all lowercase or all uppercase, never mixed case
+        if (address.Any(char.IsLower) && address.Any(char.IsUpper))
+        {
+            return false;
+        }
 
-        return bech32Data.All(c => bech32Alphabet.Contains(char.ToLowerInvariant(c)) || char.IsDigit(c));
+        // Bech32 uses ASCII a-z and 0-9, excluding 1, b, i, o in either case.
+        // The alphabet set contains ASCII characters only, so non-ASCII lookalikes cannot match.
+        // Callers check the bc1/tb1 prefix and the 42-62 length.
+        foreach (char character in address.AsSpan(Bech32PrefixLength))
+        {
+            if (!_bech32Alphabet.Contains(character))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     [GeneratedRegex("^0x[a-fA-F0-9]{40}$")]

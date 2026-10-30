@@ -2,10 +2,13 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Animations;
 using CipherBank_app.Configuration;
 using CipherBank_app.Custody;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace CipherBank_app.Tests.Configuration;
@@ -18,10 +21,10 @@ public sealed class ConfigurationTests
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
 
         CryptographyOptions? cryptography = configuration
-            .GetSection(CryptographyOptions.SectionName)
+            .GetSection(nameof(CryptographyOptions))
             .Get<CryptographyOptions>();
         SyncSchedulerOptions? scheduler = configuration
-            .GetSection(SyncSchedulerOptions.SectionName)
+            .GetSection(nameof(SyncSchedulerOptions))
             .Get<SyncSchedulerOptions>();
 
         cryptography.Should().NotBeNull();
@@ -41,6 +44,42 @@ public sealed class ConfigurationTests
         network.Environments.Should().ContainKey("Production");
     }
 
+    /// <summary>
+    /// Each field that IsValid rejects, plus the AES-192 size that must stay accepted.
+    /// Use: Medium. Scope: CryptographyOptions.IsValid.
+    /// </summary>
+    [Fact]
+    public void CryptographyOptions_IsValid_RejectsEachUnsafeField()
+    {
+        CryptographyOptions wrongNonce = CryptographyOptions.Default;
+        wrongNonce.NonceSizeBytes = CryptographyOptions.AesGcmNonceSizeBytes + 4;
+        wrongNonce.IsValid().Should().BeFalse();
+
+        CryptographyOptions shortTag = CryptographyOptions.Default;
+        shortTag.TagSizeBytes = CryptographyOptions.MinTagSizeBytes - 1;
+        shortTag.IsValid().Should().BeFalse();
+
+        CryptographyOptions longTag = CryptographyOptions.Default;
+        longTag.TagSizeBytes = CryptographyOptions.MaxTagSizeBytes + 1;
+        longTag.IsValid().Should().BeFalse();
+
+        CryptographyOptions badKey = CryptographyOptions.Default;
+        badKey.KeySizeBytes = 20;
+        badKey.IsValid().Should().BeFalse();
+
+        CryptographyOptions aes192 = CryptographyOptions.Default;
+        aes192.KeySizeBytes = CryptographyOptions.Aes192KeySizeBytes;
+        aes192.IsValid().Should().BeTrue();
+
+        CryptographyOptions shortSalt = CryptographyOptions.Default;
+        shortSalt.SaltSizeBytes = CryptographyOptions.MinSaltSizeBytes - 1;
+        shortSalt.IsValid().Should().BeFalse();
+
+        CryptographyOptions fewIterations = CryptographyOptions.Default;
+        fewIterations.Pbkdf2Iterations = CryptographyOptions.MinPbkdf2Iterations - 1;
+        fewIterations.IsValid().Should().BeFalse();
+    }
+
     [Fact]
     public void CryptographyOptions_NonDefaultKeySize_DoesNotMatchPersistedProfile()
     {
@@ -55,15 +94,15 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]
-    public void Build_Development_OverridesDatabaseName()
+    public void Build_Development_UsesDevelopmentOverlayDatabaseName()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Development");
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.dev.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.dev.db");
     }
 
     [Fact]
@@ -71,15 +110,15 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Production");
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
     }
 
     [Fact]
-    public void Build_WindowsOverlay_AppliesWindowsResource()
+    public void Build_WindowsOverlay_UsesWindowsOverlayDatabaseName()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build(windowsOverlay: true);
 
-        configuration["Persistence:DatabaseName"].Should().Be("cipherbank.win.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.win.db");
     }
 
     [Fact]
@@ -87,12 +126,91 @@ public sealed class ConfigurationTests
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
         CryptographyOptions options = configuration
-            .GetSection(CryptographyOptions.SectionName)
+            .GetSection(nameof(CryptographyOptions))
             .Get<CryptographyOptions>()!;
         AesGcmCryptoBox cryptoBox = new(options);
 
         string sealedBlob = cryptoBox.Seal("alpha beta gamma", "123456");
 
         cryptoBox.Open(sealedBlob, "123456").Should().Be("alpha beta gamma");
+    }
+
+    [Fact]
+    public void ClassNamedSections_BindCoraAndCarousel()
+    {
+        IConfiguration configuration = CipherBankDefaultsConfiguration.Build();
+
+        configuration.GetSection(nameof(CoraOptions)).Get<CoraOptions>()!.Fallback.Should().Be("CipherBank.");
+        configuration.GetSection(nameof(CarouselLayoutConfig)).Get<CarouselLayoutConfig>()!.Stride.Should().Be(220);
+        new CryptographyOptions().SectionName.Should().Be(nameof(CryptographyOptions));
+        new CoraOptions().SectionName.Should().Be(nameof(CoraOptions));
+        new CarouselLayoutConfig().SectionName.Should().Be(nameof(CarouselLayoutConfig));
+        new CarouselLayoutConfig().Should().Be(CarouselLayoutConfig.Default);
+        configuration.GetSection("Cora").Exists().Should().BeFalse();
+        configuration.GetSection("Carousel").Exists().Should().BeFalse();
+        configuration.GetSection("Cryptography").Exists().Should().BeFalse();
+    }
+
+    [Fact]
+    public void CryptographyOptions_NonDefaultProfile_FailsValidation()
+    {
+        Dictionary<string, string?> values = new Dictionary<string, string?>
+        {
+            ["CryptographyOptions:KeySizeBytes"] = "16",
+        };
+        IConfiguration configuration = new ConfigurationBuilder()
+            .AddConfiguration(CipherBankDefaultsConfiguration.Build())
+            .AddInMemoryCollection(values)
+            .Build();
+        ServiceCollection services = new ServiceCollection();
+        services.AddCipherBankCoreOptions(configuration);
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        Action act = () => _ = provider.GetRequiredService<IOptions<CryptographyOptions>>().Value;
+
+        act.Should().Throw<OptionsValidationException>();
+    }
+
+    [Fact]
+    public void SyncSchedulerOptions_NonDefaultConcurrency_FailsValidation()
+    {
+        Dictionary<string, string?> values = new Dictionary<string, string?>
+        {
+            ["SyncSchedulerOptions:MaxConcurrency"] = "99",
+        };
+        IConfiguration configuration = new ConfigurationBuilder()
+            .AddConfiguration(CipherBankDefaultsConfiguration.Build())
+            .AddInMemoryCollection(values)
+            .Build();
+        ServiceCollection services = new ServiceCollection();
+        services.AddCipherBankCoreOptions(configuration);
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        Action act = () => _ = provider.GetRequiredService<IOptions<SyncSchedulerOptions>>().Value;
+
+        act.Should().Throw<OptionsValidationException>();
+    }
+
+    [Fact]
+    public void PersistenceOptions_PathDatabaseName_FailsValidator()
+    {
+        PersistenceOptionsValidator validator = new();
+        PersistenceOptions options = new() { DatabaseName = "../cipherbank.db" };
+
+        ValidateOptionsResult result = validator.Validate(Options.DefaultName, options);
+
+        result.Failed.Should().BeTrue();
+        result.FailureMessage.Should().Contain("DatabaseName must not contain a path.");
+    }
+
+    [Fact]
+    public void UserPreferenceDefaultsOptions_InvalidLayout_FailsValidator()
+    {
+        UserPreferenceDefaultsOptionsValidator validator = new();
+        UserPreferenceDefaultsOptions options = new() { AssetsLayout = "stacked" };
+
+        ValidateOptionsResult result = validator.Validate(Options.DefaultName, options);
+
+        result.Failed.Should().BeTrue();
     }
 }

@@ -35,31 +35,42 @@ public sealed partial class SettingsService : ISettingsService
     private const string DefaultDefaultCurrency = "USD";
     private const SessionProofMode DefaultSessionProofMode = SessionProofMode.ChallengePassA1;
     private const bool DefaultDeveloperModeEnabled = false;
-    private const bool DefaultUseMockServices = true;
 
     private readonly ILogger<SettingsService>? _logger;
     private readonly NetworkOptions _networkOptions;
+    private readonly HostBehaviorOptions _hostBehavior;
 
     public SettingsService()
-        : this(logger: null, NetworkOptions.Default)
+        : this(logger: null, NetworkOptions.Default, new HostBehaviorOptions())
     {
     }
 
     public SettingsService(ILogger<SettingsService> logger)
-        : this(logger, NetworkOptions.Default)
+        : this(logger, NetworkOptions.Default, new HostBehaviorOptions())
     {
     }
 
-    public SettingsService(ILogger<SettingsService> logger, IOptions<NetworkOptions> networkOptions)
-        : this(logger, networkOptions.Value)
+    /// <summary>
+    /// Applies configured network defaults and host-gated development overrides.
+    /// Use: Low (host composition). Scope: process settings.
+    /// </summary>
+    public SettingsService(
+        ILogger<SettingsService> logger,
+        IOptions<NetworkOptions> networkOptions,
+        IOptions<HostBehaviorOptions> hostBehavior)
+        : this(logger, networkOptions.Value, hostBehavior.Value)
     {
     }
 
-    private SettingsService(ILogger<SettingsService>? logger, NetworkOptions networkOptions)
+    private SettingsService(
+        ILogger<SettingsService>? logger,
+        NetworkOptions networkOptions,
+        HostBehaviorOptions hostBehavior)
     {
         ArgumentNullException.ThrowIfNull(networkOptions);
         _logger = logger;
         _networkOptions = networkOptions;
+        _hostBehavior = hostBehavior;
     }
 
     public string CipherBankEndpointBase
@@ -206,7 +217,6 @@ public sealed partial class SettingsService : ISettingsService
         }
     }
 
-#if DEBUG
     public bool DeveloperModeEnabled
     {
         get => Preferences.Get(IdDeveloperModeEnabled, DefaultDeveloperModeEnabled);
@@ -222,11 +232,20 @@ public sealed partial class SettingsService : ISettingsService
         }
     }
 
+    /// <inheritdoc />
     public bool UseMockServices
     {
-        get => Preferences.Get(IdUseMockServices, DefaultUseMockServices);
+        get => _hostBehavior.ShowDevelopmentIndicators
+            ? Preferences.Get(IdUseMockServices, _hostBehavior.UseMockServices)
+            : _hostBehavior.UseMockServices;
         set
         {
+            // Host configuration owns production selection; only development hosts allow an override.
+            if (!_hostBehavior.ShowDevelopmentIndicators)
+            {
+                return;
+            }
+
             if (_logger != null)
             {
                 var valueString = value.ToString();
@@ -236,7 +255,6 @@ public sealed partial class SettingsService : ISettingsService
             Preferences.Set(IdUseMockServices, value);
         }
     }
-#endif
 
     public void ResetToDefaults()
     {
@@ -250,10 +268,8 @@ public sealed partial class SettingsService : ISettingsService
         DefaultCurrency = DefaultDefaultCurrency;
         SessionProofMode = DefaultSessionProofMode;
         Environment = _networkOptions.DefaultEnvironment;
-#if DEBUG
         DeveloperModeEnabled = DefaultDeveloperModeEnabled;
-        UseMockServices = DefaultUseMockServices;
-#endif
+        Preferences.Remove(IdUseMockServices);
 
         if (_logger != null)
         {

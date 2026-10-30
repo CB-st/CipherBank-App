@@ -10,13 +10,8 @@ namespace CipherBank_app.Configuration;
 /// <summary>Loads repository-owned default configuration embedded in Core.</summary>
 public static class CipherBankDefaultsConfiguration
 {
-    private const string WindowsResourceName = "CipherBank_app.Config.appsettings.Windows.json";
-
-    private static readonly string[] RequiredResourceNames =
-    [
-        "CipherBank_app.Config.appsettings.json",
-        "CipherBank_app.Config.network.endpoints.json",
-    ];
+    private const string BaseResourceName = "CipherBank_app.Config.appsettings.jsonc";
+    private const string WindowsResourceName = "CipherBank_app.Config.appsettings.Windows.jsonc";
 
     /// <summary>
     /// Maps compile-time host facts to the repository overlay order.
@@ -39,29 +34,24 @@ public static class CipherBankDefaultsConfiguration
     public static IConfigurationRoot Build(bool windowsOverlay) => Build(null, windowsOverlay);
 
     /// <summary>
-    /// Builds the default configuration, then optionally merges environment and Windows overlays.
-    /// Use: High. Scope: host and test composition of embedded options.
+    /// Builds base defaults and then applies optional environment and Windows overlays.
+    /// Use: High (host startup and composition tests). Scope: process configuration.
     /// </summary>
-    /// <param name="environment">Host environment name; unknown overlays are ignored.</param>
-    /// <param name="windowsOverlay">Whether to merge Windows defaults after the environment.</param>
     /// <returns>A configuration root owned by the caller.</returns>
     public static IConfigurationRoot Build(
         string? environment,
         bool windowsOverlay)
     {
         Assembly assembly = typeof(CipherBankDefaultsConfiguration).Assembly;
-        ConfigurationBuilder builder = new ConfigurationBuilder();
-        foreach (string resourceName in RequiredResourceNames)
-        {
-            builder.AddJsonStream(OpenRequiredResource(assembly, resourceName));
-        }
-
+        ConfigurationBuilder builder = new();
+        builder.AddJsonStream(OpenRequiredResource(assembly, BaseResourceName));
+        builder.AddJsonStream(OpenRequiredResource(assembly, "CipherBank_app.Config.network.endpoints.json"));
         if (!string.IsNullOrWhiteSpace(environment))
         {
             TryAddOptionalResource(
                 builder,
                 assembly,
-                $"CipherBank_app.Config.appsettings.{environment}.json");
+                $"CipherBank_app.Config.appsettings.{environment}.jsonc");
         }
 
         if (windowsOverlay)

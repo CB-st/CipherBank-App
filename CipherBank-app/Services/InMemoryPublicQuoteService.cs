@@ -23,16 +23,16 @@ public sealed class InMemoryPublicQuoteService : IPublicQuoteService
         return Task.FromResult(true);
     }
 
-    public Task<IReadOnlyList<string>> GetCurrenciesAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<AssetSymbol>> GetCurrenciesAsync(CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<string> currencies = ["BTC", "XMR", "USD"];
+        IReadOnlyList<AssetSymbol> currencies = ["BTC", "XMR", "USD"];
         return Task.FromResult(currencies);
     }
 
     public Task<PublicQuote> GetInverseQuoteAsync(
-        string inputSymbol,
+        AssetSymbol inputSymbol,
         decimal inputAmount,
-        string outputSymbol,
+        AssetSymbol outputSymbol,
         CancellationToken cancellationToken = default)
     {
         var input = Normalize(inputSymbol);
@@ -43,9 +43,9 @@ public sealed class InMemoryPublicQuoteService : IPublicQuoteService
     }
 
     public Task<PublicQuote> GetQuoteAsync(
-        string inputSymbol,
+        AssetSymbol inputSymbol,
         decimal outputAmount,
-        string outputSymbol,
+        AssetSymbol outputSymbol,
         CancellationToken cancellationToken = default)
     {
         var input = Normalize(inputSymbol);
@@ -55,16 +55,11 @@ public sealed class InMemoryPublicQuoteService : IPublicQuoteService
         return Task.FromResult(new PublicQuote(input, inputAmount, output, outputAmount));
     }
 
-    private static string Normalize(string symbol)
+    /// <summary>Applies provider-specific aliases after asset identity normalization.</summary>
+    private static string Normalize(AssetSymbol symbol)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
-        var upper = symbol.Trim().ToUpperInvariant();
-        return upper switch
-        {
-            "BITCOIN" => "BTC",
-            "MONERO" => "XMR",
-            _ => upper,
-        };
+        ArgumentNullException.ThrowIfNull(symbol);
+        return CurrencySymbolMap.ToAppSymbol(symbol.Value);
     }
 
     private static decimal ToUsd(string symbol, decimal amount)

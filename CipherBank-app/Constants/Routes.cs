@@ -2,6 +2,8 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
+
 namespace CipherBank_app.Constants;
 
 /// <summary>Shell navigation route constants (Cora IA).</summary>
@@ -31,6 +33,6 @@ public static class Routes
     public const string Purchase = "//PurchasePage";
     public const string Settings = "//SettingsPage";
 
-    public static string PurchaseWithSymbol(string symbol)
-        => $"{Purchase}?symbol={Uri.EscapeDataString(symbol)}";
+    public static string PurchaseWithSymbol(AssetSymbol symbol)
+        => $"{Purchase}?symbol={Uri.EscapeDataString(symbol.Value)}";
 }

@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Persist;
 
 namespace CipherBank_app.ViewModels;
@@ -19,7 +20,7 @@ public sealed class AssetRowVm
 
     public string KindLabel { get; set; } = string.Empty;
 
-    public LocalWalletRow? LocalWallet { get; set; }
+    public LocalWalletDescriptor? LocalWallet { get; set; }
 
     public bool IsLocalWallet { get; set; }
 }

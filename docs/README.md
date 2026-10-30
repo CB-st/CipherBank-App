@@ -1,13 +1,12 @@
 # CipherBank documentation
 
-Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass M4 stack.
+Documentation for the .NET 10 CipherBank MAUI/Core/ChallengePass M6 stack.
 
 ## Overview
 
-CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. M3 provides the
-shipping onboarding/custody, portfolio, money-movement, vault, POS/NFC, product
-HTTP, and public quote surfaces. M4 adds the Appium story catalog, device-state
-profiles, account/recovery journeys, harness lifecycle, diagnostics, and gap evidence.
+CipherBank-app targets Android, iOS, Mac Catalyst, and Windows. The stack includes the
+onboarding/custody, portfolio, money-movement, vault, POS/NFC, product HTTP, and
+public quote surfaces over the M2 ChallengePass foundation.
 
 ## Prerequisites
 
@@ -31,7 +30,7 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 
 | Document | Description |
 |----------|-------------|
-| [../AGENTS.md](../AGENTS.md) | **Day-to-day agent rules**, including Sonar typology, Stage 1–3 order, Shell compile gate, common missteps |
+| [../AGENTS.md](../AGENTS.md) | Repository architecture, coding, security, UI, and verification contract |
 | [BUILD_LOG.md](BUILD_LOG.md) | Condensed prototype map: what shipped, where it lives, connections |
 | [SONAR_GATE.md](SONAR_GATE.md) | Sonar quality-gate policy: what we fix vs soften (with reasons) |
 | [LOCAL_LINT.md](LOCAL_LINT.md) | Pre-push local lint (`./scripts/lint.sh`: C# + shell) |
@@ -54,7 +53,7 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 | [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
 | [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end Appium overview (full story map lands on M4) |
-| [tests/STORY_ID_MAP.md](tests/STORY_ID_MAP.md) | M4 story ownership, executable coverage, and backlog status |
+| [tests/STORY_ID_MAP.md](tests/STORY_ID_MAP.md) | M7 story ownership, executable coverage, and backlog status |
 | [tests/e2e-local.env.example](tests/e2e-local.env.example) | Template for gitignored harness credentials |
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |
 | [config/sonar/README.md](config/sonar/README.md) | Sonar quality-gate policy and local SonarQube-for-IDE setup |

@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Services;
@@ -33,7 +34,7 @@ public partial class AddWalletViewModel : ObservableObject
         _wallets = wallets;
         _dialogs = dialogs;
         _api = api;
-        AvailableSymbols = WalletRegistry.All().Select(m => m.Symbol).ToList();
+        AvailableSymbols = WalletRegistry.All().Select(m => m.Symbol.Value).ToList();
         Symbol = AvailableSymbols.Count > 0 ? AvailableSymbols[0] : "BTC";
         RefreshModes();
     }
@@ -92,9 +93,9 @@ public partial class AddWalletViewModel : ObservableObject
             }
 
             var existing = await _wallets.ListAsync();
-            int next = existing.Count(w => w.Symbol.Equals(Symbol, StringComparison.OrdinalIgnoreCase));
+            int next = existing.Count(w => w.Symbol == AssetSymbol.Parse(Symbol));
             var derived = AddressDerive.Derive(Symbol, mnemonic, next)!;
-            await _wallets.UpsertAsync(new LocalWalletRow(
+            await _wallets.UpsertAsync(new LocalWalletDescriptor(
                 Guid.NewGuid().ToString("N"),
                 Symbol.ToUpperInvariant(),
                 string.IsNullOrWhiteSpace(Label) ? $"{Symbol} #{next}" : Label,
@@ -112,7 +113,7 @@ public partial class AddWalletViewModel : ObservableObject
                 return;
             }
 
-            await _wallets.UpsertAsync(new LocalWalletRow(
+            await _wallets.UpsertAsync(new LocalWalletDescriptor(
                 Guid.NewGuid().ToString("N"),
                 Symbol.ToUpperInvariant(),
                 string.IsNullOrWhiteSpace(Label) ? $"{Symbol} watch" : Label,
@@ -132,7 +133,7 @@ public partial class AddWalletViewModel : ObservableObject
                     Label = string.IsNullOrWhiteSpace(Label) ? null : Label,
                     Mode = "managed",
                 });
-                await _wallets.UpsertAsync(new LocalWalletRow(
+                await _wallets.UpsertAsync(new LocalWalletDescriptor(
                     result.WalletId,
                     result.Symbol,
                     result.Label,
@@ -153,7 +154,7 @@ public partial class AddWalletViewModel : ObservableObject
         else
         {
             // Unmanaged / other — local placeholder only (no spend key stored).
-            await _wallets.UpsertAsync(new LocalWalletRow(
+            await _wallets.UpsertAsync(new LocalWalletDescriptor(
                 Guid.NewGuid().ToString("N"),
                 Symbol.ToUpperInvariant(),
                 string.IsNullOrWhiteSpace(Label) ? $"{Symbol} {mode}" : Label,

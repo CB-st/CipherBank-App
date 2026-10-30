@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Configuration;
 using CipherBank_app.Custody;
 using FluentAssertions;
 using Xunit;
@@ -198,7 +199,9 @@ public class PinChangeTests
     {
         string mnemonic = MnemonicHelper.Generate();
         await pin.SetPinAsync(CurrentPin);
-        await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(mnemonic, CurrentPin));
+        await store.SetAsync(
+            CustodyService.BlobKey,
+            CryptoBox.Seal(CryptographyOptions.Default, mnemonic, CurrentPin));
         return mnemonic;
     }
 

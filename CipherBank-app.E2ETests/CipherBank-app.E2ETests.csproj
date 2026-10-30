@@ -6,11 +6,9 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <!-- Keep warnings-as-errors; demote only enumerated legacy IDs while Phases 2–3 burn them down.
-         Style/CA demotions shrink in Phase 3–4; do not add CS86*/CA1001/CA2016 permanently. -->
+    <!-- CA1707: RootNamespace CipherBank_app uses underscore (assembly-aligned). -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);SA1117;SA1118;SA1128;SA1201;SA1202;SA1203;SA1204;SA1401;SA1413;SA1516;SA1624;SA1642;CA1051;CA1822;CA1859;IDE0008</WarningsNotAsErrors>
-    <!-- CA1707: xUnit Story/Fact method underscores are intentional identifiers. -->
     <NoWarn>$(NoWarn);IDE0005;CA1707;CS1573;SA1624;SA1642</NoWarn>
   </PropertyGroup>
 
@@ -24,7 +22,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
-    <!-- Produces a real runtime Skipped result for E2E_RUN-gated facts. -->
     <PackageReference Include="Xunit.SkippableFact" />
     <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -40,8 +37,6 @@
     <PackageReference Include="Selenium.WebDriver" />
   </ItemGroup>
 
-  <!-- E2E keeps a project-local stylecop.json ("All rights reserved." headers);
-       Directory.Build.props skips the root config for this project. -->
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>

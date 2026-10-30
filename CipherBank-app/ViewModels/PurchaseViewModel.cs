@@ -35,38 +35,49 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
+    /// <summary>Gets or sets the cryptocurrencies available to purchase.</summary>
     [ObservableProperty]
-    private ObservableCollection<CryptoCurrency> availableCryptos = [];
+    public partial ObservableCollection<CryptoCurrency> AvailableCryptos { get; set; } = [];
 
+    /// <summary>Gets or sets the selected cryptocurrency.</summary>
     [ObservableProperty]
-    private CryptoCurrency? selectedCrypto;
+    public partial CryptoCurrency? SelectedCrypto { get; set; }
 
+    /// <summary>Gets or sets the focused cryptocurrency card.</summary>
     [ObservableProperty]
-    private CryptoCurrency? focusedCrypto;
+    public partial CryptoCurrency? FocusedCrypto { get; set; }
 
+    /// <summary>Gets or sets the optional payment note.</summary>
     [ObservableProperty]
-    private string paymentNote = string.Empty;
+    public partial string PaymentNote { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the purchase amount.</summary>
     [ObservableProperty]
-    private decimal amount;
+    public partial decimal Amount { get; set; }
 
+    /// <summary>Gets or sets the total purchase cost.</summary>
     [ObservableProperty]
-    private decimal totalCost;
+    public partial decimal TotalCost { get; set; }
 
+    /// <summary>Gets or sets the purchase fee.</summary>
     [ObservableProperty]
-    private decimal fee;
+    public partial decimal Fee { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether a purchase is in progress.</summary>
     [ObservableProperty]
-    private bool isPurchasing;
+    public partial bool IsPurchasing { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether purchase data is loading.</summary>
     [ObservableProperty]
-    private bool isLoading;
+    public partial bool IsLoading { get; set; }
 
+    /// <summary>Gets or sets the purchase error message.</summary>
     [ObservableProperty]
-    private string? errorMessage;
+    public partial string? ErrorMessage { get; set; }
 
+    /// <summary>Gets or sets the amount text entered by the user.</summary>
     [ObservableProperty]
-    private string amountText = string.Empty;
+    public partial string AmountText { get; set; } = string.Empty;
 
     public PurchaseViewModel(
         ILogger<PurchaseViewModel> logger,
@@ -149,7 +160,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         await LoadAvailableCryptosAsync();
 
         var crypto = AvailableCryptos.FirstOrDefault(c =>
-            c.Symbol.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+            c.Symbol == AssetSymbol.Parse(symbol));
 
         if (crypto != null)
         {
@@ -184,9 +195,9 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                 {
                     var supported = await _publicQuotes.GetCurrenciesAsync(_cts.Token);
                     var purchaseSymbols = supported
-                        .Where(s => !s.Equals("USD", StringComparison.OrdinalIgnoreCase))
-                        .Where(CurrencySymbolMap.IsSupported)
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Where(s => s.Value != "USD")
+                        .Where(s => CurrencySymbolMap.IsSupported(s.Value))
+                        .Distinct()
                         .ToList();
 
                     AvailableCryptos.Clear();
@@ -194,8 +205,8 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                     {
                         var quote = await _publicQuotes.GetInverseQuoteAsync(symbol, 1m, "USD", _cts.Token);
                         AvailableCryptos.Add(new CryptoCurrency(
-                            symbol.ToUpperInvariant(),
-                            symbol.ToUpperInvariant(),
+                            symbol.Value,
+                            symbol.Value,
                             quote.OutputAmount,
                             0m,
                             0m,
@@ -265,7 +276,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         Fee = subtotal * FeePercentage;
         TotalCost = subtotal + Fee;
 
-        LogCalculatedPurchase(_logger, Amount, SelectedCrypto.Symbol, subtotal, Fee, TotalCost);
+        LogCalculatedPurchase(_logger, Amount, SelectedCrypto.Symbol.Value, subtotal, Fee, TotalCost);
     }
 
     /// <summary>
@@ -317,11 +328,11 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
         try
         {
-            LogPurchasing(_logger, Amount, SelectedCrypto.Symbol);
+            LogPurchasing(_logger, Amount, SelectedCrypto.Symbol.Value);
 
             MoneyMoveDto move = await _product.ConvertAsync(
                 "USD",
-                SelectedCrypto.Symbol,
+                SelectedCrypto.Symbol.Value,
                 Amount.ToString(CultureInfo.InvariantCulture),
                 Guid.NewGuid().ToString("N"),
                 _cts.Token);
@@ -398,7 +409,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         AmountText = Amount.ToString("F8", CultureInfo.CurrentCulture);
         CalculateTotalCost();
 
-        LogSetPresetAmount(_logger, usdAmount, Amount, SelectedCrypto.Symbol);
+        LogSetPresetAmount(_logger, usdAmount, Amount, SelectedCrypto.Symbol.Value);
     }
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators

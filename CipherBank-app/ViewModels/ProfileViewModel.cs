@@ -42,6 +42,7 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
     // --- Backup recovery file ---
     private const int MinRecoveryPasswordLength = 12;
 
+    private readonly UserPreferenceDefaults _defaults;
     private readonly IPrefsStore _prefs;
     private readonly IPrefsSyncService _prefsSync;
     private readonly ICustodyService _custody;
@@ -78,8 +79,10 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
         IPosCardSelectionStore cardSelection,
         IUiDispatcher dispatcher,
         IAppThemeSetter themeSetter,
-        ICoraLineProvider coraLines)
+        ICoraLineProvider coraLines,
+        UserPreferenceDefaults defaults)
     {
+        _defaults = defaults;
         _timeProvider = timeProvider;
         _prefs = prefs;
         _prefsSync = prefsSync;
@@ -204,9 +207,7 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
         ValuesHiddenOnLaunch = prefs.ValuesHiddenOnLaunch;
         CombineAssets = prefs.AssetsLayout.Equals("combined", StringComparison.OrdinalIgnoreCase);
         ApiEndpoint = _settings.CipherBankEndpointBase;
-#if DEBUG
         UseMockServices = _settings.UseMockServices;
-#endif
         HomeSections.Clear();
         foreach (string key in prefs.HomeOrder)
         {
@@ -284,7 +285,7 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
         prefs.ReplaceEnabledCurrencies(enabled);
         if (prefs.EnabledCurrencies.Count == 0)
         {
-            prefs.ReplaceEnabledCurrencies(UserPrefs.DefaultEnabledCurrencies);
+            prefs.ReplaceEnabledCurrencies(_defaults.EnabledCurrencies.Select(symbol => symbol.Value));
         }
 
         foreach (var section in HomeSections)
@@ -543,9 +544,7 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
     private async Task SaveAdvancedAsync()
     {
         _settings.CipherBankEndpointBase = ApiEndpoint;
-#if DEBUG
         _settings.UseMockServices = UseMockServices;
-#endif
         await _dialogs.ShowAlertAsync(
             "Saved",
             "Advanced settings stored. Restart the app for API endpoint and mock-mode changes to take effect.");

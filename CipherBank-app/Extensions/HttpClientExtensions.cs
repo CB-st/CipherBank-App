@@ -9,7 +9,6 @@ using System.Threading.RateLimiting;
 using CipherBank_app.Configuration;
 using CipherBank_app.Services;
 using CipherBank_app.Services.Handlers;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -39,13 +38,15 @@ public static class HttpClientExtensions
             http.BaseAddress = new Uri(settings.CipherBankEndpointBase);
             http.Timeout = TimeSpan.FromSeconds(30);
             http.DefaultRequestHeaders.Add("Accept", "application/json");
-#if DEBUG
-            http.DefaultRequestHeaders.Add("X-Client-Version", appVersion);
-            http.DefaultRequestHeaders.Add("X-Platform", DeviceInfo.Platform.ToString());
-#endif
+            if (sp.GetRequiredService<IOptions<HostBehaviorOptions>>().Value.IncludeDiagnosticHeaders)
+            {
+                http.DefaultRequestHeaders.Add("X-Client-Version", appVersion);
+                http.DefaultRequestHeaders.Add("X-Platform", DeviceInfo.Platform.ToString());
+            }
             configure?.Invoke(sp, http);
         })
-        .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler())
+        .ConfigurePrimaryHttpMessageHandler(sp =>
+            sp.GetRequiredService<IPlatformHttpMessageHandlerFactory>().CreateHandler())
         .AddHttpMessageHandler(sp => new AuthHeaderHandler(sp, sp.GetRequiredService<TimeProvider>()));
 
         AddResilience(builder, limiter);
@@ -72,7 +73,8 @@ public static class HttpClientExtensions
             http.DefaultRequestHeaders.Add("Accept", "application/json");
             configure?.Invoke(sp, http);
         })
-        .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler());
+        .ConfigurePrimaryHttpMessageHandler(sp =>
+            sp.GetRequiredService<IPlatformHttpMessageHandlerFactory>().CreateHandler());
 
         AddResilience(builder, limiter);
         return builder;
@@ -84,7 +86,8 @@ public static class HttpClientExtensions
     public static IServiceCollection AddHealthCheckClient(this IServiceCollection services)
     {
         services.AddHttpClient("HealthCheck")
-            .ConfigurePrimaryHttpMessageHandler(() => PlatformHttpHandlerFactory.CreateHandler());
+            .ConfigurePrimaryHttpMessageHandler(sp =>
+            sp.GetRequiredService<IPlatformHttpMessageHandlerFactory>().CreateHandler());
         services.AddTransient<IHealthCheckClient, HealthCheckClient>();
         return services;
     }

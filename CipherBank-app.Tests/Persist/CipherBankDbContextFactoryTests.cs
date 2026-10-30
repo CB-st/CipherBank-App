@@ -18,7 +18,7 @@ public sealed class CipherBankDbContextFactoryTests
     [Fact]
     public void CreateDbContext_ReturnsSqliteContext()
     {
-        CipherBankDbContextFactory factory = new CipherBankDbContextFactory();
+        CipherBankDbContextFactory factory = new();
         using CipherBankDbContext context = factory.CreateDbContext([]);
         context.Database.IsSqlite().Should().BeTrue();
         context.Database.GetDbConnection().DataSource.Should().NotBeNullOrWhiteSpace();
@@ -31,7 +31,7 @@ public sealed class CipherBankDbContextFactoryTests
     [Fact]
     public void CreateDbContext_NullArgs_AreIgnored()
     {
-        CipherBankDbContextFactory factory = new CipherBankDbContextFactory();
+        CipherBankDbContextFactory factory = new();
         using CipherBankDbContext context = factory.CreateDbContext(null!);
         context.Database.IsSqlite().Should().BeTrue();
     }

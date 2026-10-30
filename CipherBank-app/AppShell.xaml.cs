@@ -30,10 +30,9 @@ public partial class AppShell : Shell
     public AppShell(
         IServiceProvider services,
         IAppSession session,
-        ILocalDb db,
+        AppStartupCoordinator startup,
         ICustodyService custody,
-        AppIdleLockService idleLock,
-        IRecipientSeedInitializer recipientSeeds)
+        AppIdleLockService idleLock)
         : this()
     {
         ApplyDiPageTemplates(services);
@@ -51,7 +50,7 @@ public partial class AppShell : Shell
                 return;
             }
 
-            _ = BootstrapAsync(session, db, custody, idleLock, recipientSeeds);
+            _ = BootstrapAsync(session, startup, custody, idleLock);
         }
 
         void OnLoaded(object? sender, EventArgs e)
@@ -101,10 +100,9 @@ public partial class AppShell : Shell
     /// </summary>
     private static async Task BootstrapAsync(
         IAppSession session,
-        ILocalDb db,
+        AppStartupCoordinator startup,
         ICustodyService custody,
-        AppIdleLockService idleLock,
-        IRecipientSeedInitializer recipientSeeds)
+        AppIdleLockService idleLock)
     {
         try
         {
@@ -113,7 +111,7 @@ public partial class AppShell : Shell
                 await Current.GoToAsync(Routes.Splash);
             });
 
-            var boot = BootSessionAsync(db, session, recipientSeeds);
+            var boot = BootSessionAsync(startup, session);
             await Task.WhenAll(boot, Task.Delay(MinSplashDuration)).ConfigureAwait(false);
 
             string route = session.HasWallet ? Routes.Unlock : Routes.Welcome;
@@ -164,12 +162,10 @@ public partial class AppShell : Shell
     /// Use: High (once per cold start). Scope: AppShell bootstrap.
     /// </summary>
     private static async Task BootSessionAsync(
-        ILocalDb db,
-        IAppSession session,
-        IRecipientSeedInitializer recipientSeeds)
+        AppStartupCoordinator startup,
+        IAppSession session)
     {
-        await db.InitializeAsync().ConfigureAwait(false);
-        await recipientSeeds.InitializeAsync().ConfigureAwait(false);
+        await startup.InitializeAsync(CancellationToken.None).ConfigureAwait(false);
         await session.BootAsync().ConfigureAwait(false);
     }
 }

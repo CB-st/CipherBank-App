@@ -2,7 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Numerics;
+using Microsoft.Maui.Graphics;
 
 namespace CipherBank_app.Charts;
 
@@ -14,5 +14,5 @@ public sealed class ChartPathResult
     public string Area { get; init; } = string.Empty;
 
     /// <summary>Rendered device-independent pixel coordinates.</summary>
-    public IReadOnlyList<Vector2> Points { get; init; } = Array.Empty<Vector2>();
+    public IReadOnlyList<PointF> Points { get; init; } = Array.Empty<PointF>();
 }

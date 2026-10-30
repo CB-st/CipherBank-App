@@ -6,19 +6,26 @@ using QRCoder;
 
 namespace CipherBank_app.Wallets;
 
-/// <summary>QR matrix / PNG generation for receive URIs.</summary>
+/// <summary>
+/// QR PNG generation for receive URIs.
+/// A generator is created per call: <see cref="QRCodeGenerator"/> is disposable and is not
+/// shared across threads. PNG bytes are the portable payload; a bitmap would pull a UI stack
+/// into platform-neutral Core.
+/// </summary>
 public static class QrCodeGenerator
 {
     private const int DefaultPixelsPerModule = 8;
 
-    public static byte[] ToPngBytes(string payload)
-        => ToPngBytes(payload, DefaultPixelsPerModule);
+    /// <summary>Encodes <paramref name="payload"/> as a PNG QR.</summary>
+    public static QrPng ToPng(string payload)
+        => ToPng(payload, DefaultPixelsPerModule);
 
-    public static byte[] ToPngBytes(string payload, int pixelsPerModule)
+    /// <summary>Encodes <paramref name="payload"/> as a PNG QR at <paramref name="pixelsPerModule"/>.</summary>
+    public static QrPng ToPng(string payload, int pixelsPerModule)
     {
-        using QRCodeGenerator gen = new QRCodeGenerator();
-        using QRCodeData data = gen.CreateQrCode(payload, QRCodeGenerator.ECCLevel.M);
+        using QRCodeGenerator generator = new QRCodeGenerator();
+        using QRCodeData data = generator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.M);
         PngByteQRCode png = new PngByteQRCode(data);
-        return png.GetGraphic(pixelsPerModule);
+        return new QrPng(png.GetGraphic(pixelsPerModule));
     }
 }

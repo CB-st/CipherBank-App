@@ -11,7 +11,7 @@ namespace CipherBank_app.Analyzers.Tests;
 public sealed class NoLegacyAssemblyInfoAnalyzerTests
 {
     [Fact]
-    public async Task ReportsPropertiesAssemblyInfo()
+    public async Task ReportsPropertiesAssemblyInfoAsync()
     {
         var test = new CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier>
         {
@@ -31,7 +31,7 @@ public sealed class NoLegacyAssemblyInfoAnalyzerTests
     }
 
     [Fact]
-    public async Task IgnoresOrdinarySource()
+    public async Task IgnoresOrdinarySourceAsync()
     {
         var test = new CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier>
         {
@@ -45,7 +45,7 @@ public sealed class NoLegacyAssemblyInfoAnalyzerTests
     }
 
     [Fact]
-    public async Task ReportsAssemblyInfoFromAdditionalFile()
+    public async Task ReportsAssemblyInfoFromAdditionalFileAsync()
     {
         CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier> test = new()
         {
@@ -66,7 +66,7 @@ public sealed class NoLegacyAssemblyInfoAnalyzerTests
     }
 
     [Fact]
-    public async Task DoesNotDoubleReportWhenAdditionalAssemblyInfoIsCompilationTree()
+    public async Task DoesNotDoubleReportWhenAdditionalAssemblyInfoIsCompilationTreeAsync()
     {
         CSharpAnalyzerTest<NoLegacyAssemblyInfoAnalyzer, DefaultVerifier> test = new()
         {

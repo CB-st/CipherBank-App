@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Pos;
 using CipherBank_app.Wallets;
 using FluentAssertions;
@@ -15,6 +16,10 @@ public sealed class WalletSurfaceCoverageTests
     private const string KnownMnemonic =
         "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
+    // Monero general-fund donation address (public, mainnet standard).
+    private const string MoneroAddress =
+        "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
+
     /// <summary>PaymentUri schemes and Shorten. Use: High. Scope: PaymentUri.</summary>
     [Fact]
     public void PaymentUri_CoversSchemesAndShorten()
@@ -25,7 +30,7 @@ public sealed class WalletSurfaceCoverageTests
             .And.Contain("amount=1")
             .And.Contain("label=lab")
             .And.Contain("message=hi");
-        PaymentUri.Build("ETH", "0xabc", "0.1").Should().Be("ethereum:0xabc?value=0.1");
+        PaymentUri.Build("ETH", "0xabc", "0.1").Should().Be("ethereum:0xabc?value=100000000000000000");
         PaymentUri.Build("XMR", "4abc", null).Should().Be("monero:4abc");
         PaymentUri.Build("USD", "user-1").Should().Contain("cipherbank:receive/USD");
         PaymentUri.Build("DOGE", "Dtest").Should().StartWith("dogecoin:Dtest");
@@ -38,10 +43,16 @@ public sealed class WalletSurfaceCoverageTests
     public void AddressValidate_CoversSymbolsAndFailures()
     {
         AddressValidate.IsValid("BTC", string.Empty).Should().BeFalse();
+        AddressValidate.IsValid("BTC", "   ").Should().BeFalse();
+        AddressValidate.IsValid(" ", "long-enough").Should().BeFalse();
+        AddressValidate.IsValid(null!, "long-enough").Should().BeFalse();
         AddressValidate.IsValid("BTC", "not-valid").Should().BeFalse();
         AddressValidate.IsValid("LTC", "not-valid").Should().BeFalse();
         AddressValidate.IsValid("DOGE", "not-valid").Should().BeFalse();
-        AddressValidate.IsValid("XMR", new string('a', 100)).Should().BeTrue();
+        AddressValidate.IsValid("XMR", MoneroAddress).Should().BeTrue();
+        AddressValidate.IsValid("XMR", new string('a', 100)).Should().BeFalse();
+        AddressValidate.IsValid("XMR", MoneroAddress[..^1] + (MoneroAddress[^1] == 'A' ? 'B' : 'A')).Should().BeFalse();
+        AddressValidate.IsValid("XMR", "1" + MoneroAddress[1..]).Should().BeFalse();
         AddressValidate.IsValid("XMR", "short").Should().BeFalse();
         AddressValidate.IsValid("XYZ", "long-enough").Should().BeTrue();
         AddressValidate.IsValid("XYZ", "tiny").Should().BeFalse();
@@ -59,47 +70,32 @@ public sealed class WalletSurfaceCoverageTests
         viaDispatch.Should().NotBeNull();
         viaDispatch!.Address.Should().StartWith("bc1");
 
-        DerivedAddress ltc = AddressDerive.DeriveLtc(KnownMnemonic, 0);
+        DerivedAddress ltc = AddressDerive.DeriveRequired(AssetSymbol.Ltc, KnownMnemonic, 0);
         ltc.Address.Should().NotBeNullOrWhiteSpace();
         ltc.Path.Should().Contain("84'/2'");
 
-        DerivedAddress doge = AddressDerive.DeriveDoge(KnownMnemonic, 0);
+        DerivedAddress doge = AddressDerive.DeriveRequired(AssetSymbol.Doge, KnownMnemonic, 0);
         doge.Address.Should().NotBeNullOrWhiteSpace();
         doge.Path.Should().Contain("44'/3'");
     }
 
-    /// <summary>WalletModule.SourceFor mapping. Use: Medium. Scope: WalletModule.</summary>
+    /// <summary>Server-backed creates follow the module flag. Use: Medium. Scope: IWalletModule.</summary>
     [Fact]
-    public void WalletModule_SourceFor_MapsModes()
+    public void WalletModule_UsesServerWallets_OnlyForMonero()
     {
-        WalletModule local = new WalletModule
-        {
-            Symbol = "BTC",
-            AddModes = [WalletUiMode.Watch, WalletUiMode.Unmanaged],
-            CanDerive = true,
-            UsesServerWallets = false,
-        };
-        local.SourceFor(WalletUiMode.Watch).Should().Be(WalletSource.Watch);
-        local.SourceFor(WalletUiMode.Managed).Should().Be(WalletSource.Server);
-        local.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Local);
-
-        WalletModule server = new WalletModule
-        {
-            Symbol = "XMR",
-            AddModes = [WalletUiMode.Managed],
-            CanDerive = false,
-            UsesServerWallets = true,
-        };
-        server.SourceFor(WalletUiMode.Unmanaged).Should().Be(WalletSource.Server);
+        WalletRegistry.Get(AssetSymbol.Btc).UsesServerWallets.Should().BeFalse();
+        WalletRegistry.Get(AssetSymbol.Xmr).UsesServerWallets.Should().BeTrue();
+        WalletRegistry.Get(AssetSymbol.Xmr).AddModes.Should().Contain(WalletUiMode.Unmanaged);
     }
 
     /// <summary>QR PNG generation. Use: Medium. Scope: QrCodeGenerator.</summary>
     [Fact]
     public void QrCodeGenerator_ProducesPngBytes()
     {
-        byte[] png = QrCodeGenerator.ToPngBytes("bitcoin:bc1qtest");
-        png.Should().NotBeEmpty();
-        png[0].Should().Be(0x89);
+        QrPng png = QrCodeGenerator.ToPng("bitcoin:bc1qtest");
+        png.Bytes.Length.Should().BeGreaterThan(0);
+        png.Bytes.Span[0].Should().Be(0x89);
+        QrPng.MediaType.Should().Be("image/png");
     }
 
     /// <summary>NullNfcPresentmentService failure path. Use: Medium. Scope: NullNfcPresentmentService.</summary>

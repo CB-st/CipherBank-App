@@ -3,6 +3,7 @@
 // </copyright>
 
 using CipherBank_app.Configuration;
+using CipherBank_app.Persist.Entities;
 
 namespace CipherBank_app.Persist;
 
@@ -50,7 +51,7 @@ public sealed record AchRecipientRow(
     /// entity. Routing and Account stay null: the store holds masks only, never cleartext.
     /// Use: High (every recipient list read). Scope: RecipientRepository projections.
     /// </summary>
-    public AchRecipientRow(Entities.RecipientEntity entity)
+    public AchRecipientRow(RecipientEntity entity)
         : this(
             entity.Id,
             entity.Name,

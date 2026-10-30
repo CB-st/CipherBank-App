@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using CipherBank_app.Persist;
+using CipherBank_app.Tests.Persist;
 using CipherBank_app.V1;
 using FluentAssertions;
 using Xunit;
@@ -18,7 +19,7 @@ public class WireJsonFoldTests
         const string json = """{"coraEnabled":false,"assetsLayout":"combined","appLockIdleSec":90}""";
         PrefsWireDto? dto = JsonSerializer.Deserialize<PrefsWireDto>(json);
         dto.Should().NotBeNull();
-        UserPrefs prefs = new UserPrefs();
+        UserPrefs prefs = new UserPrefs(TestPreferenceDefaults.Value);
         dto!.ApplyOnto(prefs);
         prefs.CoraEnabled.Should().BeFalse();
         prefs.AssetsLayout.Should().Be("combined");
