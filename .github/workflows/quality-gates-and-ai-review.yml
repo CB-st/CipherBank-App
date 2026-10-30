@@ -124,6 +124,18 @@ jobs:
             --no-restore \
             ${{ matrix.build_args }}
 
+      - name: Verify Android SQLite native assets
+        if: ${{ matrix.name == 'Android' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t archives < <(find CipherBank-app/bin -path '*/net10.0-android/*' \( -name '*-Signed.apk' -o -name '*.aab' \) -print | sort)
+          if [[ ${#archives[@]} -eq 0 ]]; then
+            echo "No published Android APK/AAB found under CipherBank-app/bin." >&2
+            exit 1
+          fi
+          python3 scripts/verify-android-sqlite.py "${archives[@]}"
+
   generated-migrations:
     if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
     runs-on: ubuntu-22.04
