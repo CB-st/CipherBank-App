@@ -66,7 +66,6 @@ public static class ChartMath
     /// <param name="series">Absolute value series; first non-empty point is the baseline.</param>
     public static IReadOnlyList<Point> ToIndexed(IReadOnlyList<Point> series)
     {
-        ArgumentNullException.ThrowIfNull(series);
         if (series.Count == 0)
         {
             return series;
@@ -92,7 +91,6 @@ public static class ChartMath
         double? min,
         double? max)
     {
-        ArgumentNullException.ThrowIfNull(series);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
         ArgumentOutOfRangeException.ThrowIfNegative(padding);
