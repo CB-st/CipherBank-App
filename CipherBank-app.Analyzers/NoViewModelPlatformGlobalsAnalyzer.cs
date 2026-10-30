@@ -161,6 +161,14 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// Reports prohibited globals in one additional ViewModel C# file.
     /// Use: High (every additional file). Scope: unbuilt sibling projects.
     /// </summary>
+    /// <remarks>
+    /// Limits: this is a syntax-only fallback for unbuilt sibling ViewModels; there is no semantic
+    /// model. It reports fully qualified names and partial roots opened by a using directive.
+    /// Shadowing is approximated from enclosing type members, parameters, enclosing-block locals and
+    /// loop/using/fixed locals. It does not model lambda or local-function captures, pattern or out
+    /// variables, using static or alias directives, or partial types split across files, so misses
+    /// and false positives are possible. Compiled ViewModels use the semantic model and are unaffected.
+    /// </remarks>
     private static void ReportAdditionalFile(CompilationAnalysisContext context, AdditionalText file)
     {
         if (!IsViewModelPath(file.Path)
