@@ -74,7 +74,7 @@ openssl s_client -servername api.cipherbank.money -connect api.cipherbank.money:
 
 ## Updating Certificate Pins
 
-C# pin values live on `CertificatePinPolicy`. These handlers consume that policy:
+C# pin values live on `CertificatePinPolicy` in `CipherBank-app.Core/Security/CertificatePinPolicy.cs` (edit pins there). These handlers consume that policy:
 
 - `CipherBank-app/Platforms/iOS/IosCertificatePinningHandler.cs`
 - `CipherBank-app/Platforms/MacCatalyst/CertificatePinningHandler.cs` (`MacCatalystCertificatePinningHandler`)
@@ -200,6 +200,7 @@ or on failure:
 | Mac Catalyst | `Platforms/MacCatalyst/CertificatePinningHandler.cs` | NSUrlSessionHandler implementation |
 | Android | `Platforms/Android/Resources/xml/network_security_config.xml` | Network security configuration |
 | Windows | `Platforms/Windows/WindowsCertificatePinningHandler.cs` | HttpClientHandler implementation |
+| Shared (pin values) | `CipherBank-app.Core/Security/CertificatePinPolicy.cs` | `CertificatePinPolicy` — the C# pin set the iOS, Mac Catalyst and Windows handlers consume |
 | Shared | `Services/IPlatformHttpMessageHandlerFactory.cs` | Per-platform `*HttpMessageHandlerFactory` |
 
 ## Security Best Practices
