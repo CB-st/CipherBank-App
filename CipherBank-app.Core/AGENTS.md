@@ -9,4 +9,4 @@
 
 ## Repository-specific note
 
-`NoScatteredSqlAnalyzer` in `CipherBank-app.Analyzers` reports `CommandText =`, `FromSqlRaw`, or `ExecuteSqlRaw` in any Core file. Persistence uses EF Core entities and `SaveChanges`.
+`NoScatteredSqlAnalyzer` in `CipherBank-app.Analyzers` reports CB1003 for raw SQL in any Core file. Persistence uses EF Core entities and `SaveChanges`.
