@@ -569,31 +569,51 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// </summary>
     /// <param name="root">Leftmost identifier of a member-access receiver.</param>
     /// <returns>False for member-rooted chains such as <c>Controls.Application</c> with no matching import.</returns>
-    private static bool IsImportedNamespaceRoot(IdentifierNameSyntax root)
+    private static bool IsImportedNamespaceRoot(SimpleNameSyntax root)
     {
         string name = root.Identifier.ValueText;
-        foreach (SyntaxNode scope in root.Ancestors())
+        if (DeclaresValueNamed(root, name))
         {
-            SyntaxList<UsingDirectiveSyntax> usings = scope switch
-            {
-                CompilationUnitSyntax unit => unit.Usings,
-                BaseNamespaceDeclarationSyntax ns => ns.Usings,
-                _ => default,
-            };
-            foreach (UsingDirectiveSyntax directive in usings)
-            {
-                if (directive.Alias is null
-                    && directive.StaticKeyword.IsKind(SyntaxKind.None)
-                    && directive.Name is not null
-                    && _knownPlatformNamespaces.Contains(ImportedNamespace(directive.Name) + "." + name))
-                {
-                    return true;
-                }
-            }
+            return false;
         }
 
-        return false;
+        return root.Ancestors()
+            .SelectMany(ScopeUsings)
+            .Any(directive => directive.Alias is null
+                && directive.StaticKeyword.IsKind(SyntaxKind.None)
+                && directive.Name is not null
+                && _knownPlatformNamespaces.Contains(ImportedNamespace(directive.Name) + "." + name));
     }
+
+    /// <summary>
+    /// Using directives declared directly by a compilation unit or namespace.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static IEnumerable<UsingDirectiveSyntax> ScopeUsings(SyntaxNode scope)
+        => scope switch
+        {
+            CompilationUnitSyntax unit => unit.Usings,
+            BaseNamespaceDeclarationSyntax ns => ns.Usings,
+            _ => Enumerable.Empty<UsingDirectiveSyntax>(),
+        };
+
+    /// <summary>
+    /// True when the file declares a field, property, local, parameter or other value named
+    /// <paramref name="name"/>. C# binds such a value before an imported namespace, so the chain
+    /// is an instance chain such as <c>Controls.Application</c> on a <c>Controls</c> property.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool DeclaresValueNamed(SyntaxNode node, string name)
+        => node.SyntaxTree.GetRoot().DescendantNodes().Any(declaration => declaration switch
+        {
+            VariableDeclaratorSyntax variable => variable.Identifier.ValueText == name,
+            ParameterSyntax parameter => parameter.Identifier.ValueText == name,
+            PropertyDeclarationSyntax property => property.Identifier.ValueText == name,
+            EventDeclarationSyntax evt => evt.Identifier.ValueText == name,
+            SingleVariableDesignationSyntax designation => designation.Identifier.ValueText == name,
+            ForEachStatementSyntax loop => loop.Identifier.ValueText == name,
+            _ => false,
+        });
 
     /// <summary>
     /// Text of a using directive name without a leading <c>global::</c> alias.

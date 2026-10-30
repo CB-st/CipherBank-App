@@ -461,6 +461,38 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
     }
 
     [Fact]
+    public async Task IgnoresValueRootedChainsWhenMauiIsImportedInAdditionalViewModelFileAsync()
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestCode = "class Anchor { }",
+            TestState =
+            {
+                AdditionalFiles =
+                {
+                    ("CipherBank-app/ViewModels/ValueRootsViewModel.cs", """
+                        using Microsoft.Maui;
+
+                        class ValueRootsViewModel
+                        {
+                            private readonly Theme Controls = new();
+
+                            void Read(Settings Storage)
+                            {
+                                _ = Controls.Application.Current;
+                                _ = Storage.Preferences.Get("theme", "system");
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+
+        await test.RunAsync();
+    }
+
+    [Fact]
     public async Task ReportsImportedNamespacePathsInAdditionalViewModelFileAsync()
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
