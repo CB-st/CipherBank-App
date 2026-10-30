@@ -86,10 +86,10 @@ public static class UserDataPackCodec
         => DefaultBlocks.Open(block, kek, usernameHashHex, contentVersion);
 
     /// <summary>
-    /// Opens every block, skipping unknown types.
+    /// Opens every block, skipping unknown types; failed blocks are reported, not dropped.
     /// Use: High (GRAB apply). Scope: userdata restore.
     /// </summary>
-    public static Dictionary<string, string> OpenPack(
+    public static UserDataPackOpenResult OpenPack(
         UserDataPackWire pack,
         string username,
         ReadOnlySpan<byte> kek)
@@ -99,7 +99,7 @@ public static class UserDataPackCodec
     /// Opens every block; skips unknown types when <paramref name="skipUnknownTypes"/> is true.
     /// Use: High (GRAB apply). Scope: userdata restore.
     /// </summary>
-    public static Dictionary<string, string> OpenPack(
+    public static UserDataPackOpenResult OpenPack(
         UserDataPackWire pack,
         string username,
         ReadOnlySpan<byte> kek,
@@ -110,7 +110,7 @@ public static class UserDataPackCodec
     /// Opens a pack with an injected block cipher, skipping unknown types.
     /// Use: Medium (suite). Scope: userdata restore.
     /// </summary>
-    public static Dictionary<string, string> OpenPack(
+    public static UserDataPackOpenResult OpenPack(
         UserDataPackWire pack,
         string username,
         ReadOnlySpan<byte> kek,
@@ -120,7 +120,7 @@ public static class UserDataPackCodec
     /// <summary>
     /// Opens a pack with an injected block cipher. Use: Medium (suite). Scope: userdata restore.
     /// </summary>
-    public static Dictionary<string, string> OpenPack(
+    public static UserDataPackOpenResult OpenPack(
         UserDataPackWire pack,
         string username,
         ReadOnlySpan<byte> kek,
@@ -134,6 +134,7 @@ public static class UserDataPackCodec
 
         string usernameHashHex = UserDataUsernameHash.HashHex(username);
         Dictionary<string, string> opened = new(StringComparer.Ordinal);
+        List<UserDataBlockFailure> failed = [];
 
         foreach (UserDataBlockWire block in pack.Blocks)
         {
@@ -148,15 +149,17 @@ public static class UserDataPackCodec
             }
             catch (CryptographicException)
             {
-                // Keep successfully authenticated blocks; a torn/auth-failed block must not abort restore.
+                // Keep authenticated blocks, but report the failure so the caller can mark it dirty.
+                failed.Add(new UserDataBlockFailure(block.Id, block.Type, UserDataBlockFailureReason.AuthenticationFailed));
             }
             catch (FormatException)
             {
-                // Malformed Base64 nonce/tag/ciphertext must not abort partial restore.
+                // Malformed Base64 nonce/tag/ciphertext: report it rather than returning a silent partial restore.
+                failed.Add(new UserDataBlockFailure(block.Id, block.Type, UserDataBlockFailureReason.Malformed));
             }
         }
 
-        return opened;
+        return new UserDataPackOpenResult(opened, failed);
     }
 
     /// <summary>
