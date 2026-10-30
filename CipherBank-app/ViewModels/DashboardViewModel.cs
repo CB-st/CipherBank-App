@@ -26,24 +26,6 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private ObservableCollection<CryptoCurrency> cryptocurrencies = [];
-
-    [ObservableProperty]
-    private CryptoCurrency? selectedCrypto;
-
-    [ObservableProperty]
-    private bool isLoading;
-
-    [ObservableProperty]
-    private bool isRefreshing;
-
-    [ObservableProperty]
-    private string? errorMessage;
-
-    [ObservableProperty]
-    private decimal totalPortfolioValue;
-
     public DashboardViewModel(
         ILogger<DashboardViewModel> logger,
         IProductClient product,
@@ -57,6 +39,24 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         _navigation = navigation;
         _dialog = dialog;
     }
+
+    [ObservableProperty]
+    public partial ObservableCollection<CryptoCurrency> Cryptocurrencies { get; set; } = [];
+
+    [ObservableProperty]
+    public partial CryptoCurrency? SelectedCrypto { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsRefreshing { get; set; }
+
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+    [ObservableProperty]
+    public partial decimal TotalPortfolioValue { get; set; }
 
     /// <summary>
     /// Cancels any ongoing operations when leaving the page.

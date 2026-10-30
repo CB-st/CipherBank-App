@@ -2,14 +2,13 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Custody;
 using CipherBank_app.Models;
 using NBitcoin;
 
 namespace CipherBank_app.Wallets;
 
 /// <summary>BIP84 native segwit Bitcoin module.</summary>
-public sealed class BitcoinWalletModule : IWalletModule
+public sealed class BitcoinWalletModule : AddressDerive, IWalletModule
 {
     /// <inheritdoc />
     public AssetSymbol Symbol => AssetSymbol.Btc;
@@ -40,17 +39,15 @@ public sealed class BitcoinWalletModule : IWalletModule
     }
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
+    public Uri BuildReceiveUri(string address, string? amount, string? label, string? message)
+        => PaymentUri.Bip21("bitcoin", address, amount, label, message);
+
+    /// <inheritdoc />
+    protected override DerivedAddress DeriveCore(string mnemonic, int accountIndex)
     {
-        Mnemonic parsed = MnemonicHelper.Parse(mnemonic);
-        ExtKey root = parsed.DeriveExtKey();
-        string path = $"m/84'/0'/0'/0/{accountIndex}";
-        ExtKey key = root.Derive(new KeyPath(path));
+        string path = ReceivePath(84, 0, accountIndex);
+        ExtKey key = DeriveKey(mnemonic, path);
         BitcoinAddress address = key.Neuter().PubKey.GetAddress(ScriptPubKeyType.Segwit, Network.Main);
         return new DerivedAddress(address.ToString(), path, accountIndex);
     }
-
-    /// <inheritdoc />
-    public Uri BuildReceiveUri(string address, string? amount, string? label, string? message)
-        => PaymentUri.Bip21("bitcoin", address, amount, label, message);
 }

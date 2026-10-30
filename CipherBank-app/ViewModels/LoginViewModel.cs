@@ -2,15 +2,19 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+#if DEBUG
 using System.Globalization;
 using CipherBank_app.Configuration;
+#endif
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
 using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+#if DEBUG
 using Microsoft.Extensions.Options;
+#endif
 
 namespace CipherBank_app.ViewModels;
 
@@ -29,29 +33,6 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 #endif
     private CancellationTokenSource? _cts;
     private bool _disposed;
-
-    [ObservableProperty]
-    private string username = string.Empty;
-
-    [ObservableProperty]
-    private string password = string.Empty;
-
-    [ObservableProperty]
-    private bool isBusy;
-
-    [ObservableProperty]
-    private string? errorMessage;
-
-#if DEBUG
-    [ObservableProperty]
-    private bool isTestEnvironment;
-
-    [ObservableProperty]
-    private string? environmentBadge;
-
-    [ObservableProperty]
-    private string? statusMessage;
-#endif
 
 #if DEBUG
     public LoginViewModel(
@@ -84,6 +65,29 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         _navigation = navigation;
         _dialog = dialog;
     }
+#endif
+
+    [ObservableProperty]
+    public partial string Username { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string Password { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool IsBusy { get; set; }
+
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+#if DEBUG
+    [ObservableProperty]
+    public partial bool IsTestEnvironment { get; set; }
+
+    [ObservableProperty]
+    public partial string? EnvironmentBadge { get; set; }
+
+    [ObservableProperty]
+    public partial string? StatusMessage { get; set; }
 #endif
 
     /// <summary>
