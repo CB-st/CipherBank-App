@@ -12,7 +12,9 @@ using CipherBank_app.ViewModels;
 using CipherBank_app.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+#if DEBUG
 using Microsoft.Extensions.Options;
+#endif
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;

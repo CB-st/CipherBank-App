@@ -2,15 +2,19 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+#if DEBUG
 using System.Globalization;
 using CipherBank_app.Configuration;
+#endif
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
 using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+#if DEBUG
 using Microsoft.Extensions.Options;
+#endif
 
 namespace CipherBank_app.ViewModels;
 
