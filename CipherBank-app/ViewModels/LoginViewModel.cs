@@ -71,10 +71,6 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string? EnvironmentBadge { get; set; }
 
-    /// <summary>Gets or sets the login status message.</summary>
-    [ObservableProperty]
-    public partial string? StatusMessage { get; set; }
-
     /// <summary>
     /// Cancels the current login operation.
     /// </summary>
@@ -165,7 +161,6 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         {
             Username = "testuser";
             Password = "password123";
-            StatusMessage = "Test credentials filled";
             LogTestCredentialsUsed(_logger);
 
             // Optionally auto-login

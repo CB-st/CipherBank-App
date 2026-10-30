@@ -73,7 +73,7 @@
                                       HeightRequest="230"
                                       IsVisible="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"
                                       ItemsSource="{Binding AvailableCryptos}"
-                                      FocusedItem="{Binding FocusedCrypto, Mode=TwoWay}">
+                                      FocusedItem="{Binding SelectedCrypto, Mode=TwoWay}">
                     <controls:ArcCardDeck.ItemTemplate>
                         <DataTemplate x:DataType="models1:CryptoCurrency">
                             <controls:GlassCard WidthRequest="260"
