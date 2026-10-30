@@ -598,22 +598,73 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         };
 
     /// <summary>
-    /// True when the file declares a field, property, local, parameter or other value named
-    /// <paramref name="name"/>. C# binds such a value before an imported namespace, so the chain
-    /// is an instance chain such as <c>Controls.Application</c> on a <c>Controls</c> property.
+    /// True when a value named <paramref name="name"/> is in scope at <paramref name="node"/>:
+    /// a member of an enclosing type, a parameter of an enclosing method, local function or lambda,
+    /// or a local, pattern or loop variable declared in an enclosing block or statement.
+    /// C# binds such a value before an imported namespace. Declarations in other methods or
+    /// blocks do not count.
     /// Use: Medium (additional-file fallback only). Scope: this analyzer.
     /// </summary>
     private static bool DeclaresValueNamed(SyntaxNode node, string name)
-        => node.SyntaxTree.GetRoot().DescendantNodes().Any(declaration => declaration switch
+        => node.Ancestors().Any(scope => ScopeDeclaresValue(scope, name));
+
+    /// <summary>
+    /// True when <paramref name="scope"/> itself introduces a value named <paramref name="name"/>.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool ScopeDeclaresValue(SyntaxNode scope, string name)
+        => scope switch
         {
-            VariableDeclaratorSyntax variable => variable.Identifier.ValueText == name,
-            ParameterSyntax parameter => parameter.Identifier.ValueText == name,
-            PropertyDeclarationSyntax property => property.Identifier.ValueText == name,
-            EventDeclarationSyntax evt => evt.Identifier.ValueText == name,
-            SingleVariableDesignationSyntax designation => designation.Identifier.ValueText == name,
+            TypeDeclarationSyntax type => TypeDeclaresValue(type, name),
+            BaseMethodDeclarationSyntax method => HasParameter(method.ParameterList, name),
+            LocalFunctionStatementSyntax local => HasParameter(local.ParameterList, name),
+            ParenthesizedLambdaExpressionSyntax lambda => HasParameter(lambda.ParameterList, name),
+            SimpleLambdaExpressionSyntax lambda => lambda.Parameter.Identifier.ValueText == name,
+            AnonymousMethodExpressionSyntax anonymous => anonymous.ParameterList is not null
+                && HasParameter(anonymous.ParameterList, name),
             ForEachStatementSyntax loop => loop.Identifier.ValueText == name,
+            BlockSyntax block => block.Statements.Any(statement => StatementDeclaresValue(statement, name)),
+            SwitchSectionSyntax section => section.Statements.Any(statement => StatementDeclaresValue(statement, name)),
             _ => false,
-        });
+        };
+
+    /// <summary>
+    /// True when a type declares a field, property, event or primary-constructor parameter with that name.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool TypeDeclaresValue(TypeDeclarationSyntax type, string name)
+        => (type.ParameterList is not null && HasParameter(type.ParameterList, name))
+            || type.Members.Any(member => member switch
+            {
+                BaseFieldDeclarationSyntax field => field.Declaration.Variables.Any(variable => variable.Identifier.ValueText == name),
+                PropertyDeclarationSyntax property => property.Identifier.ValueText == name,
+                EventDeclarationSyntax evt => evt.Identifier.ValueText == name,
+                _ => false,
+            });
+
+    /// <summary>
+    /// True when a statement declares a local or pattern variable with that name, without
+    /// looking into nested blocks or lambdas, which have their own scopes.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool StatementDeclaresValue(StatementSyntax statement, string name)
+        => statement
+            .DescendantNodesAndSelf(child => child == statement
+                || child is not (BlockSyntax or AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+            .Any(declaration => declaration switch
+            {
+                VariableDeclaratorSyntax variable => variable.Identifier.ValueText == name,
+                SingleVariableDesignationSyntax designation => designation.Identifier.ValueText == name,
+                LocalFunctionStatementSyntax function => function.Identifier.ValueText == name,
+                _ => false,
+            });
+
+    /// <summary>
+    /// True when a parameter list declares a parameter with that name.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    private static bool HasParameter(BaseParameterListSyntax parameters, string name)
+        => parameters.Parameters.Any(parameter => parameter.Identifier.ValueText == name);
 
     /// <summary>
     /// Text of a using directive name without a leading <c>global::</c> alias.

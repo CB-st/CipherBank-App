@@ -473,6 +473,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                 {
                     ("CipherBank-app/ViewModels/ValueRootsViewModel.cs", """
                         using Microsoft.Maui;
+                        using System.Threading;
 
                         class ValueRootsViewModel
                         {
@@ -482,6 +483,17 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                             {
                                 _ = Controls.Application.Current;
                                 _ = Storage.Preferences.Get("theme", "system");
+                            }
+
+                            void OtherMethod()
+                            {
+                                var Tasks = new Theme();
+                                _ = Tasks.Task.Name;
+                            }
+
+                            void UsesPlatform()
+                            {
+                                _ = {|CB1005:Tasks.Task<int>.Run|}(() => 1);
                             }
                         }
                         """),
