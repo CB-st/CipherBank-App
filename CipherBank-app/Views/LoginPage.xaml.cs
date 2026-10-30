@@ -5,7 +5,9 @@
 using CipherBank_app.Configuration;
 using CipherBank_app.ViewModels;
 using Microsoft.Extensions.Options;
+#if DEBUG
 using Microsoft.Maui.Controls.Shapes;
+#endif
 
 namespace CipherBank_app.Views;
 
@@ -24,12 +26,15 @@ public partial class LoginPage
         _viewModel = viewModel;
         BindingContext = viewModel;
 
+#if DEBUG
         if (hostBehavior.Value.ShowDevelopmentIndicators)
         {
             AddDeveloperControls();
         }
+#endif
     }
 
+#if DEBUG
     private static void ApplyThemeColor(VisualElement element, BindableProperty property, string lightKey, string darkKey) =>
         element.SetAppThemeColor(property, GetColor(lightKey), GetColor(darkKey));
 
@@ -83,6 +88,7 @@ public partial class LoginPage
         var insertIndex = LoginFormLayout.Children.IndexOf(LoginButton) + 1;
         LoginFormLayout.Children.Insert(insertIndex, testCredentials);
     }
+#endif
 
     private void OnUsernameCompleted(object? sender, EventArgs e)
     {

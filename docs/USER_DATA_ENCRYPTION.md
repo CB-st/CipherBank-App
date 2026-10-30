@@ -354,7 +354,7 @@ sequenceDiagram
 | Monotonic version | Client increments `content_version` once per successful local commit before OVERWRITE |
 | LWW default | Higher `content_version` wins when merging two packs offline |
 | Equal versions | Prefer newer `updated_at` if present in clear envelope; else prefer local and re-push |
-| Partial block failure | If one block fails GCM open, keep successfully opened blocks; mark failed types dirty for rewrite |
+| Partial block failure | If one block fails GCM open, keep successfully opened blocks; `OpenPack` returns them in `FailedBlocks` (id, type, reason) and `IsComplete` is false — mark those types dirty for rewrite, never treat the open as a full restore |
 | Empty remote blob | Treat as first-write; push local pack |
 | Corrupt pack JSON | Fail closed on pull; do not wipe local prefs |
 

@@ -14,6 +14,15 @@ namespace CipherBank_app.Tests.Charts;
 public class ChartMathTests
 {
     [Fact]
+    public void ToPath_Empty_ReturnsEmptyGeometry()
+    {
+        ChartPathResult result = ChartMath.ToPath(Array.Empty<Point>(), 100, 40);
+        result.Line.Should().BeEmpty();
+        result.Area.Should().BeEmpty();
+        result.Points.Should().BeEmpty();
+    }
+
+    [Fact]
     public void ToPath_WithTwoPoints_ProducesLineAndArea()
     {
         Point[] series = new[] { new Point(0, 1), new Point(1, 2) };

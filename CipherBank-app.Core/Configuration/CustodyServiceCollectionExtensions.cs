@@ -27,9 +27,6 @@ public static class CustodyServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
-
         services.AddSingleton<IValidateOptions<CryptographyOptions>, CryptographyOptionsValidator>();
         services.AddRequiredOptions(configuration, new CryptographyOptions())
             .ValidateOnStart();
