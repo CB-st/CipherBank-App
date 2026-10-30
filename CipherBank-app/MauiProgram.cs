@@ -23,6 +23,9 @@ namespace CipherBank_app;
 /// </summary>
 public static class MauiProgram
 {
+    // Rebase note: M2 removes shared platform #if branches. Preserve per-TFM
+    // AddPlatformFeatures/AddPlatformHandlers registration, fail-closed pinned
+    // HTTP factories, IMotionPreference, and native/simulated blur handlers.
     public static MauiApp CreateMauiApp()
     {
         // Runtime platform check selects the appsettings.Windows.json overlay; no preprocessor fork.
@@ -119,6 +122,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddPersistenceFeature(
             mauiAppBuilder.Configuration,
             new DirectoryInfo(FileSystem.Current.AppDataDirectory));
+        mauiAppBuilder.Services.AddCustodyFeature(mauiAppBuilder.Configuration);
 
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
