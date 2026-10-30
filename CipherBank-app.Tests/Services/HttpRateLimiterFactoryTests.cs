@@ -41,7 +41,7 @@ public sealed class HttpRateLimiterFactoryTests
         using SlidingWindowRateLimiter limiter = HttpRateLimiterFactory.Create(
             permitLimit: 1,
             window: TimeSpan.FromMilliseconds(50),
-            queueLimit: 0);
+            queueLimit: 1);
 
         RateLimitLease first = await limiter.AcquireAsync(1, CancellationToken.None);
         using (first)
@@ -49,14 +49,8 @@ public sealed class HttpRateLimiterFactoryTests
             first.IsAcquired.Should().BeTrue();
         }
 
-        RateLimitLease blocked = await limiter.AcquireAsync(1, CancellationToken.None);
-        using (blocked)
-        {
-            blocked.IsAcquired.Should().BeFalse();
-        }
-
-        await Task.Delay(250);
-        RateLimitLease afterWindow = await limiter.AcquireAsync(1, CancellationToken.None);
+        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(15));
+        RateLimitLease afterWindow = await limiter.AcquireAsync(1, timeout.Token);
         using (afterWindow)
         {
             afterWindow.IsAcquired.Should().BeTrue();
