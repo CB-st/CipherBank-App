@@ -8,14 +8,15 @@ Start with this file, then read the nearest subtree contract and the relevant do
 
 | Layer | Owns | Must not own |
 | --- | --- | --- |
-| `CipherBank-app.Core` | Domain models, application services, persistence ports, EF Core LocalDb | MAUI controls, platform APIs |
+| `CipherBank-app.Core` | Domain models, application services, persistence ports, EF Core LocalDb | MAUI controls, platform APIs, page-lifecycle logic |
+| `CipherBank-app.Presentation` | Platform-neutral presentation helpers (ViewModel/page-lifecycle support) | MAUI controls, platform APIs, domain policy |
 | `CipherBank-app` | MAUI composition root, views, ViewModels, platform adapters | Domain policy, manual SQL, static service locators |
 | `CipherBank-app.Tests` | Unit and options regression tests | Shared mutable fixtures or production substitutes |
 | `CipherBank-app.Analyzers` | Repository-structure Roslyn diagnostics (CPM, AssemblyInfo, Core SQL, retired names) | Product behavior |
 | Integration tests | HTTP and persistence boundaries | Reimplementation of product behavior |
 | `CipherBank-app.E2ETests` | Appium journeys and page objects | Product policy or hard-coded credentials |
 
-Dependencies point inward: MAUI may depend on Core; Core never depends on MAUI. Tests may depend on the layer they verify.
+Dependencies point inward: MAUI may depend on Core and Presentation; Core never depends on MAUI or Presentation. Presentation does not depend on Core or MAUI. Tests may depend on the layer they verify.
 
 ## Structural rules
 

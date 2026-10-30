@@ -36,7 +36,7 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 | [core/README.md](core/README.md) | Core library overview |
 | [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |
 | [core/services.md](core/services.md) | Core service interfaces and utilities |
-| [app/README.md](app/README.md) | MAUI app overview, DI, MauiProgram |
+| [app/README.md](app/README.md) | MAUI app overview, DI, MauiProgram, platform-neutral Presentation support |
 | [app/services.md](app/services.md) | Service implementations, HTTP handlers, mocks |
 | [app/viewmodels.md](app/viewmodels.md) | ViewModels and commands |
 | [app/views.md](app/views.md) | Views/Pages and XAML bindings |

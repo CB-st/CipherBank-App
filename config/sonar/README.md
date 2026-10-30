@@ -17,7 +17,7 @@ Sonar's own PR check (decoration).
 
 Coverage for new code comes from Coverlet OpenCover produced by:
 
-- `CipherBank-app.Tests` (Core unit tests)
+- `CipherBank-app.Tests` (Core and Presentation unit tests)
 - `CipherBank-app.Analyzers.Tests` (structure-analyzer tests)
 
 Those reports are the coverage job's handoff into the scan. A missing
