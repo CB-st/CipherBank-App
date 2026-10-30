@@ -13,6 +13,27 @@ namespace CipherBank_app.Tests.Custody;
 
 public class PinAndCustodyTests
 {
+    [Theory]
+    [InlineData("223456")]
+    [InlineData("123556")]
+    [InlineData("123455")]
+    public async Task Custody_UnlockRejectsPinMismatchAtAnyPosition(string attemptedPin)
+    {
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
+        const string mnemonic =
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        await custody.SealAsync(mnemonic, "123456");
+        custody.Lock();
+
+        (await custody.UnlockAsync(attemptedPin)).Should().BeFalse();
+        custody.IsUnlocked.Should().BeFalse();
+        custody.ExportMnemonic().Should().BeNull();
+        (await custody.UnlockAsync("123456")).Should().BeTrue();
+        custody.ExportMnemonic().Should().Be(mnemonic);
+    }
+
     [Fact]
     public async Task Pin_VerifySucceedsAfterSet()
     {

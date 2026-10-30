@@ -2,14 +2,13 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Custody;
 using CipherBank_app.Models;
 using NBitcoin;
 
 namespace CipherBank_app.Wallets;
 
 /// <summary>BIP44 P2PKH Dogecoin module.</summary>
-public sealed class DogecoinWalletModule : IWalletModule
+public sealed class DogecoinWalletModule : AddressDerive, IWalletModule
 {
     /// <inheritdoc />
     public AssetSymbol Symbol => AssetSymbol.Doge;
@@ -40,19 +39,17 @@ public sealed class DogecoinWalletModule : IWalletModule
     }
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
+    public Uri BuildReceiveUri(string address, string? amount, string? label, string? message)
+        => PaymentUri.Bip21("dogecoin", address, amount, label, message);
+
+    /// <inheritdoc />
+    protected override DerivedAddress DeriveCore(string mnemonic, int accountIndex)
     {
-        Mnemonic parsed = MnemonicHelper.Parse(mnemonic);
-        ExtKey root = parsed.DeriveExtKey();
-        string path = $"m/44'/3'/0'/0/{accountIndex}";
-        ExtKey key = root.Derive(new KeyPath(path));
+        string path = ReceivePath(44, 3, accountIndex);
+        ExtKey key = DeriveKey(mnemonic, path);
         BitcoinAddress address = key.Neuter().PubKey.GetAddress(
             ScriptPubKeyType.Legacy,
             NBitcoin.Altcoins.Dogecoin.Instance.Mainnet);
         return new DerivedAddress(address.ToString(), path, accountIndex);
     }
-
-    /// <inheritdoc />
-    public Uri BuildReceiveUri(string address, string? amount, string? label, string? message)
-        => PaymentUri.Bip21("dogecoin", address, amount, label, message);
 }

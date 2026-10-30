@@ -49,7 +49,8 @@ public static class MnemonicHelper
 
     /// <summary>
     /// BIP39 entropy bytes for HKDF account / hybrid key derivation.
-    /// NBitcoin 8 no longer exposes <c>Mnemonic.Entropy</c>; recover from word indices.
+    /// NBitcoin 10.0.12 exposes neither <c>Mnemonic.Entropy</c> nor <c>ToEntropy</c>;
+    /// recover from word indices until the referenced library supplies that API.
     /// Each English word is an 11-bit index. The mnemonic is ENT entropy bits plus CS
     /// checksum bits, with CS = ENT/32, so checksum length is totalBits/33. The loop
     /// writes only the entropy prefix, most-significant bit first, and stops before
