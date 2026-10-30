@@ -27,6 +27,8 @@ public sealed class CustodyService : ICustodyService
     private readonly IPinService _pin;
     private readonly ICryptoBox _cryptoBox;
     private readonly TimeProvider _timeProvider;
+    private readonly object _sessionGate = new();
+    private int _lockGeneration;
     private string? _mnemonic;
     private DateTimeOffset? _expires;
 
@@ -70,13 +72,22 @@ public sealed class CustodyService : ICustodyService
     public event EventHandler? Locked;
 
     /// <summary>
-    /// Gets whether the in-memory session is still inside its TTL. Reading this does not lock;
+    /// Gets whether the in-memory session is still inside its TTL. Reading this does not close the session;
     /// secret readers call <see cref="CloseIfExpired"/> so a binding refresh cannot raise
     /// <see cref="Locked"/> as a side effect.
     /// </summary>
-    public bool IsUnlocked => SessionIsLive();
+    public bool IsUnlocked => SessionIsLive(out _);
 
-    public DateTimeOffset? SessionExpiresAt => _expires;
+    public DateTimeOffset? SessionExpiresAt
+    {
+        get
+        {
+            lock (_sessionGate)
+            {
+                return _expires;
+            }
+        }
+    }
 
     public async Task<bool> HasSealedWalletAsync()
         => !string.IsNullOrEmpty(await _store.GetAsync(BlobKey).ConfigureAwait(false));
@@ -119,6 +130,7 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     public async Task<bool> UnlockAsync(string pin)
     {
+        int lockGeneration = Volatile.Read(ref _lockGeneration);
         if (!await _pin.VerifyPinAsync(pin).ConfigureAwait(false))
         {
             return FailUnlock();
@@ -132,21 +144,20 @@ public sealed class CustodyService : ICustodyService
 
         try
         {
-            if (!await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false))
+            string? opened = await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false);
+            if (opened is null)
             {
-                if (!TryOpen(blob, pin, out string? legacyOpened) || legacyOpened is null)
+                if (!TryOpen(blob, pin, out opened) || opened is null)
                 {
                     return FailUnlock();
                 }
 
                 // Legacy PIN-derived blob, or interrupted migration that left DeviceSecretKey
                 // without rewriting the blob — recover via PIN then re-seal.
-                _mnemonic = legacyOpened;
-                await PersistDeviceSecretSealAsync(legacyOpened).ConfigureAwait(false);
+                await PersistDeviceSecretSealAsync(opened).ConfigureAwait(false);
             }
 
-            _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
-            return true;
+            return TryPublishSession(opened, lockGeneration);
         }
         catch (Exception ex) when (IsRejectedSeal(ex))
         {
@@ -160,6 +171,7 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     public async Task<bool> UnlockWithDeviceSecretAsync()
     {
+        int lockGeneration = Volatile.Read(ref _lockGeneration);
         string? blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
         if (string.IsNullOrEmpty(blob))
         {
@@ -168,13 +180,13 @@ public sealed class CustodyService : ICustodyService
 
         try
         {
-            if (!await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false))
+            string? opened = await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false);
+            if (opened is null)
             {
                 return FailUnlock();
             }
 
-            _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
-            return true;
+            return TryPublishSession(opened, lockGeneration);
         }
         catch (Exception ex) when (IsRejectedSeal(ex))
         {
@@ -184,20 +196,29 @@ public sealed class CustodyService : ICustodyService
 
     public void Lock()
     {
-        _mnemonic = null;
-        _expires = null;
+        lock (_sessionGate)
+        {
+            Interlocked.Increment(ref _lockGeneration);
+            _mnemonic = null;
+            _expires = null;
+        }
+
         Locked?.Invoke(this, EventArgs.Empty);
     }
 
     public string? ExportMnemonic()
     {
-        if (!SessionIsLive())
+        // Order the clock read, live-session check and snapshot against Lock() (CB43-2).
+        lock (_sessionGate)
         {
-            CloseIfExpired();
-            return null;
+            if (_mnemonic is not null && _expires > _timeProvider.GetUtcNow())
+            {
+                return _mnemonic;
+            }
         }
 
-        return _mnemonic;
+        CloseIfExpired();
+        return null;
     }
 
     private static string CreateDeviceSecret()
@@ -211,6 +232,22 @@ public sealed class CustodyService : ICustodyService
             or FormatException
             or InvalidOperationException
             or ArgumentException;
+
+    private bool TryPublishSession(string mnemonic, int lockGeneration)
+    {
+        DateTimeOffset expires = _timeProvider.GetUtcNow().Add(SessionTtl);
+        lock (_sessionGate)
+        {
+            if (_lockGeneration != lockGeneration)
+            {
+                return false;
+            }
+
+            _mnemonic = mnemonic;
+            _expires = expires;
+            return true;
+        }
+    }
 
     /// <summary>
     /// Opens a sealed blob without throwing so unlock can try the next key material.
@@ -230,20 +267,39 @@ public sealed class CustodyService : ICustodyService
         }
     }
 
-    private bool SessionIsLive()
-        => _mnemonic is not null
-            && _expires is DateTimeOffset expires
-            && expires > _timeProvider.GetUtcNow();
+    private bool SessionIsLive(out string? mnemonic)
+    {
+        DateTimeOffset? expires;
+        lock (_sessionGate)
+        {
+            mnemonic = _mnemonic;
+            expires = _expires;
+        }
+
+        return mnemonic is not null
+            && expires is DateTimeOffset expiration
+            && expiration > _timeProvider.GetUtcNow();
+    }
 
     /// <summary>
     /// Clears an expired mnemonic and raises <see cref="Locked"/>. A live or already-empty session is left alone.
     /// </summary>
     private void CloseIfExpired()
     {
-        if (_mnemonic is not null && !SessionIsLive())
+        DateTimeOffset now = _timeProvider.GetUtcNow();
+        lock (_sessionGate)
         {
-            Lock();
+            if (_mnemonic is null || _expires > now)
+            {
+                return;
+            }
+
+            Interlocked.Increment(ref _lockGeneration);
+            _mnemonic = null;
+            _expires = null;
         }
+
+        Locked?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -276,12 +332,10 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private async Task SealValidatedAsync(string normalizedMnemonic, string pin)
     {
+        int lockGeneration = Volatile.Read(ref _lockGeneration);
         await _pin.SetPinAsync(pin).ConfigureAwait(false);
         await PersistDeviceSecretSealAsync(normalizedMnemonic).ConfigureAwait(false);
-        _mnemonic = normalizedMnemonic;
-
-        // Sonar S6354: TimeProvider/IClock injection deferred (docs/SONAR_GATE.md).
-        _expires = _timeProvider.GetUtcNow().Add(SessionTtl);
+        TryPublishSession(normalizedMnemonic, lockGeneration);
     }
 
     /// <summary>
@@ -319,27 +373,25 @@ public sealed class CustodyService : ICustodyService
     /// Opens the seal with the promoted secret, then the staged secret if the promoted key
     /// cannot decrypt (interrupted reseal left a new blob + staged key while the old promoted
     /// secret remained). Commits whichever secret successfully opened the blob.
-    /// Use: High (every unlock). Scope: custody secure-store keys + in-memory mnemonic.
+    /// Use: High (every unlock). Scope: custody secure-store keys.
     /// </summary>
-    private async Task<bool> TryUnlockWithDeviceSecretsAsync(string blob)
+    private async Task<string?> TryUnlockWithDeviceSecretsAsync(string blob)
     {
         string? promoted = await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(promoted) && TryOpen(blob, promoted, out string? opened) && opened is not null)
         {
-            _mnemonic = opened;
             await CommitWorkingDeviceSecretAsync(promoted).ConfigureAwait(false);
-            return true;
+            return opened;
         }
 
         string? staged = await _store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(staged) && TryOpen(blob, staged, out string? stagedOpened) && stagedOpened is not null)
         {
-            _mnemonic = stagedOpened;
             await CommitWorkingDeviceSecretAsync(staged).ConfigureAwait(false);
-            return true;
+            return stagedOpened;
         }
 
-        return false;
+        return null;
     }
 
     /// <summary>

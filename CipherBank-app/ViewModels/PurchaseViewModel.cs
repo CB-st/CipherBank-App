@@ -29,39 +29,6 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private ObservableCollection<CryptoCurrency> availableCryptos = [];
-
-    [ObservableProperty]
-    private CryptoCurrency? selectedCrypto;
-
-    [ObservableProperty]
-    private CryptoCurrency? focusedCrypto;
-
-    [ObservableProperty]
-    private string paymentNote = string.Empty;
-
-    [ObservableProperty]
-    private decimal amount;
-
-    [ObservableProperty]
-    private decimal totalCost;
-
-    [ObservableProperty]
-    private decimal fee;
-
-    [ObservableProperty]
-    private bool isPurchasing;
-
-    [ObservableProperty]
-    private bool isLoading;
-
-    [ObservableProperty]
-    private string? errorMessage;
-
-    [ObservableProperty]
-    private string amountText = string.Empty;
-
     public PurchaseViewModel(
         ILogger<PurchaseViewModel> logger,
         IProductClient product,
@@ -75,6 +42,39 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         _navigation = navigation;
         _dialog = dialog;
     }
+
+    [ObservableProperty]
+    public partial ObservableCollection<CryptoCurrency> AvailableCryptos { get; set; } = [];
+
+    [ObservableProperty]
+    public partial CryptoCurrency? SelectedCrypto { get; set; }
+
+    [ObservableProperty]
+    public partial CryptoCurrency? FocusedCrypto { get; set; }
+
+    [ObservableProperty]
+    public partial string PaymentNote { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial decimal Amount { get; set; }
+
+    [ObservableProperty]
+    public partial decimal TotalCost { get; set; }
+
+    [ObservableProperty]
+    public partial decimal Fee { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsPurchasing { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+    [ObservableProperty]
+    public partial string AmountText { get; set; } = string.Empty;
 
     /// <summary>
     /// Handles query parameters passed to this page.

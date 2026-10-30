@@ -164,7 +164,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     /// Accumulates WebSocket text fragments until EndOfMessage, then parses one JSON event.
     /// Use: High (while connected). Scope: ClientWebSocketStreamService receive loop.
     /// </summary>
-    private async Task ReceiveLoopAsync(ClientWebSocket ws, CancellationToken ct)
+    private async Task ReceiveLoopAsync(WebSocket ws, CancellationToken ct)
     {
         byte[] buffer = new byte[ReceiveBufferBytes];
         using MemoryStream message = new MemoryStream();

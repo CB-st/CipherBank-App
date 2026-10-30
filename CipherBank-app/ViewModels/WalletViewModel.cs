@@ -25,48 +25,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    [ObservableProperty]
-    private ObservableCollection<Wallet> wallets = [];
-
-    [ObservableProperty]
-    private ObservableCollection<Transaction> transactions = [];
-
-    [ObservableProperty]
-    private Wallet? selectedWallet;
-
-    [ObservableProperty]
-    private ObservableCollection<WalletCardItem> walletCards = [];
-
-    [ObservableProperty]
-    private WalletCardItem? focusedWalletCard;
-
-    [ObservableProperty]
-    private decimal totalBalance;
-
-    [ObservableProperty]
-    private decimal totalBalanceUsd;
-
-    [ObservableProperty]
-    private bool isLoading;
-
-    [ObservableProperty]
-    private bool isLoadingTransactions;
-
-    [ObservableProperty]
-    private string? errorMessage;
-
-    [ObservableProperty]
-    private string sendToAddress = string.Empty;
-
-    [ObservableProperty]
-    private decimal sendAmount;
-
-    [ObservableProperty]
-    private bool isRefreshing;
-
-    [ObservableProperty]
-    private bool isSending;
-
     public WalletViewModel(
         ILogger<WalletViewModel> logger,
         IProductClient product,
@@ -80,6 +38,48 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         _ = navigation; // Reserved for future navigation needs
         _dialog = dialog;
     }
+
+    [ObservableProperty]
+    public partial ObservableCollection<Wallet> Wallets { get; set; } = [];
+
+    [ObservableProperty]
+    public partial ObservableCollection<Transaction> Transactions { get; set; } = [];
+
+    [ObservableProperty]
+    public partial Wallet? SelectedWallet { get; set; }
+
+    [ObservableProperty]
+    public partial ObservableCollection<WalletCardItem> WalletCards { get; set; } = [];
+
+    [ObservableProperty]
+    public partial WalletCardItem? FocusedWalletCard { get; set; }
+
+    [ObservableProperty]
+    public partial decimal TotalBalance { get; set; }
+
+    [ObservableProperty]
+    public partial decimal TotalBalanceUsd { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsLoadingTransactions { get; set; }
+
+    [ObservableProperty]
+    public partial string? ErrorMessage { get; set; }
+
+    [ObservableProperty]
+    public partial string SendToAddress { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial decimal SendAmount { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsRefreshing { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsSending { get; set; }
 
     /// <summary>
     /// Cancels any ongoing operations when leaving the page.
