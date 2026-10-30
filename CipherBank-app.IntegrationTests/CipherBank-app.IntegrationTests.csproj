@@ -11,15 +11,6 @@
   </PropertyGroup>
 
   <!-- Code Coverage Configuration -->
-  <!-- Note: Integration tests have lower coverage thresholds as they test external integrations -->
-  <PropertyGroup>
-    <CollectCoverage>true</CollectCoverage>
-    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
-    <CoverletOutput>./coverage/</CoverletOutput>
-    <Threshold>0</Threshold>
-    <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
