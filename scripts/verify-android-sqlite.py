@@ -18,7 +18,7 @@ ANDROID_RIDS = {
 }
 
 
-def native_package():
+def native_package() -> Path:
     """Use the same SQLite version and NuGet cache as the app restore."""
     props = Path(__file__).resolve().parents[1] / "Directory.Packages.props"
     pin = ET.parse(props).find(".//PackageVersion[@Include='SQLite']")
@@ -31,7 +31,7 @@ def native_package():
     return package
 
 
-def verify(archive, package):
+def verify(archive: Path, package: Path) -> None:
     """Count ZIP entries, including duplicate names, for every shipped native ABI."""
     if archive.suffix not in (".apk", ".aab"):
         raise ValueError(f"{archive}: expected an APK or AAB")
@@ -55,7 +55,8 @@ def verify(archive, package):
             print(f"{archive}: {abi}: exactly one libe_sqlite3.so, SHA-256 {digest}")
 
 
-def main():
+def main() -> None:
+    """Verify each published Android archive given on the command line."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("archives", type=Path, nargs="+", help="Published .apk and/or .aab files")
     args = parser.parse_args()
