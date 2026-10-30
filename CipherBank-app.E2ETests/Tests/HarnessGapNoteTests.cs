@@ -40,7 +40,7 @@ public class HarnessGapNoteTests
             .WithMessage("deliberate harness failure");
 
         File.Exists(expectedPath).Should().BeTrue("GapNotes must land before the exception escapes");
-        File.ReadAllText(expectedPath).Should().Contain(storyId).And.Contain("deliberate harness failure");
+        (await File.ReadAllTextAsync(expectedPath)).Should().Contain(storyId).And.Contain("deliberate harness failure");
 
         File.Delete(expectedPath);
     }
