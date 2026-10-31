@@ -89,7 +89,7 @@ public partial class WalletPage
 
         for (int i = 0; i < _viewModel.WalletCards.Count; i++)
         {
-            var dot = new Border
+            Border dot = new Border
             {
                 WidthRequest = 8,
                 HeightRequest = 8,

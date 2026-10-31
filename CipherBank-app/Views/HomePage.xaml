@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.HomePage"
+             Title="Home"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}"
+             AutomationId="HomePage">
+  <Grid>
+  <ScrollView>
+    <Grid Padding="18,16,18,110" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+
+      <!-- Brand + connection -->
+      <Grid Grid.Row="{Binding CoraRow}" ColumnDefinitions="*,Auto" IsVisible="{Binding ShowCora}">
+        <Label Style="{StaticResource BrandCompact}" VerticalOptions="Center">
+          <Label.FormattedText>
+            <FormattedString>
+              <Span Text="cipher" TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}" />
+              <Span Text="bank" TextColor="{StaticResource Gold}" />
+            </FormattedString>
+          </Label.FormattedText>
+        </Label>
+        <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+          <controls:ConnectionChip IsOnline="{Binding IsOnline}" />
+          <Label Text="Updating…"
+                 IsVisible="{Binding IsStale}"
+                 FontSize="11"
+                 TextColor="{StaticResource Gold}" />
+        </HorizontalStackLayout>
+      </Grid>
+
+      <!-- Balance -->
+      <controls:GlassCard Grid.Row="{Binding BalanceRow}" IsVisible="{Binding ShowBalance}"
+                          UseDeepPurple="True" CornerRadius="22">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Total balance" Style="{StaticResource OnDarkMetadata}" />
+              <Button Grid.Column="1" Text="{Binding HideToggleLabel}" Style="{StaticResource PillButton}"
+                      Command="{Binding ToggleBalancesHiddenCommand}" Padding="10,4"
+                      AutomationId="HomeHideBalancesButton" />
+            </Grid>
+            <Label Text="{Binding TotalUsd}"
+                   Style="{StaticResource HeroBalanceOnDark}"
+                   AutomationId="HomeTotalUsdLabel" />
+            <Label Text="{Binding Change24H}"
+                   Style="{StaticResource OnDarkBodyStrong}" />
+            <HorizontalStackLayout Spacing="8" Margin="0,4,0,0">
+              <Button Text="1D" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1d"
+                      AutomationId="HomeRange1dButton" />
+              <Button Text="1W" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1w"
+                      AutomationId="HomeRange1wButton" />
+              <Button Text="1M" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1m"
+                      AutomationId="HomeRange1mButton" />
+              <Button Text="1Y" Style="{StaticResource PillButton}" Command="{Binding SetRangeCommand}" CommandParameter="1y"
+                      AutomationId="HomeRange1yButton" />
+            </HorizontalStackLayout>
+            <GraphicsView x:Name="SparkView" HeightRequest="100" Margin="0,8,0,0" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <!-- Quick actions -->
+      <HorizontalStackLayout Grid.Row="{Binding QuickActionsRow}" IsVisible="{Binding ShowQuickActions}" Spacing="10">
+        <Button Text="Convert" Command="{Binding GoConvertCommand}" AutomationId="HomeConvertButton"
+                WidthRequest="88" FontSize="13" Padding="8,12" />
+        <Button Text="Send" Style="{StaticResource SecondaryButton}" Command="{Binding GoSendCommand}" AutomationId="HomeSendButton"
+                WidthRequest="72" FontSize="13" Padding="8,12" Shadow="{x:Null}" />
+        <Button Text="Receive" Style="{StaticResource SecondaryButton}" Command="{Binding GoReceiveCommand}" AutomationId="HomeReceiveButton"
+                WidthRequest="88" FontSize="13" Padding="8,12" Shadow="{x:Null}" />
+        <Button Text="Pay" Style="{StaticResource SecondaryButton}" Command="{Binding GoPayCommand}" AutomationId="HomePayButton"
+                WidthRequest="72" FontSize="13" Padding="8,12" Shadow="{x:Null}" />
+      </HorizontalStackLayout>
+
+      <!-- Performance -->
+      <controls:GlassCard Grid.Row="{Binding PerformanceRow}" IsVisible="{Binding ShowPerformance}">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Label Text="Performance" Style="{StaticResource SectionHeader}" />
+            <GraphicsView x:Name="CompareView" HeightRequest="160" />
+            <CollectionView ItemsSource="{Binding CompareLegend}" HeightRequest="28">
+              <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="12" />
+              </CollectionView.ItemsLayout>
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Label Text="{Binding .}" FontSize="12"
+                         TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <!-- Holdings (green) -->
+      <controls:GlassCard Grid.Row="{Binding HoldingsRow}" IsVisible="{Binding ShowHoldings}">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <BoxView HeightRequest="3" Color="{StaticResource Success}" HorizontalOptions="Fill" />
+            <Label Text="Holdings" Style="{StaticResource SectionHeader}" TextColor="{StaticResource Success}" />
+            <CollectionView ItemsSource="{Binding VisibleHoldings}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,10" ColumnDefinitions="4,*,Auto,Auto" ColumnSpacing="8">
+                    <BoxView WidthRequest="3" Color="{StaticResource Success}" VerticalOptions="Fill" />
+                    <Label Grid.Column="1" Text="{Binding Symbol}" Style="{StaticResource AssetSymbol}" />
+                    <Label Grid.Column="2" Text="{Binding Balance}" Margin="12,0"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                    <Label Grid.Column="3" Text="{Binding UsdValue}" Style="{StaticResource SummaryValue}" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="{Binding OtherAssetsLabel}"
+                    Style="{StaticResource PillButton}"
+                    Command="{Binding ToggleOtherHoldingsCommand}"
+                    IsVisible="{Binding HasOtherHoldings}"
+                    HorizontalOptions="Start" />
+            <CollectionView ItemsSource="{Binding OtherHoldings}"
+                            IsVisible="{Binding IsOtherHoldingsExpanded}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,10" ColumnDefinitions="4,*,Auto,Auto" ColumnSpacing="8">
+                    <BoxView WidthRequest="3" Color="{StaticResource TextSubtle}" VerticalOptions="Fill" />
+                    <Label Grid.Column="1" Text="{Binding Symbol}" Style="{StaticResource AssetSymbol}" />
+                    <Label Grid.Column="2" Text="{Binding Balance}" Margin="12,0"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                    <Label Grid.Column="3" Text="{Binding UsdValue}" Style="{StaticResource SummaryValue}" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <!-- Local wallets (gold) -->
+      <controls:GlassCard Grid.Row="{Binding LocalWalletsRow}" IsVisible="{Binding ShowLocalWallets}">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <BoxView HeightRequest="3" Color="{StaticResource Gold}" HorizontalOptions="Fill" />
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Local wallets" Style="{StaticResource SectionHeader}" TextColor="{StaticResource Gold}" />
+              <Button Grid.Column="1" Text="Add" Style="{StaticResource PillButton}"
+                      Command="{Binding AddWalletCommand}" />
+            </Grid>
+            <CollectionView ItemsSource="{Binding LocalWallets}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,8" ColumnDefinitions="4,Auto,*,Auto,Auto" ColumnSpacing="8">
+                    <BoxView WidthRequest="3" Color="{StaticResource Gold}" VerticalOptions="Fill" />
+                    <Label Grid.Column="1" Text="{Binding Symbol}" Style="{StaticResource AssetSymbol}" />
+                    <Label Grid.Column="2" Text="{Binding Label}" Margin="12,0" LineBreakMode="TailTruncation"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                    <Label Grid.Column="3" Text="{Binding Kind}" FontSize="12"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+                    <Button Grid.Column="4" Text="Remove" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveWalletCommand}"
+                            CommandParameter="{Binding .}"
+                            AutomationId="HomeRemoveWalletButton" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <!-- Combined assets (keeps per-row green/gold) -->
+      <controls:GlassCard Grid.Row="{Binding CombinedAssetsRow}" IsVisible="{Binding ShowCombinedAssets}">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Assets" Style="{StaticResource SectionHeader}" />
+              <Button Grid.Column="1" Text="Add" Style="{StaticResource PillButton}"
+                      Command="{Binding AddWalletCommand}" />
+            </Grid>
+            <CollectionView ItemsSource="{Binding CombinedAssets}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,8" ColumnDefinitions="4,*,Auto,Auto,Auto" ColumnSpacing="8">
+                    <BoxView WidthRequest="3" Color="{Binding Accent}" VerticalOptions="Fill" />
+                    <Label Grid.Column="1" Text="{Binding Symbol}" Style="{StaticResource AssetSymbol}" />
+                    <Label Grid.Column="2" Text="{Binding Detail}" Margin="12,0" LineBreakMode="TailTruncation"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                    <Label Grid.Column="3" Text="{Binding Trailing}" Style="{StaticResource SummaryValue}" />
+                    <Button Grid.Column="4" Text="Remove" Style="{StaticResource SecondaryButton}"
+                            IsVisible="{Binding IsLocalWallet}"
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemoveCombinedWalletCommand}"
+                            CommandParameter="{Binding .}"
+                            AutomationId="HomeRemoveCombinedWalletButton" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="{Binding OtherAssetsLabel}"
+                    Style="{StaticResource PillButton}"
+                    Command="{Binding ToggleOtherHoldingsCommand}"
+                    IsVisible="{Binding HasOtherHoldings}"
+                    HorizontalOptions="Start" />
+            <CollectionView ItemsSource="{Binding OtherHoldings}"
+                            IsVisible="{Binding IsOtherHoldingsExpanded}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,10" ColumnDefinitions="4,*,Auto,Auto" ColumnSpacing="8">
+                    <BoxView WidthRequest="3" Color="{StaticResource TextSubtle}" VerticalOptions="Fill" />
+                    <Label Grid.Column="1" Text="{Binding Symbol}" Style="{StaticResource AssetSymbol}" />
+                    <Label Grid.Column="2" Text="{Binding Balance}" Margin="12,0"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondary}, Dark={StaticResource TextSecondaryDark}}" />
+                    <Label Grid.Column="3" Text="{Binding UsdValue}" Style="{StaticResource SummaryValue}" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+    </Grid>
+  </ScrollView>
+  <controls:CoraFab ScreenKey="home"
+                    Line="{Binding CoraLine}"
+                    IsVisible="{Binding CoraEnabled}"
+                    AutomationId="CoraFab" />
+  </Grid>
+</ContentPage>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.ConvertPage"
+             Title="Convert"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
+  <ScrollView>
+    <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
+      <controls:CoraBar ScreenKey="convert" Line="{Binding CoraLine}" />
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="From" Style="{StaticResource FieldLabel}" />
+            <Picker Title="From asset" ItemsSource="{Binding Assets}" SelectedItem="{Binding FromAsset}"
+                    AutomationId="ConvertFromPicker" />
+            <Button Text="Swap" Style="{StaticResource SecondaryButton}" Command="{Binding SwapAssetsCommand}"
+                    Shadow="{x:Null}" AutomationId="ConvertSwapButton" />
+            <Label Text="To" Style="{StaticResource FieldLabel}" />
+            <Picker Title="To asset" ItemsSource="{Binding Assets}" SelectedItem="{Binding ToAsset}"
+                    AutomationId="ConvertToPicker" />
+            <Entry Text="{Binding Amount}" Placeholder="Amount" Keyboard="Numeric" AutomationId="ConvertAmountEntry" />
+            <Label Text="{Binding RateText}" Style="{StaticResource BodyStrong}" />
+            <Label Text="{Binding LockCountdown}" FontSize="12" TextColor="{StaticResource Gold}" />
+            <Button Text="Get indicative quote" Command="{Binding LockQuoteCommand}" AutomationId="ConvertLockQuoteButton" />
+            <Button Text="Convert (mocked settle)" Command="{Binding ConvertCommand}" IsEnabled="{Binding HasValidLock}" AutomationId="ConvertSubmitButton" />
+            <Label Text="{Binding Status}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="0">
+            <Grid Padding="0,12" ColumnDefinitions="*,Auto">
+              <Label Text="Network fee" TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+              <Label Grid.Column="1" Text="{Binding FeeText}" Style="{StaticResource BodyStrong}" />
+            </Grid>
+            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+            <Grid Padding="0,12" ColumnDefinitions="*,Auto">
+              <Label Text="Privacy" TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+              <Label Grid.Column="1" Text="{Binding PrivacyText}" Style="{StaticResource BodyStrong}" />
+            </Grid>
+            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource Hairline}, Dark={StaticResource HairlineDark}}" />
+            <Grid Padding="0,12" ColumnDefinitions="*,Auto">
+              <Label Text="Settlement" TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+              <Label Grid.Column="1" Text="{Binding SettlementText}" Style="{StaticResource BodyStrong}" />
+            </Grid>
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+  <controls:CoraFab ScreenKey="convert" Line="{Binding CoraLine}" AutomationId="CoraFab" />
+  </Grid>
+</ContentPage>
