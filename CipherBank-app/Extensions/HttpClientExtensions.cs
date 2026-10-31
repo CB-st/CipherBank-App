@@ -43,6 +43,7 @@ public static class HttpClientExtensions
                 http.DefaultRequestHeaders.Add("X-Client-Version", appVersion);
                 http.DefaultRequestHeaders.Add("X-Platform", DeviceInfo.Platform.ToString());
             }
+
             configure?.Invoke(sp, http);
         })
         .ConfigurePrimaryHttpMessageHandler(sp =>

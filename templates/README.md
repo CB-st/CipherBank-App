@@ -16,6 +16,9 @@ change. Templates are scaffolds, not generated source and are excluded from buil
 | `ui/Page.xaml.template` | Token-based MAUI page structure |
 | `ui/ViewModel.cs.template` | Constructor-injected page state |
 | `ui/TEMPLATE.md` | UI copy procedure and definition of done |
+| `e2e/PageObject.cs.template` | Selector-owning Appium page object |
+| `e2e/StoryTest.cs.template` | Trait-filtered, failure-recording device story |
+| `e2e/README.md` / `e2e/TEMPLATE.md` | E2E ownership, copy procedure, and acceptance checklist |
 | `repository/AGENTS.md.template` | Subtree ownership contract |
 | `repository/README.md.template` | Bounded-layer documentation |
 | `repository/TEMPLATE.md` | New layer/feature checklist |

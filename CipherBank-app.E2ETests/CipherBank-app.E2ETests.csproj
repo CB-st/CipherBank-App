@@ -7,7 +7,9 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <!-- CA1707: RootNamespace CipherBank_app uses underscore (assembly-aligned). -->
-    <NoWarn>$(NoWarn);CA1707</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);SA1117;SA1118;SA1128;SA1201;SA1202;SA1203;SA1204;SA1401;SA1413;SA1516;SA1624;SA1642;CA1051;CA1822;CA1859;IDE0008</WarningsNotAsErrors>
+    <NoWarn>$(NoWarn);IDE0005;CA1707;CS1573;SA1624;SA1642</NoWarn>
   </PropertyGroup>
 
   <!-- Code Coverage Configuration -->
@@ -20,6 +22,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
+    <PackageReference Include="Xunit.SkippableFact" />
     <PackageReference Include="xunit.runner.visualstudio">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -32,6 +35,14 @@
     <!-- Appium.NET for mobile UI testing -->
     <PackageReference Include="Appium.WebDriver" />
     <PackageReference Include="Selenium.WebDriver" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -4,7 +4,7 @@
 
 namespace CipherBank_app.Services;
 
-/// <inheritdoc />
+/// <summary>Provides Android shared-storage support for recovery exports.</summary>
 public sealed partial class BackupFileService
 {
     private const string RecoveryMimeType = "application/json";
