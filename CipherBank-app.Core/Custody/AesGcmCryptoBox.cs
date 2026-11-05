@@ -87,55 +87,34 @@ public sealed class AesGcmCryptoBox : ICryptoBox
     {
         using SensitiveBuffer packed = new(Convert.FromBase64String(sealedB64));
 
-        // Every Seal blob starts with 0x01. Try that layout first so a normal unlock pays one KDF.
-        // A legacy salt can also start with 0x01. If the versioned tag does not authenticate, the
-        // legacy layout is the other candidate; it is accepted only when its own tag authenticates.
-        // The marker is a public format byte. Tag comparison stays inside AesGcm.
-        if (packed.Length > 0
-            && packed.Span[0] == _options.BlobFormatVersion
-            && TryOpenAt(packed.Span, dataOffset: 1, pin, out string? versioned)
-            && versioned is not null)
+        // Only the v1 layout exists: [version][salt][nonce][tag][cipher]. Anything else is rejected
+        // before key derivation, so every Open pays at most one KDF. Tag comparison stays inside AesGcm.
+        int headerSize = 1 + _options.SaltSizeBytes + _options.NonceSizeBytes + _options.TagSizeBytes;
+        if (packed.Length <= headerSize || packed.Span[0] != _options.BlobFormatVersion)
         {
-            return versioned;
+            throw new CryptographicException("Invalid sealed blob.");
         }
 
-        if (TryOpenAt(packed.Span, dataOffset: 0, pin, out string? legacy) && legacy is not null)
-        {
-            return legacy;
-        }
-
-        throw new CryptographicException("Invalid sealed blob.");
-    }
-
-    private bool TryOpenAt(ReadOnlySpan<byte> packed, int dataOffset, string pin, out string? plaintext)
-    {
-        plaintext = null;
-        int headerSize = _options.SaltSizeBytes + _options.NonceSizeBytes + _options.TagSizeBytes;
-        if (packed.Length <= dataOffset + headerSize)
-        {
-            return false;
-        }
-
-        int offset = dataOffset;
-        byte[] salt = packed.Slice(offset, _options.SaltSizeBytes).ToArray();
-        offset += salt.Length;
-        byte[] nonce = packed.Slice(offset, _options.NonceSizeBytes).ToArray();
-        offset += nonce.Length;
-        byte[] tag = packed.Slice(offset, _options.TagSizeBytes).ToArray();
-        offset += tag.Length;
-        using SensitiveBuffer cipher = new(packed.Slice(offset).ToArray());
+        ReadOnlySpan<byte> body = packed.Span[1..];
+        byte[] salt = body[.._options.SaltSizeBytes].ToArray();
+        body = body[salt.Length..];
+        byte[] nonce = body[.._options.NonceSizeBytes].ToArray();
+        body = body[nonce.Length..];
+        byte[] tag = body[.._options.TagSizeBytes].ToArray();
+        body = body[tag.Length..];
+        using SensitiveBuffer cipher = new(body.ToArray());
         using SensitiveBuffer key = DeriveKey(pin, salt);
         using SensitiveBuffer plain = new(new byte[cipher.Length]);
         try
         {
             using AesGcm aes = new AesGcm(key.Span, _options.TagSizeBytes);
             aes.Decrypt(nonce, cipher.Span, tag, plain.Span);
-            plaintext = Encoding.UTF8.GetString(plain.Span);
-            return true;
         }
-        catch (CryptographicException)
+        catch (CryptographicException ex)
         {
-            return false;
+            throw new CryptographicException("Invalid sealed blob.", ex);
         }
+
+        return Encoding.UTF8.GetString(plain.Span);
     }
 }
