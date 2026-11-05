@@ -6,13 +6,13 @@ using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Configuration;
 
-/// <summary>Rejects a sync dispatch width outside the unset or 1–8 range.</summary>
+/// <summary>Rejects a sync dispatch width outside the auto or 1–8 range.</summary>
 internal sealed class SyncSchedulerOptionsValidator : IValidateOptions<SyncSchedulerOptions>
 {
     /// <inheritdoc />
     public ValidateOptionsResult Validate(string? name, SyncSchedulerOptions options)
     {
-        if (options.MaxConcurrency == 0
+        if (options.MaxConcurrency == SyncSchedulerOptions.AutoConcurrency
             || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
                 && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency))
         {
