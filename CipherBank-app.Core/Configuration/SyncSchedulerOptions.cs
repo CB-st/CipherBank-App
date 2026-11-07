@@ -11,7 +11,7 @@ public sealed class SyncSchedulerOptions
     /// Sentinel <see cref="MaxConcurrency"/> value meaning "auto": <see cref="Resolve"/> derives the width
     /// from the processor count. This is the default when the setting is not configured.
     /// </summary>
-    public const int AutoConcurrency = 0;
+    public static int AutoConcurrency => 0;
 
     /// <summary>Lower inclusive concurrency bound for validation and derived defaults.</summary>
     public static int MinConcurrency { get; } = 1;
