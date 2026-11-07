@@ -90,6 +90,13 @@ public partial class LoginPage
     }
 #endif
 
+    /// <inheritdoc />
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _viewModel.CancelLogin();
+    }
+
     private void OnUsernameCompleted(object? sender, EventArgs e)
     {
         // Move focus to password field when Enter is pressed on username

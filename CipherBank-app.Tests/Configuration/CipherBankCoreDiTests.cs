@@ -53,7 +53,7 @@ public class CipherBankCoreDiTests
         provider.GetRequiredService<ISingleFlightJobFactory>().Should().BeOfType<SingleFlightJobFactory>();
         provider.GetRequiredService<IPrioritizedJobDispatcher>().Should().BeOfType<PrioritizedJobDispatcher>();
         provider.GetRequiredService<ISyncJobScheduler>().Should().BeOfType<SyncJobScheduler>();
-        provider.GetRequiredService<ISessionProofBuilder>().Should().BeOfType<LabSessionProofBuilder>();
+        provider.GetRequiredService<ISessionProofBuilder>().Should().NotBeOfType<LabSessionProofBuilder>();
         provider.GetRequiredService<IProductSessionStore>().Should().BeOfType<InMemoryProductSessionStore>();
         provider.Invoking(p => p.GetRequiredService<IProductClient>())
             .Should().Throw<InvalidOperationException>("the host registers HttpProductClient on the Shell HTTP pipeline");
