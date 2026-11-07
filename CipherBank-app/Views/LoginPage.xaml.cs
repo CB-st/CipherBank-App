@@ -34,6 +34,13 @@ public partial class LoginPage
 #endif
     }
 
+    /// <inheritdoc />
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _viewModel.CancelLogin();
+    }
+
 #if DEBUG
     private static void ApplyThemeColor(VisualElement element, BindableProperty property, string lightKey, string darkKey) =>
         element.SetAppThemeColor(property, GetColor(lightKey), GetColor(darkKey));
@@ -89,13 +96,6 @@ public partial class LoginPage
         LoginFormLayout.Children.Insert(insertIndex, testCredentials);
     }
 #endif
-
-    /// <inheritdoc />
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-        _viewModel.CancelLogin();
-    }
 
     private void OnUsernameCompleted(object? sender, EventArgs e)
     {

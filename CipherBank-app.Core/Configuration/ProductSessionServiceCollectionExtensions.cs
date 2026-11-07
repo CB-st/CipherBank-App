@@ -33,20 +33,6 @@ public static class ProductSessionServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>Registers the configured live stream or a fail-closed unavailable adapter.</summary>
-    /// <param name="services">Host service collection.</param>
-    /// <param name="endpoint">Deployment-supplied absolute wss endpoint.</param>
-    /// <returns>The service collection.</returns>
-    public static IServiceCollection AddProductSessionStream(this IServiceCollection services, string? endpoint)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        services.TryAddSingleton<IStreamService>(_ =>
-            Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri) && uri.Scheme == "wss"
-                ? new ClientWebSocketStreamService(uri)
-                : new UnavailableStreamService());
-        return services;
-    }
-
     /// <summary>Applies explicit lab policy before registering the shared session lifecycle.</summary>
     /// <param name="services">Host service collection.</param>
     /// <param name="useLabProof">Explicit opt-in; never inferred from mock services.</param>
@@ -78,5 +64,19 @@ public static class ProductSessionServiceCollectionExtensions
         }
 
         return services.AddProductSessionServices();
+    }
+
+    /// <summary>Registers the configured live stream or a fail-closed unavailable adapter.</summary>
+    /// <param name="services">Host service collection.</param>
+    /// <param name="endpoint">Deployment-supplied absolute wss endpoint.</param>
+    /// <returns>The service collection.</returns>
+    public static IServiceCollection AddProductSessionStream(this IServiceCollection services, string? endpoint)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton<IStreamService>(_ =>
+            Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri) && uri.Scheme == "wss"
+                ? new ClientWebSocketStreamService(uri)
+                : new UnavailableStreamService());
+        return services;
     }
 }

@@ -136,6 +136,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
             }
 
             LogAttemptingLogin(_logger);
+
             // IAppSession has no cancellation overload: observe completion, then roll back
             // cancelled unlocks before navigation. Never abandon a live startup task.
             bool unlocked = await _session.UnlockAsync(Password);
@@ -182,6 +183,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         finally
         {
             Password = string.Empty;
+
             // Serialize cancellation with disposal; the awaited operation retains ownership.
             lock (_loginGate)
             {

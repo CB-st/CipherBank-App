@@ -10,8 +10,15 @@ public sealed class UnavailableStreamService : IStreamService
     /// <inheritdoc />
     public event EventHandler<StreamEventArgs>? EventReceived
     {
-        add { }
-        remove { }
+        add
+        {
+            // Intentionally ignore subscriptions: this unavailable adapter never emits events.
+        }
+
+        remove
+        {
+            // No handlers are retained, so there is nothing to unsubscribe.
+        }
     }
 
     /// <inheritdoc />
@@ -21,6 +28,7 @@ public sealed class UnavailableStreamService : IStreamService
     public Task ConnectAsync(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
+
         // Fail at use, preserving the secure endpoint requirement without breaking login DI.
         throw new InvalidOperationException("ProductSession:StreamEndpoint must be an absolute wss URL.");
     }
