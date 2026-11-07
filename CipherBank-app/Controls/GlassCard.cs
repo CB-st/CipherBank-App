@@ -1,5 +1,5 @@
 // <copyright file="GlassCard.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using Microsoft.Maui.Controls.Shapes;
@@ -17,7 +17,7 @@ public class GlassCard : ContentView
         nameof(CornerRadius),
         typeof(double),
         typeof(GlassCard),
-        20.0,
+        18.0,
         propertyChanged: (bindable, _, _) => ((GlassCard)bindable).UpdateCornerRadius());
 
     public static readonly BindableProperty BodyProperty = BindableProperty.Create(
@@ -30,36 +30,40 @@ public class GlassCard : ContentView
         nameof(BodyPadding),
         typeof(Thickness),
         typeof(GlassCard),
-        new Thickness(20),
+        new Thickness(18),
         propertyChanged: (bindable, _, newValue) => ((GlassCard)bindable)._bodyHost.Padding = (Thickness)newValue);
+
+    public static readonly BindableProperty UseDeepPurpleProperty = BindableProperty.Create(
+        nameof(UseDeepPurple),
+        typeof(bool),
+        typeof(GlassCard),
+        false,
+        propertyChanged: (bindable, _, _) => ((GlassCard)bindable).ApplySurface());
 
     private readonly Border _frame;
     private readonly ContentView _bodyHost;
+    private readonly BoxView _tint;
     private readonly BlurBackdropView _blur;
 
     public GlassCard()
     {
-        _bodyHost = new ContentView { Padding = new Thickness(20) };
+        _bodyHost = new ContentView { Padding = new Thickness(18) };
 
-        var tint = new BoxView { InputTransparent = true };
+        _tint = new BoxView { InputTransparent = true };
         var layers = new Grid();
 
         _blur = new BlurBackdropView { InputTransparent = true };
         layers.Children.Add(_blur);
-        tint.SetAppThemeColor(
-            BoxView.ColorProperty,
-            ThemeTokens.Get("Surface").WithAlpha(0.40f),
-            ThemeTokens.Get("SurfaceDark").WithAlpha(0.35f));
-        layers.Children.Add(tint);
+        layers.Children.Add(_tint);
         layers.Children.Add(_bodyHost);
 
         _frame = new Border
         {
             StrokeThickness = 1,
             Padding = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(20) },
+            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(18) },
             Content = layers,
-            Shadow = new Shadow { Brush = Brush.Black, Offset = new Point(0, 8), Radius = 24, Opacity = 0.18f },
+            Shadow = new Shadow { Brush = Brush.Black, Offset = new Point(0, 4), Radius = 12, Opacity = 0.18f },
         };
         _frame.SetAppTheme<Brush>(
             Border.StrokeProperty,
@@ -67,6 +71,7 @@ public class GlassCard : ContentView
             new SolidColorBrush(ThemeTokens.Get("HairlineDark")));
 
         Content = _frame;
+        ApplySurface();
 
         ApplyBlurMaterial();
         Loaded += OnLoaded;
@@ -89,6 +94,31 @@ public class GlassCard : ContentView
     {
         get => (Thickness)GetValue(BodyPaddingProperty);
         set => SetValue(BodyPaddingProperty, value);
+    }
+
+    /// <summary>Cora BalanceHero / dark card — solid deep purple, no glass tint.</summary>
+    public bool UseDeepPurple
+    {
+        get => (bool)GetValue(UseDeepPurpleProperty);
+        set => SetValue(UseDeepPurpleProperty, value);
+    }
+
+    private void ApplySurface()
+    {
+        if (UseDeepPurple)
+        {
+            _tint.Color = ThemeTokens.Get("DeepPurple");
+            _frame.StrokeThickness = 0;
+            _frame.Shadow = new Shadow { Opacity = 0 }; // clear elevation without assigning null to Shadow
+            return;
+        }
+
+        _frame.StrokeThickness = 1;
+        _frame.Shadow = new Shadow { Brush = Brush.Black, Offset = new Point(0, 4), Radius = 12, Opacity = 0.18f };
+        _tint.SetAppThemeColor(
+            BoxView.ColorProperty,
+            ThemeTokens.Get("Surface").WithAlpha(0.40f),
+            ThemeTokens.Get("SurfaceDark").WithAlpha(0.55f));
     }
 
     private void UpdateCornerRadius() =>
