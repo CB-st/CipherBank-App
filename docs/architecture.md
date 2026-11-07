@@ -54,9 +54,9 @@ development fixture; behavior-specific unit tests use Moq instead.
 ## Persistence
 
 Routine data access uses `CipherBankDbContext` and the EF Core SQLite provider.
-Repositories do not open connections or embed SQL. The only raw SQL owner is
-`Persist/Sql/LocalDbSql.cs`, which performs idempotent compatibility repair for
-databases created before EF Core and scrubs legacy cleartext recipient columns.
+Repositories do not open connections or embed SQL. Schema changes are EF
+`Migrate()`; unmatched prototype SQLite files without `__EFMigrationsHistory`
+are wiped. There is no `LocalDbSql` quarantine.
 
 Recipient account and routing values are input-only: repositories convert them to
 masks before creating an EF entity, and the EF model has no cleartext properties.
@@ -66,7 +66,7 @@ masks before creating an EF entity, and the EF model has no cleartext properties
 `SyncJobScheduler` uses the framework `PriorityQueue` for P1/P2 ordering and an
 injected `TaskScheduler` for dispatch. A stable sequence number gives FIFO order
 within a priority, duplicate keys are rejected while queued or running, and
-configuration bounds concurrency to 1–8 workers.
+configuration bounds concurrency to 1–8 workers (`MaxConcurrency` 0 derives half the CPU count).
 
 ## Enforced repository structure
 

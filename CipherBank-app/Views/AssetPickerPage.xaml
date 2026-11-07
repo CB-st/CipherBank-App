@@ -47,9 +47,7 @@
                             <Border Style="{StaticResource CoinCircle}"
                                     BackgroundColor="{Binding Symbol, Converter={StaticResource CoinColorConverter}}">
                                 <Label Text="{Binding Symbol, Converter={StaticResource CoinGlyphConverter}}"
-                                       TextColor="White"
-                                       FontFamily="SpaceGroteskBold"
-                                       FontSize="18"
+                                       Style="{StaticResource CoinGlyph}"
                                        HorizontalOptions="Center"
                                        VerticalOptions="Center" />
                             </Border>
@@ -59,14 +57,12 @@
                                 <Label Text="{Binding Symbol}" Style="{StaticResource PillLabel}" />
                                 <Label Text="Price" Style="{StaticResource Eyebrow}" Margin="0,6,0,0" />
                                 <Label Text="{Binding FormattedPrice}"
-                                       FontFamily="SpaceGroteskBold"
-                                       FontSize="22" />
+                                       Style="{StaticResource MoneyMedium}" />
                             </VerticalStackLayout>
 
                             <Label Grid.Column="2"
                                    Text="{Binding FormattedPercentChange}"
-                                   FontFamily="InterSemiBold"
-                                   FontSize="13"
+                                   Style="{StaticResource PriceChange}"
                                    VerticalOptions="Center"
                                    Margin="0,0,8,0"
                                    TextColor="{Binding IsPriceUp, Converter={StaticResource PriceChangeColorConverter}}" />

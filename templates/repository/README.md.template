@@ -1,0 +1,22 @@
+# __FEATURE__
+
+## Purpose
+
+__PURPOSE__
+
+## Boundary
+
+| Owns | Depends on | Exposes |
+| --- | --- | --- |
+| __OWNS__ | __DEPENDENCIES__ | __PORTS__ |
+
+## Configuration
+
+`config/__THEME__/__FILE__.json` contains non-secret defaults bound to `__OPTIONS_TYPE__`.
+
+## Verification
+
+```bash
+__NARROW_TEST_COMMAND__
+bash scripts/validate-structure.sh
+```
