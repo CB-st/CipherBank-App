@@ -1,6 +1,6 @@
 # CipherBank repository contract
 
-This file governs the M3a custody slice (stacked on M2 Persist). More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
+This file governs the M3b session slice (stacked on M3a custody / M2 Persist). More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
 
 Start with this file, then read the nearest subtree contract and the relevant documentation index in `docs/README.md`.
 
