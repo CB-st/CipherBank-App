@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.SetPinPage"
+             Title="Set PIN"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}"
+             AutomationId="SetPinPage">
+  <ScrollView>
+    <VerticalStackLayout Padding="24" Spacing="16">
+      <Label Text="Choose a PIN to seal your wallet." Style="{StaticResource CoraMuted}" />
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="14">
+            <Entry Text="{Binding Pin}" IsPassword="True" Keyboard="Numeric" Placeholder="PIN"
+                   Style="{StaticResource PinEntry}"
+                   AutomationId="SetPinEntry" />
+            <Entry Text="{Binding ConfirmPin}" IsPassword="True" Keyboard="Numeric" Placeholder="Confirm PIN"
+                   Style="{StaticResource PinEntry}"
+                   AutomationId="SetPinConfirmEntry" />
+            <Label Text="{Binding Error}"
+                   TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
+                   HorizontalTextAlignment="Center"
+                   IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="SetPinErrorLabel" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+      <Button Text="Seal wallet" Command="{Binding SealCommand}" AutomationId="SetPinSealButton" />
+    </VerticalStackLayout>
+  </ScrollView>
+</ContentPage>

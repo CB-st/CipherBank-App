@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.UnlockPage"
+             Title="Unlock"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid RowDefinitions="*,Auto,Auto" Padding="24">
+
+    <VerticalStackLayout VerticalOptions="Center" Spacing="16" HorizontalOptions="Center">
+      <Border WidthRequest="72" HeightRequest="72"
+              StrokeShape="RoundRectangle 18"
+              BackgroundColor="{StaticResource DeepPurple}"
+              StrokeThickness="0"
+              HorizontalOptions="Center">
+        <Label Text="CB" Style="{StaticResource BrandCompact}"
+               TextColor="{StaticResource Gold}"
+               HorizontalOptions="Center" VerticalOptions="Center" />
+      </Border>
+      <Label Text="CipherBank" Style="{StaticResource BrandWordmark}"
+             HorizontalOptions="Center" />
+      <Label Text="{Binding CoraLine}" Style="{StaticResource CoraMuted}"
+             HorizontalTextAlignment="Center" />
+    </VerticalStackLayout>
+
+    <controls:GlassCard Grid.Row="1" Margin="0,0,0,16">
+      <controls:GlassCard.Body>
+        <VerticalStackLayout Spacing="12">
+          <Entry Text="{Binding Pin}" IsPassword="True" Keyboard="Numeric"
+                 Placeholder="PIN" AutomationId="UnlockPinEntry"
+                 Style="{StaticResource PinEntry}" />
+          <Label Text="{Binding Error}" TextColor="{AppThemeBinding Light={StaticResource Danger}, Dark={StaticResource DangerDark}}"
+                 AutomationId="UnlockErrorLabel"
+                 IsVisible="{Binding Error, Converter={StaticResource StringToBoolConverter}}"
+                 HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+      </controls:GlassCard.Body>
+    </controls:GlassCard>
+
+    <VerticalStackLayout Grid.Row="2" Spacing="10">
+      <Button Text="Unlock" Command="{Binding UnlockCommand}" AutomationId="UnlockButton" />
+      <Button Text="Use biometrics" Command="{Binding UnlockWithBiometricsCommand}"
+              Style="{StaticResource GhostButton}"
+              TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"
+              IsVisible="{Binding BiometricsAvailable}"
+              AutomationId="UnlockBiometricButton" />
+      <Button Text="Recover with backup file" Command="{Binding RestoreFromBackupCommand}"
+              Style="{StaticResource GhostButton}"
+              TextColor="{AppThemeBinding Light={StaticResource TextPrimary}, Dark={StaticResource TextPrimaryDark}}"
+              AutomationId="UnlockRestoreFromBackupButton" />
+    </VerticalStackLayout>
+  </Grid>
+</ContentPage>
