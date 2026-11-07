@@ -5,6 +5,7 @@
 using CipherBank_app.Controls;
 using CipherBank_app.Handlers;
 using CipherBank_app.Platforms.MacCatalyst;
+using CipherBank_app.Pos;
 using CipherBank_app.Services;
 
 namespace CipherBank_app.Extensions;

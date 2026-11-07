@@ -57,6 +57,8 @@
         <!-- Microsoft.WindowsAppSDK 1.7 emits CA5392 from its generated auto-initializer.
              Suppress that dependency-owned warning only for the Windows target. -->
         <NoWarn Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">$(NoWarn);CA5392</NoWarn>
+        <!-- Windows only: MVVMTK0045 (WinUI/CsWinRT AOT) flags pre-existing [ObservableProperty] fields inherited from m6b; converting to partial properties is deferred (Vincent decision b on #103). -->
+        <NoWarn Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">$(NoWarn);MVVMTK0045</NoWarn>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
     </PropertyGroup>
 

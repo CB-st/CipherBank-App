@@ -1,29 +1,35 @@
 # Host + UI agent contract
 
-CipherBank-app is both the MAUI composition root/host and the views/view-model layer.
+CipherBank-app is both the MAUI composition root/host and the views/view-model
+layer. It carries both host and UI rules.
 
 ## Host
 
-Applies to `MauiProgram`, `Platforms/`, `Extensions/`, and the DI/service
-registration surface (`Services/` where it's composition, not policy).
-
-- Own startup, dependency composition, middleware/UI lifecycle, transport models, and error mapping.
+- `MauiProgram` is the composition root. It owns configuration loading and the
+  interface-to-implementation map.
+- Own startup, dependency composition, middleware/UI lifecycle, transport models,
+  and error mapping.
 - Keep handlers/controllers/view models thin and delegate policy.
 - Validate inputs before domain execution and return consistent errors.
 - Propagate request/window cancellation and perform bounded shutdown.
-- Keep authentication and authorization distinct from validation.
-- Test middleware/routing or UI behavior through the real host boundary.
+- Mock/simulated implementations are development-only registrations. Release
+  builds must resolve production services.
+- Configuration defaults come from `config/`; per-user mutable settings may use
+  Preferences or SecureStorage through an injected abstraction.
 - Do not query database contexts directly when an application port exists.
+- Visual tokens and reusable styles live only under `Resources/Styles`. Read that
+  subtree's `AGENTS.md` and `docs/style/README.md` before adding or changing UI.
 
 ## UI
 
-Applies to `Views/`, `ViewModels/`, `Controls/`, and `Converters/`.
-
-- Keep views/components declarative: layout, style, and bindings only; no business rules and no direct Infrastructure/persistence calls.
-- Keep view models/components thin: no domain rules and no persistence. A gesture may call several application ports (confirm, authenticate, submit) and expose presentation state (busy, validation, selection). This slice has no product VMs.
-- Marshal all UI updates through the toolkit's dispatcher/synchronization context; never call `.Result`/`.Wait()` on the UI thread.
-- Use `async void` only at the outermost event-handler boundary; everything it calls returns `Task`/`Task<T>` and is independently testable.
-- Propagate cancellation scoped to the interaction or window/page lifetime; report progress instead of manipulating controls from a background thread.
-- Meet baseline accessibility: every interactive control has a programmatic name, the whole surface is keyboard-operable, and color is never the only signal.
-- Scope DI lifetimes to the view/page/window that owns the resource; do not hold UI state in a singleton across navigations.
-- Test view models/components against Application ports independent of the UI framework; test dispatcher-specific behavior separately.
+- Views contain layout and binding only. ViewModels depend on interfaces and do
+  not call `Shell.Current`, `SecureStorage`, `Preferences`, or platform APIs.
+- Platform implementations stay under `Platforms/<platform>` and implement a
+  Core or app service interface.
+- Marshal all UI updates through the toolkit's dispatcher; never call `.Result`
+  or `.Wait()` on the UI thread.
+- Use `async void` only at the outermost event-handler boundary.
+- Meet baseline accessibility: every interactive control has a programmatic name,
+  the whole surface is keyboard-operable, and color is never the only signal.
+- Views use semantic color and typography resources. Literal colors and one-off
+  font families do not belong in page XAML.
