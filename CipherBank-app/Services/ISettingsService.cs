@@ -15,6 +15,11 @@ public interface ISettingsService
     string CipherBankEndpointBase { get; set; }
 
     /// <summary>
+    /// Gets or sets the product websocket endpoint (wss://…/v1/stream).
+    /// </summary>
+    string StreamEndpoint { get; set; }
+
+    /// <summary>
     /// Gets or sets the application theme mode (Light, Dark, System).
     /// </summary>
     string ThemeMode { get; set; }
@@ -40,6 +45,11 @@ public interface ISettingsService
     string DefaultCurrency { get; set; }
 
     /// <summary>
+    /// Gets or sets how product session open proves device possession (A1 / A2; Lab is not a shipping default).
+    /// </summary>
+    SessionProofMode SessionProofMode { get; set; }
+
+    /// <summary>
     /// Gets or sets the current environment (Production, Sandbox, Development, Local).
     /// </summary>
     string Environment { get; set; }
@@ -48,6 +58,9 @@ public interface ISettingsService
     /// Gets or sets a value indicating whether developer mode is enabled.
     /// </summary>
     bool DeveloperModeEnabled { get; set; }
+
+    /// <summary>Gets or sets the development-only override of configured service selection.</summary>
+    bool UseMockServices { get; set; }
 
     /// <summary>
     /// Resets all settings to their default values.

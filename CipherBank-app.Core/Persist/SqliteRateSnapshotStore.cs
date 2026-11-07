@@ -1,7 +1,6 @@
 // <copyright file="SqliteRateSnapshotStore.cs" company="CipherBank">
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
-
 using CipherBank_app.Models;
 using CipherBank_app.Persist.Entities;
 using Microsoft.EntityFrameworkCore;

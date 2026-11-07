@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#512BD4</color>
-    <color name="colorPrimaryDark">#2B0B98</color>
-    <color name="colorAccent">#2B0B98</color>
+    <!-- Cora Android system chrome -->
+    <color name="colorPrimary">#F2C14E</color>
+    <color name="colorPrimaryDark">#0C0D11</color>
+    <color name="colorAccent">#F2C14E</color>
+    <color name="colorCanvas">#0C0D11</color>
+    <color name="colorDeepPurple">#2B1E3E</color>
 </resources>

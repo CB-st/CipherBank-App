@@ -19,4 +19,15 @@ public interface IDialogService
     /// Returns true if the user tapped accept, false if cancel.
     /// </summary>
     Task<bool> ShowConfirmAsync(string title, string message, string accept = "OK", string cancel = "Cancel");
+
+    /// <summary>
+    /// Prompts for a single line of text. Returns null if cancelled.
+    /// </summary>
+    Task<string?> PromptAsync(string title, string message, string accept = "OK", string cancel = "Cancel");
+
+    /// <summary>
+    /// Prompts for a masked secret (PIN / password). Returns null if cancelled.
+    /// Use: High (step-up PIN fallback). Scope: Shell dialog surface.
+    /// </summary>
+    Task<string?> PromptPasswordAsync(string title, string message, string accept = "OK", string cancel = "Cancel");
 }

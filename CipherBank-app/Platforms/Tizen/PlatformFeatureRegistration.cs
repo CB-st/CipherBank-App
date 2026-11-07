@@ -9,10 +9,12 @@ namespace CipherBank_app.Extensions;
 /// <summary>Fails closed until Tizen secure transport and blur adapters exist.</summary>
 public static class PlatformFeatureRegistration
 {
+    /// <summary>Registers transport, motion, and NFC adapters. Use: Low (startup). Scope: this platform.</summary>
     public static IServiceCollection AddPlatformFeatures(this IServiceCollection services)
     {
         services.AddSingleton<IPlatformHttpMessageHandlerFactory, UnsupportedPlatformHttpMessageHandlerFactory>();
         services.AddSingleton<IMotionPreference, DefaultMotionPreference>();
+        services.AddSingleton<INfcPresentmentService, NullNfcPresentmentService>();
         return services;
     }
 

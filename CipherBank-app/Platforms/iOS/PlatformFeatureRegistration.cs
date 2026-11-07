@@ -12,10 +12,12 @@ namespace CipherBank_app.Extensions;
 /// <summary>Registers iOS-owned host capabilities.</summary>
 public static class PlatformFeatureRegistration
 {
+    /// <summary>Registers transport, motion, and NFC adapters. Use: Low (startup). Scope: this platform.</summary>
     public static IServiceCollection AddPlatformFeatures(this IServiceCollection services)
     {
         services.AddSingleton<IPlatformHttpMessageHandlerFactory, IosHttpMessageHandlerFactory>();
         services.AddSingleton<IMotionPreference, AppleMotionPreference>();
+        services.AddSingleton<INfcPresentmentService, NullNfcPresentmentService>();
         return services;
     }
 
