@@ -33,7 +33,7 @@ public sealed class MoneroWalletModuleTests
     [InlineData("51sMpMDNd422LxFSMtsQ5k3gsHPkECmXt52nKM8ZY8z26NhMJWtsWSA7icPFuECstJ94XRDHZYFLSAQSTAftscnaBkMV84ECzEi9CE3fg3", false)]
     public void IsValidAddress_RequiresLengthForPrefix(string address, bool expected)
     {
-        MoneroWalletModule module = new MoneroWalletModule();
+        MoneroWalletModule module = new();
 
         module.IsValidAddress(address).Should().Be(expected);
     }
@@ -51,7 +51,7 @@ public sealed class MoneroWalletModuleTests
     [InlineData("42ey1afDFnn4886T7196doS9GPMzexD9gXpsZJDwVjeRVdFCSoHnv7KPbBeGpzJBzHRCAs9UxqeoyFQMYbqSWYTfSbLRB61BQVAU44NfV5", false)]
     public void IsValidAddress_MatchesUpstreamMainnetVectors(string address, bool expected)
     {
-        MoneroWalletModule module = new MoneroWalletModule();
+        MoneroWalletModule module = new();
 
         module.IsValidAddress(address).Should().Be(expected);
     }

@@ -79,7 +79,7 @@ public partial class PurchaseViewModel(
     /// </summary>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (!query.TryGetValue("symbol", out var symbolObj) || symbolObj is not string symbol)
+        if (!query.TryGetValue("symbol", out object? symbolObj) || symbolObj is not string symbol)
         {
             return;
         }
@@ -124,7 +124,7 @@ public partial class PurchaseViewModel(
 
     partial void OnAmountTextChanged(string value)
     {
-        if (decimal.TryParse(value, out var parsed) && parsed >= 0)
+        if (decimal.TryParse(value, out decimal parsed) && parsed >= 0)
         {
             Amount = parsed;
             CalculateTotalCost();
@@ -174,7 +174,7 @@ public partial class PurchaseViewModel(
         {
             LogLoadingCryptos(logger);
 
-            var success = await errorHandler.HandleApiErrorsAsync(
+            bool success = await errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
                     List<CryptoCurrency> cryptos = await cryptoService.GetCryptoPricesAsync(_cts.Token);
@@ -231,7 +231,7 @@ public partial class PurchaseViewModel(
             return;
         }
 
-        var subtotal = Amount * SelectedCrypto.CurrentPrice;
+        decimal subtotal = Amount * SelectedCrypto.CurrentPrice;
         Fee = subtotal * FeePercentage;
         TotalCost = subtotal + Fee;
 
@@ -257,7 +257,7 @@ public partial class PurchaseViewModel(
         }
 
         // Confirm purchase
-        var confirmMessage =
+        string confirmMessage =
             $"Buy {Amount:F8} {SelectedCrypto.Symbol} ({SelectedCrypto.Name})\n\n" +
             $"Subtotal: ${Amount * SelectedCrypto.CurrentPrice:F2}\n" +
             $"Fee (1.5%): ${Fee:F2}\n" +
@@ -268,7 +268,7 @@ public partial class PurchaseViewModel(
             confirmMessage += $"\nNote: {PaymentNote}";
         }
 
-        var confirm = await dialog.ShowConfirmAsync(
+        bool confirm = await dialog.ShowConfirmAsync(
             "Confirm Purchase",
             confirmMessage,
             "Purchase");
@@ -291,7 +291,7 @@ public partial class PurchaseViewModel(
             Transaction transaction = await transactionService.PurchaseCryptoAsync(
                 SelectedCrypto.Symbol, Amount, _cts.Token);
 
-            var successMessage =
+            string successMessage =
                 $"Successfully purchased {transaction.Amount:F8} {transaction.CryptoSymbol}!\n\n" +
                 $"Transaction ID: {transaction.Id}\n" +
                 $"Fee: {transaction.FeeAmount:F8} {transaction.CryptoSymbol}";
@@ -308,7 +308,7 @@ public partial class PurchaseViewModel(
             LogPurchaseCompleted(logger, transaction.Id);
 
             // Optionally navigate to wallet
-            var viewWallet = await dialog.ShowConfirmAsync(
+            bool viewWallet = await dialog.ShowConfirmAsync(
                 "View Wallet?",
                 "Would you like to view your wallet?",
                 "Yes",
@@ -352,7 +352,7 @@ public partial class PurchaseViewModel(
     [RelayCommand]
     private void SetPresetAmount(string usdAmountString)
     {
-        if (SelectedCrypto == null || !decimal.TryParse(usdAmountString, out var usdAmount))
+        if (SelectedCrypto == null || !decimal.TryParse(usdAmountString, out decimal usdAmount))
         {
             return;
         }

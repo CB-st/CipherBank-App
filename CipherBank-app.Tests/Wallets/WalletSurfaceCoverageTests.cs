@@ -102,7 +102,7 @@ public sealed class WalletSurfaceCoverageTests
     [Fact]
     public async Task NullNfcPresentmentService_ReportsUnsupported()
     {
-        NullNfcPresentmentService nfc = new NullNfcPresentmentService();
+        NullNfcPresentmentService nfc = new();
         nfc.IsSupported.Should().BeFalse();
         nfc.LastError.Should().Contain("Android");
         bool ok = await nfc.PresentAsync(new NfcPresentmentPayload(), CancellationToken.None);

@@ -20,7 +20,7 @@ public sealed partial class AuthHeaderHandler(IServiceProvider serviceProvider) 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         // Skip auth header for login/refresh endpoints
-        var requestPath = request.RequestUri?.AbsolutePath ?? string.Empty;
+        string requestPath = request.RequestUri?.AbsolutePath ?? string.Empty;
         if (IsAuthEndpoint(requestPath))
         {
             return await base.SendAsync(request, cancellationToken);

@@ -52,7 +52,7 @@ public sealed partial class WalletService(ILogger<WalletService> logger, HttpCli
 
         try
         {
-            var endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}";
+            string endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}";
             HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -87,7 +87,7 @@ public sealed partial class WalletService(ILogger<WalletService> logger, HttpCli
 
         try
         {
-            var endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}/balance";
+            string endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}/balance";
             HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -122,7 +122,7 @@ public sealed partial class WalletService(ILogger<WalletService> logger, HttpCli
 
         try
         {
-            var request = new CreateWalletRequest(cryptoSymbol.Value);
+            CreateWalletRequest request = new(cryptoSymbol.Value);
             HttpResponseMessage response = await http.PostAsJsonAsync(WalletsEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 

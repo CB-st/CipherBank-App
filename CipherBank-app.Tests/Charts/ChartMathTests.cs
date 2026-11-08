@@ -3,7 +3,6 @@
 // </copyright>
 
 using System.Globalization;
-
 using CipherBank_app.Charts;
 using FluentAssertions;
 using Microsoft.Maui.Graphics;

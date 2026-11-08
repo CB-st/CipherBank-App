@@ -16,10 +16,10 @@ public sealed class UserPrefs
     {
         ArgumentNullException.ThrowIfNull(defaults);
         _defaults = defaults;
-        HomeOrder = new Collection<string>(defaults.HomeOrder.ToList());
+        HomeOrder = new Collection<string>([.. defaults.HomeOrder]);
         HomeVisible = new Dictionary<string, bool>(defaults.HomeVisible, StringComparer.Ordinal);
         EnabledCurrencies = new Collection<string>(
-            defaults.EnabledCurrencies.Select(symbol => symbol.Value).ToList());
+            [.. defaults.EnabledCurrencies.Select(symbol => symbol.Value)]);
         AssetsLayout = defaults.AssetsLayout;
         ValuesHiddenOnLaunch = defaults.ValuesHiddenOnLaunch;
         CoraEnabled = defaults.CoraEnabled;
@@ -181,11 +181,10 @@ public sealed class UserPrefs
             return;
         }
 
-        List<string> normalized = EnabledCurrencies
+        List<string> normalized = [.. EnabledCurrencies
             .Where(s => !string.IsNullOrWhiteSpace(s))
             .Select(s => AssetSymbol.Parse(s).Value)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
         ReplaceEnabledCurrencies(
             normalized.Count == 0
                 ? _defaults.EnabledCurrencies.Select(symbol => symbol.Value)

@@ -55,7 +55,7 @@ public sealed partial class CryptoApiService(ILogger<CryptoApiService> logger, H
 
         try
         {
-            var endpoint = $"{PriceEndpoint}/{Uri.EscapeDataString(symbol.Value)}";
+            string endpoint = $"{PriceEndpoint}/{Uri.EscapeDataString(symbol.Value)}";
             HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -91,7 +91,7 @@ public sealed partial class CryptoApiService(ILogger<CryptoApiService> logger, H
 
         try
         {
-            var endpoint = $"{HistoryEndpoint}/{Uri.EscapeDataString(symbol.Value)}?period={Uri.EscapeDataString(period)}";
+            string endpoint = $"{HistoryEndpoint}/{Uri.EscapeDataString(symbol.Value)}?period={Uri.EscapeDataString(period)}";
             HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -126,7 +126,7 @@ public sealed partial class CryptoApiService(ILogger<CryptoApiService> logger, H
 
         try
         {
-            var endpoint = $"{SearchEndpoint}?q={Uri.EscapeDataString(query)}";
+            string endpoint = $"{SearchEndpoint}?q={Uri.EscapeDataString(query)}";
             HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 

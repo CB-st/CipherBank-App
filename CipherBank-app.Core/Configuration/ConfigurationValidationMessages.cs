@@ -12,7 +12,7 @@ namespace CipherBank_app.Configuration;
 /// </summary>
 internal static class ConfigurationValidationMessages
 {
-    private static readonly ResourceManager Manager = new(
+    private static readonly ResourceManager _manager = new(
         "CipherBank_app.Configuration.ConfigurationValidationMessages",
         typeof(ConfigurationValidationMessages).Assembly);
 
@@ -27,6 +27,6 @@ internal static class ConfigurationValidationMessages
     internal static string DefaultRecipientsInvalid => Require(nameof(DefaultRecipientsInvalid));
 
     private static string Require(string name)
-        => Manager.GetString(name, CultureInfo.InvariantCulture)
+        => _manager.GetString(name, CultureInfo.InvariantCulture)
            ?? throw new InvalidOperationException($"Missing resource string '{name}'.");
 }

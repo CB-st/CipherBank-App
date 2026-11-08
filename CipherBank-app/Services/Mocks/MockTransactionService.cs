@@ -47,10 +47,9 @@ public sealed partial class MockTransactionService : ITransactionService
         // Get wallet to verify it exists
         Wallet wallet = await _walletService.GetWalletAsync(walletId, cancellationToken);
 
-        var transactions = _transactions
+        List<Transaction> transactions = [.. _transactions
             .Where(t => t.CryptoSymbol == wallet.CryptoSymbol)
-            .OrderByDescending(t => t.Timestamp)
-            .ToList();
+            .OrderByDescending(t => t.Timestamp)];
 
         LogReturnedTransactions(_logger, transactions.Count, walletId);
         return transactions;
@@ -67,7 +66,7 @@ public sealed partial class MockTransactionService : ITransactionService
         LogProcessingPurchase(_logger, amount, symbol.Value);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var fee = amount * PurchaseFeePercent;
+        decimal fee = amount * PurchaseFeePercent;
 
         // Find or create wallet
         Wallet? wallet = _walletService.GetWalletBySymbol(symbol);
@@ -82,10 +81,10 @@ public sealed partial class MockTransactionService : ITransactionService
         toAddress = wallet.Address;
 
         // Update wallet balance
-        var newBalance = wallet.Balance + amount;
+        decimal newBalance = wallet.Balance + amount;
         _walletService.UpdateWalletBalance(wallet.Id, newBalance);
 
-        var transaction = new Transaction(
+        Transaction transaction = new(
             GenerateTransactionId(),
             TransactionType.Purchase,
             amount,
@@ -117,8 +116,8 @@ public sealed partial class MockTransactionService : ITransactionService
 
         // Validate source wallet and balance
         Wallet wallet = await _walletService.GetWalletAsync(fromWalletId, cancellationToken);
-        var fee = amount * SendFeePercent;
-        var totalAmount = amount + fee;
+        decimal fee = amount * SendFeePercent;
+        decimal totalAmount = amount + fee;
 
         if (wallet.Balance < totalAmount)
         {
@@ -135,11 +134,11 @@ public sealed partial class MockTransactionService : ITransactionService
         }
 
         // Deduct from wallet
-        var newBalance = wallet.Balance - totalAmount;
+        decimal newBalance = wallet.Balance - totalAmount;
         _walletService.UpdateWalletBalance(wallet.Id, newBalance);
 
         // Simulate transaction being initially pending, then confirmed
-        var transaction = new Transaction(
+        Transaction transaction = new(
             GenerateTransactionId(),
             TransactionType.Send,
             amount,
@@ -157,7 +156,7 @@ public sealed partial class MockTransactionService : ITransactionService
             async () =>
             {
                 await Task.Delay(3000, CancellationToken.None);
-                var index = _transactions.FindIndex(t => t.Id == transaction.Id);
+                int index = _transactions.FindIndex(t => t.Id == transaction.Id);
                 if (index >= 0)
                 {
                     _transactions[index] = _transactions[index] with { Status = TransactionStatus.Confirmed };
@@ -191,7 +190,7 @@ public sealed partial class MockTransactionService : ITransactionService
 
     private static List<Transaction> GenerateMockTransactionHistory()
     {
-        var transactions = new List<Transaction>();
+        List<Transaction> transactions = new();
         DateTimeOffset now = DateTimeOffset.UtcNow;
 
         // Bitcoin transactions
@@ -316,15 +315,13 @@ public sealed partial class MockTransactionService : ITransactionService
     private static string GenerateRandomString(int length)
     {
         const string chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-        return new string(Enumerable.Range(0, length)
-            .Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
+        return new string([.. Enumerable.Range(0, length).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)])]);
     }
 
     private static string GenerateRandomHex(int length)
     {
         const string hexChars = "0123456789abcdef";
-        return new string(Enumerable.Range(0, length)
-            .Select(_ => hexChars[RandomNumberGenerator.GetInt32(hexChars.Length)]).ToArray());
+        return new string([.. Enumerable.Range(0, length).Select(_ => hexChars[RandomNumberGenerator.GetInt32(hexChars.Length)])]);
     }
 
     private static bool IsValidAddress(string address, AssetSymbol symbol) => symbol.Value switch
@@ -338,7 +335,7 @@ public sealed partial class MockTransactionService : ITransactionService
 
     private static async Task SimulateNetworkDelayAsync(CancellationToken cancellationToken)
     {
-        var delay = RandomNumberGenerator.GetInt32(MinLatencyMs, MaxLatencyMs);
+        int delay = RandomNumberGenerator.GetInt32(MinLatencyMs, MaxLatencyMs);
         await Task.Delay(delay, cancellationToken);
     }
 

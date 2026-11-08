@@ -13,7 +13,7 @@ public class NfcPresentmentPayloadTests
     [Fact]
     public void ToJson_RoundTripsWithoutPan()
     {
-        NfcPresentmentPayload payload = new NfcPresentmentPayload
+        NfcPresentmentPayload payload = new()
         {
             SessionId = "sess_abc",
             TokenRef = "tok_xyz",

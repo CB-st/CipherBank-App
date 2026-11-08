@@ -32,17 +32,17 @@ public sealed class SqliteRateSnapshotStore(IDbContextFactory<CipherBankDbContex
         IEnumerable<AssetSymbol>? symbols,
         CancellationToken ct)
     {
-        AssetSymbol[] requestedSymbols = symbols?
+        HashSet<string> requestedValues = symbols?
             .Distinct()
-            .ToArray() ?? [];
+            .Select(symbol => symbol.Value)
+            .ToHashSet() ?? [];
 
         CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             IQueryable<RateSnapshotEntity> query = context.RateSnapshots.AsNoTracking();
-            if (requestedSymbols.Length > 0)
+            if (requestedValues.Count > 0)
             {
-                string[] requestedValues = requestedSymbols.Select(symbol => symbol.Value).ToArray();
                 query = query.Where(entity => requestedValues.Contains(entity.Symbol));
             }
 
@@ -56,10 +56,9 @@ public sealed class SqliteRateSnapshotStore(IDbContextFactory<CipherBankDbContex
 
     private async Task UpsertCoreAsync(IEnumerable<RateRow> rows, CancellationToken ct)
     {
-        RateRow[] normalized = rows
+        RateRow[] normalized = [.. rows
             .GroupBy(row => row.Symbol)
-            .Select(group => group.MaxBy(row => row.UpdatedAtMs)!)
-            .ToArray();
+            .Select(group => group.MaxBy(row => row.UpdatedAtMs)!)];
         if (normalized is [])
         {
             return;
@@ -71,7 +70,7 @@ public sealed class SqliteRateSnapshotStore(IDbContextFactory<CipherBankDbContex
             CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
             await using (context)
             {
-                string[] symbols = normalized.Select(row => row.Symbol.Value).ToArray();
+                string[] symbols = [.. normalized.Select(row => row.Symbol.Value)];
                 Dictionary<string, RateSnapshotEntity> existing = await context.RateSnapshots
                     .Where(entity => symbols.Contains(entity.Symbol))
                     .ToDictionaryAsync(entity => entity.Symbol, StringComparer.Ordinal, ct)

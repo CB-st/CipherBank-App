@@ -14,8 +14,8 @@ public sealed class HealthCheckClient(IHttpClientFactory httpClientFactory) : IH
         HttpClient client = httpClientFactory.CreateClient("HealthCheck");
         client.Timeout = TimeSpan.FromSeconds(10);
 
-        var baseUri = new Uri(baseUrl.TrimEnd('/') + "/");
-        var healthUri = new Uri(baseUri, "health");
+        Uri baseUri = new(baseUrl.TrimEnd('/') + "/");
+        Uri healthUri = new(baseUri, "health");
         HttpResponseMessage response = await client.GetAsync(healthUri, cancellationToken);
         return response.IsSuccessStatusCode;
     }

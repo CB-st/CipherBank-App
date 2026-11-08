@@ -93,7 +93,7 @@ public class ArcCardDeck : ContentView
         _config = BuildConfig();
         Content = _layout;
 
-        var pan = new PanGestureRecognizer();
+        PanGestureRecognizer pan = new();
         pan.PanUpdated += OnPanUpdated;
         GestureRecognizers.Add(pan);
     }
@@ -163,7 +163,7 @@ public class ArcCardDeck : ContentView
 
     private static void OnItemsSourceChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        var deck = (ArcCardDeck)bindable;
+        ArcCardDeck deck = (ArcCardDeck)bindable;
 
         if (oldValue is INotifyCollectionChanged oldIncc)
         {
@@ -183,26 +183,28 @@ public class ArcCardDeck : ContentView
 
     private static void OnTuningChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        var deck = (ArcCardDeck)bindable;
+        ArcCardDeck deck = (ArcCardDeck)bindable;
         deck._config = deck.BuildConfig();
         deck.ApplyLayout();
     }
 
     private static void OnFocusedItemChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        var deck = (ArcCardDeck)bindable;
+        ArcCardDeck deck = (ArcCardDeck)bindable;
         if (deck._suppressFocusSync || deck.ItemsSource == null)
         {
             return;
         }
 
         int index = deck.ItemsSource.IndexOf(newValue);
-        if (index >= 0 && Math.Abs(index - deck._position) > 0.001)
+        if (index < 0 || !(Math.Abs(index - deck._position) > 0.001))
         {
-            deck.AbortSpring();
-            deck._position = index;
-            deck.ApplyLayout();
+            return;
         }
+
+        deck.AbortSpring();
+        deck._position = index;
+        deck.ApplyLayout();
     }
 
     private CarouselLayoutConfig BuildConfig() =>
@@ -221,9 +223,9 @@ public class ArcCardDeck : ContentView
             return;
         }
 
-        foreach (var item in ItemsSource)
+        foreach (object item in ItemsSource)
         {
-            var view = (View)ItemTemplate.CreateContent();
+            View view = (View)ItemTemplate.CreateContent();
             view.BindingContext = item;
             AbsoluteLayout.SetLayoutFlags(view, AbsoluteLayoutFlags.PositionProportional);
             AbsoluteLayout.SetLayoutBounds(
@@ -361,13 +363,15 @@ public class ArcCardDeck : ContentView
             ApplyLayout();
 
             bool settled = Math.Abs(_position - target) < 0.001 && Math.Abs(velocity) < 0.001;
-            if (settled)
+            if (!settled)
             {
-                _position = target;
-                ApplyLayout();
-                AbortSpring();
-                CommitFocusedItem();
+                return;
             }
+
+            _position = target;
+            ApplyLayout();
+            AbortSpring();
+            CommitFocusedItem();
         };
         _springTimer.Start();
     }

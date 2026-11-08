@@ -19,8 +19,8 @@ public sealed class PinChangeCoordinator(ICustodyService custody)
     public static readonly int MinPinLength = 6;
 
     /// <summary>Status → message table so the caller never grows an if/else chain over statuses.</summary>
-    private static readonly Dictionary<PinChangeStatus, string> Messages =
-        new Dictionary<PinChangeStatus, string>
+    private static readonly Dictionary<PinChangeStatus, string> _messages =
+        new()
         {
             [PinChangeStatus.Success] = UserFacingStrings.PinChangeSuccess,
             [PinChangeStatus.TooShort] = UserFacingStrings.PinChangeTooShort(MinPinLength),
@@ -32,8 +32,8 @@ public sealed class PinChangeCoordinator(ICustodyService custody)
         };
 
     /// <summary>Custody result → surfaced status, so this class never grows a branch chain over results.</summary>
-    private static readonly Dictionary<CustodyPinChangeResult, PinChangeStatus> FromCustody =
-        new Dictionary<CustodyPinChangeResult, PinChangeStatus>
+    private static readonly Dictionary<CustodyPinChangeResult, PinChangeStatus> _fromCustody =
+        new()
         {
             [CustodyPinChangeResult.Changed] = PinChangeStatus.Success,
             [CustodyPinChangeResult.WrongPin] = PinChangeStatus.WrongCurrentPin,
@@ -81,12 +81,12 @@ public sealed class PinChangeCoordinator(ICustodyService custody)
         CustodyPinChangeResult result = await custody
             .ChangePinAsync(currentPin ?? string.Empty, newPin ?? string.Empty)
             .ConfigureAwait(false);
-        return Describe(FromCustody[result]);
+        return Describe(_fromCustody[result]);
     }
 
     /// <summary>
     /// Pairs a status with its user-facing message from the dispatch table.
     /// Use: Low (once per submit). Scope: this coordinator.
     /// </summary>
-    private static PinChangeOutcome Describe(PinChangeStatus status) => new(status, Messages[status]);
+    private static PinChangeOutcome Describe(PinChangeStatus status) => new(status, _messages[status]);
 }

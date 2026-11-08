@@ -26,7 +26,7 @@ public sealed class CustodyService(
 
     private const int DeviceSecretByteLength = 32;
 
-    private static readonly TimeSpan SessionTtl = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan _sessionTtl = TimeSpan.FromMinutes(5);
 
     private readonly Lock _sessionGate = new();
     private int _lockGeneration;
@@ -216,7 +216,7 @@ public sealed class CustodyService(
 
     private bool TryPublishSession(string mnemonic, int lockGeneration)
     {
-        DateTimeOffset expires = timeProvider.GetUtcNow().Add(SessionTtl);
+        DateTimeOffset expires = timeProvider.GetUtcNow().Add(_sessionTtl);
         lock (_sessionGate)
         {
             if (_lockGeneration != lockGeneration)

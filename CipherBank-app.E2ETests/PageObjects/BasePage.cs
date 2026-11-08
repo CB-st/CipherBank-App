@@ -87,8 +87,5 @@ public abstract class BasePage(AppiumDriver driver)
     /// <summary>
     /// Gets the text content of an element.
     /// </summary>
-    protected string GetElementText(By locator)
-    {
-        return WaitForElement(locator).Text;
-    }
+    protected string GetElementText(By locator) => WaitForElement(locator).Text;
 }

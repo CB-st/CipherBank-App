@@ -63,21 +63,16 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
     {
         try
         {
-            var accessToken = await SecureStorage.Default.GetAsync(AccessTokenKey);
-            var refreshToken = await SecureStorage.Default.GetAsync(RefreshTokenKey);
-            var expiresUtcString = await SecureStorage.Default.GetAsync(ExpiresUtcKey);
+            string? accessToken = await SecureStorage.Default.GetAsync(AccessTokenKey);
+            string? refreshToken = await SecureStorage.Default.GetAsync(RefreshTokenKey);
+            string? expiresUtcString = await SecureStorage.Default.GetAsync(ExpiresUtcKey);
 
             if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken) || string.IsNullOrEmpty(expiresUtcString))
             {
                 return null;
             }
 
-            if (!DateTimeOffset.TryParse(expiresUtcString, out DateTimeOffset expiresUtc))
-            {
-                return null;
-            }
-
-            return new AuthToken(accessToken, refreshToken, expiresUtc);
+            return !DateTimeOffset.TryParse(expiresUtcString, out DateTimeOffset expiresUtc) ? null : new AuthToken(accessToken, refreshToken, expiresUtc);
         }
         catch (Exception ex)
         {

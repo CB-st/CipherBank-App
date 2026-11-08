@@ -78,7 +78,7 @@ public sealed partial class SettingsService : ISettingsService
         {
             if (_logger != null)
             {
-                var valueString = value.ToString();
+                string valueString = value.ToString();
                 LogSettingChanged(_logger, "NotificationsEnabled", valueString);
             }
 
@@ -93,7 +93,7 @@ public sealed partial class SettingsService : ISettingsService
         {
             if (_logger != null)
             {
-                var valueString = value.ToString();
+                string valueString = value.ToString();
                 LogSettingChanged(_logger, "BiometricAuthEnabled", valueString);
             }
 
@@ -108,7 +108,7 @@ public sealed partial class SettingsService : ISettingsService
         {
             if (_logger != null)
             {
-                var valueString = value.ToString(CultureInfo.InvariantCulture);
+                string valueString = value.ToString(CultureInfo.InvariantCulture);
                 LogSettingChanged(_logger, "AutoLockTimeoutMinutes", valueString);
             }
 
@@ -161,7 +161,7 @@ public sealed partial class SettingsService : ISettingsService
         {
             if (_logger != null)
             {
-                var valueString = value.ToString();
+                string valueString = value.ToString();
                 LogSettingChanged(_logger, "DeveloperModeEnabled", valueString);
             }
 

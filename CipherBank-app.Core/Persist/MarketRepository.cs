@@ -41,7 +41,7 @@ public sealed class MarketRepository(IDbContextFactory<CipherBankDbContext> cont
         CancellationToken ct)
     {
         string normalizedSymbol = symbol.Value;
-        PricePoint[] snapshot = points.ToArray();
+        PricePoint[] snapshot = [.. points];
         if (snapshot is [])
         {
             return;
@@ -54,7 +54,7 @@ public sealed class MarketRepository(IDbContextFactory<CipherBankDbContext> cont
         CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
-            long[] timestamps = latestByTimestamp.Keys.ToArray();
+            long[] timestamps = [.. latestByTimestamp.Keys];
             Dictionary<long, OhlcPointEntity> existing = await context.OhlcPoints
                 .Where(entity => entity.Symbol == normalizedSymbol && timestamps.Contains(entity.Timestamp))
                 .ToDictionaryAsync(entity => entity.Timestamp, ct)

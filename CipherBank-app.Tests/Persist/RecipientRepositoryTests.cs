@@ -75,11 +75,12 @@ public class RecipientRepositoryTests
             await using SqliteCommand cmd = conn.CreateCommand();
             cmd.CommandText = "SELECT account_mask, routing_mask FROM recipients WHERE id=$id";
             cmd.Parameters.AddWithValue("$id", "payee-1");
-            await using SqliteDataReader reader = await cmd.ExecuteReaderAsync();
-            (await reader.ReadAsync()).Should().BeTrue();
-            reader.GetString(0).Should().Contain("0001");
-            reader.GetString(1).Should().Contain("0021");
-            await reader.DisposeAsync();
+            await using (SqliteDataReader reader = await cmd.ExecuteReaderAsync())
+            {
+                (await reader.ReadAsync()).Should().BeTrue();
+                reader.GetString(0).Should().Contain("0001");
+                reader.GetString(1).Should().Contain("0021");
+            }
 
             await using SqliteCommand schema = conn.CreateCommand();
             schema.CommandText = "SELECT name FROM pragma_table_info('recipients')";

@@ -110,7 +110,7 @@ public partial class DashboardViewModel(
                 LogLoadingPrices(logger);
             }
 
-            var success = await errorHandler.HandleApiErrorsAsync(
+            bool success = await errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
                     List<CryptoCurrency> cryptos = await cryptoService.GetCryptoPricesAsync(_cts.Token);
@@ -201,7 +201,7 @@ public partial class DashboardViewModel(
         SelectedCrypto = crypto;
 
         // Could navigate to a details page here
-        var detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
+        string detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
         await dialog.ShowAlertAsync(
             crypto.Name,
             detailMessage);
@@ -247,14 +247,16 @@ public partial class DashboardViewModel(
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            if (disposing)
-            {
-                _cts?.Dispose();
-            }
-
-            _disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            _cts?.Dispose();
+        }
+
+        _disposed = true;
     }
 }

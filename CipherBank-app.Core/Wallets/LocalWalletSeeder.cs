@@ -11,8 +11,7 @@ namespace CipherBank_app.Wallets;
 /// <inheritdoc />
 public sealed class LocalWalletSeeder(IWalletRepository wallets, TimeProvider timeProvider) : ILocalWalletSeeder
 {
-    private static readonly AssetSymbol[] DefaultSymbols = [AssetSymbol.Btc, AssetSymbol.Eth];
-    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+    private static readonly AssetSymbol[] _defaultSymbols = [AssetSymbol.Btc, AssetSymbol.Eth];
 
     public LocalWalletSeeder(IWalletRepository wallets)
         : this(wallets, TimeProvider.System)
@@ -20,18 +19,15 @@ public sealed class LocalWalletSeeder(IWalletRepository wallets, TimeProvider ti
     }
 
     public Task EnsureDerivedAsync(string mnemonic)
-        => EnsureDerivedAsync(mnemonic, DefaultSymbols);
+        => EnsureDerivedAsync(mnemonic, _defaultSymbols);
 
     public Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
     {
         ArgumentNullException.ThrowIfNull(symbols);
         AssetSymbol[] list = [.. symbols];
-        if (Array.Exists(list, symbol => symbol is null))
-        {
-            throw new ArgumentException("Symbols must not contain null entries.", nameof(symbols));
-        }
-
-        return EnsureDerivedCoreAsync(mnemonic, list);
+        return Array.Exists(list, symbol => symbol is null)
+            ? throw new ArgumentException("Symbols must not contain null entries.", nameof(symbols))
+            : EnsureDerivedCoreAsync(mnemonic, list);
     }
 
     /// <summary>
@@ -85,7 +81,7 @@ public sealed class LocalWalletSeeder(IWalletRepository wallets, TimeProvider ti
                 derived.Path,
                 derived.AccountIndex,
                 "derived",
-                _timeProvider.GetUtcNow())).ConfigureAwait(false);
+                timeProvider.GetUtcNow())).ConfigureAwait(false);
         }
     }
 }

@@ -47,7 +47,7 @@ public partial class WalletPage
     }
 
     private static Color GetColor(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
+        Application.Current?.Resources.TryGetValue(key, out object? value) == true && value is Color color
             ? color
             : Colors.Gray;
 
@@ -89,7 +89,7 @@ public partial class WalletPage
 
         for (int i = 0; i < _viewModel.WalletCards.Count; i++)
         {
-            var dot = new Border
+            Border dot = new()
             {
                 WidthRequest = 8,
                 HeightRequest = 8,
@@ -112,12 +112,14 @@ public partial class WalletPage
 
         for (int i = 0; i < PageIndicator.Children.Count; i++)
         {
-            if (PageIndicator.Children[i] is View dot)
+            if (PageIndicator.Children[i] is not View dot)
             {
-                bool active = i == focusedIndex;
-                dot.Opacity = active ? 1.0 : 0.35;
-                dot.Scale = active ? 1.3 : 1.0;
+                continue;
             }
+
+            bool active = i == focusedIndex;
+            dot.Opacity = active ? 1.0 : 0.35;
+            dot.Scale = active ? 1.3 : 1.0;
         }
     }
 
