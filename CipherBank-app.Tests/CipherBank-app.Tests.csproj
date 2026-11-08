@@ -46,6 +46,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../CipherBank-app/Services/Handlers/AuthHeaderHandler.cs" Link="Host/AuthHeaderHandler.cs" />
+    <!-- The linked handler normally receives this extension import from the MAUI host. -->
+    <Using Include="Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions" Static="true" />
     <Compile Include="../CipherBank-app/ViewModels/LoginViewModel.cs" Link="Host/LoginViewModel.cs" />
     <Compile Include="../CipherBank-app/Services/INavigationService.cs" Link="Host/INavigationService.cs" />
     <Compile Include="../CipherBank-app/Services/IDialogService.cs" Link="Host/IDialogService.cs" />

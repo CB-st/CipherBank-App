@@ -44,7 +44,6 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
                 if (product is { } p && p.Expires > _timeProvider.GetUtcNow().AddMinutes(ProductTokenSkewMinutes))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", p.Access);
-                    return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
