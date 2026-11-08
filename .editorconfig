@@ -142,6 +142,12 @@ dotnet_diagnostic.IDE0007.severity = none       # Conflicts with IDE0008 / Sonar
 dotnet_diagnostic.IDE0028.severity = none       # Collection expression burn-down deferred for tests
 dotnet_diagnostic.SA1515.severity = suggestion
 
+# Rider CheckNamespace: each target compiles one platform-owned registration
+# into the shared Extensions namespace. Host/platform composition owns this
+# exception; revisit if target filtering no longer depends on the Platforms tree.
+[CipherBank-app/Platforms/*/PlatformFeatureRegistration.cs]
+resharper_check_namespace_highlighting = none
+
 # Analyzer public API keeps XML comments (CS1591/SA16xx as warnings → errors).
 [CipherBank-app.Analyzers/**.cs]
 dotnet_diagnostic.CS1591.severity = warning
