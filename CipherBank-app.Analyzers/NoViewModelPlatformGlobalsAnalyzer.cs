@@ -34,7 +34,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-        => ImmutableArray.Create(CipherBankDiagnostics.ViewModelPlatformGlobal);
+        => [CipherBankDiagnostics.ViewModelPlatformGlobal];
 
     /// <summary>
     /// Registers a compilation action over compilation trees and additional files.
@@ -88,9 +88,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        SyntaxTree tree;
-        SourceText text;
-        if (!AdditionalSource.TryParseCSharp(file, context.CancellationToken, out tree, out text))
+        if (!AdditionalSource.TryParseCSharp(file, context.CancellationToken, out SyntaxTree tree, out SourceText text))
         {
             return;
         }
@@ -116,8 +114,7 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     {
         foreach (SyntaxNode node in tree.GetRoot(cancellationToken).DescendantNodes())
         {
-            if (node is not MemberAccessExpressionSyntax access
-                || access.Expression is not IdentifierNameSyntax identifier)
+            if (node is not MemberAccessExpressionSyntax { Expression: IdentifierNameSyntax identifier } access)
             {
                 continue;
             }

@@ -33,12 +33,7 @@ public static class CertificatePinPolicy
             return PinMatches(computedPin, ProductionPin, BackupPin);
         }
 
-        if (HostMatches(hostname, SandboxHost))
-        {
-            return PinMatches(computedPin, SandboxPin, SandboxBackupPin);
-        }
-
-        return false;
+        return HostMatches(hostname, SandboxHost) && PinMatches(computedPin, SandboxPin, SandboxBackupPin);
     }
 
     public static string ComputeSpkiSha256Pin(ReadOnlySpan<byte> subjectPublicKeyInfo)

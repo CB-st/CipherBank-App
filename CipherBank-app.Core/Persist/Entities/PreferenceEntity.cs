@@ -13,7 +13,7 @@ namespace CipherBank_app.Persist.Entities;
 public sealed record PreferenceEntity
 {
     /// <summary>Preference bag identifier (currently <c>user_prefs</c>).</summary>
-    public string Key { get; set; } = string.Empty;
+    public string Key { get; init; } = string.Empty;
 
     /// <summary>JSON payload for the key. Cleartext UI prefs, not PIN/mnemonic/key material.</summary>
     public string Value { get; set; } = string.Empty;

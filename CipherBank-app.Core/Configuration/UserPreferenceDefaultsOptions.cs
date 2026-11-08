@@ -17,7 +17,7 @@ public sealed class UserPreferenceDefaultsOptions
 
     public bool ValuesHiddenOnLaunch { get; set; }
 
-    public bool CoraEnabled { get; set; }
+    public bool CoraEnabled { get; init; }
 
     public string DefaultSendSpeed { get; set; } = string.Empty;
 

@@ -137,14 +137,14 @@ public sealed partial class RateLimiter : IDisposable
             }
 
             // Get the oldest timestamp that's still in the window
-            if (_requestTimestamps.TryPeek(out DateTimeOffset oldestInWindow))
+            if (!_requestTimestamps.TryPeek(out DateTimeOffset oldestInWindow))
             {
-                DateTimeOffset waitUntil = oldestInWindow + WindowDuration;
-                TimeSpan waitTime = waitUntil - now;
-                return waitTime > TimeSpan.Zero ? waitTime : TimeSpan.Zero;
+                return TimeSpan.Zero;
             }
 
-            return TimeSpan.Zero;
+            DateTimeOffset waitUntil = oldestInWindow + WindowDuration;
+            TimeSpan waitTime = waitUntil - now;
+            return waitTime > TimeSpan.Zero ? waitTime : TimeSpan.Zero;
         }
         finally
         {

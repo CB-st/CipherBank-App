@@ -13,7 +13,7 @@ namespace CipherBank_app.Custody;
 /// invariant, so no Shell flow can orphan a legacy PIN-derived blob. The blob is never re-sealed.
 /// Use: Low (only when a user opens Change PIN). Scope: one Profile/Change-PIN interaction.
 /// </summary>
-public sealed class PinChangeCoordinator
+public sealed class PinChangeCoordinator(ICustodyService custody)
 {
     /// <summary>Minimum digits for a new PIN — matches SetPin onboarding.</summary>
     public static readonly int MinPinLength = 6;
@@ -40,13 +40,6 @@ public sealed class PinChangeCoordinator
             [CustodyPinChangeResult.LockedOut] = PinChangeStatus.LockedOut,
             [CustodyPinChangeResult.DeviceSecretMissing] = PinChangeStatus.VaultNotReady,
         };
-
-    private readonly ICustodyService _custody;
-
-    public PinChangeCoordinator(ICustodyService custody)
-    {
-        _custody = custody;
-    }
 
     /// <summary>
     /// Pure shape check (length, confirmation match, reuse) that needs no secure storage, returning
@@ -85,7 +78,7 @@ public sealed class PinChangeCoordinator
             return Describe(shape);
         }
 
-        CustodyPinChangeResult result = await _custody
+        CustodyPinChangeResult result = await custody
             .ChangePinAsync(currentPin ?? string.Empty, newPin ?? string.Empty)
             .ConfigureAwait(false);
         return Describe(FromCustody[result]);

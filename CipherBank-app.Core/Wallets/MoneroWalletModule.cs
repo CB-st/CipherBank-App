@@ -73,7 +73,7 @@ public sealed class MoneroWalletModule : IWalletModule
     public bool UsesServerWallets => true;
 
     /// <inheritdoc />
-    public string? Notes => "Hybrid: managed/unmanaged via /wallets API — native derive deferred";
+    public string Notes => "Hybrid: managed/unmanaged via /wallets API — native derive deferred";
 
     /// <inheritdoc />
     public bool IsValidAddress(string address)

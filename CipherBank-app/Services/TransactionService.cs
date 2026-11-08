@@ -13,52 +13,44 @@ namespace CipherBank_app.Services;
 /// Production implementation of ITransactionService using HTTP client.
 /// Manages cryptocurrency transactions via the CipherBank API.
 /// </summary>
-public sealed partial class TransactionService : ITransactionService
+public sealed partial class TransactionService(ILogger<TransactionService> logger, HttpClient http)
+    : ITransactionService
 {
     private const string TransactionsEndpoint = "api/v1/transactions";
     private const string PurchaseEndpoint = "api/v1/transactions/purchase";
     private const string SendEndpoint = "api/v1/transactions/send";
 
-    private readonly ILogger<TransactionService> _logger;
-    private readonly HttpClient _http;
-
-    public TransactionService(ILogger<TransactionService> logger, HttpClient http)
-    {
-        _logger = logger;
-        _http = http;
-    }
-
     public async Task<List<Transaction>> GetTransactionHistoryAsync(string walletId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(walletId);
 
-        LogFetchingTransactionHistory(_logger, walletId);
+        LogFetchingTransactionHistory(logger, walletId);
 
         try
         {
             var endpoint = $"{TransactionsEndpoint}?walletId={Uri.EscapeDataString(walletId)}";
-            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             List<Transaction>? transactions = await response.Content.ReadFromJsonAsync<List<Transaction>>(cancellationToken: cancellationToken);
 
             if (transactions == null)
             {
-                LogNullResponseForTransactions(_logger, walletId);
+                LogNullResponseForTransactions(logger, walletId);
                 return [];
             }
 
-            LogRetrievedTransactions(_logger, transactions.Count, walletId);
+            LogRetrievedTransactions(logger, transactions.Count, walletId);
             return transactions;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogWalletNotFound(_logger, walletId);
+            LogWalletNotFound(logger, walletId);
             throw new KeyNotFoundException($"Wallet '{walletId}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingTransactions(_logger, ex, walletId, ex.StatusCode);
+            LogHttpErrorFetchingTransactions(logger, ex, walletId, ex.StatusCode);
             throw new InvalidOperationException("Failed to retrieve transaction history from server", ex);
         }
     }
@@ -71,39 +63,39 @@ public sealed partial class TransactionService : ITransactionService
             throw new ArgumentException(@"Amount must be positive", nameof(amount));
         }
 
-        LogProcessingPurchase(_logger, amount, symbol.Value);
+        LogProcessingPurchase(logger, amount, symbol.Value);
 
         try
         {
             var request = new PurchaseRequest(symbol.Value, amount);
-            HttpResponseMessage response = await _http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
+            HttpResponseMessage response = await http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
 
             if (transaction == null)
             {
-                LogNullResponseForPurchase(_logger, amount, symbol.Value);
+                LogNullResponseForPurchase(logger, amount, symbol.Value);
                 throw new InvalidOperationException($"Failed to complete purchase of {amount} {symbol}");
             }
 
-            LogPurchaseCompleted(_logger, transaction.Amount, transaction.CryptoSymbol.Value, transaction.FeeAmount, transaction.Id);
+            LogPurchaseCompleted(logger, transaction.Amount, transaction.CryptoSymbol.Value, transaction.FeeAmount, transaction.Id);
 
             return transaction;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
         {
-            LogInvalidPurchaseRequest(_logger, amount, symbol.Value);
+            LogInvalidPurchaseRequest(logger, amount, symbol.Value);
             throw new ArgumentException("Invalid purchase request", ex);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.PaymentRequired)
         {
-            LogInsufficientFundsForPurchase(_logger, amount, symbol.Value);
+            LogInsufficientFundsForPurchase(logger, amount, symbol.Value);
             throw new InvalidOperationException("Insufficient funds for purchase", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorProcessingPurchase(_logger, ex, amount, symbol.Value, ex.StatusCode);
+            LogHttpErrorProcessingPurchase(logger, ex, amount, symbol.Value, ex.StatusCode);
             throw new InvalidOperationException("Failed to process purchase from server", ex);
         }
     }
@@ -118,50 +110,50 @@ public sealed partial class TransactionService : ITransactionService
         }
 
         // Basic address validation (additional validation done server-side)
-        if (toAddress.Length < 20 || toAddress.Length > 100)
+        if (toAddress.Length is < 20 or > 100)
         {
-            LogInvalidDestinationAddress(_logger, toAddress);
+            LogInvalidDestinationAddress(logger, toAddress);
             throw new ArgumentException(@"Invalid destination address format", nameof(toAddress));
         }
 
-        LogProcessingSend(_logger, fromWalletId, toAddress, amount);
+        LogProcessingSend(logger, fromWalletId, toAddress, amount);
 
         try
         {
             var request = new SendRequest(fromWalletId, toAddress, amount);
-            HttpResponseMessage response = await _http.PostAsJsonAsync(SendEndpoint, request, cancellationToken);
+            HttpResponseMessage response = await http.PostAsJsonAsync(SendEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>(cancellationToken: cancellationToken);
 
             if (transaction == null)
             {
-                LogNullResponseForSend(_logger, fromWalletId);
+                LogNullResponseForSend(logger, fromWalletId);
                 throw new InvalidOperationException("Failed to complete send transaction");
             }
 
-            LogSendInitiated(_logger, transaction.Amount, transaction.CryptoSymbol.Value, toAddress, transaction.FeeAmount, transaction.Id);
+            LogSendInitiated(logger, transaction.Amount, transaction.CryptoSymbol.Value, toAddress, transaction.FeeAmount, transaction.Id);
 
             return transaction;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
         {
-            LogInvalidSendRequest(_logger, fromWalletId);
+            LogInvalidSendRequest(logger, fromWalletId);
             throw new ArgumentException("Invalid send request", ex);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogWalletNotFound(_logger, fromWalletId);
+            LogWalletNotFound(logger, fromWalletId);
             throw new KeyNotFoundException($"Wallet '{fromWalletId}' not found", ex);
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.UnprocessableEntity)
         {
-            LogInsufficientBalance(_logger, fromWalletId);
+            LogInsufficientBalance(logger, fromWalletId);
             throw new InvalidOperationException("Insufficient balance for transaction", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorProcessingSend(_logger, ex, fromWalletId, ex.StatusCode);
+            LogHttpErrorProcessingSend(logger, ex, fromWalletId, ex.StatusCode);
             throw new InvalidOperationException("Failed to process send from server", ex);
         }
     }
@@ -170,33 +162,33 @@ public sealed partial class TransactionService : ITransactionService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(transactionId);
 
-        LogFetchingTransactionStatus(_logger, transactionId);
+        LogFetchingTransactionStatus(logger, transactionId);
 
         try
         {
             var endpoint = $"{TransactionsEndpoint}/{Uri.EscapeDataString(transactionId)}/status";
-            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             StatusResponse? result = await response.Content.ReadFromJsonAsync<StatusResponse>(cancellationToken: cancellationToken);
 
             if (result == null)
             {
-                LogNullResponseForTransactionStatus(_logger, transactionId);
+                LogNullResponseForTransactionStatus(logger, transactionId);
                 throw new InvalidOperationException($"Failed to retrieve status for transaction '{transactionId}'");
             }
 
-            LogTransactionStatus(_logger, transactionId, result.Status);
+            LogTransactionStatus(logger, transactionId, result.Status);
             return result.Status;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogTransactionNotFound(_logger, transactionId);
+            LogTransactionNotFound(logger, transactionId);
             throw new KeyNotFoundException($"Transaction '{transactionId}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingTransactionStatus(_logger, ex, transactionId, ex.StatusCode);
+            LogHttpErrorFetchingTransactionStatus(logger, ex, transactionId, ex.StatusCode);
             throw new InvalidOperationException("Failed to retrieve transaction status from server", ex);
         }
     }

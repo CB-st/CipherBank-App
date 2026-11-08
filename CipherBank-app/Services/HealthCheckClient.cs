@@ -7,18 +7,11 @@ namespace CipherBank_app.Services;
 /// <summary>
 /// Health check client using the app's configured HTTP handler (certificate pinning).
 /// </summary>
-public sealed class HealthCheckClient : IHealthCheckClient
+public sealed class HealthCheckClient(IHttpClientFactory httpClientFactory) : IHealthCheckClient
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public HealthCheckClient(IHttpClientFactory httpClientFactory)
-    {
-        _httpClientFactory = httpClientFactory;
-    }
-
     public async Task<bool> CheckHealthAsync(string baseUrl, CancellationToken cancellationToken = default)
     {
-        HttpClient client = _httpClientFactory.CreateClient("HealthCheck");
+        HttpClient client = httpClientFactory.CreateClient("HealthCheck");
         client.Timeout = TimeSpan.FromSeconds(10);
 
         var baseUri = new Uri(baseUrl.TrimEnd('/') + "/");

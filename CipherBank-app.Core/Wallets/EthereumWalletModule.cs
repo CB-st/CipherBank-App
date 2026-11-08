@@ -30,7 +30,7 @@ public sealed partial class EthereumWalletModule : AddressDerive, IWalletModule
     public bool UsesServerWallets => false;
 
     /// <inheritdoc />
-    public string? Notes => "BIP44 m/44'/60'/0'/0/i from on-device BIP39";
+    public string Notes => "BIP44 m/44'/60'/0'/0/i from on-device BIP39";
 
     /// <inheritdoc />
     public bool IsValidAddress(string address) => EthAddressRegex().IsMatch(address);

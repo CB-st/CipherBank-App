@@ -76,7 +76,7 @@ public class GlassCard : ContentView
     public double CornerRadius
     {
         get => (double)GetValue(CornerRadiusProperty);
-        set => SetValue(CornerRadiusProperty, value);
+        init => SetValue(CornerRadiusProperty, value);
     }
 
     public View? Body

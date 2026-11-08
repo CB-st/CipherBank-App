@@ -12,7 +12,7 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Page object for the Purchase page.
 /// Provides methods to interact with cryptocurrency purchase functionality.
 /// </summary>
-public class PurchasePage : BasePage
+public class PurchasePage(AppiumDriver driver) : BasePage(driver)
 {
     // Element locators
     private static readonly By _viewAllButton = By.Id("ViewAllButton");
@@ -25,11 +25,6 @@ public class PurchasePage : BasePage
     private static readonly By _estimatedCryptoLabel = By.Id("EstimatedCryptoLabel");
     private static readonly By _feeLabel = By.Id("FeeLabel");
     private static readonly By _backButton = By.Id("BackButton");
-
-    public PurchasePage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Selects a cryptocurrency to purchase.

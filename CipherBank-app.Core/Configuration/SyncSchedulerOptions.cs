@@ -24,7 +24,7 @@ public sealed class SyncSchedulerOptions
     /// (rounded up, clamped to <see cref="MinConcurrency"/>..<see cref="MaxAllowedConcurrency"/>).
     /// Overlay <c>SyncScheduler:MaxConcurrency</c> to set an explicit value.
     /// </summary>
-    public int MaxConcurrency { get; set; } = AutoConcurrency;
+    public int MaxConcurrency { get; init; } = AutoConcurrency;
 
     /// <summary>
     /// Returns the effective dispatch width. An explicit 1–8 wins; otherwise half the CPU count.

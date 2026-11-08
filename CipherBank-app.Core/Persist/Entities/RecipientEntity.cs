@@ -6,21 +6,21 @@ namespace CipherBank_app.Persist.Entities;
 
 public sealed record RecipientEntity
 {
-    public string Id { get; set; } = string.Empty;
+    public string Id { get; init; } = string.Empty;
 
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
 
-    public string? Holder { get; set; }
+    public string? Holder { get; init; }
 
-    public string? Bank { get; set; }
+    public string? Bank { get; init; }
 
-    public string AccountType { get; set; } = "checking";
+    public string AccountType { get; init; } = "checking";
 
-    public string? Memo { get; set; }
+    public string? Memo { get; init; }
 
-    public string? AccountMask { get; set; }
+    public string? AccountMask { get; init; }
 
-    public string? RoutingMask { get; set; }
+    public string? RoutingMask { get; init; }
 
-    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; init; }
 }

@@ -23,14 +23,15 @@ public sealed class DogecoinWalletModule : AddressDerive, IWalletModule
     public bool UsesServerWallets => false;
 
     /// <inheritdoc />
-    public string? Notes => "BIP44 m/44'/3'/0'/0/i P2PKH";
+    public string Notes => "BIP44 m/44'/3'/0'/0/i P2PKH";
 
     /// <inheritdoc />
     public bool IsValidAddress(string address)
     {
         try
         {
-            return BitcoinAddress.Create(address, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet) is not null;
+            BitcoinAddress.Create(address, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet);
+            return true;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
         {

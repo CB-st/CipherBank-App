@@ -11,7 +11,7 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Page object for the Login page.
 /// Provides methods to interact with login functionality.
 /// </summary>
-public class LoginPage : BasePage
+public class LoginPage(AppiumDriver driver) : BasePage(driver)
 {
     // Element locators
     private static readonly By _usernameField = By.Id("UsernameEntry");
@@ -19,11 +19,6 @@ public class LoginPage : BasePage
     private static readonly By _loginButton = By.Id("LoginButton");
     private static readonly By _errorMessage = By.Id("ErrorLabel");
     private static readonly By _biometricButton = By.Id("BiometricLoginButton");
-
-    public LoginPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Enters the username.

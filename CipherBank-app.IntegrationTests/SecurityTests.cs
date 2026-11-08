@@ -17,22 +17,15 @@ namespace CipherBank_app.IntegrationTests;
 /// Security-focused integration tests to verify authentication,
 /// authorization, and secure communication patterns.
 /// </summary>
-public class SecurityTests : IClassFixture<MockServerFixture>
+public class SecurityTests(MockServerFixture fixture) : IClassFixture<MockServerFixture>
 {
-    private readonly MockServerFixture _fixture;
-    private readonly HttpClient _client;
-
-    public SecurityTests(MockServerFixture fixture)
-    {
-        _fixture = fixture;
-        _client = fixture.HttpClient;
-    }
+    private readonly HttpClient _client = fixture.HttpClient;
 
     [Fact]
     public async Task UnauthorizedRequest_ReturnsUnauthorized()
     {
         // Arrange - Setup an endpoint that requires auth
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/secure/resource")
                 .WithHeader("Authorization", "*", MatchBehaviour.RejectOnMatch)
                 .UsingGet())
@@ -51,7 +44,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
     public async Task AuthorizedRequest_WithValidToken_Succeeds()
     {
         // Arrange
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/secure/data")
                 .WithHeader("Authorization", "Bearer valid_token")
                 .UsingGet())
@@ -76,7 +69,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
     public async Task ExpiredToken_Returns401()
     {
         // Arrange
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/protected/endpoint")
                 .WithHeader("Authorization", "Bearer expired_token")
                 .UsingGet())
@@ -101,7 +94,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
     public async Task InvalidCredentials_ReturnsUnauthorized()
     {
         // Arrange
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/auth/login/invalid")
                 .UsingPost())
             .RespondWith(Response.Create()
@@ -121,7 +114,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
     public async Task RateLimiting_Returns429WhenExceeded()
     {
         // Arrange
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/rate-limited")
                 .UsingGet())
             .RespondWith(Response.Create()
@@ -141,7 +134,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
     public async Task XssAttempt_IsSanitized()
     {
         // Arrange
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/crypto/search")
                 .WithParam("q", "<script>alert('xss')</script>")
                 .UsingGet())
@@ -160,7 +153,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
     public async Task SqlInjectionAttempt_IsRejected()
     {
         // Arrange
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/wallets/'; DROP TABLE wallets;--")
                 .UsingGet())
             .RespondWith(Response.Create()
@@ -178,7 +171,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
     public async Task ContentSecurityHeaders_ArePresent()
     {
         // Arrange
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/secure-headers")
                 .UsingGet())
             .RespondWith(Response.Create()
@@ -223,7 +216,7 @@ public class SecurityTests : IClassFixture<MockServerFixture>
     public async Task TimeoutHandling_ReturnsGatewayTimeout()
     {
         // Arrange
-        _fixture.Server.Given(Request.Create()
+        fixture.Server.Given(Request.Create()
                 .WithPath("/api/v1/slow-endpoint")
                 .UsingGet())
             .RespondWith(Response.Create()

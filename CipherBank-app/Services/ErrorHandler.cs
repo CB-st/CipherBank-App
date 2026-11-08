@@ -9,15 +9,8 @@ namespace CipherBank_app.Services;
 /// <summary>
 /// Centralizes API error handling: sets ErrorMessage, navigates to Login on 401.
 /// </summary>
-public sealed class ErrorHandler : IErrorHandler
+public sealed class ErrorHandler(INavigationService navigation) : IErrorHandler
 {
-    private readonly INavigationService _navigation;
-
-    public ErrorHandler(INavigationService navigation)
-    {
-        _navigation = navigation;
-    }
-
     public async Task<bool> HandleApiErrorsAsync(
         Func<Task> operation,
         Action<string?> setErrorMessage,
@@ -40,7 +33,7 @@ public sealed class ErrorHandler : IErrorHandler
         catch (UnauthorizedAccessException)
         {
             setErrorMessage("Session expired. Please log in again.");
-            await _navigation.GoToAsync(Routes.Login);
+            await navigation.GoToAsync(Routes.Login);
             return false;
         }
     }

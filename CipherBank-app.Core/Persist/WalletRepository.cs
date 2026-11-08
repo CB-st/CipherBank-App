@@ -9,21 +9,14 @@ using Microsoft.EntityFrameworkCore;
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
-public sealed class WalletRepository : IWalletRepository
+public sealed class WalletRepository(IDbContextFactory<CipherBankDbContext> contexts) : IWalletRepository
 {
-    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
-
-    public WalletRepository(IDbContextFactory<CipherBankDbContext> contexts)
-    {
-        _contexts = contexts;
-    }
-
     public Task<IReadOnlyList<LocalWalletDescriptor>> ListAsync()
         => ListAsync(CancellationToken.None);
 
     public async Task<IReadOnlyList<LocalWalletDescriptor>> ListAsync(CancellationToken ct)
     {
-        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             List<WalletEntity> entities = await context.Wallets
@@ -49,7 +42,7 @@ public sealed class WalletRepository : IWalletRepository
     public async Task DeleteAsync(string id, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
-        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             WalletEntity? entity = await context.Wallets.FindAsync([id], ct).ConfigureAwait(false);
@@ -65,7 +58,7 @@ public sealed class WalletRepository : IWalletRepository
 
     private async Task UpsertCoreAsync(LocalWalletDescriptor row, CancellationToken ct)
     {
-        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             WalletEntity? entity = await context.Wallets.FindAsync([row.Id], ct).ConfigureAwait(false);

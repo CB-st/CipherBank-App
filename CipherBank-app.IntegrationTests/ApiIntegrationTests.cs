@@ -14,14 +14,9 @@ namespace CipherBank_app.IntegrationTests;
 /// Integration tests that verify API endpoint behavior using WireMock.
 /// These tests ensure that the application correctly handles API responses.
 /// </summary>
-public class ApiIntegrationTests : IClassFixture<MockServerFixture>
+public class ApiIntegrationTests(MockServerFixture fixture) : IClassFixture<MockServerFixture>
 {
-    private readonly HttpClient _client;
-
-    public ApiIntegrationTests(MockServerFixture fixture)
-    {
-        _client = fixture.HttpClient;
-    }
+    private readonly HttpClient _client = fixture.HttpClient;
 
     [Fact]
     public async Task HealthCheck_ReturnsOk()
@@ -47,7 +42,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 
         AuthToken? token = await response.Content.ReadFromJsonAsync<AuthToken>();
         token.Should().NotBeNull();
-        token!.AccessToken.Should().NotBeNullOrEmpty();
+        token.AccessToken.Should().NotBeNullOrEmpty();
         token.RefreshToken.Should().NotBeNullOrEmpty();
         token.ExpiresUtc.Should().BeAfter(DateTimeOffset.UtcNow);
     }
@@ -66,7 +61,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 
         AuthToken? token = await response.Content.ReadFromJsonAsync<AuthToken>();
         token.Should().NotBeNull();
-        token!.AccessToken.Should().Contain("refreshed");
+        token.AccessToken.Should().Contain("refreshed");
     }
 
     [Fact]
@@ -95,7 +90,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 
         CryptoCurrency? crypto = await response.Content.ReadFromJsonAsync<CryptoCurrency>();
         crypto.Should().NotBeNull();
-        crypto!.Symbol.Value.Should().Be("BTC");
+        crypto.Symbol.Value.Should().Be("BTC");
         crypto.Name.Should().Be("Bitcoin");
         crypto.CurrentPrice.Should().BeGreaterThan(0);
     }
@@ -143,7 +138,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 
         Wallet? wallet = await response.Content.ReadFromJsonAsync<Wallet>();
         wallet.Should().NotBeNull();
-        wallet!.CryptoSymbol.Value.Should().Be("SOL");
+        wallet.CryptoSymbol.Value.Should().Be("SOL");
         wallet.Balance.Should().Be(0m);
         wallet.Address.Should().NotBeNullOrEmpty();
     }
@@ -176,7 +171,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 
         Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>();
         transaction.Should().NotBeNull();
-        transaction!.Type.Should().Be(TransactionType.Purchase);
+        transaction.Type.Should().Be(TransactionType.Purchase);
         transaction.CryptoSymbol.Value.Should().Be("BTC");
     }
 
@@ -194,7 +189,7 @@ public class ApiIntegrationTests : IClassFixture<MockServerFixture>
 
         Transaction? transaction = await response.Content.ReadFromJsonAsync<Transaction>();
         transaction.Should().NotBeNull();
-        transaction!.Type.Should().Be(TransactionType.Send);
+        transaction.Type.Should().Be(TransactionType.Send);
         transaction.Status.Should().Be(TransactionStatus.Pending);
     }
 }

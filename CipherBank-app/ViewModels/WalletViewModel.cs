@@ -44,10 +44,12 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Gets or sets the user's wallets.</summary>
+    //noinspection PropertyCanBeMadeInitOnly.Global -- ObservableProperty source generation requires set.
     [ObservableProperty]
     public partial ObservableCollection<Wallet> Wallets { get; set; } = [];
 
     /// <summary>Gets or sets the transactions for the selected wallet.</summary>
+    //noinspection PropertyCanBeMadeInitOnly.Global -- ObservableProperty source generation requires set.
     [ObservableProperty]
     public partial ObservableCollection<Transaction> Transactions { get; set; } = [];
 
@@ -56,6 +58,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     public partial Wallet? SelectedWallet { get; set; }
 
     /// <summary>Gets or sets the wallet cards shown in the deck.</summary>
+    //noinspection PropertyCanBeMadeInitOnly.Global -- ObservableProperty source generation requires set.
     [ObservableProperty]
     public partial ObservableCollection<WalletCardItem> WalletCards { get; set; } = [];
 

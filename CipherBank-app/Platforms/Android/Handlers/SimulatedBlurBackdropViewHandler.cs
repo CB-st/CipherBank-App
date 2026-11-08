@@ -9,19 +9,14 @@ using Microsoft.Maui.Handlers;
 namespace CipherBank_app.Handlers;
 
 /// <summary>Renders the non-native glass fallback on Android.</summary>
-public sealed class SimulatedBlurBackdropViewHandler :
-    ViewHandler<BlurBackdropView, global::Android.Views.View>
+public sealed class SimulatedBlurBackdropViewHandler() :
+    ViewHandler<BlurBackdropView, global::Android.Views.View>(Mapper)
 {
     public static readonly IPropertyMapper<BlurBackdropView, SimulatedBlurBackdropViewHandler> Mapper =
         new PropertyMapper<BlurBackdropView, SimulatedBlurBackdropViewHandler>(ViewMapper)
         {
             [nameof(BlurBackdropView.UseDarkMaterial)] = MapMaterial,
         };
-
-    public SimulatedBlurBackdropViewHandler()
-        : base(Mapper)
-    {
-    }
 
     protected override global::Android.Views.View CreatePlatformView() =>
         new(Context);
