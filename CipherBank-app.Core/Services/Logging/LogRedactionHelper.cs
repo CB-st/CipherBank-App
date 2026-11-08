@@ -43,7 +43,9 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        return username.Length <= UsernameMinLengthForPartial ? RedactionMarker : $"{username[0]}{new string('*', username.Length - UsernameMinLengthForPartial)}{username[^1]}";
+        return username.Length <= UsernameMinLengthForPartial
+            ? RedactionMarker
+            : $"{username[0]}{new string('*', username.Length - UsernameMinLengthForPartial)}{username[^1]}";
     }
 
     /// <summary>
@@ -59,7 +61,9 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        return walletId.Length <= WalletIdShortMaxLength ? $"{walletId[..WalletIdShortPrefixLength]}{Ellipsis}" : $"{walletId[..WalletIdPrefixLength]}{Ellipsis}{walletId[^WalletIdSuffixLength..]}";
+        return walletId.Length <= WalletIdShortMaxLength
+            ? $"{walletId[..WalletIdShortPrefixLength]}{Ellipsis}"
+            : $"{walletId[..WalletIdPrefixLength]}{Ellipsis}{walletId[^WalletIdSuffixLength..]}";
     }
 
     /// <summary>
@@ -75,7 +79,9 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        return address.Length <= AddressShortMaxLength ? $"{address[..AddressShortPrefixLength]}{Ellipsis}" : $"{address[..AddressPrefixLength]}{Ellipsis}{address[^AddressSuffixLength..]}";
+        return address.Length <= AddressShortMaxLength
+            ? $"{address[..AddressShortPrefixLength]}{Ellipsis}"
+            : $"{address[..AddressPrefixLength]}{Ellipsis}{address[^AddressSuffixLength..]}";
     }
 
     /// <summary>
@@ -116,7 +122,9 @@ public static class LogRedactionHelper
         string localPart = email[..atIndex];
         string domain = email[atIndex..];
 
-        return localPart.Length <= EmailLocalPrefixLength ? $"{localPart[0]}{RedactionMarker}{domain}" : $"{localPart[..EmailLocalPrefixLength]}{RedactionMarker}{domain}";
+        return localPart.Length <= EmailLocalPrefixLength
+            ? $"{localPart[0]}{RedactionMarker}{domain}"
+            : $"{localPart[..EmailLocalPrefixLength]}{RedactionMarker}{domain}";
     }
 
     /// <summary>
@@ -132,7 +140,9 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        return transactionId.Length <= TransactionIdShortMaxLength ? $"{transactionId[..TransactionIdShortPrefixLength]}{Ellipsis}" : $"{transactionId[..TransactionIdPrefixLength]}{Ellipsis}{transactionId[^TransactionIdSuffixLength..]}";
+        return transactionId.Length <= TransactionIdShortMaxLength
+            ? $"{transactionId[..TransactionIdShortPrefixLength]}{Ellipsis}"
+            : $"{transactionId[..TransactionIdPrefixLength]}{Ellipsis}{transactionId[^TransactionIdSuffixLength..]}";
     }
 
     /// <summary>Redacts sensitive data from a generic string based on its apparent type.</summary>
