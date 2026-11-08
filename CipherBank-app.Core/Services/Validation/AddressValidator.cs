@@ -48,9 +48,9 @@ public static partial class AddressValidator
     /// <param name="address">The address to validate.</param>
     /// <param name="symbol">The normalized asset symbol.</param>
     /// <returns>True if the address format is valid, false otherwise.</returns>
-    public static bool IsValidAddress(string address, AssetSymbol symbol)
+    public static bool IsValidAddress(string address, AssetSymbol? symbol)
     {
-        if (string.IsNullOrWhiteSpace(address))
+        if (string.IsNullOrWhiteSpace(address) || symbol is null)
         {
             return false;
         }
