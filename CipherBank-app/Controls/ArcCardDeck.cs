@@ -135,19 +135,19 @@ public class ArcCardDeck : ContentView
     public double Stride
     {
         get => (double)GetValue(StrideProperty);
-        set => SetValue(StrideProperty, value);
+        init => SetValue(StrideProperty, value);
     }
 
     public double MaxTilt
     {
         get => (double)GetValue(MaxTiltProperty);
-        set => SetValue(MaxTiltProperty, value);
+        init => SetValue(MaxTiltProperty, value);
     }
 
     public double ArcDrop
     {
         get => (double)GetValue(ArcDropProperty);
-        set => SetValue(ArcDropProperty, value);
+        init => SetValue(ArcDropProperty, value);
     }
 
     private int Count => ItemsSource?.Count ?? 0;

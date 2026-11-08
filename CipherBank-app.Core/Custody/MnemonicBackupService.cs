@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 namespace CipherBank_app.Custody;
 
 /// <summary>PBKDF2 and AES-GCM protection for portable mnemonic recovery files.</summary>
-public sealed class MnemonicBackupService : IMnemonicBackupService
+public sealed class MnemonicBackupService(TimeProvider timeProvider) : IMnemonicBackupService
 {
     private const string Format = "cipherbank-recovery-v1";
     private const string InvalidRecoveryFileMessage = "Invalid recovery file.";
@@ -22,16 +22,9 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
     private const int TagSize = 16;
     private const int KeySize = 32;
 
-    private readonly TimeProvider _timeProvider;
-
     public MnemonicBackupService()
         : this(TimeProvider.System)
     {
-    }
-
-    public MnemonicBackupService(TimeProvider timeProvider)
-    {
-        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public Task<byte[]> CreateBackupFileAsync(
@@ -118,12 +111,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
             using AesGcm aes = new AesGcm(key, TagSize);
             aes.Decrypt(nonce, ciphertext, tag, plaintext);
             string mnemonic = Encoding.UTF8.GetString(plaintext);
-            if (!MnemonicHelper.Validate(mnemonic))
-            {
-                throw new CryptographicException("Recovery file does not contain a valid mnemonic.");
-            }
-
-            return MnemonicHelper.Normalize(mnemonic);
+            return !MnemonicHelper.Validate(mnemonic) ? throw new CryptographicException("Recovery file does not contain a valid mnemonic.") : MnemonicHelper.Normalize(mnemonic);
         }
         finally
         {
@@ -223,7 +211,7 @@ public sealed class MnemonicBackupService : IMnemonicBackupService
                 NonceBase64 = Convert.ToBase64String(nonce),
                 TagBase64 = Convert.ToBase64String(tag),
                 CiphertextBase64 = Convert.ToBase64String(ciphertext),
-                CreatedAt = _timeProvider.GetUtcNow(),
+                CreatedAt = timeProvider.GetUtcNow(),
                 Hint = hint,
             };
 

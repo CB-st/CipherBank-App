@@ -13,45 +13,36 @@ namespace CipherBank_app.Services;
 /// Production implementation of ICryptoAPIService using HTTP client.
 /// Retrieves cryptocurrency market data from the CipherBank API.
 /// </summary>
-public sealed partial class CryptoApiService : ICryptoApiService
+public sealed partial class CryptoApiService(ILogger<CryptoApiService> logger, HttpClient http) : ICryptoApiService
 {
     private const string PricesEndpoint = "api/v1/crypto/prices";
     private const string PriceEndpoint = "api/v1/crypto/price";
     private const string HistoryEndpoint = "api/v1/crypto/history";
     private const string SearchEndpoint = "api/v1/crypto/search";
 
-    private readonly ILogger<CryptoApiService> _logger;
-    private readonly HttpClient _http;
-
-    public CryptoApiService(ILogger<CryptoApiService> logger, HttpClient http)
-    {
-        _logger = logger;
-        _http = http;
-    }
-
     public async Task<List<CryptoCurrency>> GetCryptoPricesAsync(CancellationToken cancellationToken)
     {
-        LogFetchingAllPrices(_logger);
+        LogFetchingAllPrices(logger);
 
         try
         {
-            HttpResponseMessage response = await _http.GetAsync(PricesEndpoint, cancellationToken);
+            HttpResponseMessage response = await http.GetAsync(PricesEndpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             List<CryptoCurrency>? cryptos = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>(cancellationToken: cancellationToken);
 
             if (cryptos == null)
             {
-                LogNullResponseForPrices(_logger);
+                LogNullResponseForPrices(logger);
                 return [];
             }
 
-            LogRetrievedPrices(_logger, cryptos.Count);
+            LogRetrievedPrices(logger, cryptos.Count);
             return cryptos;
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingPrices(_logger, ex, ex.StatusCode);
+            LogHttpErrorFetchingPrices(logger, ex, ex.StatusCode);
             throw new InvalidOperationException("Failed to retrieve cryptocurrency prices from server", ex);
         }
     }
@@ -60,33 +51,33 @@ public sealed partial class CryptoApiService : ICryptoApiService
     {
         ArgumentNullException.ThrowIfNull(symbol);
 
-        LogFetchingPriceForSymbol(_logger, symbol.Value);
+        LogFetchingPriceForSymbol(logger, symbol.Value);
 
         try
         {
             var endpoint = $"{PriceEndpoint}/{Uri.EscapeDataString(symbol.Value)}";
-            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             CryptoCurrency? crypto = await response.Content.ReadFromJsonAsync<CryptoCurrency>(cancellationToken: cancellationToken);
 
             if (crypto == null)
             {
-                LogNullResponseForSymbol(_logger, symbol.Value);
+                LogNullResponseForSymbol(logger, symbol.Value);
                 throw new KeyNotFoundException($"Cryptocurrency '{symbol}' not found");
             }
 
-            LogRetrievedPriceForSymbol(_logger, symbol.Value, crypto.CurrentPrice);
+            LogRetrievedPriceForSymbol(logger, symbol.Value, crypto.CurrentPrice);
             return crypto;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogSymbolNotFound(_logger, symbol.Value);
+            LogSymbolNotFound(logger, symbol.Value);
             throw new KeyNotFoundException($"Cryptocurrency '{symbol}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingSymbolPrice(_logger, ex, symbol.Value, ex.StatusCode);
+            LogHttpErrorFetchingSymbolPrice(logger, ex, symbol.Value, ex.StatusCode);
             throw new InvalidOperationException($"Failed to retrieve price for {symbol} from server", ex);
         }
     }
@@ -96,33 +87,33 @@ public sealed partial class CryptoApiService : ICryptoApiService
         ArgumentNullException.ThrowIfNull(symbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(period);
 
-        LogFetchingHistory(_logger, symbol.Value, period);
+        LogFetchingHistory(logger, symbol.Value, period);
 
         try
         {
             var endpoint = $"{HistoryEndpoint}/{Uri.EscapeDataString(symbol.Value)}?period={Uri.EscapeDataString(period)}";
-            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             PriceHistory? history = await response.Content.ReadFromJsonAsync<PriceHistory>(cancellationToken: cancellationToken);
 
             if (history == null)
             {
-                LogNullResponseForHistory(_logger, symbol.Value);
+                LogNullResponseForHistory(logger, symbol.Value);
                 throw new KeyNotFoundException($"Price history for '{symbol}' not found");
             }
 
-            LogRetrievedHistory(_logger, history.PricePoints.Count, symbol.Value, period);
+            LogRetrievedHistory(logger, history.PricePoints.Count, symbol.Value, period);
             return history;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogHistoryNotFound(_logger, symbol.Value);
+            LogHistoryNotFound(logger, symbol.Value);
             throw new KeyNotFoundException($"Price history for '{symbol}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingHistory(_logger, ex, symbol.Value, ex.StatusCode);
+            LogHttpErrorFetchingHistory(logger, ex, symbol.Value, ex.StatusCode);
             throw new InvalidOperationException($"Failed to retrieve price history for {symbol} from server", ex);
         }
     }
@@ -131,28 +122,28 @@ public sealed partial class CryptoApiService : ICryptoApiService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
 
-        LogSearchingCrypto(_logger, query);
+        LogSearchingCrypto(logger, query);
 
         try
         {
             var endpoint = $"{SearchEndpoint}?q={Uri.EscapeDataString(query)}";
-            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
+            HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             List<CryptoCurrency>? results = await response.Content.ReadFromJsonAsync<List<CryptoCurrency>>(cancellationToken: cancellationToken);
 
             if (results == null)
             {
-                LogNullResponseForSearch(_logger, query);
+                LogNullResponseForSearch(logger, query);
                 return [];
             }
 
-            LogSearchResults(_logger, query, results.Count);
+            LogSearchResults(logger, query, results.Count);
             return results;
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorSearching(_logger, ex, query, ex.StatusCode);
+            LogHttpErrorSearching(logger, ex, query, ex.StatusCode);
             throw new InvalidOperationException("Failed to search cryptocurrencies from server", ex);
         }
     }

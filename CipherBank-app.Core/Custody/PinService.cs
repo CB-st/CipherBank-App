@@ -8,7 +8,7 @@ using System.Text;
 namespace CipherBank_app.Custody;
 
 /// <inheritdoc />
-public sealed class PinService : IPinService
+public sealed class PinService(ISecureStore store, TimeProvider timeProvider) : IPinService
 {
     private const string HashKey = "cb_pin_hash";
     private const string SaltKey = "cb_pin_salt";
@@ -20,19 +20,11 @@ public sealed class PinService : IPinService
     private const int MinimumPinLength = 6;
     private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(5);
 
-    private readonly ISecureStore _store;
-    private readonly TimeProvider _timeProvider;
     private DateTimeOffset? _lockUntilUtc;
 
     public PinService(ISecureStore store)
         : this(store, TimeProvider.System)
     {
-    }
-
-    public PinService(ISecureStore store, TimeProvider timeProvider)
-    {
-        _store = store;
-        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public int FailedAttempts { get; private set; }
@@ -44,8 +36,8 @@ public sealed class PinService : IPinService
         get
         {
             // populated async via RefreshAsync — sync helpers use cached fields
-            return _lockUntilUtc is DateTimeOffset until && until > _timeProvider.GetUtcNow()
-                ? until - _timeProvider.GetUtcNow()
+            return _lockUntilUtc is { } until && until > timeProvider.GetUtcNow()
+                ? until - timeProvider.GetUtcNow()
                 : null;
         }
     }
@@ -66,7 +58,7 @@ public sealed class PinService : IPinService
     public async Task<bool> HasPinAsync()
     {
         await RecoverInterruptedPinWriteAsync().ConfigureAwait(false);
-        return !string.IsNullOrEmpty(await _store.GetAsync(HashKey).ConfigureAwait(false));
+        return !string.IsNullOrEmpty(await store.GetAsync(HashKey).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -95,8 +87,8 @@ public sealed class PinService : IPinService
 
         await RecoverInterruptedPinWriteAsync().ConfigureAwait(false);
 
-        string? saltB64 = await _store.GetAsync(SaltKey).ConfigureAwait(false);
-        string? hash = await _store.GetAsync(HashKey).ConfigureAwait(false);
+        string? saltB64 = await store.GetAsync(SaltKey).ConfigureAwait(false);
+        string? hash = await store.GetAsync(HashKey).ConfigureAwait(false);
         if (string.IsNullOrEmpty(saltB64) || string.IsNullOrEmpty(hash))
         {
             return false;
@@ -109,19 +101,21 @@ public sealed class PinService : IPinService
                 Encoding.UTF8.GetBytes(hash)))
         {
             FailedAttempts = 0;
-            await _store.SetAsync(FailKey, "0").ConfigureAwait(false);
-            await _store.RemoveAsync(LockKey).ConfigureAwait(false);
+            await store.SetAsync(FailKey, "0").ConfigureAwait(false);
+            await store.RemoveAsync(LockKey).ConfigureAwait(false);
             _lockUntilUtc = null;
             return true;
         }
 
         FailedAttempts++;
-        await _store.SetAsync(FailKey, FailedAttempts.ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
-        if (FailedAttempts >= MaxFails)
+        await store.SetAsync(FailKey, FailedAttempts.ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
+        if (FailedAttempts < MaxFails)
         {
-            _lockUntilUtc = _timeProvider.GetUtcNow().Add(LockoutDuration);
-            await _store.SetAsync(LockKey, _lockUntilUtc.Value.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
+            return false;
         }
+
+        _lockUntilUtc = timeProvider.GetUtcNow().Add(LockoutDuration);
+        await store.SetAsync(LockKey, _lockUntilUtc.Value.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
 
         return false;
     }
@@ -146,15 +140,15 @@ public sealed class PinService : IPinService
         string saltB64 = Convert.ToBase64String(salt);
 
         // Stage the full pair first so a torn promote can still recover a matching salt+hash.
-        await _store.SetAsync(StagingSaltKey, saltB64).ConfigureAwait(false);
-        await _store.SetAsync(StagingHashKey, hash).ConfigureAwait(false);
-        await _store.SetAsync(SaltKey, saltB64).ConfigureAwait(false);
-        await _store.SetAsync(HashKey, hash).ConfigureAwait(false);
-        await _store.RemoveAsync(StagingSaltKey).ConfigureAwait(false);
-        await _store.RemoveAsync(StagingHashKey).ConfigureAwait(false);
+        await store.SetAsync(StagingSaltKey, saltB64).ConfigureAwait(false);
+        await store.SetAsync(StagingHashKey, hash).ConfigureAwait(false);
+        await store.SetAsync(SaltKey, saltB64).ConfigureAwait(false);
+        await store.SetAsync(HashKey, hash).ConfigureAwait(false);
+        await store.RemoveAsync(StagingSaltKey).ConfigureAwait(false);
+        await store.RemoveAsync(StagingHashKey).ConfigureAwait(false);
 
-        await _store.SetAsync(FailKey, "0").ConfigureAwait(false);
-        await _store.RemoveAsync(LockKey).ConfigureAwait(false);
+        await store.SetAsync(FailKey, "0").ConfigureAwait(false);
+        await store.RemoveAsync(LockKey).ConfigureAwait(false);
         FailedAttempts = 0;
         _lockUntilUtc = null;
     }
@@ -165,43 +159,43 @@ public sealed class PinService : IPinService
     /// </summary>
     private async Task RecoverInterruptedPinWriteAsync()
     {
-        string? stagedSalt = await _store.GetAsync(StagingSaltKey).ConfigureAwait(false);
-        string? stagedHash = await _store.GetAsync(StagingHashKey).ConfigureAwait(false);
+        string? stagedSalt = await store.GetAsync(StagingSaltKey).ConfigureAwait(false);
+        string? stagedHash = await store.GetAsync(StagingHashKey).ConfigureAwait(false);
         if (string.IsNullOrEmpty(stagedSalt) || string.IsNullOrEmpty(stagedHash))
         {
             if (!string.IsNullOrEmpty(stagedSalt))
             {
-                await _store.RemoveAsync(StagingSaltKey).ConfigureAwait(false);
+                await store.RemoveAsync(StagingSaltKey).ConfigureAwait(false);
             }
 
             if (!string.IsNullOrEmpty(stagedHash))
             {
-                await _store.RemoveAsync(StagingHashKey).ConfigureAwait(false);
+                await store.RemoveAsync(StagingHashKey).ConfigureAwait(false);
             }
 
             return;
         }
 
-        await _store.SetAsync(SaltKey, stagedSalt).ConfigureAwait(false);
-        await _store.SetAsync(HashKey, stagedHash).ConfigureAwait(false);
-        await _store.RemoveAsync(StagingSaltKey).ConfigureAwait(false);
-        await _store.RemoveAsync(StagingHashKey).ConfigureAwait(false);
+        await store.SetAsync(SaltKey, stagedSalt).ConfigureAwait(false);
+        await store.SetAsync(HashKey, stagedHash).ConfigureAwait(false);
+        await store.RemoveAsync(StagingSaltKey).ConfigureAwait(false);
+        await store.RemoveAsync(StagingHashKey).ConfigureAwait(false);
     }
 
     private async Task RefreshLockAsync()
     {
-        string? fails = await _store.GetAsync(FailKey).ConfigureAwait(false);
+        string? fails = await store.GetAsync(FailKey).ConfigureAwait(false);
         FailedAttempts = int.TryParse(fails, out int f) ? f : 0;
-        string? lockMs = await _store.GetAsync(LockKey).ConfigureAwait(false);
+        string? lockMs = await store.GetAsync(LockKey).ConfigureAwait(false);
         if (long.TryParse(lockMs, out long ms))
         {
             _lockUntilUtc = DateTimeOffset.FromUnixTimeMilliseconds(ms);
-            if (_lockUntilUtc <= _timeProvider.GetUtcNow())
+            if (_lockUntilUtc <= timeProvider.GetUtcNow())
             {
                 _lockUntilUtc = null;
                 FailedAttempts = 0;
-                await _store.RemoveAsync(LockKey).ConfigureAwait(false);
-                await _store.SetAsync(FailKey, "0").ConfigureAwait(false);
+                await store.RemoveAsync(LockKey).ConfigureAwait(false);
+                await store.SetAsync(FailKey, "0").ConfigureAwait(false);
             }
         }
     }

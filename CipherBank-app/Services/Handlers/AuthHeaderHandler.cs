@@ -12,16 +12,10 @@ namespace CipherBank_app.Services.Handlers;
 /// HTTP message handler that automatically injects Bearer token authentication headers.
 /// Retrieves the current auth token from IAuthService and adds it to outgoing requests.
 /// </summary>
-public sealed partial class AuthHeaderHandler : DelegatingHandler
+public sealed partial class AuthHeaderHandler(IServiceProvider serviceProvider) : DelegatingHandler
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<AuthHeaderHandler>? _logger;
-
-    public AuthHeaderHandler(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _logger = serviceProvider.GetService<ILogger<AuthHeaderHandler>>();
-    }
+    private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    private readonly ILogger<AuthHeaderHandler>? _logger = serviceProvider.GetService<ILogger<AuthHeaderHandler>>();
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {

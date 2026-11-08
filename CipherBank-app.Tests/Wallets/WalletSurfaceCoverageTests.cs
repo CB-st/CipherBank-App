@@ -68,7 +68,7 @@ public sealed class WalletSurfaceCoverageTests
 
         DerivedAddress? viaDispatch = AddressDerive.Derive("BTC", KnownMnemonic, 0);
         viaDispatch.Should().NotBeNull();
-        viaDispatch!.Address.Should().StartWith("bc1");
+        viaDispatch.Address.Should().StartWith("bc1");
 
         DerivedAddress ltc = AddressDerive.DeriveRequired(AssetSymbol.Ltc, KnownMnemonic, 0);
         ltc.Address.Should().NotBeNullOrWhiteSpace();

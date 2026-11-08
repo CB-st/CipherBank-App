@@ -90,7 +90,7 @@ public class CryptoBoxTests
         byte? saltPrefix)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(options.SaltSizeBytes);
-        if (saltPrefix is byte prefix)
+        if (saltPrefix is { } prefix)
         {
             salt[0] = prefix;
         }

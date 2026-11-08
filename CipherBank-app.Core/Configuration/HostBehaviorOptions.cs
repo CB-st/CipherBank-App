@@ -10,15 +10,15 @@ public sealed class HostBehaviorOptions
     private static readonly HashSet<string> ValidLogLevels =
         ["Verbose", "Debug", "Information", "Warning", "Error", "Fatal"];
 
-    public bool UseMockServices { get; set; }
+    public bool UseMockServices { get; init; }
 
-    public bool IncludeDiagnosticHeaders { get; set; }
+    public bool IncludeDiagnosticHeaders { get; init; }
 
-    public bool ShowDevelopmentIndicators { get; set; }
+    public bool ShowDevelopmentIndicators { get; init; }
 
-    public string MinimumLogLevel { get; set; } = "Information";
+    public string MinimumLogLevel { get; init; } = "Information";
 
-    public bool EnableFileLogging { get; set; } = true;
+    public bool EnableFileLogging { get; init; } = true;
 
     public bool IsValid() => ValidLogLevels.Contains(MinimumLogLevel);
 }

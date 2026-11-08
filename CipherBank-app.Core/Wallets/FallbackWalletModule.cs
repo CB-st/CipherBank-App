@@ -30,7 +30,7 @@ public sealed class FallbackWalletModule : IWalletModule
     public bool UsesServerWallets => false;
 
     /// <inheritdoc />
-    public string? Notes => "No dedicated module — watch address only";
+    public string Notes => "No dedicated module — watch address only";
 
     /// <inheritdoc />
     public bool IsValidAddress(string address) => address.Length >= GenericAddressMinLength;

@@ -9,15 +9,8 @@ using Microsoft.EntityFrameworkCore;
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
-public sealed class MarketRepository : IMarketRepository
+public sealed class MarketRepository(IDbContextFactory<CipherBankDbContext> contexts) : IMarketRepository
 {
-    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
-
-    public MarketRepository(IDbContextFactory<CipherBankDbContext> contexts)
-    {
-        _contexts = contexts;
-    }
-
     /// <inheritdoc />
     public Task UpsertOhlcAsync(
         AssetSymbol symbol,
@@ -58,7 +51,7 @@ public sealed class MarketRepository : IMarketRepository
             .GroupBy(point => point.Timestamp.ToUnixTimeMilliseconds())
             .ToDictionary(group => group.Key, group => group.Last());
 
-        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             long[] timestamps = latestByTimestamp.Keys.ToArray();
@@ -101,7 +94,7 @@ public sealed class MarketRepository : IMarketRepository
         long? fromT,
         CancellationToken ct)
     {
-        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             IQueryable<OhlcPointEntity> query = context.OhlcPoints

@@ -15,29 +15,16 @@ namespace CipherBank_app.ViewModels;
 /// <summary>
 /// ViewModel for the Dashboard page displaying cryptocurrency prices and market data.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject, IDisposable
+public partial class DashboardViewModel(
+    ILogger<DashboardViewModel> logger,
+    ICryptoApiService cryptoService,
+    IErrorHandler errorHandler,
+    INavigationService navigation,
+    IDialogService dialog)
+    : ObservableObject, IDisposable
 {
-    private readonly ILogger<DashboardViewModel> _logger;
-    private readonly ICryptoApiService _cryptoService;
-    private readonly IErrorHandler _errorHandler;
-    private readonly INavigationService _navigation;
-    private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
     private bool _disposed;
-
-    public DashboardViewModel(
-        ILogger<DashboardViewModel> logger,
-        ICryptoApiService cryptoService,
-        IErrorHandler errorHandler,
-        INavigationService navigation,
-        IDialogService dialog)
-    {
-        _logger = logger;
-        _cryptoService = cryptoService;
-        _errorHandler = errorHandler;
-        _navigation = navigation;
-        _dialog = dialog;
-    }
 
     /// <summary>Gets or sets the cryptocurrencies shown on the dashboard.</summary>
     [ObservableProperty]
@@ -69,7 +56,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     public void OnDisappearing()
     {
         _cts?.Cancel();
-        LogDashboardDisappearing(_logger);
+        LogDashboardDisappearing(logger);
     }
 
     /// <inheritdoc/>
@@ -116,17 +103,17 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         {
             if (isRefresh)
             {
-                LogRefreshingPrices(_logger);
+                LogRefreshingPrices(logger);
             }
             else
             {
-                LogLoadingPrices(_logger);
+                LogLoadingPrices(logger);
             }
 
-            var success = await _errorHandler.HandleApiErrorsAsync(
+            var success = await errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    List<CryptoCurrency> cryptos = await _cryptoService.GetCryptoPricesAsync(_cts.Token);
+                    List<CryptoCurrency> cryptos = await cryptoService.GetCryptoPricesAsync(_cts.Token);
                     Cryptocurrencies.Clear();
                     foreach (CryptoCurrency crypto in cryptos)
                     {
@@ -135,11 +122,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
                     if (isRefresh)
                     {
-                        LogRefreshedCount(_logger, cryptos.Count);
+                        LogRefreshedCount(logger, cryptos.Count);
                     }
                     else
                     {
-                        LogLoadedCount(_logger, cryptos.Count);
+                        LogLoadedCount(logger, cryptos.Count);
                     }
                 },
                 msg => ErrorMessage = msg,
@@ -151,18 +138,18 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 {
                     if (isRefresh)
                     {
-                        LogRefreshCancelled(_logger);
+                        LogRefreshCancelled(logger);
                     }
                     else
                     {
-                        LogLoadPricesCancelled(_logger);
+                        LogLoadPricesCancelled(logger);
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            LogErrorLoadingPrices(_logger, ex);
+            LogErrorLoadingPrices(logger, ex);
             ErrorMessage = isRefresh ? "Failed to refresh. Pull down to try again." : "Failed to load prices. Please try again.";
         }
         finally
@@ -186,12 +173,12 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         if (SelectedCrypto == null)
         {
-            LogNoCryptoSelected(_logger);
+            LogNoCryptoSelected(logger);
             return;
         }
 
-        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol.Value);
-        await _navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
+        LogNavigatingToPurchase(logger, SelectedCrypto.Symbol.Value);
+        await navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
     }
 
     /// <summary>
@@ -200,8 +187,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task NavigateToWalletsAsync()
     {
-        LogNavigatingToWallets(_logger);
-        await _navigation.GoToAsync(Routes.Wallet);
+        LogNavigatingToWallets(logger);
+        await navigation.GoToAsync(Routes.Wallet);
     }
 
     /// <summary>
@@ -210,12 +197,12 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ViewCryptoDetailsAsync(CryptoCurrency crypto)
     {
-        LogViewingDetails(_logger, crypto.Symbol.Value);
+        LogViewingDetails(logger, crypto.Symbol.Value);
         SelectedCrypto = crypto;
 
         // Could navigate to a details page here
         var detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
-        await _dialog.ShowAlertAsync(
+        await dialog.ShowAlertAsync(
             crypto.Name,
             detailMessage);
     }

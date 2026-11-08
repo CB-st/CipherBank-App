@@ -23,14 +23,15 @@ public sealed class BitcoinWalletModule : AddressDerive, IWalletModule
     public bool UsesServerWallets => false;
 
     /// <inheritdoc />
-    public string? Notes => "BIP84 native segwit from on-device BIP39";
+    public string Notes => "BIP84 native segwit from on-device BIP39";
 
     /// <inheritdoc />
     public bool IsValidAddress(string address)
     {
         try
         {
-            return BitcoinAddress.Create(address, Network.Main) is not null;
+            BitcoinAddress.Create(address, Network.Main);
+            return true;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
         {

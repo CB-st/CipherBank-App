@@ -47,11 +47,11 @@ public class StepUpAuthTests
 
     private sealed class FakeChallenges : IStepUpChallenges
     {
-        public bool BiometricsPreferred { get; set; }
+        public bool BiometricsPreferred { get; init; }
 
-        public bool BioSucceed { get; set; }
+        public bool BioSucceed { get; init; }
 
-        public string? PinPromptResult { get; set; }
+        public string? PinPromptResult { get; init; }
 
         public Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct)
             => Task.FromResult(BioSucceed);

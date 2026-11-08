@@ -12,7 +12,7 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Page object for the Wallet page.
 /// Provides methods to interact with wallet and transaction functionality.
 /// </summary>
-public class WalletPage : BasePage
+public class WalletPage(AppiumDriver driver) : BasePage(driver)
 {
     // Element locators
     private static readonly By _walletBalanceLabel = By.Id("WalletBalanceLabel");
@@ -28,11 +28,6 @@ public class WalletPage : BasePage
     private static readonly By _sendAmountField = By.Id("SendAmountEntry");
     private static readonly By _confirmSendButton = By.Id("ConfirmSendButton");
     private static readonly By _cancelSendButton = By.Id("CancelSendButton");
-
-    public WalletPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Gets the wallet balance.

@@ -11,7 +11,7 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Page object for the Dashboard page.
 /// Provides methods to interact with the main dashboard and navigate to other pages.
 /// </summary>
-public class DashboardPage : BasePage
+public class DashboardPage(AppiumDriver driver) : BasePage(driver)
 {
     // Element locators
     private static readonly By _welcomeLabel = By.Id("WelcomeLabel");
@@ -22,11 +22,6 @@ public class DashboardPage : BasePage
     private static readonly By _logoutButton = By.Id("LogoutButton");
     private static readonly By _refreshButton = By.Id("RefreshButton");
     private static readonly By _transactionsList = By.Id("RecentTransactionsList");
-
-    public DashboardPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Gets the welcome message text.

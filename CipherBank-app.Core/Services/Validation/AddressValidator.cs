@@ -50,7 +50,7 @@ public static partial class AddressValidator
     /// <returns>True if the address format is valid, false otherwise.</returns>
     public static bool IsValidAddress(string address, AssetSymbol symbol)
     {
-        if (string.IsNullOrWhiteSpace(address) || symbol is null)
+        if (string.IsNullOrWhiteSpace(address))
         {
             return false;
         }
@@ -138,7 +138,7 @@ public static partial class AddressValidator
             return false;
         }
 
-        if (address.Length < SolanaMinLength || address.Length > SolanaMaxLength)
+        if (address.Length is < SolanaMinLength or > SolanaMaxLength)
         {
             return false;
         }

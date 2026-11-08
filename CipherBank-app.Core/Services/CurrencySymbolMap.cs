@@ -43,12 +43,7 @@ public static class CurrencySymbolMap
     public static string ToApiCurrency(AssetSymbol appSymbol)
     {
         ArgumentNullException.ThrowIfNull(appSymbol);
-        if (AppToApi.TryGetValue(appSymbol, out AssetSymbol? api))
-        {
-            return api.Value;
-        }
-
-        throw new ArgumentException($"Unsupported currency symbol '{appSymbol.Value}'.", nameof(appSymbol));
+        return AppToApi.TryGetValue(appSymbol, out AssetSymbol? api) ? api.Value : throw new ArgumentException($"Unsupported currency symbol '{appSymbol.Value}'.", nameof(appSymbol));
     }
 
     /// <summary>

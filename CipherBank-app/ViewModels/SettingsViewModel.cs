@@ -474,14 +474,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            if (disposing)
-            {
-                _cts?.Dispose();
-            }
-
-            _disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            _cts?.Dispose();
+        }
+
+        _disposed = true;
     }
 }
