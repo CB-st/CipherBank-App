@@ -84,7 +84,7 @@ public class MacCatalystCertificatePinningHandler : NSUrlSessionHandler
             SecPolicy policy = SecPolicy.CreateSslPolicy(true, hostname);
             trust.SetPolicy(policy);
 
-            if (!trust.Evaluate(out NSError? error))
+            if (!trust.Evaluate(out Foundation.NSError? error))
             {
                 Serilog.Log.Debug($"[Certificate Validation] Failed for {hostname}: {error?.LocalizedDescription}");
                 return false;
