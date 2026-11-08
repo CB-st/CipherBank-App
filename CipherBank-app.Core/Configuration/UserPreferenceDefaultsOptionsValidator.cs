@@ -10,5 +10,8 @@ namespace CipherBank_app.Configuration;
 internal sealed class UserPreferenceDefaultsOptionsValidator : IValidateOptions<UserPreferenceDefaultsOptions>
 {
     /// <inheritdoc />
-    public ValidateOptionsResult Validate(string? name, UserPreferenceDefaultsOptions options) => options.IsValid() ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(OptionsValidationMessages.UserPreferenceDefaultsInvalid);
+    public ValidateOptionsResult Validate(string? name, UserPreferenceDefaultsOptions options) =>
+        options.IsValid()
+            ? ValidateOptionsResult.Success
+            : ValidateOptionsResult.Fail(OptionsValidationMessages.UserPreferenceDefaultsInvalid);
 }

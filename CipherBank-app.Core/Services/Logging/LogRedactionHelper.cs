@@ -152,6 +152,8 @@ public static class LogRedactionHelper
             return "[empty]";
         }
 
-        return value.Length <= showChars * BothEndsMultiplier ? RedactionMarker : $"{value[..showChars]}{Ellipsis}{value[^showChars..]}";
+        return value.Length <= showChars * BothEndsMultiplier
+            ? RedactionMarker
+            : $"{value[..showChars]}{Ellipsis}{value[^showChars..]}";
     }
 }
