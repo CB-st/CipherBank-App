@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.Services.Validation;
 using FluentAssertions;
 using Xunit;
@@ -230,6 +231,19 @@ public class AddressValidatorTests
     {
         // Act
         bool result = AddressValidator.IsValidAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", null!);
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValidAddress_NullNormalizedSymbol_ReturnsFalse()
+    {
+        // Arrange
+        AssetSymbol? symbol = null;
+
+        // Act
+        bool result = AddressValidator.IsValidAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", symbol);
 
         // Assert
         result.Should().BeFalse();
