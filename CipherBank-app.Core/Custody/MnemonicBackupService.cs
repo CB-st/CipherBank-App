@@ -108,7 +108,7 @@ public sealed class MnemonicBackupService(TimeProvider timeProvider) : IMnemonic
 
         try
         {
-            using AesGcm aes = new AesGcm(key, TagSize);
+            using AesGcm aes = new(key, TagSize);
             aes.Decrypt(nonce, ciphertext, tag, plaintext);
             string mnemonic = Encoding.UTF8.GetString(plaintext);
             return !MnemonicHelper.Validate(mnemonic) ? throw new CryptographicException("Recovery file does not contain a valid mnemonic.") : MnemonicHelper.Normalize(mnemonic);
@@ -199,10 +199,10 @@ public sealed class MnemonicBackupService(TimeProvider timeProvider) : IMnemonic
 
         try
         {
-            using AesGcm aes = new AesGcm(key, TagSize);
+            using AesGcm aes = new(key, TagSize);
             aes.Encrypt(nonce, plaintext, ciphertext, tag);
 
-            BackupDocument document = new BackupDocument
+            BackupDocument document = new()
             {
                 DocumentFormat = Format,
                 KeyDerivation = Kdf,

@@ -32,18 +32,12 @@ public class WalletPage(AppiumDriver driver) : BasePage(driver)
     /// <summary>
     /// Gets the wallet balance.
     /// </summary>
-    public string GetBalance()
-    {
-        return GetElementText(_walletBalanceLabel);
-    }
+    public string GetBalance() => GetElementText(_walletBalanceLabel);
 
     /// <summary>
     /// Gets the wallet address.
     /// </summary>
-    public string GetWalletAddress()
-    {
-        return GetElementText(_walletAddressLabel);
-    }
+    public string GetWalletAddress() => GetElementText(_walletAddressLabel);
 
     /// <summary>
     /// Copies the wallet address to clipboard.
@@ -123,10 +117,7 @@ public class WalletPage(AppiumDriver driver) : BasePage(driver)
     /// <summary>
     /// Checks if transaction history is displayed.
     /// </summary>
-    public bool HasTransactionHistory()
-    {
-        return IsElementDisplayed(_transactionHistoryList);
-    }
+    public bool HasTransactionHistory() => IsElementDisplayed(_transactionHistoryList);
 
     /// <summary>
     /// Goes back to the dashboard.
@@ -137,8 +128,5 @@ public class WalletPage(AppiumDriver driver) : BasePage(driver)
         return new DashboardPage(Driver);
     }
 
-    public override void WaitForPageLoad()
-    {
-        WaitForElement(_walletBalanceLabel);
-    }
+    public override void WaitForPageLoad() => WaitForElement(_walletBalanceLabel);
 }

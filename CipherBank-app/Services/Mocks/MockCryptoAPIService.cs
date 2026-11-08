@@ -46,7 +46,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         await SimulateNetworkDelayAsync(cancellationToken);
 
         // Add slight price variations to simulate real-time data
-        var cryptos = _mockCryptos.Select(c => AddPriceVariation(c)).ToList();
+        List<CryptoCurrency> cryptos = [.. _mockCryptos.Select(AddPriceVariation)];
 
         LogReturnedPrices(_logger, cryptos.Count);
         return cryptos;
@@ -86,7 +86,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         (List<PricePoint>? points, DateTimeOffset startDate) = GeneratePriceHistory(crypto.CurrentPrice, period);
         DateTimeOffset endDate = DateTimeOffset.UtcNow;
 
-        var history = new PriceHistory(symbol, points, startDate, endDate);
+        PriceHistory history = new(symbol, points, startDate, endDate);
 
         LogGeneratedPriceHistory(_logger, points.Count, symbol.Value, period);
         return history;
@@ -99,11 +99,10 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         LogSearchingCrypto(_logger, query);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        var results = _mockCryptos
+        List<CryptoCurrency> results = [.. _mockCryptos
             .Where(c => c.Symbol.Value.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                        c.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .Select(AddPriceVariation)
-            .ToList();
+            .Select(AddPriceVariation)];
 
         LogSearchResults(_logger, query, results.Count);
         return results;
@@ -112,10 +111,10 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
     private static CryptoCurrency AddPriceVariation(CryptoCurrency crypto)
     {
         // Add up to +/- 0.5% price variation to simulate real-time updates
-        var variation = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 0.01) - 0.005);
-        var newPrice = crypto.CurrentPrice * (1 + variation);
-        var newChange = crypto.PriceChange24H + (crypto.CurrentPrice * variation);
-        var newPercent = crypto.PercentChange24H + (variation * 100);
+        decimal variation = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 0.01) - 0.005);
+        decimal newPrice = crypto.CurrentPrice * (1 + variation);
+        decimal newChange = crypto.PriceChange24H + (crypto.CurrentPrice * variation);
+        decimal newPercent = crypto.PercentChange24H + (variation * 100);
 
         return crypto with
         {
@@ -128,7 +127,7 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
     private static (List<PricePoint> Points, DateTimeOffset StartDate) GeneratePriceHistory(decimal basePrice, string period)
     {
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        var points = new List<PricePoint>();
+        List<PricePoint> points = new();
 
         (int intervalMinutes, int totalPoints) = period.ToLowerInvariant() switch
         {
@@ -141,18 +140,18 @@ public sealed partial class MockCryptoApiService : ICryptoApiService
         };
 
         DateTimeOffset startDate = now.AddMinutes(-intervalMinutes * totalPoints);
-        var currentPrice = basePrice * 0.95m; // Start 5% lower
+        decimal currentPrice = basePrice * 0.95m; // Start 5% lower
 
         for (int i = 0; i < totalPoints; i++)
         {
             DateTimeOffset timestamp = startDate.AddMinutes(intervalMinutes * i);
-            var variation = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 0.02) - 0.01); // +/- 1%
+            decimal variation = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 0.02) - 0.01); // +/- 1%
             currentPrice *= 1 + variation;
 
             // Trend slightly upward to end near base price
             currentPrice += (basePrice - currentPrice) * 0.01m;
 
-            var volume = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 1000000) + 500000);
+            decimal volume = (decimal)((RandomNumberGenerator.GetInt32(0, 10000) / 10000.0 * 1000000) + 500000);
 
             points.Add(new PricePoint(
                 timestamp,

@@ -14,7 +14,7 @@ namespace CipherBank_app.Services;
 public sealed partial class RateLimiter : IDisposable
 {
     private const int DefaultMaxRequests = 60;
-    private static readonly TimeSpan DefaultWindowDuration = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan _defaultWindowDuration = TimeSpan.FromMinutes(1);
 
     private readonly ILogger<RateLimiter>? _logger;
     private readonly TimeProvider _timeProvider;
@@ -37,7 +37,7 @@ public sealed partial class RateLimiter : IDisposable
     }
 
     public RateLimiter(ILogger<RateLimiter>? logger, TimeProvider timeProvider)
-        : this(logger, timeProvider, DefaultMaxRequests, DefaultWindowDuration)
+        : this(logger, timeProvider, DefaultMaxRequests, _defaultWindowDuration)
     {
     }
 
@@ -153,10 +153,7 @@ public sealed partial class RateLimiter : IDisposable
     }
 
     /// <inheritdoc/>
-    public void Dispose()
-    {
-        _lock.Dispose();
-    }
+    public void Dispose() => _lock.Dispose();
 
     [LoggerMessage(Level = LogLevel.Information, Message = "RateLimiter initialized: {MaxRequests} requests per {WindowDuration}")]
     private static partial void LogRateLimiterInitialized(ILogger logger, int maxRequests, TimeSpan windowDuration);

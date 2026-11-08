@@ -28,7 +28,7 @@ public sealed partial class TransactionService(ILogger<TransactionService> logge
 
         try
         {
-            var endpoint = $"{TransactionsEndpoint}?walletId={Uri.EscapeDataString(walletId)}";
+            string endpoint = $"{TransactionsEndpoint}?walletId={Uri.EscapeDataString(walletId)}";
             HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -67,7 +67,7 @@ public sealed partial class TransactionService(ILogger<TransactionService> logge
 
         try
         {
-            var request = new PurchaseRequest(symbol.Value, amount);
+            PurchaseRequest request = new(symbol.Value, amount);
             HttpResponseMessage response = await http.PostAsJsonAsync(PurchaseEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -120,7 +120,7 @@ public sealed partial class TransactionService(ILogger<TransactionService> logge
 
         try
         {
-            var request = new SendRequest(fromWalletId, toAddress, amount);
+            SendRequest request = new(fromWalletId, toAddress, amount);
             HttpResponseMessage response = await http.PostAsJsonAsync(SendEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -166,7 +166,7 @@ public sealed partial class TransactionService(ILogger<TransactionService> logge
 
         try
         {
-            var endpoint = $"{TransactionsEndpoint}/{Uri.EscapeDataString(transactionId)}/status";
+            string endpoint = $"{TransactionsEndpoint}/{Uri.EscapeDataString(transactionId)}/status";
             HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 

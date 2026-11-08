@@ -14,7 +14,7 @@ public class WalletTests
     public void HasBalance_WhenPositiveBalance_ReturnsTrue()
     {
         // Arrange
-        Wallet wallet = new Wallet(
+        Wallet wallet = new(
             "wallet123",
             "BTC",
             "Bitcoin",
@@ -30,7 +30,7 @@ public class WalletTests
     public void HasBalance_WhenZeroBalance_ReturnsFalse()
     {
         // Arrange
-        Wallet wallet = new Wallet(
+        Wallet wallet = new(
             "wallet123",
             "BTC",
             "Bitcoin",
@@ -46,7 +46,7 @@ public class WalletTests
     public void FormattedBalance_ReturnsCorrectFormat()
     {
         // Arrange
-        Wallet wallet = new Wallet(
+        Wallet wallet = new(
             "wallet123",
             "BTC",
             "Bitcoin",
@@ -65,7 +65,7 @@ public class WalletTests
     public void FormattedBalance_HandlesLargeNumbers()
     {
         // Arrange
-        Wallet wallet = new Wallet(
+        Wallet wallet = new(
             "wallet123",
             "DOGE",
             "Dogecoin",

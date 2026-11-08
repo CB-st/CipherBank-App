@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -18,7 +19,7 @@ public sealed class PinService(ISecureStore store, TimeProvider timeProvider) : 
     private const string LockKey = "cb_pin_lock_until";
     private const int MaxFails = 5;
     private const int MinimumPinLength = 6;
-    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan _lockoutDuration = TimeSpan.FromMinutes(5);
 
     private DateTimeOffset? _lockUntilUtc;
 
@@ -108,14 +109,14 @@ public sealed class PinService(ISecureStore store, TimeProvider timeProvider) : 
         }
 
         FailedAttempts++;
-        await store.SetAsync(FailKey, FailedAttempts.ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
+        await store.SetAsync(FailKey, FailedAttempts.ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
         if (FailedAttempts < MaxFails)
         {
             return false;
         }
 
-        _lockUntilUtc = timeProvider.GetUtcNow().Add(LockoutDuration);
-        await store.SetAsync(LockKey, _lockUntilUtc.Value.ToUnixTimeMilliseconds().ToString(System.Globalization.CultureInfo.InvariantCulture)).ConfigureAwait(false);
+        _lockUntilUtc = timeProvider.GetUtcNow().Add(_lockoutDuration);
+        await store.SetAsync(LockKey, _lockUntilUtc.Value.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)).ConfigureAwait(false);
 
         return false;
     }

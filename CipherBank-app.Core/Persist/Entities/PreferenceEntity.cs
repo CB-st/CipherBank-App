@@ -6,8 +6,8 @@ namespace CipherBank_app.Persist.Entities;
 
 /// <summary>
 /// On-device key/value row for serialized user preference JSON.
-/// <see cref="CipherBank_app.Persist.PrefsStore"/> uses key <c>user_prefs</c>; <see cref="Value"/> is
-/// System.Text.Json text of <see cref="CipherBank_app.Persist.UserPrefs"/> (home layout, enabled
+/// <see cref="PrefsStore"/> uses key <c>user_prefs</c>; <see cref="Value"/> is
+/// System.Text.Json text of <see cref="UserPrefs"/> (home layout, enabled
 /// currencies), not custody material or a secret.
 /// </summary>
 public sealed record PreferenceEntity

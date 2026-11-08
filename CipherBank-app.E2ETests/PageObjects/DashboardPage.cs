@@ -26,18 +26,12 @@ public class DashboardPage(AppiumDriver driver) : BasePage(driver)
     /// <summary>
     /// Gets the welcome message text.
     /// </summary>
-    public string GetWelcomeMessage()
-    {
-        return GetElementText(_welcomeLabel);
-    }
+    public string GetWelcomeMessage() => GetElementText(_welcomeLabel);
 
     /// <summary>
     /// Gets the total balance displayed.
     /// </summary>
-    public string GetTotalBalance()
-    {
-        return GetElementText(_totalBalanceLabel);
-    }
+    public string GetTotalBalance() => GetElementText(_totalBalanceLabel);
 
     /// <summary>
     /// Navigates to the Wallet page.
@@ -60,10 +54,7 @@ public class DashboardPage(AppiumDriver driver) : BasePage(driver)
     /// <summary>
     /// Navigates to the Settings page.
     /// </summary>
-    public void GoToSettings()
-    {
-        ClickElement(_settingsButton);
-    }
+    public void GoToSettings() => ClickElement(_settingsButton);
 
     /// <summary>
     /// Logs out and returns to the Login page.
@@ -86,18 +77,12 @@ public class DashboardPage(AppiumDriver driver) : BasePage(driver)
     /// <summary>
     /// Checks if the user is logged in by verifying dashboard elements.
     /// </summary>
-    public bool IsLoggedIn()
-    {
-        return IsElementDisplayed(_welcomeLabel) && IsElementDisplayed(_totalBalanceLabel);
-    }
+    public bool IsLoggedIn() => IsElementDisplayed(_welcomeLabel) && IsElementDisplayed(_totalBalanceLabel);
 
     /// <summary>
     /// Checks if recent transactions are displayed.
     /// </summary>
-    public bool HasRecentTransactions()
-    {
-        return IsElementDisplayed(_transactionsList);
-    }
+    public bool HasRecentTransactions() => IsElementDisplayed(_transactionsList);
 
     public override void WaitForPageLoad()
     {

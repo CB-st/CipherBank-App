@@ -176,7 +176,7 @@ public static class AchRecipientValidation
     /// Use: High (Validate/Mask). Scope: this helper.
     /// </summary>
     private static string DigitsOnly(string value)
-        => new(value.Where(char.IsAsciiDigit).ToArray());
+        => new([.. value.Where(char.IsAsciiDigit)]);
 
     /// <summary>
     /// Shared trailing-digit mask core: shows the last <see cref="MaskVisibleTrailingDigits"/>

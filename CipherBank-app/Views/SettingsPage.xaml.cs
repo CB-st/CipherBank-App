@@ -38,7 +38,7 @@ public partial class SettingsPage
 
     private static Border BuildDeveloperCard()
     {
-        var headerLabel = new Label
+        Label headerLabel = new()
         {
             Text = "Developer Mode Active",
             FontSize = 16,
@@ -48,7 +48,7 @@ public partial class SettingsPage
         ApplyThemeColor(headerLabel, Label.TextColorProperty, "EnvironmentBadge", "EnvironmentBadgeDark");
         Grid.SetColumn(headerLabel, 0);
 
-        var devBadge = new Border
+        Border devBadge = new()
         {
             StrokeThickness = 0,
             Padding = new Thickness(6, 2),
@@ -65,7 +65,7 @@ public partial class SettingsPage
         ApplyThemeColor(devBadge, BackgroundColorProperty, "EnvironmentBadge", "EnvironmentBadgeDark");
         Grid.SetColumn(devBadge, 1);
 
-        var headerGrid = new Grid
+        Grid headerGrid = new()
         {
             ColumnDefinitions =
             {
@@ -75,18 +75,18 @@ public partial class SettingsPage
             Children = { headerLabel, devBadge },
         };
 
-        var environmentLabel = new Label { Text = "Environment", FontSize = 12, Style = GetStyle("SecondaryText") };
-        var environmentPicker = new Picker { Title = "Select environment" };
+        Label environmentLabel = new() { Text = "Environment", FontSize = 12, Style = GetStyle("SecondaryText") };
+        Picker environmentPicker = new() { Title = "Select environment" };
         environmentPicker.SetBinding(Picker.ItemsSourceProperty, new Binding(nameof(SettingsViewModel.Environments)));
         environmentPicker.SetBinding(Picker.SelectedItemProperty, new Binding(nameof(SettingsViewModel.SelectedEnvironment), BindingMode.TwoWay));
 
-        var environmentSection = new VerticalStackLayout
+        VerticalStackLayout environmentSection = new()
         {
             Spacing = 4,
             Children = { environmentLabel, environmentPicker },
         };
 
-        var noteLabel = new Label
+        Label noteLabel = new()
         {
             Text = "Note: Changing environment will clear your authentication",
             FontSize = 11,
@@ -94,7 +94,7 @@ public partial class SettingsPage
             HorizontalTextAlignment = TextAlignment.Center,
         };
 
-        var card = new Border
+        Border card = new()
         {
             StrokeShape = new RoundRectangle { CornerRadius = 12 },
             Padding = new Thickness(16),
@@ -116,12 +116,12 @@ public partial class SettingsPage
         element.SetAppThemeColor(property, GetColor(lightKey), GetColor(darkKey));
 
     private static Color GetColor(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
+        Application.Current?.Resources.TryGetValue(key, out object? value) == true && value is Color color
             ? color
             : Colors.Transparent;
 
     private static Style? GetStyle(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true ? value as Style : null;
+        Application.Current?.Resources.TryGetValue(key, out object? value) == true ? value as Style : null;
 
     // Developer-only affordances are built in code so they are not compiled into Release builds.
     private void AddDeveloperControls()
@@ -134,7 +134,7 @@ public partial class SettingsPage
 
         // The developer card is inserted right after the API configuration card and is
         // only visible once developer mode has been enabled.
-        var insertIndex = SettingsLayout.Children.IndexOf(ApiSettingsCard) + 1;
+        int insertIndex = SettingsLayout.Children.IndexOf(ApiSettingsCard) + 1;
         SettingsLayout.Children.Insert(insertIndex, BuildDeveloperCard());
     }
 }

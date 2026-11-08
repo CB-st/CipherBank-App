@@ -7,18 +7,13 @@ using CipherBank_app.Models;
 namespace CipherBank_app.Wallets;
 
 /// <summary>Watch-only module for tickers that do not have a dedicated chain implementation.</summary>
-public sealed class FallbackWalletModule : IWalletModule
+/// <remarks>Initializes a new instance of the <see cref="FallbackWalletModule"/> class.</remarks>
+public sealed class FallbackWalletModule(AssetSymbol symbol) : IWalletModule
 {
     private const int GenericAddressMinLength = 8;
 
-    /// <summary>Initializes a new instance of the <see cref="FallbackWalletModule"/> class.</summary>
-    public FallbackWalletModule(AssetSymbol symbol)
-    {
-        Symbol = symbol;
-    }
-
     /// <inheritdoc />
-    public AssetSymbol Symbol { get; }
+    public AssetSymbol Symbol { get; } = symbol;
 
     /// <inheritdoc />
     public IReadOnlyList<WalletUiMode> AddModes { get; } = [WalletUiMode.Watch];

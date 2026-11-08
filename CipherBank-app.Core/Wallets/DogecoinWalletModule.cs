@@ -4,6 +4,7 @@
 
 using CipherBank_app.Models;
 using NBitcoin;
+using NBitcoin.Altcoins;
 
 namespace CipherBank_app.Wallets;
 
@@ -30,7 +31,7 @@ public sealed class DogecoinWalletModule : AddressDerive, IWalletModule
     {
         try
         {
-            BitcoinAddress.Create(address, NBitcoin.Altcoins.Dogecoin.Instance.Mainnet);
+            BitcoinAddress.Create(address, Dogecoin.Instance.Mainnet);
             return true;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
@@ -50,7 +51,7 @@ public sealed class DogecoinWalletModule : AddressDerive, IWalletModule
         ExtKey key = DeriveKey(mnemonic, path);
         BitcoinAddress address = key.Neuter().PubKey.GetAddress(
             ScriptPubKeyType.Legacy,
-            NBitcoin.Altcoins.Dogecoin.Instance.Mainnet);
+            Dogecoin.Instance.Mainnet);
         return new DerivedAddress(address.ToString(), path, accountIndex);
     }
 }
