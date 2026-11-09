@@ -43,7 +43,7 @@ public sealed class AppSession : IAppSession, IDisposable
     {
         _custody = custody;
         _authority = authority ?? (productSession as ProductSessionCoordinator)?.Authority
-            ?? ProductSessionAuthority.For(new InMemoryProductSessionStore());
+            ?? throw new ArgumentException("A shared authority is required for a custom product session coordinator.", nameof(authority));
         _productSession = productSession;
         _seeder = seeder;
         _prefs = prefs;

@@ -22,6 +22,7 @@ public sealed class ProductSessionAuthority : IDisposable
     private bool _loaded;
     private ProductSessionSnapshot? _snapshot;
     private Task _drain = Task.CompletedTask;
+    private bool _revoking;
     private ProductSessionRefreshFlight? _refresh;
 
     private ProductSessionAuthority(IProductSessionStore backing) => _backing = backing;
@@ -98,26 +99,67 @@ public sealed class ProductSessionAuthority : IDisposable
     /// <summary>Revokes immediately; queues physical removal behind admitted local writes.</summary>
     public void Invalidate(ProductSessionOperation? expected = null, Action? onRevoked = null)
     {
-        CancellationTokenSource previous;
-        lock (_state)
+        CancellationTokenSource? previous = null;
+        try
         {
-            if (expected is not null && (expected.Epoch != _epoch || !ReferenceEquals(expected.Owner, this)))
+            lock (_state)
             {
-                return;
+                if (expected is not null && (expected.Epoch != _epoch || !ReferenceEquals(expected.Owner, this)))
+                {
+                    return;
+                }
+
+                // Re-entrant teardown is part of this revoke, not a new epoch or physical clear.
+                if (_revoking)
+                {
+                    onRevoked?.Invoke();
+                    return;
+                }
+
+                previous = _lifetime;
+                _lifetime = new CancellationTokenSource();
+                _epoch++;
+                _revision++;
+                _loaded = true;
+                _snapshot = null;
+                // Install the observed drain before callbacks can re-enter. Pending cleanup already
+                // covers admitted writes; replacements cannot write until that same drain completes.
+                TaskCompletionSource? cleanup = null;
+                if (_drain.IsCompleted)
+                {
+                    cleanup = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                    _drain = cleanup.Task;
+                }
+
+                _revoking = true;
+                try
+                {
+                    onRevoked?.Invoke();
+                }
+                finally
+                {
+                    _revoking = false;
+                    if (cleanup is not null)
+                    {
+                        _ = CompleteClearAsync(cleanup);
+                    }
+                }
             }
-
-            previous = _lifetime;
-            _lifetime = new CancellationTokenSource();
-            _epoch++;
-            _revision++;
-            _loaded = true;
-            _snapshot = null;
-            onRevoked?.Invoke();
-            _drain = ClearAsync();
         }
-
-        previous.Cancel();
-        previous.Dispose();
+        finally
+        {
+            if (previous is not null)
+            {
+                try
+                {
+                    previous.Cancel();
+                }
+                finally
+                {
+                    previous.Dispose();
+                }
+            }
+        }
     }
 
     /// <summary>Reads only a complete tuple, validating an initial backing read after its await.</summary>
@@ -197,7 +239,8 @@ public sealed class ProductSessionAuthority : IDisposable
                 {
                     lock (_state)
                     {
-                        _drain = Task.FromException(cleanupError);
+                        // Retain any queued revoke cleanup as well as this write failure.
+                        _drain = Task.WhenAll(_drain, Task.FromException(cleanupError));
                     }
 
                     throw;
@@ -364,6 +407,19 @@ public sealed class ProductSessionAuthority : IDisposable
             flight.CompletionSource.TrySetException(error);
             // Observe the shared failure even if every waiter cancelled independently.
             _ = flight.Completion.Exception;
+        }
+    }
+
+    private async Task CompleteClearAsync(TaskCompletionSource completion)
+    {
+        try
+        {
+            await ClearAsync().ConfigureAwait(false);
+            completion.SetResult();
+        }
+        catch (Exception error)
+        {
+            completion.SetException(error);
         }
     }
 

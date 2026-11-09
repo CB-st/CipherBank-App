@@ -45,10 +45,13 @@ public sealed class H1H2LoginOwnershipTests
         Assert.False(rig.App.IsUnlocked);
     }
 
-    [Fact]
-    public async Task LateNavigationFailure_CannotLockOrClearReplacement()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LateNavigationFailureOrCancellation_CannotLockOrClearReplacement(bool cancel)
     {
-        using H1H2TestRig rig = new();
+        H1H2ThreeKeyStore backing = new();
+        using H1H2TestRig rig = new(backing);
         int creates = 0;
         rig.Product.Setup(p => p.CreateSessionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() => Credential(Interlocked.Increment(ref creates) == 1 ? "old" : "new"));
@@ -57,6 +60,11 @@ public sealed class H1H2LoginOwnershipTests
         navigation.Setup(n => n.GoToAsync(Routes.Dashboard)).Returns(async () =>
         {
             await navigationGate.PauseAsync();
+            if (cancel)
+            {
+                throw new OperationCanceledException("old navigation cancelled");
+            }
+
             throw new HttpRequestException("old navigation failed");
         });
         using LoginViewModel login = Create(rig, navigation.Object);
@@ -65,13 +73,73 @@ public sealed class H1H2LoginOwnershipTests
         await navigationGate.Entered;
         rig.App.Lock();
         Assert.True(await rig.App.UnlockAsync("123456"));
+        int clearsBeforeRollback = backing.ClearCalls;
+        if (cancel)
+        {
+            login.CancelLogin();
+        }
+
         navigationGate.Release();
         await attempt;
+        await rig.Services.GetRequiredService<ProductSessionAuthority>().Drain;
+        Assert.Equal(clearsBeforeRollback, backing.ClearCalls);
+        Assert.Equal(3, backing.KeyCount);
         Assert.Equal("new-access", rig.App.AccessToken);
         Assert.Equal("new-access", (await rig.Store.GetAsync())?.Access);
         Assert.True(rig.App.IsUnlocked);
         Assert.True(rig.Stream.IsConnected);
         Assert.True(rig.Hub.IsRunning);
+    }
+
+    [Fact]
+    public async Task B1_LoginRollback_OneDrainedClearBeforeNewerUnlock()
+    {
+        H1H2ThreeKeyStore backing = new();
+        using H1H2TestRig rig = new(backing);
+        ProductSessionAuthority authority = rig.Services.GetRequiredService<ProductSessionAuthority>();
+        AsyncGate navigationGate = new();
+        Mock<INavigationService> navigation = new();
+        navigation.Setup(n => n.GoToAsync(Routes.Dashboard)).Returns(async () =>
+        {
+            await navigationGate.PauseAsync();
+            throw new HttpRequestException("navigation requires login rollback");
+        });
+        using LoginViewModel login = Create(rig, navigation.Object);
+        login.Password = "123456";
+        Task attempt = login.SignInCommand.ExecuteAsync(null);
+        await navigationGate.Entered;
+        AsyncGate local = new();
+        AsyncGate clear = new();
+        backing.ClearGate = clear;
+        Task admitted = authority.RunLocalAsync(authority.Capture(), () => local.PauseAsync(), CancellationToken.None);
+        await local.Entered;
+        Task drain;
+        try
+        {
+            navigationGate.Release();
+            // Exercise real navigation rollback through the ownership-admitted AppSession.Lock.
+            await attempt.WaitAsync(TimeSpan.FromSeconds(10));
+            drain = authority.Drain;
+            local.Release();
+            await clear.Entered;
+            Assert.False(drain.IsCompleted);
+        }
+        finally
+        {
+            navigationGate.Release();
+            local.Release();
+            clear.Release();
+        }
+
+        await ObserveAsync(() => admitted);
+        await drain.WaitAsync(TimeSpan.FromSeconds(10));
+        int clearsAtDrain = backing.ClearCalls;
+        Assert.True(await rig.App.UnlockAsync("123456"));
+        Assert.Equal("current-access", rig.App.AccessToken);
+        Assert.Equal("current-access", (await backing.GetAsync())?.Access);
+        Assert.Equal(3, backing.KeyCount);
+        Assert.Equal(clearsAtDrain, backing.ClearCalls);
+        Assert.Equal(1, clearsAtDrain);
     }
 
     private static LoginViewModel Create(H1H2TestRig rig, INavigationService navigation)

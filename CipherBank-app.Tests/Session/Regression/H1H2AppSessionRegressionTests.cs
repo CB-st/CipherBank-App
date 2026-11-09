@@ -6,6 +6,7 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Session;
 using CipherBank_app.Tests.Persist;
+using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using Moq;
 using Xunit;
@@ -132,7 +133,13 @@ public sealed class H1H2AppSessionRegressionTests
     {
         Mock<IPrefsStore> prefs = new();
         prefs.Setup(p => p.LoadAsync()).ReturnsAsync(new UserPrefs(TestPreferenceDefaults.Value));
-        return new AppSession(custody, product, Mock.Of<ILocalWalletSeeder>(), prefs.Object, new FixedClock());
+        return new AppSession(
+            custody,
+            product,
+            Mock.Of<ILocalWalletSeeder>(),
+            prefs.Object,
+            new FixedClock(),
+            ProductSessionAuthority.For(new InMemoryProductSessionStore()));
     }
 
     private static async Task AttemptAsync(AppSession app, string entry, Action<bool> completed)

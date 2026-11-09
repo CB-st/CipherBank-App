@@ -13,6 +13,62 @@ namespace CipherBank_app.Tests.Session.Regression;
 public sealed class H1H2StorageRegressionTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task B1_RevokeWave_DrainCoversOneClearAndPreservesReplacement(bool appLock)
+    {
+        H1H2ThreeKeyStore backing = new();
+        using H1H2TestRig rig = new(backing);
+        Assert.True(await rig.App.UnlockAsync("123456"));
+        ProductSessionAuthority authority = rig.Services.GetRequiredService<ProductSessionAuthority>();
+        AsyncGate local = new();
+        AsyncGate clear = new();
+        backing.ClearGate = clear;
+        Task admitted = authority.RunLocalAsync(authority.Capture(), () => local.PauseAsync(), CancellationToken.None);
+        await local.Entered;
+        Task drain;
+        Task replacement;
+        try
+        {
+            if (appLock)
+            {
+                rig.App.Lock();
+            }
+            else
+            {
+                rig.Coordinator.StopSession();
+                Task firstDrain = authority.Drain;
+                rig.Coordinator.StopSession();
+                Assert.Same(firstDrain, authority.Drain);
+            }
+
+            drain = authority.Drain;
+            local.Release();
+            await clear.Entered;
+            Assert.False(drain.IsCompleted);
+            replacement = authority.PublishAsync(authority.Begin(), Credential("replacement"), CancellationToken.None);
+            Assert.False(replacement.IsCompleted);
+            Assert.Same(drain, authority.Drain);
+        }
+        finally
+        {
+            local.Release();
+            clear.Release();
+        }
+
+        await ObserveAsync(() => admitted);
+        await drain.WaitAsync(TimeSpan.FromSeconds(10));
+        int clearsAtDrain = backing.ClearCalls;
+        await replacement.WaitAsync(TimeSpan.FromSeconds(10));
+        await authority.PublishAsync(authority.Begin(), Credential("replacement"), CancellationToken.None);
+        Assert.Equal("replacement-access", (await backing.GetAsync())?.Access);
+        Assert.Equal(3, backing.KeyCount);
+        Assert.Equal(clearsAtDrain, backing.ClearCalls);
+        // A count oracle exposes orphan creation without assuming SemaphoreSlim waiter order.
+        Assert.Equal(1, clearsAtDrain);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]

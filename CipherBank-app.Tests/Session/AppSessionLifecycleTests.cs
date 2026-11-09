@@ -8,6 +8,7 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Session;
 using CipherBank_app.Tests.Persist;
+using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -20,6 +21,17 @@ namespace CipherBank_app.Tests.Session;
 /// <summary>Verifies session lifecycle boundaries using deterministic ports and time.</summary>
 public sealed class AppSessionLifecycleTests
 {
+    [Fact]
+    public void CustomCoordinator_RequiresExplicitSharedAuthority()
+    {
+        Assert.Throws<ArgumentException>(() => new AppSession(
+            Mock.Of<ICustodyService>(),
+            Mock.Of<IProductSessionCoordinator>(),
+            Mock.Of<ILocalWalletSeeder>(),
+            Mock.Of<IPrefsStore>(),
+            TimeProvider.System));
+    }
+
     /// <summary>Boot loads wallet presence and selects the configured or fallback idle timeout.</summary>
     [Theory]
     [InlineData(true, 180, 180000)]
@@ -210,7 +222,8 @@ public sealed class AppSessionLifecycleTests
             product ?? Mock.Of<IProductSessionCoordinator>(),
             Mock.Of<ILocalWalletSeeder>(),
             prefs ?? Mock.Of<IPrefsStore>(),
-            clock ?? new ManualClock());
+            clock ?? new ManualClock(),
+            ProductSessionAuthority.For(new InMemoryProductSessionStore()));
 
     private static Exception CreateFailure(string failure) => failure switch
     {

@@ -169,7 +169,7 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
     internal async Task<SessionDto> CreateSessionAsync(ProductSessionOperation operation, CancellationToken ct)
     {
         _sessions.Check(operation, ct);
-        // Lab stub today; ISessionProofBuilder will swap to challenge/pass without changing this call site.
+        // The proof builder owns the custody proof protocol behind this call site.
         object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
         using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionPath, UriKind.Relative))
         {

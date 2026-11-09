@@ -19,8 +19,13 @@ internal sealed class H1H2ThreeKeyStore : IProductSessionStore
     private readonly Dictionary<string, string> _keys = [];
     private readonly object _gate = new();
     private int _saves;
+    private int _clears;
 
     internal int SaveCalls => Volatile.Read(ref _saves);
+
+    internal int ClearCalls => Volatile.Read(ref _clears);
+
+    internal AsyncGate? ClearGate { get; set; }
 
     internal AsyncGate? SaveGate { get; set; }
 
@@ -81,6 +86,9 @@ internal sealed class H1H2ThreeKeyStore : IProductSessionStore
 
     public void Clear()
     {
+        Interlocked.Increment(ref _clears);
+        // The legacy boundary is synchronous. Pause before removing keys, outside the key lock.
+        ClearGate?.PauseAsync().GetAwaiter().GetResult();
         lock (_gate)
         {
             _keys.Remove("access");

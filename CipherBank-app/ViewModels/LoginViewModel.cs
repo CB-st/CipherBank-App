@@ -119,7 +119,15 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     {
         if (identity is not null)
         {
-            _authority!.Invalidate(identity, _session.Lock);
+            try
+            {
+                // Lock owns revocation; admit it only while this login still owns the session.
+                _authority!.Commit(identity, _session.Lock);
+            }
+            catch (OperationCanceledException)
+            {
+                // A newer unlock owns custody and credentials now.
+            }
         }
         else
         {

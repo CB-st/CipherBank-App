@@ -10,6 +10,7 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
+using CipherBank_app.V1;
 using CipherBank_app.ViewModels;
 using CipherBank_app.Wallets;
 using FluentAssertions;
@@ -58,7 +59,13 @@ public sealed class LoginViewModelTests
         TaskCompletionSource<ProductSessionStartResult> startup = new(TaskCreationOptions.RunContinuationsAsynchronously);
         Mock<IProductSessionCoordinator> coordinator = new();
         coordinator.Setup(c => c.StartAsync(true, It.Is<CancellationToken>(ct => ct.CanBeCanceled))).Returns(startup.Task);
-        AppSession session = new(custody.Object, coordinator.Object, Mock.Of<ILocalWalletSeeder>(), Mock.Of<IPrefsStore>(), TimeProvider.System);
+        AppSession session = new(
+            custody.Object,
+            coordinator.Object,
+            Mock.Of<ILocalWalletSeeder>(),
+            Mock.Of<IPrefsStore>(),
+            TimeProvider.System,
+            ProductSessionAuthority.For(new InMemoryProductSessionStore()));
         Mock<INavigationService> navigation = new();
         using LoginViewModel viewModel = Create(session, navigation.Object);
         viewModel.Password = "123456";

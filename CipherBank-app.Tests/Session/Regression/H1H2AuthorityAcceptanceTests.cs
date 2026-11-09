@@ -38,6 +38,33 @@ public sealed class H1H2AuthorityAcceptanceTests
         Assert.Throws<InvalidOperationException>(() => provider.GetRequiredService<ProductSessionAuthority>());
     }
 
+    [Fact]
+    public async Task B1_NestedInvalidation_PreservesEpochAndObservedDrain()
+    {
+        H1H2ThreeKeyStore backing = new();
+        using ProductSessionAuthority authority = ProductSessionAuthority.For(backing);
+        await authority.PublishAsync(authority.Begin(), Credential("old"), CancellationToken.None);
+        Task? observed = null;
+        ProductSessionOperation? revoked = null;
+        authority.Invalidate(onRevoked: () =>
+        {
+            observed = authority.Drain;
+            revoked = authority.Capture();
+            Assert.False(observed.IsCompleted);
+            authority.Invalidate();
+            Assert.Same(observed, authority.Drain);
+            authority.Check(revoked);
+        });
+        Assert.NotNull(observed);
+        Assert.Same(observed, authority.Drain);
+        await observed;
+        Assert.Equal(1, backing.ClearCalls);
+        await authority.PublishAsync(authority.Begin(), Credential("replacement"), CancellationToken.None);
+        Assert.Equal("replacement-access", (await backing.GetAsync())?.Access);
+        Assert.Equal(3, backing.KeyCount);
+        Assert.Equal(1, backing.ClearCalls);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
