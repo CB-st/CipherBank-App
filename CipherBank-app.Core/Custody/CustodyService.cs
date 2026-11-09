@@ -311,10 +311,10 @@ public sealed class CustodyService(
     /// Persists PIN + sealed mnemonic after shape validation.
     /// Use: Medium (SealAsync). Scope: this service.
     /// </summary>
-    private async Task SealValidatedAsync(string normalizedMnemonic, string pin1)
+    private async Task SealValidatedAsync(string normalizedMnemonic, string pin)
     {
         int lockGeneration = Volatile.Read(ref _lockGeneration);
-        await pinService.SetPinAsync(pin1).ConfigureAwait(false);
+        await pinService.SetPinAsync(pin).ConfigureAwait(false);
         await PersistDeviceSecretSealAsync(normalizedMnemonic).ConfigureAwait(false);
         TryPublishSession(normalizedMnemonic, lockGeneration);
     }
