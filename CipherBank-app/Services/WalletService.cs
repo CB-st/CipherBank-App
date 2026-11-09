@@ -13,42 +13,33 @@ namespace CipherBank_app.Services;
 /// Production implementation of IWalletService using HTTP client.
 /// Manages cryptocurrency wallets via the CipherBank API.
 /// </summary>
-public sealed partial class WalletService : IWalletService
+public sealed partial class WalletService(ILogger<WalletService> logger, HttpClient http) : IWalletService
 {
     private const string WalletsEndpoint = "api/v1/wallets";
 
-    private readonly ILogger<WalletService> _logger;
-    private readonly HttpClient _http;
-
-    public WalletService(ILogger<WalletService> logger, HttpClient http)
-    {
-        _logger = logger;
-        _http = http;
-    }
-
     public async Task<List<Wallet>> GetWalletsAsync(CancellationToken cancellationToken)
     {
-        LogFetchingAllWallets(_logger);
+        LogFetchingAllWallets(logger);
 
         try
         {
-            HttpResponseMessage response = await _http.GetAsync(WalletsEndpoint, cancellationToken);
+            HttpResponseMessage response = await http.GetAsync(WalletsEndpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             List<Wallet>? wallets = await response.Content.ReadFromJsonAsync<List<Wallet>>(cancellationToken: cancellationToken);
 
             if (wallets == null)
             {
-                LogNullResponseForWallets(_logger);
+                LogNullResponseForWallets(logger);
                 return [];
             }
 
-            LogRetrievedWallets(_logger, wallets.Count);
+            LogRetrievedWallets(logger, wallets.Count);
             return wallets;
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingWallets(_logger, ex, ex.StatusCode);
+            LogHttpErrorFetchingWallets(logger, ex, ex.StatusCode);
             throw new InvalidOperationException("Failed to retrieve wallets from server", ex);
         }
     }
@@ -57,33 +48,33 @@ public sealed partial class WalletService : IWalletService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
-        LogFetchingWallet(_logger, id);
+        LogFetchingWallet(logger, id);
 
         try
         {
-            var endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}";
-            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
+            string endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}";
+            HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             Wallet? wallet = await response.Content.ReadFromJsonAsync<Wallet>(cancellationToken: cancellationToken);
 
             if (wallet == null)
             {
-                LogNullResponseForWallet(_logger, id);
+                LogNullResponseForWallet(logger, id);
                 throw new KeyNotFoundException($"Wallet '{id}' not found");
             }
 
-            LogRetrievedWallet(_logger, wallet.Id, wallet.Balance, wallet.CryptoSymbol.Value);
+            LogRetrievedWallet(logger, wallet.Id, wallet.Balance, wallet.CryptoSymbol.Value);
             return wallet;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogWalletNotFound(_logger, id);
+            LogWalletNotFound(logger, id);
             throw new KeyNotFoundException($"Wallet '{id}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingWallet(_logger, ex, id, ex.StatusCode);
+            LogHttpErrorFetchingWallet(logger, ex, id, ex.StatusCode);
             throw new InvalidOperationException("Failed to retrieve wallet from server", ex);
         }
     }
@@ -92,33 +83,33 @@ public sealed partial class WalletService : IWalletService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
-        LogFetchingBalance(_logger, id);
+        LogFetchingBalance(logger, id);
 
         try
         {
-            var endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}/balance";
-            HttpResponseMessage response = await _http.GetAsync(endpoint, cancellationToken);
+            string endpoint = $"{WalletsEndpoint}/{Uri.EscapeDataString(id)}/balance";
+            HttpResponseMessage response = await http.GetAsync(endpoint, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             BalanceResponse? result = await response.Content.ReadFromJsonAsync<BalanceResponse>(cancellationToken: cancellationToken);
 
             if (result == null)
             {
-                LogNullResponseForBalance(_logger, id);
+                LogNullResponseForBalance(logger, id);
                 throw new InvalidOperationException($"Failed to retrieve balance for wallet '{id}'");
             }
 
-            LogWalletBalance(_logger, id, result.Balance);
+            LogWalletBalance(logger, id, result.Balance);
             return result.Balance;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
-            LogWalletNotFound(_logger, id);
+            LogWalletNotFound(logger, id);
             throw new KeyNotFoundException($"Wallet '{id}' not found", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorFetchingBalance(_logger, ex, id, ex.StatusCode);
+            LogHttpErrorFetchingBalance(logger, ex, id, ex.StatusCode);
             throw new InvalidOperationException("Failed to retrieve wallet balance from server", ex);
         }
     }
@@ -127,33 +118,33 @@ public sealed partial class WalletService : IWalletService
     {
         ArgumentNullException.ThrowIfNull(cryptoSymbol);
 
-        LogCreatingWallet(_logger, cryptoSymbol.Value);
+        LogCreatingWallet(logger, cryptoSymbol.Value);
 
         try
         {
-            var request = new CreateWalletRequest(cryptoSymbol.Value);
-            HttpResponseMessage response = await _http.PostAsJsonAsync(WalletsEndpoint, request, cancellationToken);
+            CreateWalletRequest request = new(cryptoSymbol.Value);
+            HttpResponseMessage response = await http.PostAsJsonAsync(WalletsEndpoint, request, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             Wallet? wallet = await response.Content.ReadFromJsonAsync<Wallet>(cancellationToken: cancellationToken);
 
             if (wallet == null)
             {
-                LogNullResponseForCreateWallet(_logger, cryptoSymbol.Value);
+                LogNullResponseForCreateWallet(logger, cryptoSymbol.Value);
                 throw new InvalidOperationException($"Failed to create wallet for {cryptoSymbol}");
             }
 
-            LogWalletCreated(_logger, wallet.Id, wallet.CryptoSymbol.Value, wallet.Address);
+            LogWalletCreated(logger, wallet.Id, wallet.CryptoSymbol.Value, wallet.Address);
             return wallet;
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
         {
-            LogWalletAlreadyExists(_logger, cryptoSymbol.Value);
+            LogWalletAlreadyExists(logger, cryptoSymbol.Value);
             throw new InvalidOperationException($"Wallet for {cryptoSymbol} already exists", ex);
         }
         catch (HttpRequestException ex)
         {
-            LogHttpErrorCreatingWallet(_logger, ex, cryptoSymbol.Value, ex.StatusCode);
+            LogHttpErrorCreatingWallet(logger, ex, cryptoSymbol.Value, ex.StatusCode);
             throw new InvalidOperationException("Failed to create wallet from server", ex);
         }
     }

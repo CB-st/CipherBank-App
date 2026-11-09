@@ -18,18 +18,18 @@ public sealed class NfcPresentmentPayload
 
     [Range(CurrentVersion, CurrentVersion)]
     [JsonPropertyName("v")]
-    public int V { get; set; } = SupportedVersion;
+    public int V { get; init; } = SupportedVersion;
 
     [Required]
     [JsonPropertyName("sessionId")]
-    public string SessionId { get; set; } = string.Empty;
+    public string SessionId { get; init; } = string.Empty;
 
     [Required]
     [JsonPropertyName("tokenRef")]
-    public string TokenRef { get; set; } = string.Empty;
+    public string TokenRef { get; init; } = string.Empty;
 
     [JsonPropertyName("merchantId")]
-    public string? MerchantId { get; set; }
+    public string? MerchantId { get; init; }
 
     /// <summary>
     /// Parses an NDEF presentment JSON blob into a payload, or null when malformed.

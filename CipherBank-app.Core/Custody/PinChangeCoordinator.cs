@@ -13,14 +13,14 @@ namespace CipherBank_app.Custody;
 /// invariant, so no Shell flow can orphan a legacy PIN-derived blob. The blob is never re-sealed.
 /// Use: Low (only when a user opens Change PIN). Scope: one Profile/Change-PIN interaction.
 /// </summary>
-public sealed class PinChangeCoordinator
+public sealed class PinChangeCoordinator(ICustodyService custody)
 {
     /// <summary>Minimum digits for a new PIN — matches SetPin onboarding.</summary>
     public static readonly int MinPinLength = 6;
 
     /// <summary>Status → message table so the caller never grows an if/else chain over statuses.</summary>
-    private static readonly Dictionary<PinChangeStatus, string> Messages =
-        new Dictionary<PinChangeStatus, string>
+    private static readonly Dictionary<PinChangeStatus, string> _messages =
+        new()
         {
             [PinChangeStatus.Success] = UserFacingStrings.PinChangeSuccess,
             [PinChangeStatus.TooShort] = UserFacingStrings.PinChangeTooShort(MinPinLength),
@@ -32,21 +32,14 @@ public sealed class PinChangeCoordinator
         };
 
     /// <summary>Custody result → surfaced status, so this class never grows a branch chain over results.</summary>
-    private static readonly Dictionary<CustodyPinChangeResult, PinChangeStatus> FromCustody =
-        new Dictionary<CustodyPinChangeResult, PinChangeStatus>
+    private static readonly Dictionary<CustodyPinChangeResult, PinChangeStatus> _fromCustody =
+        new()
         {
             [CustodyPinChangeResult.Changed] = PinChangeStatus.Success,
             [CustodyPinChangeResult.WrongPin] = PinChangeStatus.WrongCurrentPin,
             [CustodyPinChangeResult.LockedOut] = PinChangeStatus.LockedOut,
             [CustodyPinChangeResult.DeviceSecretMissing] = PinChangeStatus.VaultNotReady,
         };
-
-    private readonly ICustodyService _custody;
-
-    public PinChangeCoordinator(ICustodyService custody)
-    {
-        _custody = custody;
-    }
 
     /// <summary>
     /// Pure shape check (length, confirmation match, reuse) that needs no secure storage, returning
@@ -85,15 +78,15 @@ public sealed class PinChangeCoordinator
             return Describe(shape);
         }
 
-        CustodyPinChangeResult result = await _custody
+        CustodyPinChangeResult result = await custody
             .ChangePinAsync(currentPin ?? string.Empty, newPin ?? string.Empty)
             .ConfigureAwait(false);
-        return Describe(FromCustody[result]);
+        return Describe(_fromCustody[result]);
     }
 
     /// <summary>
     /// Pairs a status with its user-facing message from the dispatch table.
     /// Use: Low (once per submit). Scope: this coordinator.
     /// </summary>
-    private static PinChangeOutcome Describe(PinChangeStatus status) => new(status, Messages[status]);
+    private static PinChangeOutcome Describe(PinChangeStatus status) => new(status, _messages[status]);
 }

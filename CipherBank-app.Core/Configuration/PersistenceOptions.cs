@@ -11,7 +11,7 @@ public sealed class PersistenceOptions
     private const int RoutingNumberLength = 9;
     private const int MemoMaxLength = 140;
 
-    public string DatabaseName { get; set; } = "cipherbank.db";
+    public string DatabaseName { get; init; } = "cipherbank.db";
 
     /// <summary>
     /// Demo payees inserted when the recipients table is empty. Stable ids; changing them duplicates rows.

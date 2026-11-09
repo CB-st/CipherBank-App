@@ -12,7 +12,7 @@ public static class PaymentUri
     private const int DefaultShortenHeadLength = 8;
     private const int DefaultShortenTailLength = 6;
 
-    private static readonly HashSet<AssetSymbol> FiatCurrencies = [AssetSymbol.Usd, AssetSymbol.Eur, AssetSymbol.Jpy];
+    private static readonly HashSet<AssetSymbol> _fiatCurrencies = [AssetSymbol.Usd, AssetSymbol.Eur, AssetSymbol.Jpy];
 
     /// <summary>Builds a receive URI. Empty addresses return an empty string.</summary>
     public static string Build(string symbol, string address)
@@ -40,7 +40,7 @@ public static class PaymentUri
             return string.Empty;
         }
 
-        if (FiatCurrencies.Contains(parsed))
+        if (_fiatCurrencies.Contains(parsed))
         {
             return new Uri(
                 $"cipherbank:receive/{parsed.Value}?address={Uri.EscapeDataString(addr)}",
@@ -62,12 +62,7 @@ public static class PaymentUri
     public static string Shorten(string address, int head, int tail)
     {
         string trimmed = address.Trim();
-        if (trimmed.Length <= head + tail + 1)
-        {
-            return trimmed;
-        }
-
-        return string.Concat(trimmed.AsSpan(0, head), "…", trimmed.AsSpan(trimmed.Length - tail));
+        return trimmed.Length <= head + tail + 1 ? trimmed : string.Concat(trimmed.AsSpan(0, head), "…", trimmed.AsSpan(trimmed.Length - tail));
     }
 
     /// <summary>BIP21-style URI with optional amount, label, and message query fields.</summary>

@@ -13,11 +13,11 @@ public class StepUpAuthTests
     [Fact]
     public async Task RequireAsync_False_WhenPinCancelled()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
+        MemStore store = new();
+        PinService pin = new(store);
         await pin.SetPinAsync("111111");
-        FakeChallenges challenges = new FakeChallenges { BiometricsPreferred = false, PinPromptResult = null };
-        StepUpAuthService step = new StepUpAuthService(challenges, pin);
+        FakeChallenges challenges = new() { BiometricsPreferred = false, PinPromptResult = null };
+        StepUpAuthService step = new(challenges, pin);
 
         (await step.RequireAsync(AuthReason.Payment, default)).Should().BeFalse();
     }
@@ -25,10 +25,10 @@ public class StepUpAuthTests
     [Fact]
     public async Task RequireAsync_True_WhenBiometricsSucceed()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        FakeChallenges challenges = new FakeChallenges { BiometricsPreferred = true, BioSucceed = true };
-        StepUpAuthService step = new StepUpAuthService(challenges, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        FakeChallenges challenges = new() { BiometricsPreferred = true, BioSucceed = true };
+        StepUpAuthService step = new(challenges, pin);
 
         (await step.RequireAsync(AuthReason.Convert, default)).Should().BeTrue();
     }
@@ -36,22 +36,22 @@ public class StepUpAuthTests
     [Fact]
     public async Task RequireAsync_True_WhenCorrectPinEntered()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
+        MemStore store = new();
+        PinService pin = new(store);
         await pin.SetPinAsync("222222");
-        FakeChallenges challenges = new FakeChallenges { BiometricsPreferred = false, PinPromptResult = "222222" };
-        StepUpAuthService step = new StepUpAuthService(challenges, pin);
+        FakeChallenges challenges = new() { BiometricsPreferred = false, PinPromptResult = "222222" };
+        StepUpAuthService step = new(challenges, pin);
 
         (await step.RequireAsync(AuthReason.RevealKeys, default)).Should().BeTrue();
     }
 
     private sealed class FakeChallenges : IStepUpChallenges
     {
-        public bool BiometricsPreferred { get; set; }
+        public bool BiometricsPreferred { get; init; }
 
-        public bool BioSucceed { get; set; }
+        public bool BioSucceed { get; init; }
 
-        public string? PinPromptResult { get; set; }
+        public string? PinPromptResult { get; init; }
 
         public Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct)
             => Task.FromResult(BioSucceed);

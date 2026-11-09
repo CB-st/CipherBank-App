@@ -27,12 +27,7 @@ public sealed class AssetSymbolJsonConverter : JsonConverter<AssetSymbol>
         }
 
         string? value = reader.GetString();
-        if (!AssetSymbol.TryParse(value, out AssetSymbol? symbol))
-        {
-            throw new JsonException("Asset symbol must be a nonblank string.");
-        }
-
-        return symbol!;
+        return !AssetSymbol.TryParse(value, out AssetSymbol? symbol) ? throw new JsonException("Asset symbol must be a nonblank string.") : symbol;
     }
 
     /// <inheritdoc />

@@ -11,7 +11,7 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Page object for the Login page.
 /// Provides methods to interact with login functionality.
 /// </summary>
-public class LoginPage : BasePage
+public class LoginPage(AppiumDriver driver) : BasePage(driver)
 {
     // Element locators
     private static readonly By _usernameField = By.Id("UsernameEntry");
@@ -19,11 +19,6 @@ public class LoginPage : BasePage
     private static readonly By _loginButton = By.Id("LoginButton");
     private static readonly By _errorMessage = By.Id("ErrorLabel");
     private static readonly By _biometricButton = By.Id("BiometricLoginButton");
-
-    public LoginPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Enters the username.
@@ -46,10 +41,7 @@ public class LoginPage : BasePage
     /// <summary>
     /// Clicks the login button.
     /// </summary>
-    public void ClickLogin()
-    {
-        ClickElement(_loginButton);
-    }
+    public void ClickLogin() => ClickElement(_loginButton);
 
     /// <summary>
     /// Performs a complete login with username and password.
@@ -66,26 +58,17 @@ public class LoginPage : BasePage
     /// <summary>
     /// Checks if an error message is displayed.
     /// </summary>
-    public bool IsErrorDisplayed()
-    {
-        return IsElementDisplayed(_errorMessage);
-    }
+    public bool IsErrorDisplayed() => IsElementDisplayed(_errorMessage);
 
     /// <summary>
     /// Gets the error message text.
     /// </summary>
-    public string GetErrorMessage()
-    {
-        return GetElementText(_errorMessage);
-    }
+    public string GetErrorMessage() => GetElementText(_errorMessage);
 
     /// <summary>
     /// Checks if biometric login is available.
     /// </summary>
-    public bool IsBiometricLoginAvailable()
-    {
-        return IsElementDisplayed(_biometricButton);
-    }
+    public bool IsBiometricLoginAvailable() => IsElementDisplayed(_biometricButton);
 
     /// <summary>
     /// Attempts biometric login.
@@ -96,8 +79,5 @@ public class LoginPage : BasePage
         return new DashboardPage(Driver);
     }
 
-    public override void WaitForPageLoad()
-    {
-        WaitForElement(_loginButton);
-    }
+    public override void WaitForPageLoad() => WaitForElement(_loginButton);
 }

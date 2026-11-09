@@ -8,7 +8,12 @@ using CipherBank_app.Configuration;
 namespace CipherBank_app.Custody;
 
 /// <inheritdoc />
-public sealed class CustodyService : ICustodyService
+public sealed class CustodyService(
+    ISecureStore store,
+    IPinService pinService,
+    ICryptoBox cryptoBox,
+    TimeProvider timeProvider)
+    : ICustodyService
 {
     internal const string BlobKey = "cb_custody_blob";
     internal const string DeviceSecretKey = "cb_device_secret_v1";
@@ -21,13 +26,9 @@ public sealed class CustodyService : ICustodyService
 
     private const int DeviceSecretByteLength = 32;
 
-    private static readonly TimeSpan SessionTtl = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan _sessionTtl = TimeSpan.FromMinutes(5);
 
-    private readonly ISecureStore _store;
-    private readonly IPinService _pin;
-    private readonly ICryptoBox _cryptoBox;
-    private readonly TimeProvider _timeProvider;
-    private readonly object _sessionGate = new();
+    private readonly Lock _sessionGate = new();
     private int _lockGeneration;
     private string? _mnemonic;
     private DateTimeOffset? _expires;
@@ -37,8 +38,8 @@ public sealed class CustodyService : ICustodyService
     /// Test convenience: seals with <see cref="CryptographyOptions.Default"/>.
     /// Production hosts inject <see cref="ICryptoBox"/> built from bound options.
     /// </summary>
-    public CustodyService(ISecureStore store, IPinService pin)
-        : this(store, pin, new AesGcmCryptoBox(CryptographyOptions.Default), TimeProvider.System)
+    public CustodyService(ISecureStore store, IPinService pinService)
+        : this(store, pinService, new AesGcmCryptoBox(CryptographyOptions.Default), TimeProvider.System)
     {
     }
 
@@ -46,26 +47,14 @@ public sealed class CustodyService : ICustodyService
     /// Initializes a new instance of the <see cref="CustodyService"/> class.
     /// Test convenience with an explicit clock. Seals with <see cref="CryptographyOptions.Default"/>.
     /// </summary>
-    public CustodyService(ISecureStore store, IPinService pin, TimeProvider timeProvider)
-        : this(store, pin, new AesGcmCryptoBox(CryptographyOptions.Default), timeProvider)
+    public CustodyService(ISecureStore store, IPinService pinService, TimeProvider timeProvider)
+        : this(store, pinService, new AesGcmCryptoBox(CryptographyOptions.Default), timeProvider)
     {
     }
 
-    public CustodyService(ISecureStore store, IPinService pin, ICryptoBox cryptoBox)
-        : this(store, pin, cryptoBox, TimeProvider.System)
+    public CustodyService(ISecureStore store, IPinService pinService, ICryptoBox cryptoBox)
+        : this(store, pinService, cryptoBox, TimeProvider.System)
     {
-    }
-
-    public CustodyService(
-        ISecureStore store,
-        IPinService pin,
-        ICryptoBox cryptoBox,
-        TimeProvider timeProvider)
-    {
-        _store = store;
-        _pin = pin;
-        _cryptoBox = cryptoBox;
-        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     /// <inheritdoc />
@@ -90,7 +79,7 @@ public sealed class CustodyService : ICustodyService
     }
 
     public async Task<bool> HasSealedWalletAsync()
-        => !string.IsNullOrEmpty(await _store.GetAsync(BlobKey).ConfigureAwait(false));
+        => !string.IsNullOrEmpty(await store.GetAsync(BlobKey).ConfigureAwait(false));
 
     public async Task<bool> CanUnlockWithDeviceOwnerAsync()
         => !string.IsNullOrEmpty(await ResolveDeviceSecretAsync().ConfigureAwait(false));
@@ -104,24 +93,19 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     public async Task<CustodyPinChangeResult> ChangePinAsync(string oldPin, string newPin)
     {
-        if (string.IsNullOrEmpty(await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false)))
+        if (string.IsNullOrEmpty(await store.GetAsync(DeviceSecretKey).ConfigureAwait(false)))
         {
             return CustodyPinChangeResult.DeviceSecretMissing;
         }
 
-        bool changed = await _pin.ChangePinAsync(oldPin, newPin).ConfigureAwait(false);
+        bool changed = await pinService.ChangePinAsync(oldPin, newPin).ConfigureAwait(false);
         return MapPinChangeResult(changed);
     }
 
     public Task SealAsync(string mnemonic, string pin)
     {
         string normalized = MnemonicHelper.Normalize(mnemonic);
-        if (!MnemonicHelper.Validate(normalized))
-        {
-            throw new ArgumentException("Invalid mnemonic.", nameof(mnemonic));
-        }
-
-        return SealValidatedAsync(normalized, pin);
+        return !MnemonicHelper.Validate(normalized) ? throw new ArgumentException("Invalid mnemonic.", nameof(mnemonic)) : SealValidatedAsync(normalized, pin);
     }
 
     /// <summary>
@@ -131,12 +115,12 @@ public sealed class CustodyService : ICustodyService
     public async Task<bool> UnlockAsync(string pin)
     {
         int lockGeneration = Volatile.Read(ref _lockGeneration);
-        if (!await _pin.VerifyPinAsync(pin).ConfigureAwait(false))
+        if (!await pinService.VerifyPinAsync(pin).ConfigureAwait(false))
         {
             return FailUnlock();
         }
 
-        string? blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
+        string? blob = await store.GetAsync(BlobKey).ConfigureAwait(false);
         if (string.IsNullOrEmpty(blob))
         {
             return FailUnlock();
@@ -145,17 +129,19 @@ public sealed class CustodyService : ICustodyService
         try
         {
             string? opened = await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false);
-            if (opened is null)
+            if (opened is not null)
             {
-                if (!TryOpen(blob, pin, out opened) || opened is null)
-                {
-                    return FailUnlock();
-                }
-
-                // Legacy PIN-derived blob, or interrupted migration that left DeviceSecretKey
-                // without rewriting the blob — recover via PIN then re-seal.
-                await PersistDeviceSecretSealAsync(opened).ConfigureAwait(false);
+                return TryPublishSession(opened, lockGeneration);
             }
+
+            if (!TryOpen(blob, pin, out opened) || opened is null)
+            {
+                return FailUnlock();
+            }
+
+            // Legacy PIN-derived blob, or interrupted migration that left DeviceSecretKey
+            // without rewriting the blob — recover via PIN then re-seal.
+            await PersistDeviceSecretSealAsync(opened).ConfigureAwait(false);
 
             return TryPublishSession(opened, lockGeneration);
         }
@@ -172,7 +158,7 @@ public sealed class CustodyService : ICustodyService
     public async Task<bool> UnlockWithDeviceSecretAsync()
     {
         int lockGeneration = Volatile.Read(ref _lockGeneration);
-        string? blob = await _store.GetAsync(BlobKey).ConfigureAwait(false);
+        string? blob = await store.GetAsync(BlobKey).ConfigureAwait(false);
         if (string.IsNullOrEmpty(blob))
         {
             return FailUnlock();
@@ -181,12 +167,7 @@ public sealed class CustodyService : ICustodyService
         try
         {
             string? opened = await TryUnlockWithDeviceSecretsAsync(blob).ConfigureAwait(false);
-            if (opened is null)
-            {
-                return FailUnlock();
-            }
-
-            return TryPublishSession(opened, lockGeneration);
+            return opened is null ? FailUnlock() : TryPublishSession(opened, lockGeneration);
         }
         catch (Exception ex) when (IsRejectedSeal(ex))
         {
@@ -211,7 +192,7 @@ public sealed class CustodyService : ICustodyService
         // Order the clock read, live-session check and snapshot against Lock() (CB43-2).
         lock (_sessionGate)
         {
-            if (_mnemonic is not null && _expires > _timeProvider.GetUtcNow())
+            if (_mnemonic is not null && _expires > timeProvider.GetUtcNow())
             {
                 return _mnemonic;
             }
@@ -235,7 +216,7 @@ public sealed class CustodyService : ICustodyService
 
     private bool TryPublishSession(string mnemonic, int lockGeneration)
     {
-        DateTimeOffset expires = _timeProvider.GetUtcNow().Add(SessionTtl);
+        DateTimeOffset expires = timeProvider.GetUtcNow().Add(_sessionTtl);
         lock (_sessionGate)
         {
             if (_lockGeneration != lockGeneration)
@@ -257,7 +238,7 @@ public sealed class CustodyService : ICustodyService
     {
         try
         {
-            mnemonic = _cryptoBox.Open(blob, keyMaterial);
+            mnemonic = cryptoBox.Open(blob, keyMaterial);
             return true;
         }
         catch (Exception ex) when (IsRejectedSeal(ex))
@@ -277,8 +258,8 @@ public sealed class CustodyService : ICustodyService
         }
 
         return mnemonic is not null
-            && expires is DateTimeOffset expiration
-            && expiration > _timeProvider.GetUtcNow();
+            && expires is { } expiration
+            && expiration > timeProvider.GetUtcNow();
     }
 
     /// <summary>
@@ -286,7 +267,7 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private void CloseIfExpired()
     {
-        DateTimeOffset now = _timeProvider.GetUtcNow();
+        DateTimeOffset now = timeProvider.GetUtcNow();
         lock (_sessionGate)
         {
             if (_mnemonic is null || _expires > now)
@@ -323,7 +304,7 @@ public sealed class CustodyService : ICustodyService
             return CustodyPinChangeResult.Changed;
         }
 
-        return _pin.IsLockedOut ? CustodyPinChangeResult.LockedOut : CustodyPinChangeResult.WrongPin;
+        return pinService.IsLockedOut ? CustodyPinChangeResult.LockedOut : CustodyPinChangeResult.WrongPin;
     }
 
     /// <summary>
@@ -333,7 +314,7 @@ public sealed class CustodyService : ICustodyService
     private async Task SealValidatedAsync(string normalizedMnemonic, string pin)
     {
         int lockGeneration = Volatile.Read(ref _lockGeneration);
-        await _pin.SetPinAsync(pin).ConfigureAwait(false);
+        await pinService.SetPinAsync(pin).ConfigureAwait(false);
         await PersistDeviceSecretSealAsync(normalizedMnemonic).ConfigureAwait(false);
         TryPublishSession(normalizedMnemonic, lockGeneration);
     }
@@ -346,11 +327,11 @@ public sealed class CustodyService : ICustodyService
     private async Task PersistDeviceSecretSealAsync(string mnemonic)
     {
         string deviceSecret = CreateDeviceSecret();
-        string sealedBlob = _cryptoBox.Seal(mnemonic, deviceSecret);
-        await _store.SetAsync(StagingDeviceSecretKey, deviceSecret).ConfigureAwait(false);
-        await _store.SetAsync(BlobKey, sealedBlob).ConfigureAwait(false);
-        await _store.SetAsync(DeviceSecretKey, deviceSecret).ConfigureAwait(false);
-        await _store.RemoveAsync(StagingDeviceSecretKey).ConfigureAwait(false);
+        string sealedBlob = cryptoBox.Seal(mnemonic, deviceSecret);
+        await store.SetAsync(StagingDeviceSecretKey, deviceSecret).ConfigureAwait(false);
+        await store.SetAsync(BlobKey, sealedBlob).ConfigureAwait(false);
+        await store.SetAsync(DeviceSecretKey, deviceSecret).ConfigureAwait(false);
+        await store.RemoveAsync(StagingDeviceSecretKey).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -359,13 +340,13 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private async Task<string?> ResolveDeviceSecretAsync()
     {
-        string? promoted = await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
+        string? promoted = await store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(promoted))
         {
             return promoted;
         }
 
-        string? staged = await _store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
+        string? staged = await store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
         return string.IsNullOrEmpty(staged) ? null : staged;
     }
 
@@ -377,21 +358,21 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private async Task<string?> TryUnlockWithDeviceSecretsAsync(string blob)
     {
-        string? promoted = await _store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
+        string? promoted = await store.GetAsync(DeviceSecretKey).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(promoted) && TryOpen(blob, promoted, out string? opened) && opened is not null)
         {
             await CommitWorkingDeviceSecretAsync(promoted).ConfigureAwait(false);
             return opened;
         }
 
-        string? staged = await _store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
-        if (!string.IsNullOrEmpty(staged) && TryOpen(blob, staged, out string? stagedOpened) && stagedOpened is not null)
+        string? staged = await store.GetAsync(StagingDeviceSecretKey).ConfigureAwait(false);
+        if (string.IsNullOrEmpty(staged) || !TryOpen(blob, staged, out string? stagedOpened) || stagedOpened is null)
         {
-            await CommitWorkingDeviceSecretAsync(staged).ConfigureAwait(false);
-            return stagedOpened;
+            return null;
         }
 
-        return null;
+        await CommitWorkingDeviceSecretAsync(staged).ConfigureAwait(false);
+        return stagedOpened;
     }
 
     /// <summary>
@@ -401,7 +382,7 @@ public sealed class CustodyService : ICustodyService
     /// </summary>
     private async Task CommitWorkingDeviceSecretAsync(string deviceSecret)
     {
-        await _store.SetAsync(DeviceSecretKey, deviceSecret).ConfigureAwait(false);
-        await _store.RemoveAsync(StagingDeviceSecretKey).ConfigureAwait(false);
+        await store.SetAsync(DeviceSecretKey, deviceSecret).ConfigureAwait(false);
+        await store.RemoveAsync(StagingDeviceSecretKey).ConfigureAwait(false);
     }
 }

@@ -195,11 +195,9 @@ public class AchRecipientValidationTests
     }
 
     [Fact]
-    public void MaskRouting_IgnoresUnicodeDigits()
-    {
+    public void MaskRouting_IgnoresUnicodeDigits() =>
         // Only ASCII digits count toward the visible trailing mask.
         AchRecipientValidation.MaskRouting("٠٢١٠٠٠٠٢١").Should().Be("••••");
-    }
 
     [Fact]
     public void MaskAccount_KeepsLastFour() => AchRecipientValidation.MaskAccount("88210001").Should().Be("•••• 0001");

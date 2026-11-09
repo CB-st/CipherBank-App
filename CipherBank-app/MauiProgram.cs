@@ -74,7 +74,7 @@ public static class MauiProgram
             throw new InvalidOperationException("Host behavior configuration is invalid.");
         }
 
-        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
+        string logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
 
         LoggerConfiguration config = new LoggerConfiguration()
             .MinimumLevel.Is(minimumLevel)
@@ -118,7 +118,7 @@ public static class MauiProgram
                 new HostBehaviorOptions())
             .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
             .ValidateOnStart();
-        mauiAppBuilder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+        mauiAppBuilder.Services.AddSingleton(TimeProvider.System);
         mauiAppBuilder.Services.AddPersistenceFeature(
             mauiAppBuilder.Configuration,
             new DirectoryInfo(FileSystem.Current.AppDataDirectory));
@@ -128,7 +128,7 @@ public static class MauiProgram
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();
 
         // Rate Limiter (singleton)
-        mauiAppBuilder.Services.AddSingleton<RateLimiter>(static sp =>
+        mauiAppBuilder.Services.AddSingleton(static sp =>
             new RateLimiter(
                 sp.GetService<ILogger<RateLimiter>>(),
                 sp.GetRequiredService<TimeProvider>()));

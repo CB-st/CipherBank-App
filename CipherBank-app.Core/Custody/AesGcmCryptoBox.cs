@@ -64,7 +64,7 @@ public sealed class AesGcmCryptoBox : ICryptoBox
         byte[] nonce = RandomNumberGenerator.GetBytes(_options.NonceSizeBytes);
         using SensitiveBuffer cipher = new(new byte[plain.Length]);
         byte[] tag = new byte[_options.TagSizeBytes];
-        using AesGcm aes = new AesGcm(key.Span, _options.TagSizeBytes);
+        using AesGcm aes = new(key.Span, _options.TagSizeBytes);
         aes.Encrypt(nonce, plain.Span, cipher.Span, tag);
 
         // v1: [version][salt][nonce][tag][cipher]. Bytes, not a StringBuilder:
@@ -107,7 +107,7 @@ public sealed class AesGcmCryptoBox : ICryptoBox
         using SensitiveBuffer plain = new(new byte[cipher.Length]);
         try
         {
-            using AesGcm aes = new AesGcm(key.Span, _options.TagSizeBytes);
+            using AesGcm aes = new(key.Span, _options.TagSizeBytes);
             aes.Decrypt(nonce, cipher.Span, tag, plain.Span);
         }
         catch (CryptographicException ex)

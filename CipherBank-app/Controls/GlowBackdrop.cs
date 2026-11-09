@@ -32,7 +32,7 @@ public class GlowBackdrop : Grid
         double translationX,
         double translationY)
     {
-        var ellipse = new Ellipse
+        Ellipse ellipse = new()
         {
             WidthRequest = size,
             HeightRequest = size,
@@ -53,11 +53,10 @@ public class GlowBackdrop : Grid
     private static RadialGradientBrush MakeRadial(Color color)
     {
         return new RadialGradientBrush(
-            new GradientStopCollection
-            {
+            [
                 new GradientStop(color, 0.0f),
-                new GradientStop(color.WithAlpha(0f), 1.0f),
-            },
+                new GradientStop(color.WithAlpha(0f), 1.0f)
+            ],
             new Point(0.5, 0.5),
             0.5);
     }

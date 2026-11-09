@@ -11,26 +11,20 @@ using Microsoft.Extensions.Options;
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
-public sealed class PrefsStore : IPrefsStore
+public sealed class PrefsStore(
+    IDbContextFactory<CipherBankDbContext> contexts,
+    IOptions<UserPreferenceDefaultsOptions> defaults)
+    : IPrefsStore
 {
     private const string Key = "user_prefs";
-    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
-    private readonly UserPreferenceDefaults _defaults;
-
-    public PrefsStore(
-        IDbContextFactory<CipherBankDbContext> contexts,
-        IOptions<UserPreferenceDefaultsOptions> defaults)
-    {
-        _contexts = contexts;
-        _defaults = UserPreferenceDefaults.FromOptions(defaults.Value);
-    }
+    private readonly UserPreferenceDefaults _defaults = UserPreferenceDefaults.FromOptions(defaults.Value);
 
     /// <inheritdoc />
     public Task<UserPrefs> LoadAsync() => LoadAsync(CancellationToken.None);
 
     public async Task<UserPrefs> LoadAsync(CancellationToken ct)
     {
-        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             string? json = await context.Preferences
@@ -73,7 +67,7 @@ public sealed class PrefsStore : IPrefsStore
     private async Task SaveCoreAsync(UserPrefs prefs, CancellationToken ct)
     {
         string json = JsonSerializer.Serialize(UserPrefsWireDto.FromPrefs(prefs));
-        CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
+        CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
             PreferenceEntity? entity = await context.Preferences.FindAsync([Key], ct).ConfigureAwait(false);

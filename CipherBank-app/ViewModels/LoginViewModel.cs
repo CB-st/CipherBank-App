@@ -2,11 +2,14 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Globalization;
+using CipherBank_app.Configuration;
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.ViewModels;
 
@@ -31,7 +34,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         INavigationService navigation,
         IDialogService dialog,
         ISettingsService settings,
-        Microsoft.Extensions.Options.IOptions<CipherBank_app.Configuration.HostBehaviorOptions> hostBehavior)
+        IOptions<HostBehaviorOptions> hostBehavior)
     {
         _logger = logger;
         _auth = auth;
@@ -78,10 +81,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Cancels the current login operation.
     /// </summary>
-    public void CancelLogin()
-    {
-        _cts?.Cancel();
-    }
+    public void CancelLogin() => _cts?.Cancel();
 
     /// <inheritdoc/>
     public void Dispose()
@@ -189,7 +189,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         }
         else
         {
-            EnvironmentBadge = _settings.Environment.ToUpper(System.Globalization.CultureInfo.InvariantCulture) switch
+            EnvironmentBadge = _settings.Environment.ToUpper(CultureInfo.InvariantCulture) switch
             {
                 "SANDBOX" => "SANDBOX",
                 "DEVELOPMENT" => "DEV",
@@ -224,14 +224,16 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            if (disposing)
-            {
-                _cts?.Dispose();
-            }
-
-            _disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            _cts?.Dispose();
+        }
+
+        _disposed = true;
     }
 }

@@ -7,35 +7,26 @@ using CipherBank_app.Resources;
 namespace CipherBank_app.Custody;
 
 /// <inheritdoc />
-public sealed class StepUpAuthService : IStepUpAuth
+public sealed class StepUpAuthService(IStepUpChallenges challenges, IPinService pin) : IStepUpAuth
 {
-    private readonly IStepUpChallenges _challenges;
-    private readonly IPinService _pin;
-
-    public StepUpAuthService(IStepUpChallenges challenges, IPinService pin)
-    {
-        _challenges = challenges;
-        _pin = pin;
-    }
-
     public async Task<bool> RequireAsync(AuthReason reason, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         string prompt = PromptFor(reason);
 
-        if (_challenges.BiometricsPreferred
-            && await _challenges.TryBiometricsAsync(prompt, ct).ConfigureAwait(false))
+        if (challenges.BiometricsPreferred
+            && await challenges.TryBiometricsAsync(prompt, ct).ConfigureAwait(false))
         {
             return true;
         }
 
-        string? entered = await _challenges.PromptForPinAsync(prompt, ct).ConfigureAwait(false);
+        string? entered = await challenges.PromptForPinAsync(prompt, ct).ConfigureAwait(false);
         if (string.IsNullOrEmpty(entered))
         {
             return false;
         }
 
-        return await _pin.VerifyPinAsync(entered).ConfigureAwait(false);
+        return await pin.VerifyPinAsync(entered).ConfigureAwait(false);
     }
 
     private static string PromptFor(AuthReason reason) => reason switch

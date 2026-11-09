@@ -68,7 +68,7 @@ public sealed class WalletSurfaceCoverageTests
 
         DerivedAddress? viaDispatch = AddressDerive.Derive("BTC", KnownMnemonic, 0);
         viaDispatch.Should().NotBeNull();
-        viaDispatch!.Address.Should().StartWith("bc1");
+        viaDispatch.Address.Should().StartWith("bc1");
 
         DerivedAddress ltc = AddressDerive.DeriveRequired(AssetSymbol.Ltc, KnownMnemonic, 0);
         ltc.Address.Should().NotBeNullOrWhiteSpace();
@@ -102,7 +102,7 @@ public sealed class WalletSurfaceCoverageTests
     [Fact]
     public async Task NullNfcPresentmentService_ReportsUnsupported()
     {
-        NullNfcPresentmentService nfc = new NullNfcPresentmentService();
+        NullNfcPresentmentService nfc = new();
         nfc.IsSupported.Should().BeFalse();
         nfc.LastError.Should().Contain("Android");
         bool ok = await nfc.PresentAsync(new NfcPresentmentPayload(), CancellationToken.None);

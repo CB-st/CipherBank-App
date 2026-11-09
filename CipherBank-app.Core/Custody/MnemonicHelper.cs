@@ -16,7 +16,7 @@ public static class MnemonicHelper
 
     public static string Generate()
     {
-        Mnemonic mnemonic = new Mnemonic(Wordlist.English, WordCount.Twelve);
+        Mnemonic mnemonic = new(Wordlist.English, WordCount.Twelve);
         return mnemonic.ToString();
     }
 
@@ -44,7 +44,7 @@ public static class MnemonicHelper
         => Normalize(phrase).Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
     public static Mnemonic Parse(string phrase)
-        => new Mnemonic(Normalize(phrase), Wordlist.English);
+        => new(Normalize(phrase), Wordlist.English);
 
     /// <summary>
     /// BIP39 entropy bytes for HKDF account / hybrid key derivation.

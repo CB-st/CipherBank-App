@@ -34,18 +34,18 @@ public partial class LoginPage
         element.SetAppThemeColor(property, GetColor(lightKey), GetColor(darkKey));
 
     private static Color GetColor(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
+        Application.Current?.Resources.TryGetValue(key, out object? value) == true && value is Color color
             ? color
             : Colors.Transparent;
 
     private static Style? GetStyle(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true ? value as Style : null;
+        Application.Current?.Resources.TryGetValue(key, out object? value) == true ? value as Style : null;
 
     // Development affordances remain analyzable and are enabled by configuration.
     private void AddDeveloperControls()
     {
         // Environment badge overlay, shown only in test/non-production environments.
-        var badgeLabel = new Label
+        Label badgeLabel = new()
         {
             TextColor = Colors.White,
             FontAttributes = FontAttributes.Bold,
@@ -53,7 +53,7 @@ public partial class LoginPage
         };
         badgeLabel.SetBinding(Label.TextProperty, new Binding(nameof(LoginViewModel.EnvironmentBadge)));
 
-        var badge = new Border
+        Border badge = new()
         {
             StrokeThickness = 0,
             Padding = new Thickness(10, 5),
@@ -68,7 +68,7 @@ public partial class LoginPage
         RootGrid.Children.Add(badge);
 
         // Quick-login button for filling mock credentials.
-        var testCredentials = new Button
+        Button testCredentials = new()
         {
             Text = "Use Test Credentials",
             AutomationId = "TestCredentialsButton",
@@ -80,15 +80,13 @@ public partial class LoginPage
         };
         testCredentials.SetBinding(IsVisibleProperty, new Binding(nameof(LoginViewModel.IsTestEnvironment)));
 
-        var insertIndex = LoginFormLayout.Children.IndexOf(LoginButton) + 1;
+        int insertIndex = LoginFormLayout.Children.IndexOf(LoginButton) + 1;
         LoginFormLayout.Children.Insert(insertIndex, testCredentials);
     }
 
-    private void OnUsernameCompleted(object? sender, EventArgs e)
-    {
+    private void OnUsernameCompleted(object? sender, EventArgs e) =>
         // Move focus to password field when Enter is pressed on username
         PasswordEntry.Focus();
-    }
 
     private void OnPasswordCompleted(object? sender, EventArgs e)
     {

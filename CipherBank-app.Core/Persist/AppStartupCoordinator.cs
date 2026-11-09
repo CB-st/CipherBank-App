@@ -5,20 +5,12 @@
 namespace CipherBank_app.Persist;
 
 /// <summary>Orders persistence initialization before recipient seeding.</summary>
-public sealed class AppStartupCoordinator
+public sealed class AppStartupCoordinator(
+    ILocalDatabaseInitializer database,
+    IRecipientSeedInitializer recipients)
 {
     private readonly Lock _gate = new();
-    private readonly ILocalDatabaseInitializer _database;
-    private readonly IRecipientSeedInitializer _recipients;
     private Task? _startup;
-
-    public AppStartupCoordinator(
-        ILocalDatabaseInitializer database,
-        IRecipientSeedInitializer recipients)
-    {
-        _database = database;
-        _recipients = recipients;
-    }
 
     public Task InitializeAsync(CancellationToken cancellationToken)
     {
@@ -35,7 +27,7 @@ public sealed class AppStartupCoordinator
 
     private async Task InitializeCoreAsync(CancellationToken cancellationToken)
     {
-        await _database.InitializeAsync(cancellationToken).ConfigureAwait(false);
-        await _recipients.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await database.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await recipients.InitializeAsync(cancellationToken).ConfigureAwait(false);
     }
 }

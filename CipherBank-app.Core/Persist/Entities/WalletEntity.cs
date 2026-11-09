@@ -8,21 +8,21 @@ namespace CipherBank_app.Persist.Entities;
 
 public sealed record WalletEntity
 {
-    public string Id { get; set; } = string.Empty;
+    public string Id { get; init; } = string.Empty;
 
-    public string Symbol { get; set; } = string.Empty;
+    public string Symbol { get; init; } = string.Empty;
 
-    public string? Label { get; set; }
+    public string? Label { get; init; }
 
-    public string? Address { get; set; }
+    public string? Address { get; init; }
 
-    public string? Path { get; set; }
+    public string? Path { get; init; }
 
-    public int AccountIndex { get; set; }
+    public int AccountIndex { get; init; }
 
-    public string Kind { get; set; } = "derived";
+    public string Kind { get; init; } = "derived";
 
-    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; init; }
 
     internal LocalWalletDescriptor ToDescriptor() =>
         new(

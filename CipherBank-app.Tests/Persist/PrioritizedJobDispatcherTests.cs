@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Diagnostics.CodeAnalysis;
 using CipherBank_app.Configuration;
 using CipherBank_app.Persist;
 using FluentAssertions;
@@ -336,6 +337,7 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     [Fact]
+    [SuppressMessage("ReSharper", "DisposeOnUsingVariable", Justification = "That is the point of the test")]
     public async Task DrainAsync_AfterDisposeReturnsWithoutWaitingForRunningWork()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
@@ -361,16 +363,18 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     [Fact]
+    [SuppressMessage("ReSharper", "DisposeOnUsingVariable", Justification = "That is the point of the test")]
     public void Dispose_CalledTwiceDoesNotThrow()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
         dispatcher.Dispose();
 
-        Action secondDispose = () => dispatcher.Dispose();
+        Action secondDispose = dispatcher.Dispose;
         secondDispose.Should().NotThrow();
     }
 
     [Fact]
+    [SuppressMessage("ReSharper", "DisposeOnUsingVariable", Justification = "That is the point of the test")]
     public async Task Dispose_DoesNotHangWhenWorkerDrainsDequeuedUnstartedWork()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
@@ -437,6 +441,7 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     [Fact]
+    [SuppressMessage("ReSharper", "DisposeOnUsingVariable", Justification = "That is the point of the test")]
     public async Task Dispose_CancelsRunningWork()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
@@ -458,6 +463,7 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     [Fact]
+    [SuppressMessage("ReSharper", "DisposeOnUsingVariable", Justification = "That is the point of the test")]
     public async Task Dispose_CancelsQueuedWorkWithoutStartingIt()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();
@@ -491,6 +497,7 @@ public sealed class PrioritizedJobDispatcherTests
     }
 
     [Fact]
+    [SuppressMessage("ReSharper", "DisposeOnUsingVariable", Justification = "That is the point of the test")]
     public void EnqueueAsync_AfterDisposeThrows()
     {
         using PrioritizedJobDispatcher dispatcher = CreateDispatcher();

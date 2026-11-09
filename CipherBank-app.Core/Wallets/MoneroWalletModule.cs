@@ -42,10 +42,10 @@ public sealed class MoneroWalletModule : IWalletModule
 
     // Monero Base58 encodes 8-byte blocks as 11 characters; a short final block of
     // N characters decodes to this many bytes (-1 marks a length no block can have).
-    private static readonly int[] BlockBytesForChars = [0, -1, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8];
+    private static readonly int[] _blockBytesForChars = [0, -1, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8];
 
     // Each single-byte network prefix fixes both the encoded and the decoded address length.
-    private static readonly FrozenDictionary<byte, (int Chars, int Bytes)> LengthsByPrefix =
+    private static readonly FrozenDictionary<byte, (int Chars, int Bytes)> _lengthsByPrefix =
         new Dictionary<byte, (int Chars, int Bytes)>
         {
             [MainnetStandardPrefix] = (AddressMinLength, StandardDecodedLength),
@@ -73,7 +73,7 @@ public sealed class MoneroWalletModule : IWalletModule
     public bool UsesServerWallets => true;
 
     /// <inheritdoc />
-    public string? Notes => "Hybrid: managed/unmanaged via /wallets API — native derive deferred";
+    public string Notes => "Hybrid: managed/unmanaged via /wallets API — native derive deferred";
 
     /// <inheritdoc />
     public bool IsValidAddress(string address)
@@ -107,7 +107,7 @@ public sealed class MoneroWalletModule : IWalletModule
     }
 
     private static bool HasExpectedLength(string address, byte[] decoded)
-        => LengthsByPrefix.TryGetValue(decoded[0], out (int Chars, int Bytes) expected)
+        => _lengthsByPrefix.TryGetValue(decoded[0], out (int Chars, int Bytes) expected)
             && address.Length == expected.Chars
             && decoded.Length == expected.Bytes;
 
@@ -125,7 +125,7 @@ public sealed class MoneroWalletModule : IWalletModule
         for (int start = 0; start < address.Length; start += FullBlockChars)
         {
             int chars = Math.Min(FullBlockChars, address.Length - start);
-            int byteCount = BlockBytesForChars[chars];
+            int byteCount = _blockBytesForChars[chars];
             if (byteCount < 0)
             {
                 return null;

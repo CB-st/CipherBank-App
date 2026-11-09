@@ -113,14 +113,14 @@ public static class ChartMath
 
         // A zero span has no scale. Center that dimension instead of substituting
         // an arbitrary span of 1, which would make near-zero and zero inputs jump.
-        List<PointF> points = series.Select(point =>
+        List<PointF> points = [.. series.Select(point =>
         {
             double x = dx == 0 ? width / 2 : ((point.X - x0) / dx) * width;
             double y = dy == 0
                 ? height / 2
                 : (height - padding) - (((point.Y - lo) / dy) * (height - (padding * PaddingSides)));
             return new PointF((float)x, (float)y);
-        }).ToList();
+        })];
 
         string line = string.Join(
             " ",
