@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Reflection;
 using CipherBank_app.Configuration;
 using CipherBank_app.Persist;
 using CipherBank_app.V1;
@@ -168,16 +169,63 @@ public sealed class H1H2AuthorityAcceptanceTests
         ProductSessionAuthority authority = ProductSessionAuthority.For(backing);
         ProductSessionOperation operation = authority.Begin();
         ProductSessionSnapshot original = await authority.PublishAsync(operation, Credential("first"), CancellationToken.None);
-        ProductSessionSnapshot rotated = await authority.PublishAsync(operation, Credential("rotated"), CancellationToken.None, original.Revision);
+        ProductSessionSnapshot rotated = await authority.PublishAsync(operation, Credential("rotated"), original.Revision, CancellationToken.None);
         Assert.Same(operation, rotated.Operation);
         Assert.True(rotated.Revision > original.Revision);
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            authority.PublishAsync(operation, Credential("stale"), CancellationToken.None, original.Revision));
+            authority.PublishAsync(operation, Credential("stale"), original.Revision, CancellationToken.None));
         Assert.Equal("rotated-access", (await backing.GetAsync())?.Access);
         authority.Invalidate();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             authority.PublishAsync(operation, Credential("revoked"), CancellationToken.None));
         Assert.Null(await backing.GetAsync());
+    }
+
+    [Fact]
+    public void PublishAsync_PublicOverloads_TakeCancellationTokenLast()
+    {
+        MethodInfo[] overloads = typeof(ProductSessionAuthority)
+            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+            .Where(method => method.Name == nameof(ProductSessionAuthority.PublishAsync))
+            .ToArray();
+        Assert.NotEmpty(overloads);
+        foreach (MethodInfo overload in overloads)
+        {
+            ParameterInfo[] parameters = overload.GetParameters();
+            Assert.NotEmpty(parameters);
+            Assert.Equal(typeof(CancellationToken), parameters[^1].ParameterType);
+        }
+
+        MethodInfo revisionOverload = Assert.Single(overloads, method =>
+            method.GetParameters().Any(parameter => parameter.ParameterType == typeof(long?)));
+        ParameterInfo[] revisionParameters = revisionOverload.GetParameters();
+        ParameterInfo expectedRevision = Assert.Single(revisionParameters, parameter => parameter.ParameterType == typeof(long?));
+        Assert.Equal("expectedRevision", expectedRevision.Name);
+        Assert.Equal(revisionParameters.Length - 2, expectedRevision.Position);
+    }
+
+    [Fact]
+    public async Task PublishAsync_WithExpectedRevision_HonorsCancellationTokenInLastPosition()
+    {
+        InMemoryProductSessionStore backing = new();
+        using ProductSessionAuthority authority = ProductSessionAuthority.For(backing);
+        ProductSessionOperation operation = authority.Begin();
+        ProductSessionSnapshot original = await authority.PublishAsync(operation, Credential("first"), CancellationToken.None);
+        (string Access, string Refresh, DateTimeOffset Expires)? stored = await backing.GetAsync();
+        CancellationToken cancelled = new(canceled: true);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            authority.PublishAsync(operation, Credential("cancelled"), original.Revision, cancelled));
+        Assert.Equal(stored, await backing.GetAsync());
+        Assert.Equal(original, await authority.ReadAsync(operation));
+
+        ProductSessionSnapshot published = await authority.PublishAsync(
+            operation, Credential("replacement"), original.Revision, CancellationToken.None);
+        Assert.Equal(original.Revision + 1, published.Revision);
+        Assert.Equal("replacement-access", published.Access);
+        Assert.Equal("replacement-refresh", published.Refresh);
+        Assert.Equal(published, await authority.ReadAsync(operation));
+        Assert.Equal((published.Access, published.Refresh, published.Expires), await backing.GetAsync());
     }
 
     [Fact]

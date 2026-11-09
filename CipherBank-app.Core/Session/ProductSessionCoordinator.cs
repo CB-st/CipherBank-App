@@ -14,6 +14,11 @@ namespace CipherBank_app.Session;
 /// <inheritdoc />
 public sealed class ProductSessionCoordinator : IProductSessionCoordinator, IDisposable
 {
+    private const string AuthorityConstructorJustification =
+        "S107: DI greedy ctor wires client/stream/hub/prefs/sync/bootstrap/store/authority; " +
+        "an options bag would change the Maui DI shape used by upper #98/#37-#40. " +
+        "Owner: #44 session maintainers; revisit when the upper stack lands.";
+
     private readonly IProductClient _client;
     private readonly IStreamService _stream;
     private readonly IStreamHub _streamHub;
@@ -39,7 +44,7 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator, IDis
     [SuppressMessage(
         "Major Code Smell",
         "S107:Methods should not have too many parameters",
-        Justification = "Session orchestration requires client/stream/hub/prefs/sync/bootstrap/store/authority; collapsing into an options bag would retouch Maui DI registration used by upper #98/#37-#40.")]
+        Justification = AuthorityConstructorJustification)]
     public ProductSessionCoordinator(
         IProductClient client,
         IStreamService stream,

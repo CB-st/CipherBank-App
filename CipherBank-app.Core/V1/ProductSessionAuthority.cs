@@ -190,14 +190,10 @@ public sealed class ProductSessionAuthority : IDisposable
     /// <summary>Serializes physical publication and atomically exposes it only to its original owner.</summary>
     public Task<ProductSessionSnapshot> PublishAsync(
         ProductSessionOperation operation, SessionDto session, CancellationToken ct)
-        => PublishAsync(operation, session, ct, null);
+        => PublishAsync(operation, session, null, ct);
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage(
-        "Design",
-        "CA1068:CancellationToken parameters must come last",
-        Justification = "Preserve the existing positional API while replacing optional expectedRevision with an overload.")]
     public async Task<ProductSessionSnapshot> PublishAsync(
-        ProductSessionOperation operation, SessionDto session, CancellationToken ct, long? expectedRevision)
+        ProductSessionOperation operation, SessionDto session, long? expectedRevision, CancellationToken ct)
     {
         await Drain.ConfigureAwait(false);
         await _storage.WaitAsync(ct).ConfigureAwait(false);
@@ -433,7 +429,7 @@ public sealed class ProductSessionAuthority : IDisposable
         {
             SessionDto session = await refresh(flight.Cancellation.Token).ConfigureAwait(false);
             ProductSessionSnapshot published = await PublishAsync(
-                flight.Original.Operation, session, flight.Cancellation.Token, flight.Original.Revision).ConfigureAwait(false);
+                flight.Original.Operation, session, flight.Original.Revision, flight.Cancellation.Token).ConfigureAwait(false);
             flight.CompletionSource.TrySetResult(published);
         }
         catch (Exception error) when (!flight.Completion.IsCompleted)
