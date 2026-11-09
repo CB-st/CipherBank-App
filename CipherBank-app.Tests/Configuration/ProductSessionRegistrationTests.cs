@@ -178,10 +178,11 @@ public sealed class ProductSessionRegistrationTests
         Mock<ICustodyService> custody = new();
         custody.Setup(c => c.UnlockAsync("123456")).ReturnsAsync(true);
         Mock<IProductClient> client = new(MockBehavior.Strict);
-        client.Setup(c => c.CreateSessionAsync(CancellationToken.None))
+        // Startup carries the original operation cancellation through both ports.
+        client.Setup(c => c.CreateSessionAsync(It.Is<CancellationToken>(ct => ct.CanBeCanceled)))
             .ReturnsAsync(new SessionDto { AccessToken = "access", RefreshToken = "refresh" });
         Mock<IPrefsStore> prefs = new();
-        prefs.Setup(p => p.LoadAsync(CancellationToken.None)).ReturnsAsync(new UserPrefs(TestPreferenceDefaults.Value));
+        prefs.Setup(p => p.LoadAsync(It.Is<CancellationToken>(ct => ct.CanBeCanceled))).ReturnsAsync(new UserPrefs(TestPreferenceDefaults.Value));
         services.AddSingleton(custody.Object);
         services.AddSingleton(client.Object);
         services.AddSingleton(prefs.Object);
@@ -214,7 +215,8 @@ public sealed class ProductSessionRegistrationTests
         session.AccessToken.Should().BeNull();
         (await provider.GetRequiredService<IProductSessionStore>().GetAsync()).Should().BeNull();
         custody.Verify(c => c.Lock(), Times.Once);
-        client.Verify(c => c.CreateSessionAsync(CancellationToken.None), Times.Once);
+        prefs.Verify(p => p.LoadAsync(It.Is<CancellationToken>(ct => ct.CanBeCanceled)), Times.Once);
+        client.Verify(c => c.CreateSessionAsync(It.Is<CancellationToken>(ct => ct.CanBeCanceled)), Times.Once);
         client.VerifyNoOtherCalls();
     }
 
