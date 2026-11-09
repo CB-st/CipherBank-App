@@ -9,6 +9,7 @@ using CipherBank_app.Configuration;
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
 using CipherBank_app.Session;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<LoginViewModel> _logger;
     private readonly IAppSession _session;
+    private readonly ProductSessionAuthority? _authority;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
 #if DEBUG
@@ -42,10 +44,12 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         INavigationService navigation,
         IDialogService dialog,
         ISettingsService settings,
-        IOptions<HostBehaviorOptions> hostBehavior)
+        IOptions<HostBehaviorOptions> hostBehavior,
+        ProductSessionAuthority? authority = null)
     {
         _logger = logger;
         _session = session;
+        _authority = authority;
         _navigation = navigation;
         _dialog = dialog;
         _settings = settings;
@@ -59,10 +63,12 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         ILogger<LoginViewModel> logger,
         IAppSession session,
         INavigationService navigation,
-        IDialogService dialog)
+        IDialogService dialog,
+        ProductSessionAuthority? authority = null)
     {
         _logger = logger;
         _session = session;
+        _authority = authority;
         _navigation = navigation;
         _dialog = dialog;
     }
@@ -109,6 +115,18 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private void RollbackLogin(ProductSessionOperation? identity)
+    {
+        if (identity is not null)
+        {
+            _authority!.Invalidate(identity, _session.Lock);
+        }
+        else
+        {
+            _session.Lock();
+        }
+    }
+
     [RelayCommand]
     private async Task SignInAsync()
     {
@@ -126,6 +144,7 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 
         IsBusy = true;
         ErrorMessage = null;
+        ProductSessionOperation? identity = null;
 
         try
         {
@@ -139,7 +158,17 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 
             // IAppSession has no cancellation overload: observe completion, then roll back
             // cancelled unlocks before navigation. Never abandon a live startup task.
-            bool unlocked = await _session.UnlockAsync(Password);
+            bool unlocked;
+            if (_session is AppSession app && _authority is not null)
+            {
+                identity = _authority.Begin();
+                unlocked = await app.UnlockAsync(Password, identity);
+            }
+            else
+            {
+                unlocked = await _session.UnlockAsync(Password);
+            }
+
             operation.Token.ThrowIfCancellationRequested();
 
             if (!unlocked)
@@ -151,31 +180,44 @@ public partial class LoginViewModel : ObservableObject, IDisposable
             // Navigation is the commit point; page disappearance during this transition
             // must not undo the completed session.
             LogLoginSuccessful(_logger);
-            await _navigation.GoToAsync(Routes.Dashboard);
+            if (identity is not null)
+            {
+                Task transition = Task.CompletedTask;
+                _authority!.Commit(identity, () =>
+                {
+                    operation.Token.ThrowIfCancellationRequested();
+                    transition = _navigation.GoToAsync(Routes.Dashboard);
+                });
+                await transition;
+            }
+            else
+            {
+                await _navigation.GoToAsync(Routes.Dashboard);
+            }
         }
         catch (HttpRequestException ex)
         {
-            _session.Lock();
+            RollbackLogin(identity);
             LogNetworkError(_logger, ex);
             ErrorMessage = "Network error. Please check your connection and try again.";
             await _dialog.ShowAlertAsync("Connection Error", ErrorMessage, "OK");
         }
         catch (OperationCanceledException)
         {
-            _session.Lock();
+            RollbackLogin(identity);
             LogLoginCancelled(_logger);
             ErrorMessage = "Login cancelled";
         }
         catch (InvalidOperationException ex)
         {
-            _session.Lock();
+            RollbackLogin(identity);
             LogInvalidOperation(_logger, ex);
             ErrorMessage = "Invalid credentials or server error";
             await _dialog.ShowAlertAsync("Login Failed", ErrorMessage, "OK");
         }
         catch (Exception ex)
         {
-            _session.Lock();
+            RollbackLogin(identity);
             LogUnexpectedError(_logger, ex);
             ErrorMessage = "An unexpected error occurred. Please try again.";
             await _dialog.ShowAlertAsync("Error", ErrorMessage, "OK");

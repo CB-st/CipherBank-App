@@ -43,13 +43,13 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
     };
 
     private readonly HttpClient _http;
-    private readonly IProductSessionStore _sessions;
+    private readonly ProductSessionAuthority _sessions;
     private readonly ISessionProofBuilder _sessionProof;
 
-    public HttpProductClient(HttpClient http, IProductSessionStore sessions, ISessionProofBuilder sessionProof)
+    public HttpProductClient(HttpClient http, IProductSessionStore sessions, ISessionProofBuilder sessionProof, ProductSessionAuthority? authority = null)
     {
         _http = http;
-        _sessions = sessions;
+        _sessions = authority ?? ProductSessionAuthority.For(sessions);
         _sessionProof = sessionProof;
     }
 
@@ -63,20 +63,7 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
     }
 
     public async Task<SessionDto> CreateSessionAsync(CancellationToken ct)
-    {
-        // Lab stub today; ISessionProofBuilder will swap to challenge/pass without changing this call site.
-        object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionPath, UriKind.Relative))
-        {
-            Content = JsonContent.Create(body),
-        };
-        using HttpResponseMessage resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
-        resp.EnsureSuccessStatusCode();
-        SessionDto? session = await resp.Content.ReadFromJsonAsync<SessionDto>(JsonOptions, ct).ConfigureAwait(false)
-            ?? throw new InvalidOperationException("Empty session response.");
-        await _sessions.SaveAsync(session).ConfigureAwait(false);
-        return session;
-    }
+        => await CreateSessionAsync(_sessions.Begin(), ct).ConfigureAwait(false);
 
     public async Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
@@ -179,6 +166,27 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
     public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
         => GetAsync<AccountBootstrapDto>(AccountBootstrapPath, ct);
 
+    internal async Task<SessionDto> CreateSessionAsync(ProductSessionOperation operation, CancellationToken ct)
+    {
+        _sessions.Check(operation, ct);
+        // Lab stub today; ISessionProofBuilder will swap to challenge/pass without changing this call site.
+        object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
+        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionPath, UriKind.Relative))
+        {
+            Content = JsonContent.Create(body),
+        };
+        _sessions.Check(operation, ct);
+        ProductSessionDispatch.SetOperation(req, operation);
+        using HttpResponseMessage resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        _sessions.Check(operation, ct);
+        resp.EnsureSuccessStatusCode();
+        SessionDto? session = await resp.Content.ReadFromJsonAsync<SessionDto>(JsonOptions, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Empty session response.");
+        await _sessions.PublishAsync(operation, session, ct).ConfigureAwait(false);
+        _sessions.Check(operation, ct);
+        return session;
+    }
+
     private async Task PutAsync(string path, object body, CancellationToken ct)
     {
         byte[] bodyUtf8 = JsonSerializer.SerializeToUtf8Bytes(body, JsonOptions);
@@ -217,35 +225,41 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
         string? idempotencyKey,
         CancellationToken ct)
     {
-        HttpResponseMessage resp = await SendOnceAsync(method, path, bodyUtf8, idempotencyKey, ct).ConfigureAwait(false);
+        ProductSessionOperation operation = _sessions.Capture();
+        ProductSessionSnapshot? original = await _sessions.ReadAsync(operation, ct).ConfigureAwait(false);
+        HttpResponseMessage resp = await SendOnceAsync(method, path, bodyUtf8, idempotencyKey, original, operation, ct).ConfigureAwait(false);
         if (resp.StatusCode != HttpStatusCode.Unauthorized)
         {
             return resp;
         }
 
         resp.Dispose();
-        await RefreshSessionAsync(ct).ConfigureAwait(false);
-        return await SendOnceAsync(method, path, bodyUtf8, idempotencyKey, ct).ConfigureAwait(false);
-    }
-
-    private async Task RefreshSessionAsync(CancellationToken ct)
-    {
-        (string Access, string Refresh, DateTimeOffset Expires)? stored =
-            await _sessions.GetAsync().ConfigureAwait(false);
-        if (stored is null)
+        if (original is null)
         {
             throw new UnauthorizedAccessException("Product session missing.");
         }
 
-        using HttpRequestMessage refreshReq = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionRefreshPath, UriKind.Relative))
+        ProductSessionSnapshot refreshed = await _sessions.RefreshAsync(
+            original,
+            token => RefreshSessionAsync(original, token),
+            ct).ConfigureAwait(false);
+        _sessions.Check(operation, ct);
+        return await SendOnceAsync(method, path, bodyUtf8, idempotencyKey, refreshed, operation, ct).ConfigureAwait(false);
+    }
+
+    private async Task<SessionDto> RefreshSessionAsync(ProductSessionSnapshot original, CancellationToken ct)
+    {
+        _sessions.Check(original.Operation, ct);
+        using HttpRequestMessage refreshReq = new(HttpMethod.Post, new Uri(SessionRefreshPath, UriKind.Relative))
         {
-            Content = JsonContent.Create(new { REFRESH_TOKEN = stored.Value.Refresh }),
+            Content = JsonContent.Create(new { REFRESH_TOKEN = original.Refresh }),
         };
+        ProductSessionDispatch.SetOperation(refreshReq, original.Operation);
+        ProductSessionDispatch.Set(refreshReq, original);
         using HttpResponseMessage refreshResp = await _http.SendAsync(refreshReq, ct).ConfigureAwait(false);
         refreshResp.EnsureSuccessStatusCode();
-        SessionDto? session = await refreshResp.Content.ReadFromJsonAsync<SessionDto>(JsonOptions, ct).ConfigureAwait(false)
+        return await refreshResp.Content.ReadFromJsonAsync<SessionDto>(JsonOptions, ct).ConfigureAwait(false)
             ?? throw new UnauthorizedAccessException("Session refresh failed.");
-        await _sessions.SaveAsync(session).ConfigureAwait(false);
     }
 
     private async Task<HttpResponseMessage> SendOnceAsync(
@@ -253,8 +267,11 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
         string path,
         byte[]? bodyUtf8,
         string? idempotencyKey,
+        ProductSessionSnapshot? snapshot,
+        ProductSessionOperation operation,
         CancellationToken ct)
     {
+        _sessions.Check(operation, ct);
         using HttpRequestMessage req = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
         if (bodyUtf8 is not null)
         {
@@ -267,7 +284,14 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
             req.Headers.TryAddWithoutValidation(IdempotencyHeader, idempotencyKey);
         }
 
-        // Bearer is injected by AuthHeaderHandler from IProductSessionStore.
+        ProductSessionDispatch.SetOperation(req, operation);
+        if (snapshot is not null)
+        {
+            ProductSessionDispatch.Set(req, snapshot);
+        }
+
+        // Admission cannot retract a request already transmitted to the transport.
+        _sessions.Check(operation, ct);
         return await _http.SendAsync(req, ct).ConfigureAwait(false);
     }
 }

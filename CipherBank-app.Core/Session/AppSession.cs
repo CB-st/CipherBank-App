@@ -6,6 +6,7 @@ using System.Net.WebSockets;
 using System.Text.Json;
 using CipherBank_app.Custody;
 using CipherBank_app.Persist;
+using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ using Microsoft.EntityFrameworkCore;
 namespace CipherBank_app.Session;
 
 /// <inheritdoc />
-public sealed class AppSession : IAppSession
+public sealed class AppSession : IAppSession, IDisposable
 {
     public static readonly int DefaultIdleMs = 60_000;
     private const int MillisecondsPerSecond = 1000;
@@ -23,7 +24,13 @@ public sealed class AppSession : IAppSession
     private readonly ILocalWalletSeeder _seeder;
     private readonly IPrefsStore _prefs;
     private readonly TimeProvider _timeProvider;
+    private readonly ProductSessionAuthority _authority;
+    private readonly SemaphoreSlim _custodyLane = new(1, 1);
     private DateTimeOffset _lastTouch;
+    private int _suppressCustodyEvent;
+    private ProductSessionOperation? _accessOperation;
+    private ProductSessionOperation? _lastCustodyRevocation;
+    private string? _accessToken;
     private Task _pendingDisconnect = Task.CompletedTask;
 
     public AppSession(
@@ -31,9 +38,12 @@ public sealed class AppSession : IAppSession
         IProductSessionCoordinator productSession,
         ILocalWalletSeeder seeder,
         IPrefsStore prefs,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ProductSessionAuthority? authority = null)
     {
         _custody = custody;
+        _authority = authority ?? (productSession as ProductSessionCoordinator)?.Authority
+            ?? ProductSessionAuthority.For(new InMemoryProductSessionStore());
         _productSession = productSession;
         _seeder = seeder;
         _prefs = prefs;
@@ -53,7 +63,26 @@ public sealed class AppSession : IAppSession
 
     public int IdleMs { get; set; }
 
-    public string? AccessToken { get; private set; }
+    public string? AccessToken
+    {
+        get
+        {
+            string? token = null;
+            if (_accessOperation is { } operation)
+            {
+                try
+                {
+                    _authority.Commit(operation, () => token = _accessToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Revocation won the race with this read.
+                }
+            }
+
+            return token;
+        }
+    }
 
     public async Task BootAsync()
     {
@@ -70,14 +99,18 @@ public sealed class AppSession : IAppSession
         }
     }
 
-    public async Task<bool> UnlockAsync(string pin)
+    public Task<bool> UnlockAsync(string pin)
+        => UnlockAsync(pin, _authority.Begin());
+
+    /// <summary>Uses the host's original login identity for custody, result and navigation admission.</summary>
+    public async Task<bool> UnlockAsync(string pin, ProductSessionOperation operation)
     {
-        if (!await _custody.UnlockAsync(pin).ConfigureAwait(false))
+        if (!await UnlockCustodyAsync(operation, () => _custody.UnlockAsync(pin)).ConfigureAwait(false))
         {
             return false;
         }
 
-        return await CompleteUnlockAsync(applyBootstrap: true).ConfigureAwait(false);
+        return await CompleteUnlockAsync(operation, applyBootstrap: true).ConfigureAwait(false);
     }
 
     public Task<bool> CanUnlockWithDeviceOwnerAsync()
@@ -85,33 +118,48 @@ public sealed class AppSession : IAppSession
 
     public async Task<bool> UnlockWithDeviceOwnerAsync()
     {
-        if (!await _custody.UnlockWithDeviceSecretAsync().ConfigureAwait(false))
+        ProductSessionOperation operation = _authority.Begin();
+        if (!await UnlockCustodyAsync(operation, _custody.UnlockWithDeviceSecretAsync).ConfigureAwait(false))
         {
             return false;
         }
 
-        return await CompleteUnlockAsync(applyBootstrap: true).ConfigureAwait(false);
+        return await CompleteUnlockAsync(operation, applyBootstrap: true).ConfigureAwait(false);
     }
 
     public void Touch() => _lastTouch = _timeProvider.GetUtcNow();
 
     public void Lock()
     {
-        TearDownProductSession();
-        _custody.Lock();
+        TearDownProductSession(lockCustody: true);
         Locked?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task FinishCustodySetupAsync(string mnemonic, string pin)
     {
-        await _custody.SealAsync(mnemonic, pin).ConfigureAwait(false);
-        await _seeder.EnsureDerivedAsync(mnemonic).ConfigureAwait(false);
-        if (!await CompleteUnlockAsync(applyBootstrap: false).ConfigureAwait(false))
+        ProductSessionOperation operation = _authority.Begin();
+        bool unlocked = await UnlockCustodyAsync(operation, async () =>
+        {
+            await _custody.SealAsync(mnemonic, pin).ConfigureAwait(false);
+            return true;
+        }).ConfigureAwait(false);
+        if (!unlocked)
+        {
+            throw new OperationCanceledException("Setup was invalidated.");
+        }
+
+        _authority.Check(operation);
+        await _authority.RunLocalAsync(
+            operation,
+            () => _seeder.EnsureDerivedAsync(mnemonic),
+            operation.Token).ConfigureAwait(false);
+        _authority.Check(operation);
+        if (!await CompleteUnlockAsync(operation, applyBootstrap: false).ConfigureAwait(false))
         {
             throw new InvalidOperationException("Custody sealed but product session setup failed.");
         }
 
-        HasWallet = true;
+        _authority.Commit(operation, () => HasWallet = true);
     }
 
     /// <summary>Returns true if idle exceeded and lock was applied.</summary>
@@ -131,72 +179,114 @@ public sealed class AppSession : IAppSession
         return true;
     }
 
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _custody.Locked -= OnCustodyLocked;
+        _custodyLane.Dispose();
+    }
+
+    private async Task<bool> UnlockCustodyAsync(ProductSessionOperation operation, Func<Task<bool>> unlock)
+    {
+        await _custodyLane.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await _authority.RunLocalAsync(operation, () => Task.CompletedTask, operation.Token).ConfigureAwait(false);
+            bool result = await unlock().ConfigureAwait(false);
+            try
+            {
+                _authority.Check(operation);
+            }
+            catch (OperationCanceledException)
+            {
+                // Replacement custody cannot enter this lane until stale unlock is re-locked.
+                _suppressCustodyEvent++;
+                try
+                {
+                    _custody.Lock();
+                }
+                finally
+                {
+                    _suppressCustodyEvent--;
+                }
+
+                return false;
+            }
+
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+        finally
+        {
+            _custodyLane.Release();
+        }
+    }
+
     /// <summary>
     /// Creates the product session and starts streams after custody is already unlocked.
     /// On session/stream failure, re-locks custody so callers never see unlock-failed with an open vault.
     /// Use: High (every unlock). Scope: AppSession + custody + product session store.
     /// </summary>
-    private async Task<bool> CompleteUnlockAsync(bool applyBootstrap)
+    private async Task<bool> CompleteUnlockAsync(ProductSessionOperation operation, bool applyBootstrap)
     {
         await _pendingDisconnect.ConfigureAwait(false);
         try
         {
-            ProductSessionStartResult result = await _productSession
-                .StartAsync(applyBootstrap, CancellationToken.None)
-                .ConfigureAwait(false);
-            AccessToken = result.AccessToken;
-            IdleMs = result.LockIdleSeconds > 0
-                ? result.LockIdleSeconds * MillisecondsPerSecond
-                : DefaultIdleMs;
+            _authority.Check(operation);
+            ProductSessionStartResult result = _productSession is ProductSessionCoordinator coordinator
+                ? await coordinator.StartAsync(operation, applyBootstrap, operation.Token).ConfigureAwait(false)
+                : await _productSession.StartAsync(applyBootstrap, operation.Token).ConfigureAwait(false);
+            _authority.Commit(operation, () =>
+            {
+                _accessToken = result.AccessToken;
+                _accessOperation = operation;
+                IdleMs = result.LockIdleSeconds > 0
+                    ? result.LockIdleSeconds * MillisecondsPerSecond
+                    : DefaultIdleMs;
 
-            Touch();
+                Touch();
+            });
             return true;
         }
         catch (InvalidOperationException)
         {
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
         catch (FormatException)
         {
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
         catch (ArgumentException)
         {
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
         catch (SqliteException)
         {
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
         catch (DbUpdateException)
         {
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
         catch (JsonException)
         {
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
         catch (HttpRequestException)
         {
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
         catch (WebSocketException)
         {
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
             // Includes TaskCanceledException from connect/request timeouts.
-            RollbackFailedUnlock();
-            return false;
+            return await FailedUnlockAsync(operation).ConfigureAwait(false);
         }
     }
 
@@ -206,9 +296,22 @@ public sealed class AppSession : IAppSession
     /// </summary>
     private void OnCustodyLocked(object? sender, EventArgs e)
     {
-        if (AccessToken is null)
+        if (_suppressCustodyEvent > 0)
         {
             return;
+        }
+
+        if (_lastCustodyRevocation is { } revoked)
+        {
+            try
+            {
+                _authority.Check(revoked);
+                return; // Duplicate event with no intervening attempt; never use AccessToken as this guard.
+            }
+            catch (OperationCanceledException)
+            {
+                // A new attempt, including one still inside custody, must be revoked.
+            }
         }
 
         TearDownProductSession();
@@ -219,21 +322,58 @@ public sealed class AppSession : IAppSession
     /// Clears access token, product session store, and queues stream disconnect.
     /// Use: High (lock paths). Scope: AppSession.
     /// </summary>
-    private void TearDownProductSession()
+    private void TearDownProductSession(bool lockCustody = false)
     {
-        _productSession.StopSession();
-        AccessToken = null;
-        QueueDisconnect();
+        _authority.Invalidate(onRevoked: () =>
+        {
+            _productSession.StopSession();
+            _accessToken = null;
+            _accessOperation = null;
+            if (lockCustody)
+            {
+                _suppressCustodyEvent++;
+                try
+                {
+                    _custody.Lock();
+                }
+                finally
+                {
+                    _suppressCustodyEvent--;
+                }
+            }
+
+            QueueDisconnect();
+            _lastCustodyRevocation = _authority.Capture();
+        });
     }
 
     /// <summary>
     /// Rolls custody and product tokens back when post-unlock session setup fails.
     /// Use: Low (failure path). Scope: AppSession unlock teardown.
     /// </summary>
-    private void RollbackFailedUnlock()
+    private async Task<bool> FailedUnlockAsync(ProductSessionOperation operation)
     {
-        TearDownProductSession();
-        _custody.Lock();
+        bool owned = false;
+        try
+        {
+            _authority.Commit(operation, () =>
+            {
+                owned = true;
+                TearDownProductSession(lockCustody: true);
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            // A stale failure has no authority over a newer unlocked custody/session.
+        }
+
+        if (owned)
+        {
+            await _pendingDisconnect.ConfigureAwait(false);
+            await _authority.Drain.ConfigureAwait(false);
+        }
+
+        return false;
     }
 
     /// <summary>

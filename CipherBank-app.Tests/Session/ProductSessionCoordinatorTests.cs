@@ -74,6 +74,8 @@ public class ProductSessionCoordinatorTests
         Mock<IStreamService> stream = new Mock<IStreamService>(MockBehavior.Strict);
         stream.Setup(s => s.ConnectAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("connect failed"));
+        // The ownership lane also drains a possibly partial connection before releasing it.
+        stream.Setup(s => s.DisconnectAsync()).Returns(Task.CompletedTask);
 
         Mock<IStreamHub> hub = new Mock<IStreamHub>(MockBehavior.Strict);
         hub.Setup(h => h.Start());

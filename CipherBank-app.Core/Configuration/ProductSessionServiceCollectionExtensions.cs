@@ -24,6 +24,17 @@ public static class ProductSessionServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton<ISessionProofBuilder, UnavailableSessionProofBuilder>();
         services.TryAddSingleton<IProductSessionStore, InMemoryProductSessionStore>();
+        services.TryAddSingleton<ProductSessionAuthority>(provider =>
+        {
+            ServiceDescriptor effective = services.Last(d => d.ServiceType == typeof(IProductSessionStore));
+            if (effective.Lifetime != ServiceLifetime.Singleton)
+            {
+                throw new InvalidOperationException("Product session backing must be a singleton.");
+            }
+
+            // Resolve only from the completed provider: M7 registers its secure store after Core.
+            return ProductSessionAuthority.For(provider.GetRequiredService<IProductSessionStore>());
+        });
         services.TryAddSingleton<IAppSession, AppSession>();
         services.TryAddSingleton<IProductSessionCoordinator, ProductSessionCoordinator>();
         services.TryAddSingleton<IStreamHub, StreamHub>();

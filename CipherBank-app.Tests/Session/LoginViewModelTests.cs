@@ -57,7 +57,7 @@ public sealed class LoginViewModelTests
         custody.Setup(c => c.UnlockAsync("123456")).ReturnsAsync(true);
         TaskCompletionSource<ProductSessionStartResult> startup = new(TaskCreationOptions.RunContinuationsAsynchronously);
         Mock<IProductSessionCoordinator> coordinator = new();
-        coordinator.Setup(c => c.StartAsync(true, CancellationToken.None)).Returns(startup.Task);
+        coordinator.Setup(c => c.StartAsync(true, It.Is<CancellationToken>(ct => ct.CanBeCanceled))).Returns(startup.Task);
         AppSession session = new(custody.Object, coordinator.Object, Mock.Of<ILocalWalletSeeder>(), Mock.Of<IPrefsStore>(), TimeProvider.System);
         Mock<INavigationService> navigation = new();
         using LoginViewModel viewModel = Create(session, navigation.Object);

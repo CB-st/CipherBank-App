@@ -32,27 +32,41 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
         string requestPath = request.RequestUri?.AbsolutePath ?? string.Empty;
         if (IsUnauthenticatedEndpoint(requestPath))
         {
+            ProductSessionAuthority? dispatchAuthority = _serviceProvider.GetService<ProductSessionAuthority>();
+            if (dispatchAuthority is not null)
+            {
+                ProductSessionDispatch.Check(request, dispatchAuthority, cancellationToken);
+            }
+
             return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
+        ProductSessionSnapshot? product = null;
+        ProductSessionAuthority? authority = null;
         try
         {
             IProductSessionStore? productSessions = _serviceProvider.GetService<IProductSessionStore>();
             if (productSessions is not null)
             {
-                (string Access, string Refresh, DateTimeOffset Expires)? product = await productSessions.GetAsync().ConfigureAwait(false);
+                authority = _serviceProvider.GetService<ProductSessionAuthority>() ?? ProductSessionAuthority.For(productSessions);
+                product = await ProductSessionDispatch.ReadAsync(request, authority, CancellationToken.None).ConfigureAwait(false);
                 if (product is { } p && p.Expires > _timeProvider.GetUtcNow().AddMinutes(ProductTokenSkewMinutes))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", p.Access);
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             if (_logger is not null)
             {
                 LogErrorAddingAuthHeader(_logger, ex);
             }
+        }
+
+        if (product is not null)
+        {
+            authority!.Check(product.Operation, CancellationToken.None);
         }
 
         return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
