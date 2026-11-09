@@ -14,7 +14,14 @@ public sealed class PrefsSyncService : IPrefsSyncService
     private readonly IProductClient _api;
     private readonly ProductSessionAuthority? _authority;
 
-    public PrefsSyncService(IPrefsStore store, IProductClient api, ProductSessionAuthority? authority = null)
+    public PrefsSyncService(
+        IPrefsStore store,
+        IProductClient api)
+        : this(store, api, null)
+    {
+    }
+
+    public PrefsSyncService(IPrefsStore store, IProductClient api, ProductSessionAuthority? authority)
     {
         _store = store;
         _authority = authority;

@@ -24,8 +24,17 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
         IProductClient api,
         IPrefsStore prefs,
         IRecipientRepository recipients,
+        TimeProvider timeProvider)
+        : this(api, prefs, recipients, timeProvider, null)
+    {
+    }
+
+    public AccountBootstrapService(
+        IProductClient api,
+        IPrefsStore prefs,
+        IRecipientRepository recipients,
         TimeProvider timeProvider,
-        ProductSessionAuthority? authority = null)
+        ProductSessionAuthority? authority)
     {
         _api = api;
         _authority = authority;

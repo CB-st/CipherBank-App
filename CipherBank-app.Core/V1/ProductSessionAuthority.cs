@@ -76,7 +76,9 @@ public sealed class ProductSessionAuthority : IDisposable
     }
 
     /// <summary>Checks original ownership, outside best-effort exception handling.</summary>
-    public void Check(ProductSessionOperation operation, CancellationToken ct = default)
+    public void Check(ProductSessionOperation operation) => Check(operation, CancellationToken.None);
+
+    public void Check(ProductSessionOperation operation, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         lock (_state)
@@ -97,7 +99,13 @@ public sealed class ProductSessionAuthority : IDisposable
     }
 
     /// <summary>Revokes immediately; queues physical removal behind admitted local writes.</summary>
-    public void Invalidate(ProductSessionOperation? expected = null, Action? onRevoked = null)
+    public void Invalidate() => Invalidate(null, null);
+
+    public void Invalidate(ProductSessionOperation? expected) => Invalidate(expected, null);
+
+    public void Invalidate(Action? onRevoked) => Invalidate(null, onRevoked);
+
+    public void Invalidate(ProductSessionOperation? expected, Action? onRevoked)
     {
         CancellationTokenSource? previous = null;
         try
@@ -163,7 +171,10 @@ public sealed class ProductSessionAuthority : IDisposable
     }
 
     /// <summary>Reads only a complete tuple, validating an initial backing read after its await.</summary>
-    public async Task<ProductSessionSnapshot?> ReadAsync(ProductSessionOperation operation, CancellationToken ct = default)
+    public Task<ProductSessionSnapshot?> ReadAsync(ProductSessionOperation operation)
+        => ReadAsync(operation, CancellationToken.None);
+
+    public async Task<ProductSessionSnapshot?> ReadAsync(ProductSessionOperation operation, CancellationToken ct)
     {
         try
         {
@@ -177,8 +188,16 @@ public sealed class ProductSessionAuthority : IDisposable
     }
 
     /// <summary>Serializes physical publication and atomically exposes it only to its original owner.</summary>
+    public Task<ProductSessionSnapshot> PublishAsync(
+        ProductSessionOperation operation, SessionDto session, CancellationToken ct)
+        => PublishAsync(operation, session, ct, null);
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Design",
+        "CA1068:CancellationToken parameters must come last",
+        Justification = "Preserve the existing positional API while replacing optional expectedRevision with an overload.")]
     public async Task<ProductSessionSnapshot> PublishAsync(
-        ProductSessionOperation operation, SessionDto session, CancellationToken ct, long? expectedRevision = null)
+        ProductSessionOperation operation, SessionDto session, CancellationToken ct, long? expectedRevision)
     {
         await Drain.ConfigureAwait(false);
         await _storage.WaitAsync(ct).ConfigureAwait(false);
@@ -191,7 +210,7 @@ public sealed class ProductSessionAuthority : IDisposable
                 CheckCore(operation);
                 if (_drain.IsFaulted)
                 {
-                    throw new InvalidOperationException("Product session cleanup must recover before publication.", _drain.Exception);
+                    throw new InvalidOperationException($"Product {nameof(session)} cleanup must recover before publication.", _drain.Exception);
                 }
 
                 if (expectedRevision.HasValue && _revision != expectedRevision.Value)
@@ -256,30 +275,15 @@ public sealed class ProductSessionAuthority : IDisposable
     }
 
     /// <summary>Drains admitted local effects before replacement; never wrap network work in this lane.</summary>
-    public async Task RunLocalAsync(ProductSessionOperation operation, Func<Task> action, CancellationToken ct)
+    public Task RunLocalAsync(ProductSessionOperation operation, Func<Task> action, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(action);
-        await Drain.ConfigureAwait(false);
-        await _storage.WaitAsync(ct).ConfigureAwait(false);
-        try
+        if (action is null)
         {
-            Check(operation, ct);
-            lock (_state)
-            {
-                CheckCore(operation);
-                if (_drain.IsFaulted)
-                {
-                    throw new InvalidOperationException("Product session cleanup must recover before local effects.", _drain.Exception);
-                }
-            }
+            // Preserve the original async API's faulted-task contract before entering the storage lane.
+            return Task.FromException(new ArgumentNullException(nameof(action)));
+        }
 
-            await action().ConfigureAwait(false);
-            Check(operation, ct);
-        }
-        finally
-        {
-            _storage.Release();
-        }
+        return RunLocalCoreAsync(operation, action, ct);
     }
 
     /// <summary>Coalesces rotating refresh for an exact epoch/revision; cancellation belongs to each waiter.</summary>
@@ -296,9 +300,7 @@ public sealed class ProductSessionAuthority : IDisposable
                 return current;
             }
 
-            if (_refresh is null || _refresh.Original.Operation.Epoch != _epoch
-                || _refresh.Original.Revision != original.Revision || _refresh.Completion.IsFaulted
-                || _refresh.Cancellation.IsCancellationRequested)
+            if (_refresh is null || NeedsNewRefresh(_refresh, original))
             {
                 _refresh = new ProductSessionRefreshFlight(original);
                 start = true;
@@ -332,6 +334,31 @@ public sealed class ProductSessionAuthority : IDisposable
         _lifetime.Dispose();
         _storage.Dispose();
         _refresh?.Dispose();
+    }
+
+    private async Task RunLocalCoreAsync(ProductSessionOperation operation, Func<Task> action, CancellationToken ct)
+    {
+        await Drain.ConfigureAwait(false);
+        await _storage.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            Check(operation, ct);
+            lock (_state)
+            {
+                CheckCore(operation);
+                if (_drain.IsFaulted)
+                {
+                    throw new InvalidOperationException("Product session cleanup must recover before local effects.", _drain.Exception);
+                }
+            }
+
+            await action().ConfigureAwait(false);
+            Check(operation, ct);
+        }
+        finally
+        {
+            _storage.Release();
+        }
     }
 
     private async Task<ProductSessionSnapshot?> ReadCoreAsync(ProductSessionOperation operation, CancellationToken ct = default)
@@ -375,6 +402,13 @@ public sealed class ProductSessionAuthority : IDisposable
         }
     }
 
+    // Keep the B1/H1H2 refresh admission decision under the state monitor.
+    private bool NeedsNewRefresh(ProductSessionRefreshFlight flight, ProductSessionSnapshot original)
+        => flight.Original.Operation.Epoch != _epoch
+            || flight.Original.Revision != original.Revision
+            || flight.Completion.IsFaulted
+            || flight.Cancellation.IsCancellationRequested;
+
     private void ReleaseWaiter(ProductSessionRefreshFlight flight, ProductSessionRefreshWaiter waiter)
     {
         lock (_state)
@@ -402,8 +436,9 @@ public sealed class ProductSessionAuthority : IDisposable
                 flight.Original.Operation, session, flight.Cancellation.Token, flight.Original.Revision).ConfigureAwait(false);
             flight.CompletionSource.TrySetResult(published);
         }
-        catch (Exception error)
+        catch (Exception error) when (!flight.Completion.IsCompleted)
         {
+            // This worker alone completes the flight; every failure must release its waiters (H1H2).
             flight.CompletionSource.TrySetException(error);
             // Observe the shared failure even if every waiter cancelled independently.
             _ = flight.Completion.Exception;
@@ -417,8 +452,9 @@ public sealed class ProductSessionAuthority : IDisposable
             await ClearAsync().ConfigureAwait(false);
             completion.SetResult();
         }
-        catch (Exception error)
+        catch (Exception error) when (!completion.Task.IsCompleted)
         {
+            // Invalidate installs this pending drain before starting its sole cleanup worker (B1).
             completion.SetException(error);
         }
     }

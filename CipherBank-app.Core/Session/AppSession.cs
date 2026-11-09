@@ -38,11 +38,21 @@ public sealed class AppSession : IAppSession, IDisposable
         IProductSessionCoordinator productSession,
         ILocalWalletSeeder seeder,
         IPrefsStore prefs,
+        TimeProvider timeProvider)
+        : this(custody, productSession, seeder, prefs, timeProvider, null)
+    {
+    }
+
+    public AppSession(
+        ICustodyService custody,
+        IProductSessionCoordinator productSession,
+        ILocalWalletSeeder seeder,
+        IPrefsStore prefs,
         TimeProvider timeProvider,
-        ProductSessionAuthority? authority = null)
+        ProductSessionAuthority? authority)
     {
         _custody = custody;
-        _authority = authority ?? (productSession as ProductSessionCoordinator)?.Authority
+        _authority = authority ?? (productSession as ProductSessionCoordinator)?.Authority // NOSONAR S3215 — intentional fallback when optional authority is omitted; IProductSessionCoordinator does not expose Authority; upper DI (#98) injects ProductSessionAuthority and concrete ProductSessionCoordinator; changing interface/DI is out of M3b Sonar scope.
             ?? throw new ArgumentException("A shared authority is required for a custom product session coordinator.", nameof(authority));
         _productSession = productSession;
         _seeder = seeder;

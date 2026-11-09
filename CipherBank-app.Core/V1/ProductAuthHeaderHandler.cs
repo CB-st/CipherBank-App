@@ -13,7 +13,13 @@ public sealed class ProductAuthHeaderHandler : DelegatingHandler
 {
     private readonly ProductSessionAuthority _sessions;
 
-    public ProductAuthHeaderHandler(IProductSessionStore sessions, ProductSessionAuthority? authority = null)
+    public ProductAuthHeaderHandler(
+        IProductSessionStore sessions)
+        : this(sessions, null)
+    {
+    }
+
+    public ProductAuthHeaderHandler(IProductSessionStore sessions, ProductSessionAuthority? authority)
     {
         _sessions = authority ?? ProductSessionAuthority.For(sessions);
     }

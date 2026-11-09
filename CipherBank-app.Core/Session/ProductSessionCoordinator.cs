@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using CipherBank_app.Persist;
 using CipherBank_app.V1;
@@ -30,8 +31,24 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator, IDis
         IPrefsStore prefs,
         IPrefsSyncService prefsSync,
         IAccountBootstrapService bootstrap,
+        IProductSessionStore productSessions)
+        : this(client, stream, streamHub, prefs, prefsSync, bootstrap, productSessions, null)
+    {
+    }
+
+    [SuppressMessage(
+        "Major Code Smell",
+        "S107:Methods should not have too many parameters",
+        Justification = "Session orchestration requires client/stream/hub/prefs/sync/bootstrap/store/authority; collapsing into an options bag would retouch Maui DI registration used by upper #98/#37-#40.")]
+    public ProductSessionCoordinator(
+        IProductClient client,
+        IStreamService stream,
+        IStreamHub streamHub,
+        IPrefsStore prefs,
+        IPrefsSyncService prefsSync,
+        IAccountBootstrapService bootstrap,
         IProductSessionStore productSessions,
-        ProductSessionAuthority? authority = null)
+        ProductSessionAuthority? authority)
     {
         _client = client;
         _stream = stream;
@@ -116,36 +133,10 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator, IDis
         {
             try
             {
-                if (_prefsSync is PrefsSyncService prefsSync)
-                {
-                    await prefsSync.PullMergeAsync(operation, _productSessions, ct).ConfigureAwait(false);
-                }
-                else
-                {
-                    await _prefsSync.PullMergeAsync(ct).ConfigureAwait(false);
-                }
-
-                _productSessions.Check(operation, ct);
-                if (applyBootstrap)
-                {
-                    if (_bootstrap is AccountBootstrapService bootstrap)
-                    {
-                        await bootstrap.ApplyAsync(operation, _productSessions, ct).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        await _bootstrap.ApplyAsync(ct).ConfigureAwait(false);
-                    }
-
-                    _productSessions.Check(operation, ct);
-                }
+                await ApplyPreferencesAndBootstrapAsync(operation, applyBootstrap, ct).ConfigureAwait(false);
 
                 UserPrefs prefs = await _prefs.LoadAsync(ct).ConfigureAwait(false);
                 lockIdleSeconds = prefs.LockIdleSeconds;
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
             }
             catch (InvalidOperationException)
             {
@@ -184,6 +175,34 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator, IDis
         {
             await DisconnectOwnedAsync(operation).ConfigureAwait(false);
             throw;
+        }
+    }
+
+    private async Task ApplyPreferencesAndBootstrapAsync(
+        ProductSessionOperation operation, bool applyBootstrap, CancellationToken ct)
+    {
+        if (_prefsSync is PrefsSyncService prefsSync)
+        {
+            await prefsSync.PullMergeAsync(operation, _productSessions, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            await _prefsSync.PullMergeAsync(ct).ConfigureAwait(false);
+        }
+
+        _productSessions.Check(operation, ct);
+        if (applyBootstrap)
+        {
+            if (_bootstrap is AccountBootstrapService bootstrap)
+            {
+                await bootstrap.ApplyAsync(operation, _productSessions, ct).ConfigureAwait(false);
+            }
+            else
+            {
+                await _bootstrap.ApplyAsync(ct).ConfigureAwait(false);
+            }
+
+            _productSessions.Check(operation, ct);
         }
     }
 

@@ -46,7 +46,15 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
     private readonly ProductSessionAuthority _sessions;
     private readonly ISessionProofBuilder _sessionProof;
 
-    public HttpProductClient(HttpClient http, IProductSessionStore sessions, ISessionProofBuilder sessionProof, ProductSessionAuthority? authority = null)
+    public HttpProductClient(
+        HttpClient http,
+        IProductSessionStore sessions,
+        ISessionProofBuilder sessionProof)
+        : this(http, sessions, sessionProof, null)
+    {
+    }
+
+    public HttpProductClient(HttpClient http, IProductSessionStore sessions, ISessionProofBuilder sessionProof, ProductSessionAuthority? authority)
     {
         _http = http;
         _sessions = authority ?? ProductSessionAuthority.For(sessions);
