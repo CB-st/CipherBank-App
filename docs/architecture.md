@@ -2,7 +2,7 @@
 
 ## Overview
 
-CipherBank-app uses a layered architecture with clear separation between the MAUI app, Core library, and test projects.
+CipherBank-app uses a layered architecture with clear separation between the MAUI app, Core and Presentation libraries, and test projects.
 
 ```mermaid
 flowchart TB
@@ -15,12 +15,17 @@ flowchart TB
         CoreInterfaces[Interfaces]
         CoreModels[Models]
     end
+    subgraph presentation [CipherBank-app.Presentation]
+        Lifetime[ViewModel/page-lifecycle support]
+    end
     subgraph tests [Test Projects]
         UnitTests[Unit Tests]
         IntegrationTests[Integration Tests]
         E2ETests[E2E Tests]
     end
     Views --> ViewModels
+    ViewModels --> Lifetime
+    UnitTests --> Lifetime
     ViewModels --> Services
     Services --> CoreInterfaces
     Services --> CoreModels
@@ -35,6 +40,7 @@ flowchart TB
 | **Views** | XAML UI, bindings, user interaction. No business logic. |
 | **ViewModels** | Presentation logic, commands, state. Uses CommunityToolkit.Mvvm. |
 | **Services** | API calls, auth, persistence. Implements Core interfaces. |
+| **Presentation** | Platform-neutral ViewModel/page-lifecycle helpers; no MAUI or platform APIs and no Core dependency. Internal helpers are accessible only to the MAUI app and unit tests. |
 | **Core** | Shared interfaces, models, validation, rate limiting. Referenced by tests. |
 
 **Note**: The app references CipherBank-app.Core as the single source of truth for Models and service interfaces. Core is MAUI-agnostic.

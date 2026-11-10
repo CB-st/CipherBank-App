@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CipherBank.Presentation</RootNamespace>
+    <Company>CipherBank</Company>
+    <Product>CipherBank App Presentation</Product>
+    <Description>Platform-neutral ViewModel and page-lifecycle support for CipherBank.</Description>
+    <RepositoryUrl>https://github.com/CB-st/CipherBank-App</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CipherBank-app" />
+    <InternalsVisibleTo Include="CipherBank-app.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.CLSCompliantAttribute">
+      <_Parameter1>false</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.InteropServices.ComVisibleAttribute">
+      <_Parameter1>false</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

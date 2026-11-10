@@ -2,6 +2,10 @@
 
 The CipherBank-app project is the main .NET MAUI application targeting Android, iOS, Mac Catalyst, and Windows.
 
+The app references Core for domain/application services and `CipherBank-app.Presentation`
+for platform-neutral ViewModel/page-lifecycle support such as `PurchaseRequestLifetime`.
+Presentation targets plain `net10.0` and has no Core, MAUI, or platform dependencies.
+
 ## Entry Point
 
 - **App.xaml / App.xaml.cs**: Application class. `CreateWindow` returns a `Window` hosting `AppShell`.

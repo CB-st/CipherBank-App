@@ -104,6 +104,7 @@ jobs:
           # references; restore their native targets again before --no-restore.
           dotnet restore CipherBank-app.Analyzers/CipherBank-app.Analyzers.csproj
           dotnet restore CipherBank-app.Core/CipherBank-app.Core.csproj
+          dotnet restore CipherBank-app.Presentation/CipherBank-app.Presentation.csproj
 
       - name: Build platform app
         shell: bash
@@ -379,7 +380,7 @@ jobs:
         run: dotnet tool install --global dotnet-sonarscanner
 
       ### 5. Begin / build / end ################################################
-      # Scan Core + Tests when present; skip missing .csproj paths; no MAUI host.
+      # Scan Core + Presentation + Tests when present; skip missing .csproj paths; no MAUI host.
       - name: Begin SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -434,7 +435,7 @@ jobs:
             /d:sonar.cs.opencover.reportsPaths="reports/coverage.opencover.xml,reports/analyzer.opencover.xml,CipherBank-app.Tests/coverage/coverage.opencover.xml" \
             "${extra_args[@]}"
 
-      # Scan graph: Analyzers + Core + unit tests. Sibling trees still reach
+      # Scan graph: Analyzers + Core + Presentation + unit tests. Sibling trees still reach
       # structure analyzers via Directory.Build.targets additional files.
       - name: Build analyzable projects
         run: |
@@ -442,6 +443,7 @@ jobs:
           projects=(
             CipherBank-app.Analyzers/CipherBank-app.Analyzers.csproj
             CipherBank-app.Core/CipherBank-app.Core.csproj
+            CipherBank-app.Presentation/CipherBank-app.Presentation.csproj
             CipherBank-app.Tests/CipherBank-app.Tests.csproj
           )
           built=0
