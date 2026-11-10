@@ -11,6 +11,15 @@ namespace CipherBank_app.Security;
 /// <summary>Platform-neutral API hostname and SPKI pin policy.</summary>
 public static class CertificatePinPolicy
 {
+    /// <summary>
+    /// HPKP-style prefix used by the C# pin comparison. Android network security
+    /// config stores the base64 digest only and puts the algorithm on the pin element.
+    /// </summary>
+    public static string SpkiSha256Prefix { get; } = "sha256/";
+
+    /// <summary>Marker that means a pin has not been replaced with a real SPKI hash.</summary>
+    public static string PlaceholderMarker { get; } = "REPLACE_WITH_";
+
     public static string ProductionHost { get; } = "api.cipherbank.money";
 
     public static string SandboxHost { get; } = "api.sandbox.cipherbank.money";
@@ -44,7 +53,61 @@ public static class CertificatePinPolicy
     public static string ComputeSpkiSha256Pin(ReadOnlySpan<byte> subjectPublicKeyInfo)
     {
         byte[] hash = SHA256.HashData(subjectPublicKeyInfo);
-        return $"sha256/{Convert.ToBase64String(hash)}";
+        return string.Concat(SpkiSha256Prefix, Convert.ToBase64String(hash));
+    }
+
+    /// <summary>Returns true when <paramref name="pin"/> still contains <see cref="PlaceholderMarker"/>.</summary>
+    public static bool IsPlaceholderPin(string pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        return pin.Contains(PlaceholderMarker, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Returns true when <paramref name="pin"/> is <c>sha256/</c> followed by the
+    /// canonical Base64 encoding of a 32-byte SHA-256 digest (no whitespace).
+    /// </summary>
+    public static bool IsWellFormedSpkiSha256Pin(string pin)
+    {
+        ArgumentNullException.ThrowIfNull(pin);
+        if (!pin.StartsWith(SpkiSha256Prefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // Base64 decoding skips whitespace, so compare the canonical re-encoding to reject it.
+        string encoded = pin[SpkiSha256Prefix.Length..];
+        Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
+        return Convert.TryFromBase64String(encoded, digest, out int written)
+            && written == SHA256.HashSizeInBytes
+            && string.Equals(Convert.ToBase64String(digest), encoded, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Fails when any configured pin is a placeholder or is not a well-formed SPKI SHA-256 pin.
+    /// Release startup calls this so a build cannot ship without real pins.
+    /// </summary>
+    public static void EnsureReleasePinsAreConfigured() =>
+        EnsurePinsAreNotPlaceholders(ProductionPin, BackupPin, SandboxPin, SandboxBackupPin);
+
+    /// <summary>
+    /// Fails when any supplied pin still contains <see cref="PlaceholderMarker"/> or is not
+    /// <c>sha256/</c> followed by a Base64 SHA-256 digest (see <see cref="IsWellFormedSpkiSha256Pin"/>).
+    /// </summary>
+    public static void EnsurePinsAreNotPlaceholders(params string[] pins)
+    {
+        ArgumentNullException.ThrowIfNull(pins);
+        if (Array.Exists(pins, IsPlaceholderPin))
+        {
+            throw new InvalidOperationException(
+                "Certificate pin configuration contains a REPLACE_WITH_ placeholder. Replace the production and sandbox pins before shipping a Release build.");
+        }
+
+        if (!Array.TrueForAll(pins, IsWellFormedSpkiSha256Pin))
+        {
+            throw new InvalidOperationException(
+                "Certificate pin configuration contains a pin that is not sha256/ followed by a Base64 SHA-256 digest. Replace it with a real SPKI pin before shipping a Release build.");
+        }
     }
 
     public static bool TryComputeSpkiSha256PinFromCertificateDer(

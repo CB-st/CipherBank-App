@@ -89,6 +89,12 @@ jobs:
         shell: bash
         run: dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj -c "${{ matrix.configuration }}" -p:CollectCoverage=false
 
+      - name: Verify Android pins match CertificatePinPolicy
+        if: ${{ matrix.name == 'Android' }}
+        shell: bash
+        # Android pins come from network_security_config.xml, not the C# policy; gate packaging on the contract.
+        run: dotnet test CipherBank-app.IntegrationTests/CipherBank-app.IntegrationTests.csproj -c "${{ matrix.configuration }}" --filter "FullyQualifiedName~AndroidCertificatePinContractTests"
+
       - name: Restore platform app
         shell: bash
         run: |

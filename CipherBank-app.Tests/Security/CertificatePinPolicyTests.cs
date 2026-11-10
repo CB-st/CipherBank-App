@@ -52,4 +52,73 @@ public sealed class CertificatePinPolicyTests
             .BeTrue();
         pin.Should().Be(expectedPin);
     }
+
+    [Theory]
+    [InlineData("sha256/REPLACE_WITH_PRODUCTION_PIN=", true)]
+    [InlineData("REPLACE_WITH_BACKUP_PIN=", true)]
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=", false)]
+    [InlineData("", false)]
+    public void IsPlaceholderPin_DetectsReplaceWithMarker(string pin, bool isPlaceholder) =>
+        CertificatePinPolicy.IsPlaceholderPin(pin).Should().Be(isPlaceholder);
+
+    [Fact]
+    public void IsPlaceholderPin_RejectsNull()
+    {
+        Action act = () => CertificatePinPolicy.IsPlaceholderPin(null!);
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void EnsurePinsAreNotPlaceholders_ThrowsWhenAnyPinContainsTheMarker()
+    {
+        Action act = () => CertificatePinPolicy.EnsurePinsAreNotPlaceholders(
+            "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=",
+            "sha256/REPLACE_WITH_BACKUP_PIN=");
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*REPLACE_WITH_*");
+    }
+
+    [Fact]
+    public void EnsurePinsAreNotPlaceholders_AllowsPinsWithoutTheMarker()
+    {
+        Action act = () => CertificatePinPolicy.EnsurePinsAreNotPlaceholders(
+            "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=",
+            "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void EnsurePinsAreNotPlaceholders_ThrowsOnMalformedPin()
+    {
+        Action act = () => CertificatePinPolicy.EnsurePinsAreNotPlaceholders(
+            "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=",
+            "sha256/BACKUP_PIN_HERE=");
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*Base64 SHA-256 digest*");
+    }
+
+    [Theory]
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=", true)]
+    [InlineData("sha256/ISiAtvm91VBP2VBIgpTKAfPeV/2RH/sai0RFOhdu55o=", true)]
+    [InlineData("YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=", false)] // missing sha256/ prefix
+    [InlineData("SHA256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=", false)] // prefix is case-sensitive
+    [InlineData("sha256/BACKUP_PIN_HERE=", false)] // prose placeholder, not Base64
+    [InlineData("sha256/REPLACE_WITH_PRODUCTION_PIN=", false)]
+    [InlineData("sha256/AAAA", false)] // 3-byte digest
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2FuihgAAAA=", false)] // 35-byte digest
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=\n", false)] // trailing newline
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7 JKnbQG/uEtLMkBgFF2Fuihg=", false)] // embedded space
+    [InlineData("sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihh=", false)] // non-canonical padding bits
+    [InlineData("sha256/", false)]
+    [InlineData("", false)]
+    public void IsWellFormedSpkiSha256Pin_RequiresPrefixAndBase64Sha256Digest(string pin, bool expected) =>
+        CertificatePinPolicy.IsWellFormedSpkiSha256Pin(pin).Should().Be(expected);
+
+    [Fact]
+    public void IsWellFormedSpkiSha256Pin_RejectsNull()
+    {
+        Action act = () => CertificatePinPolicy.IsWellFormedSpkiSha256Pin(null!);
+        act.Should().Throw<ArgumentNullException>();
+    }
 }
