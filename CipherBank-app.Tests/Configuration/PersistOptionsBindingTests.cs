@@ -31,6 +31,32 @@ public sealed class PersistOptionsBindingTests
         development.DefaultRecipients[1].Id.Should().Be("seed:utilities-co");
     }
 
+    /// <summary>
+    /// The configuration binder can assign null to non-nullable AccountType.
+    /// That seed row must fail validation without throwing from Trim().
+    /// Use: Medium. Scope: persist options contract.
+    /// </summary>
+    [Fact]
+    public void AreDefaultRecipientsValid_NullAccountType_ReturnsFalseWithoutThrowing()
+    {
+        PersistenceOptions options = new();
+        options.DefaultRecipients.Add(new DefaultRecipientOptions
+        {
+            Id = "seed:rent-4th-st",
+            Name = "Rent — 4th St LLC",
+            Holder = "4th St LLC",
+            Bank = "Demo Bank",
+            Routing = "021000021",
+            Account = "88210001",
+            AccountType = null!,
+            Memo = "Rent",
+        });
+
+        Func<bool> validate = options.AreDefaultRecipientsValid;
+
+        validate.Should().NotThrow().Which.Should().BeFalse();
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("../cipherbank.db")]

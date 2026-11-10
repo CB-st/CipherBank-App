@@ -30,8 +30,16 @@ public sealed class SimulatedBlurBackdropViewHandler :
         SimulatedBlurBackdropViewHandler handler,
         BlurBackdropView view)
     {
+        byte red = 24;
+        byte green = 24;
+        byte blue = 30;
+        if (!view.UseDarkMaterial)
+        {
+            ThemeTokens.Get("Surface").ToRgb(out red, out green, out blue);
+        }
+
         int alpha = view.UseDarkMaterial ? 204 : 235;
         handler.PlatformView.Background = new ColorDrawable(
-            global::Android.Graphics.Color.Argb(alpha, 24, 24, 30));
+            global::Android.Graphics.Color.Argb(alpha, red, green, blue));
     }
 }

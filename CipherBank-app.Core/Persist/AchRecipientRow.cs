@@ -38,7 +38,7 @@ public sealed record AchRecipientRow(
             seed.Bank,
             seed.Routing,
             seed.Account,
-            seed.AccountType,
+            CanonicalAccountType(seed.AccountType),
             seed.Memo,
             null,
             null,
@@ -65,5 +65,21 @@ public sealed record AchRecipientRow(
             entity.RoutingMask,
             entity.CreatedAt)
     {
+    }
+
+    /// <summary>
+    /// Maps a padded or mixed-case seed account type to the persisted lowercase form.
+    /// Unknown values are only trimmed so validation reports them unchanged.
+    /// Use: Low (startup seeding). Scope: this record.
+    /// </summary>
+    private static string CanonicalAccountType(string accountType)
+    {
+        string trimmed = accountType.Trim();
+        return trimmed.ToUpperInvariant() switch
+        {
+            "CHECKING" => "checking",
+            "SAVINGS" => "savings",
+            _ => trimmed,
+        };
     }
 }

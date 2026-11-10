@@ -72,7 +72,8 @@
                                Text="Biometric Authentication"
                                VerticalOptions="Center" />
                         <Switch Grid.Column="1"
-                                IsToggled="{Binding BiometricEnabled}" />
+                                IsToggled="{Binding BiometricEnabled}"
+                                SemanticProperties.Description="Biometric Authentication" />
                     </Grid>
 
                     <VerticalStackLayout Spacing="6">
@@ -98,7 +99,8 @@
                                Text="Push Notifications"
                                VerticalOptions="Center" />
                         <Switch Grid.Column="1"
-                                IsToggled="{Binding NotificationsEnabled}" />
+                                IsToggled="{Binding NotificationsEnabled}"
+                                SemanticProperties.Description="Push Notifications" />
                     </Grid>
 
                     <Label Text="Receive alerts for price changes and transactions."

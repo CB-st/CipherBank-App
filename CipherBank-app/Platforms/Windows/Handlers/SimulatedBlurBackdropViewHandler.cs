@@ -29,8 +29,16 @@ public sealed class SimulatedBlurBackdropViewHandler : ViewHandler<BlurBackdropV
         SimulatedBlurBackdropViewHandler handler,
         BlurBackdropView view)
     {
+        byte red = 24;
+        byte green = 24;
+        byte blue = 30;
+        if (!view.UseDarkMaterial)
+        {
+            ThemeTokens.Get("Surface").ToRgb(out red, out green, out blue);
+        }
+
         byte alpha = view.UseDarkMaterial ? (byte)204 : (byte)235;
         handler.PlatformView.Background = new PlatformBrush(
-            Windows.UI.Color.FromArgb(alpha, 24, 24, 30));
+            Windows.UI.Color.FromArgb(alpha, red, green, blue));
     }
 }
