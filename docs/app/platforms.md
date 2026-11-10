@@ -59,7 +59,8 @@ adapters are implemented.
 ## Shared platform boundaries
 
 Shared host code contains no platform preprocessor ladder. Each platform folder
-registers `IPlatformHttpMessageHandlerFactory`, `IMotionPreference`, and the
-appropriate `BlurBackdropView` handler. Apple uses native blur; Android and
-Windows register simulated material handlers. Unsupported targets never fall
-back to an unpinned HTTP handler.
+registers `IPlatformHttpMessageHandlerFactory` and `IMotionPreference`. iOS and
+Mac Catalyst register a native `BlurBackdropView` handler; Android and Windows
+register simulated material handlers. Tizen `AddPlatformHandlers` throws
+`PlatformNotSupportedException` and does not register a blur handler.
+Unsupported targets never fall back to an unpinned HTTP handler.
