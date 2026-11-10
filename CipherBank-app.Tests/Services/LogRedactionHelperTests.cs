@@ -17,10 +17,10 @@ public class LogRedactionHelperTests
     public void RedactUsername_StandardUsername_RedactsMiddle()
     {
         // Arrange
-        var username = "testuser123";
+        string username = "testuser123";
 
         // Act
-        var redacted = LogRedactionHelper.RedactUsername(username);
+        string redacted = LogRedactionHelper.RedactUsername(username);
 
         // Assert
         redacted.Should().NotBe(username);
@@ -34,10 +34,10 @@ public class LogRedactionHelperTests
     public void RedactUsername_ShortUsername_ReturnsRedactionMarker()
     {
         // Arrange
-        var username = "ab";
+        string username = "ab";
 
         // Act
-        var redacted = LogRedactionHelper.RedactUsername(username);
+        string redacted = LogRedactionHelper.RedactUsername(username);
 
         // Assert
         redacted.Should().Be("***");
@@ -47,7 +47,7 @@ public class LogRedactionHelperTests
     public void RedactUsername_NullUsername_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.RedactUsername(null);
+        string redacted = LogRedactionHelper.RedactUsername(null);
 
         // Assert
         redacted.Should().Be("[empty]");
@@ -57,7 +57,7 @@ public class LogRedactionHelperTests
     public void RedactUsername_EmptyUsername_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.RedactUsername(string.Empty);
+        string redacted = LogRedactionHelper.RedactUsername(string.Empty);
 
         // Assert
         redacted.Should().Be("[empty]");
@@ -67,10 +67,10 @@ public class LogRedactionHelperTests
     public void RedactWalletId_StandardWalletId_RedactsMiddle()
     {
         // Arrange
-        var walletId = "wallet1234567890abcdef";
+        string walletId = "wallet1234567890abcdef";
 
         // Act
-        var redacted = LogRedactionHelper.RedactWalletId(walletId);
+        string redacted = LogRedactionHelper.RedactWalletId(walletId);
 
         // Assert
         redacted.Should().NotBe(walletId);
@@ -84,10 +84,10 @@ public class LogRedactionHelperTests
     public void RedactWalletId_ShortWalletId_RedactsPartially()
     {
         // Arrange
-        var walletId = "short";
+        string walletId = "short";
 
         // Act
-        var redacted = LogRedactionHelper.RedactWalletId(walletId);
+        string redacted = LogRedactionHelper.RedactWalletId(walletId);
 
         // Assert
         redacted.Should().StartWith("sh");
@@ -98,7 +98,7 @@ public class LogRedactionHelperTests
     public void RedactWalletId_NullWalletId_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.RedactWalletId(null);
+        string redacted = LogRedactionHelper.RedactWalletId(null);
 
         // Assert
         redacted.Should().Be("[empty]");
@@ -108,10 +108,10 @@ public class LogRedactionHelperTests
     public void RedactAddress_BitcoinAddress_RedactsMiddle()
     {
         // Arrange
-        var address = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
+        string address = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
 
         // Act
-        var redacted = LogRedactionHelper.RedactAddress(address);
+        string redacted = LogRedactionHelper.RedactAddress(address);
 
         // Assert
         redacted.Should().NotBe(address);
@@ -124,10 +124,10 @@ public class LogRedactionHelperTests
     public void RedactAddress_EthereumAddress_RedactsMiddle()
     {
         // Arrange
-        var address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
+        string address = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0";
 
         // Act
-        var redacted = LogRedactionHelper.RedactAddress(address);
+        string redacted = LogRedactionHelper.RedactAddress(address);
 
         // Assert
         redacted.Should().NotBe(address);
@@ -140,10 +140,10 @@ public class LogRedactionHelperTests
     public void RedactAddress_ShortAddress_RedactsPartially()
     {
         // Arrange
-        var address = "short";
+        string address = "short";
 
         // Act
-        var redacted = LogRedactionHelper.RedactAddress(address);
+        string redacted = LogRedactionHelper.RedactAddress(address);
 
         // Assert
         redacted.Should().StartWith("sho");
@@ -154,7 +154,7 @@ public class LogRedactionHelperTests
     public void RedactAddress_NullAddress_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.RedactAddress(null);
+        string redacted = LogRedactionHelper.RedactAddress(null);
 
         // Assert
         redacted.Should().Be("[empty]");
@@ -164,10 +164,10 @@ public class LogRedactionHelperTests
     public void RedactToken_JwtToken_RedactsAfterPrefix()
     {
         // Arrange
-        var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
+        string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
 
         // Act
-        var redacted = LogRedactionHelper.RedactToken(token);
+        string redacted = LogRedactionHelper.RedactToken(token);
 
         // Assert
         redacted.Should().NotBe(token);
@@ -180,10 +180,10 @@ public class LogRedactionHelperTests
     public void RedactToken_ShortToken_ReturnsRedactionMarker()
     {
         // Arrange
-        var token = "short";
+        string token = "short";
 
         // Act
-        var redacted = LogRedactionHelper.RedactToken(token);
+        string redacted = LogRedactionHelper.RedactToken(token);
 
         // Assert
         redacted.Should().Be("***");
@@ -193,7 +193,7 @@ public class LogRedactionHelperTests
     public void RedactToken_NullToken_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.RedactToken(null);
+        string redacted = LogRedactionHelper.RedactToken(null);
 
         // Assert
         redacted.Should().Be("[empty]");
@@ -203,10 +203,10 @@ public class LogRedactionHelperTests
     public void RedactEmail_StandardEmail_RedactsLocalPart()
     {
         // Arrange
-        var email = "user@example.com";
+        string email = "user@example.com";
 
         // Act
-        var redacted = LogRedactionHelper.RedactEmail(email);
+        string redacted = LogRedactionHelper.RedactEmail(email);
 
         // Assert
         redacted.Should().NotBe(email);
@@ -219,10 +219,10 @@ public class LogRedactionHelperTests
     public void RedactEmail_ShortLocalPart_RedactsWithMarker()
     {
         // Arrange
-        var email = "a@example.com";
+        string email = "a@example.com";
 
         // Act
-        var redacted = LogRedactionHelper.RedactEmail(email);
+        string redacted = LogRedactionHelper.RedactEmail(email);
 
         // Assert
         redacted.Should().Contain("***");
@@ -233,10 +233,10 @@ public class LogRedactionHelperTests
     public void RedactEmail_InvalidEmail_ReturnsRedactionMarker()
     {
         // Arrange
-        var email = "notanemail";
+        string email = "notanemail";
 
         // Act
-        var redacted = LogRedactionHelper.RedactEmail(email);
+        string redacted = LogRedactionHelper.RedactEmail(email);
 
         // Assert
         redacted.Should().Be("***");
@@ -246,7 +246,7 @@ public class LogRedactionHelperTests
     public void RedactEmail_NullEmail_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.RedactEmail(null);
+        string redacted = LogRedactionHelper.RedactEmail(null);
 
         // Assert
         redacted.Should().Be("[empty]");
@@ -256,10 +256,10 @@ public class LogRedactionHelperTests
     public void RedactTransactionId_StandardId_RedactsMiddle()
     {
         // Arrange
-        var transactionId = "tx_1234567890abcdef";
+        string transactionId = "tx_1234567890abcdef";
 
         // Act
-        var redacted = LogRedactionHelper.RedactTransactionId(transactionId);
+        string redacted = LogRedactionHelper.RedactTransactionId(transactionId);
 
         // Assert
         redacted.Should().NotBe(transactionId);
@@ -272,10 +272,10 @@ public class LogRedactionHelperTests
     public void RedactTransactionId_ShortId_RedactsPartially()
     {
         // Arrange
-        var transactionId = "tx_123";
+        string transactionId = "tx_123";
 
         // Act
-        var redacted = LogRedactionHelper.RedactTransactionId(transactionId);
+        string redacted = LogRedactionHelper.RedactTransactionId(transactionId);
 
         // Assert
         redacted.Should().StartWith("tx_1");
@@ -286,7 +286,7 @@ public class LogRedactionHelperTests
     public void RedactTransactionId_NullId_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.RedactTransactionId(null);
+        string redacted = LogRedactionHelper.RedactTransactionId(null);
 
         // Assert
         redacted.Should().Be("[empty]");
@@ -299,7 +299,7 @@ public class LogRedactionHelperTests
     public void Redact_WithCustomShowChars_RedactsCorrectly(string value, int showChars, string expected)
     {
         // Act
-        var redacted = LogRedactionHelper.Redact(value, showChars);
+        string redacted = LogRedactionHelper.Redact(value, showChars);
 
         // Assert
         redacted.Should().Be(expected);
@@ -309,7 +309,7 @@ public class LogRedactionHelperTests
     public void Redact_NullValue_ReturnsEmpty()
     {
         // Act
-        var redacted = LogRedactionHelper.Redact(null);
+        string redacted = LogRedactionHelper.Redact(null);
 
         // Assert
         redacted.Should().Be("[empty]");
