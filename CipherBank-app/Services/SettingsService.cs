@@ -3,12 +3,14 @@
 // </copyright>
 
 using System.Globalization;
+using CipherBank_app.Services.Logging;
 using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Services;
 
 /// <summary>
-/// Implementation of application settings using secure preferences storage.
+/// Implementation of application settings persisted with MAUI Preferences.
+/// Preferences is unencrypted key-value storage and is not SecureStorage.
 /// </summary>
 public sealed partial class SettingsService : ISettingsService
 {
@@ -48,9 +50,10 @@ public sealed partial class SettingsService : ISettingsService
         get => Preferences.Get(IdCipherBankEndpointBase, DefaultCipherBankEndpointBase);
         set
         {
-            if (_logger != null && _logger.IsEnabled(LogLevel.Information))
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
             {
-                LogSettingChanged(_logger, "CipherBankEndpointBase", value);
+                string redactedEndpoint = LogRedactionHelper.Redact(value);
+                LogSettingChanged(_logger, "CipherBankEndpointBase", redactedEndpoint);
             }
 
             Preferences.Set(IdCipherBankEndpointBase, value);

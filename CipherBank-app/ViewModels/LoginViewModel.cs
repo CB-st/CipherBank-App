@@ -4,6 +4,7 @@
 
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
+using CipherBank_app.Services.Logging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -119,7 +120,12 @@ public partial class LoginViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            LogAttemptingLogin(_logger, Username);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                string redactedUsername = LogRedactionHelper.RedactUsername(Username);
+                LogAttemptingLogin(_logger, redactedUsername);
+            }
+
             await _auth.LoginAsync(Username, Password, _cts.Token);
             LogLoginSuccessful(_logger);
             await _navigation.GoToAsync(Routes.Dashboard);
