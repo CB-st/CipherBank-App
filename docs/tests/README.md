@@ -13,7 +13,6 @@ flowchart TB
     end
     subgraph integration [Integration Tests]
         API[ApiIntegrationTests]
-        SEC[SecurityTests]
     end
     subgraph unit [Unit Tests]
         Models[Model Tests]
@@ -64,8 +63,8 @@ Sonar (`new_coverage`) and Cobertura for tooling:
   (`reports/coverage.cobertura.xml`, `reports/coverage.opencover.xml`).
   Project file still records a 70% local threshold; CI passes
   `Threshold=0` and lets Sonar enforce new-code coverage.
-- **Integration tests**: Coverage collected, 0% threshold. Not in the M1
-  coverage job.
+- **Integration tests**: No automatic coverage collection or configured local
+  threshold. Coverage collection requires explicit opt-in. Not in the M1 coverage job.
 - **E2E tests**: Coverage collected. Not in the M1 coverage job.
 
 The AI-review `cipherbank_coverage_report.txt` summary is an M4 harness
