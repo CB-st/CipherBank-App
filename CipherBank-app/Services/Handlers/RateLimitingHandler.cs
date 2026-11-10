@@ -5,6 +5,11 @@
 using System.Net;
 using Microsoft.Extensions.Logging;
 
+// The MAUI host imports this namespace implicitly; linked unit tests need it explicitly.
+#if CIPHERBANK_RESILIENCE_LINK
+using Microsoft.Extensions.DependencyInjection;
+#endif
+
 namespace CipherBank_app.Services.Handlers;
 
 /// <summary>
