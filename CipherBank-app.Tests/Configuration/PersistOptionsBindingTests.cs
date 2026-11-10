@@ -79,14 +79,14 @@ public sealed class PersistOptionsBindingTests
     }
 
     /// <summary>
-    /// Unbound SyncScheduler.MaxConcurrency stays 0 (unset); Resolve uses half the CPU count.
+    /// Unbound SyncScheduler.MaxConcurrency stays <see cref="SyncSchedulerOptions.AutoConcurrency"/>; Resolve uses half the CPU count.
     /// Use: Medium. Scope: persist options contract.
     /// </summary>
     [Fact]
     public void EmbeddedAppSettings_UnboundSyncSchedulerResolvesHalfCores()
     {
         SyncSchedulerOptions options = EmbeddedAppSettings.BindOptions<SyncSchedulerOptions>();
-        options.MaxConcurrency.Should().Be(0);
+        options.MaxConcurrency.Should().Be(SyncSchedulerOptions.AutoConcurrency);
         int expected = Math.Clamp(
             (int)Math.Ceiling(Environment.ProcessorCount / 2.0),
             SyncSchedulerOptions.MinConcurrency,
