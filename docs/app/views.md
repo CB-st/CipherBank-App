@@ -73,7 +73,7 @@ Legacy home page. Minimal content.
 
 **Wallet deck**: `ArcCardDeck.ItemsSource` binds to `WalletCards`; `ArcCardDeck.FocusedItem` binds two-way to `FocusedWalletCard`.
 
-**UI**: Portfolio summary card (TotalBalanceUsd), CollectionView of wallets (horizontal), Send Crypto section (address, amount, Send button), Recent Transactions CollectionView. EmptyView for wallet/transactions.
+**UI**: Portfolio summary card (TotalBalanceUsd), ArcCardDeck wallet deck, Send Crypto section (address, amount, Send button), Recent Transactions CollectionView. EmptyView for transactions.
 
 ---
 
