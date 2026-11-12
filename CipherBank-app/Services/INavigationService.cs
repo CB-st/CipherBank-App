@@ -10,6 +10,12 @@ namespace CipherBank_app.Services;
 public interface INavigationService
 {
     /// <summary>
+    /// Gets the current route, or null when navigation has not started.
+    /// Used to avoid sending the user to Login when they are already there.
+    /// </summary>
+    string? CurrentRoute { get; }
+
+    /// <summary>
     /// Navigates to the specified route.
     /// </summary>
     Task GoToAsync(string route);

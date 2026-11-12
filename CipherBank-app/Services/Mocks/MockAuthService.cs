@@ -25,16 +25,19 @@ public sealed partial class MockAuthService : IAuthService
     private const string TestPassword = "password123";
 
     private readonly ILogger<MockAuthService> _logger;
+    private readonly AuthSessionGuard _sessionGuard;
     private readonly bool _enabled;
 
     private AuthToken? _currentToken;
 
     public MockAuthService(
         ILogger<MockAuthService> logger,
-        IOptions<HostBehaviorOptions> hostBehavior)
+        IOptions<HostBehaviorOptions> hostBehavior,
+        AuthSessionGuard sessionGuard)
     {
         _logger = logger;
         _enabled = hostBehavior.Value.UseMockServices;
+        _sessionGuard = sessionGuard;
         LogMockAuthServiceInitialized(_logger);
     }
 
@@ -44,6 +47,7 @@ public sealed partial class MockAuthService : IAuthService
         ArgumentException.ThrowIfNullOrWhiteSpace(password);
 
         LogAttemptingLogin(_logger);
+        int generation = await _sessionGuard.CaptureAsync(cancellationToken);
         await SimulateNetworkDelayAsync(cancellationToken);
 
         bool isValidCredentials = _enabled
@@ -60,15 +64,15 @@ public sealed partial class MockAuthService : IAuthService
             throw new UnauthorizedAccessException("Invalid username or password");
         }
 
-        // Generate mock token
-        _currentToken = new AuthToken(
+        AuthToken created = new(
             GenerateJwtToken(user),
             GenerateRefreshToken(),
             DateTimeOffset.UtcNow.AddHours(1));
+        await StoreTokenAsync(generation, created, cancellationToken);
 
-        LogLoginSucceeded(_logger, user, _currentToken.ExpiresUtc);
+        LogLoginSucceeded(_logger, user, created.ExpiresUtc);
 
-        return _currentToken;
+        return created;
     }
 
     public async Task<AuthToken> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
@@ -76,24 +80,36 @@ public sealed partial class MockAuthService : IAuthService
         ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
 
         LogRefreshingToken(_logger);
+        int generation = await _sessionGuard.CaptureAsync(cancellationToken);
         await SimulateNetworkDelayAsync(cancellationToken);
 
-        // Validate refresh token exists
-        if (_currentToken == null || _currentToken.RefreshToken != refreshToken)
-        {
-            LogRefreshTokenInvalid(_logger);
-            throw new UnauthorizedAccessException("Invalid refresh token");
-        }
-
-        // Generate new token
-        _currentToken = new AuthToken(
+        AuthToken created = new(
             GenerateJwtToken("refreshed_user"),
             GenerateRefreshToken(),
             DateTimeOffset.UtcNow.AddHours(1));
+        bool stored = await _sessionGuard.TryPersistAsync(
+            generation,
+            () =>
+            {
+                if (_currentToken == null || _currentToken.RefreshToken != refreshToken)
+                {
+                    LogRefreshTokenInvalid(_logger);
+                    throw new UnauthorizedAccessException("Invalid refresh token");
+                }
 
-        LogTokenRefreshedSuccessfully(_logger, _currentToken.ExpiresUtc);
+                _currentToken = created;
+                return Task.CompletedTask;
+            },
+            cancellationToken: cancellationToken);
 
-        return _currentToken;
+        if (!stored)
+        {
+            throw new InvalidOperationException("Session ended before the token could be stored");
+        }
+
+        LogTokenRefreshedSuccessfully(_logger, created.ExpiresUtc);
+
+        return created;
     }
 
     public Task<AuthToken?> GetStoredTokenAsync()
@@ -115,11 +131,25 @@ public sealed partial class MockAuthService : IAuthService
         return Task.FromResult(isExpired);
     }
 
+    public Task<int> CaptureSessionAsync() => _sessionGuard.CaptureAsync();
+
     public async Task LogoutAsync()
     {
+        await LogoutAsync(await CaptureSessionAsync());
+    }
+
+    public async Task<bool> LogoutAsync(int capturedGeneration)
+    {
         await RevokeTokenAsync();
+        bool cleared = await _sessionGuard.InvalidateAndClearAsync(
+            () =>
+            {
+                _currentToken = null;
+                return Task.CompletedTask;
+            },
+            capturedGeneration: capturedGeneration);
         LogUserLoggedOut(_logger);
-        _currentToken = null;
+        return cleared;
     }
 
     public async Task<bool> RevokeTokenAsync(CancellationToken cancellationToken = default)
@@ -202,4 +232,22 @@ public sealed partial class MockAuthService : IAuthService
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Token revoked (mock)")]
     private static partial void LogTokenRevoked(ILogger logger);
+
+    private async Task StoreTokenAsync(int generation, AuthToken created, CancellationToken cancellationToken)
+    {
+        bool stored = await _sessionGuard.TryPersistAsync(
+            generation,
+            () =>
+            {
+                _currentToken = created;
+                return Task.CompletedTask;
+            },
+            startsSession: true,
+            cancellationToken: cancellationToken);
+
+        if (!stored)
+        {
+            throw new InvalidOperationException("Session ended before the token could be stored");
+        }
+    }
 }

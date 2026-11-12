@@ -301,8 +301,26 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         {
             LogPurchasing(_logger, Amount, SelectedCrypto.Symbol.Value);
 
-            Transaction transaction = await _transactionService.PurchaseCryptoAsync(
-                SelectedCrypto.Symbol, Amount, _cts.Token);
+            AssetSymbol symbol = SelectedCrypto.Symbol;
+            decimal amount = Amount;
+            Transaction? transaction = null;
+            bool purchased = await _errorHandler.HandleApiErrorsAsync(
+                async () =>
+                {
+                    transaction = await _transactionService.PurchaseCryptoAsync(
+                        symbol, amount, _cts.Token);
+                },
+                msg => ErrorMessage = msg);
+
+            if (!purchased || transaction == null)
+            {
+                if (ErrorMessage == null)
+                {
+                    LogPurchaseCancelled(_logger);
+                }
+
+                return;
+            }
 
             var successMessage =
                 $"Successfully purchased {transaction.Amount:F8} {transaction.CryptoSymbol}!\n\n" +

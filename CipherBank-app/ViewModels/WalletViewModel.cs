@@ -181,7 +181,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
                             card = WalletCardItem.FromWallet(wallet, crypto);
                             totalUsd += card.UsdValue;
                         }
-                        catch (Exception ex)
+                        catch (Exception ex) when (!_errorHandler.IsSessionExpired(ex))
                         {
                             LogCouldNotGetPrice(_logger, ex, wallet.CryptoSymbol.Value);
                             card = WalletCardItem.WithoutPrice(wallet);
@@ -254,16 +254,27 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         try
         {
             LogLoadingTransactions(_logger, SelectedWallet.Id);
-            List<Transaction> txList = await _transactionService.GetTransactionHistoryAsync(
-                SelectedWallet.Id, _cts.Token);
+            string walletId = SelectedWallet.Id;
+            bool loaded = await _errorHandler.HandleApiErrorsAsync(
+                async () =>
+                {
+                    List<Transaction> txList = await _transactionService.GetTransactionHistoryAsync(
+                        walletId, _cts.Token);
 
-            Transactions.Clear();
-            foreach (Transaction tx in txList)
+                    Transactions.Clear();
+                    foreach (Transaction tx in txList)
+                    {
+                        Transactions.Add(tx);
+                    }
+
+                    LogLoadedTransactions(_logger, txList.Count);
+                },
+                msg => ErrorMessage = msg);
+
+            if (!loaded && ErrorMessage == null)
             {
-                Transactions.Add(tx);
+                LogLoadTransactionsCancelled(_logger);
             }
-
-            LogLoadedTransactions(_logger, txList.Count);
         }
         catch (OperationCanceledException)
         {
@@ -332,8 +343,22 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         {
             LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol.Value, SendToAddress);
 
-            Transaction transaction = await _transactionService.SendCryptoAsync(
-                SelectedWallet.Id, SendToAddress, SendAmount, _cts.Token);
+            string walletId = SelectedWallet.Id;
+            string destination = SendToAddress;
+            decimal amount = SendAmount;
+            Transaction? transaction = null;
+            bool sent = await _errorHandler.HandleApiErrorsAsync(
+                async () =>
+                {
+                    transaction = await _transactionService.SendCryptoAsync(
+                        walletId, destination, amount, _cts.Token);
+                },
+                msg => ErrorMessage = msg);
+
+            if (!sent || transaction == null)
+            {
+                return;
+            }
 
             await _dialog.ShowAlertAsync(
                 "Success",
@@ -384,7 +409,15 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         try
         {
             LogCreatingWallet(_logger, cryptoSymbol);
-            Wallet wallet = await _walletService.CreateWalletAsync(cryptoSymbol);
+            Wallet? wallet = null;
+            bool created = await _errorHandler.HandleApiErrorsAsync(
+                async () => wallet = await _walletService.CreateWalletAsync(cryptoSymbol),
+                msg => ErrorMessage = msg);
+
+            if (!created || wallet == null)
+            {
+                return;
+            }
 
             Wallets.Add(wallet);
             SelectedWallet = wallet;

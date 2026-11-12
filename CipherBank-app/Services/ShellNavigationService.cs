@@ -9,6 +9,10 @@ namespace CipherBank_app.Services;
 /// </summary>
 public sealed class ShellNavigationService : INavigationService
 {
+    /// <inheritdoc />
+    public string? CurrentRoute =>
+        Shell.Current?.CurrentState?.Location?.OriginalString;
+
     public Task GoToAsync(string route) =>
         Shell.Current.GoToAsync(route);
 
