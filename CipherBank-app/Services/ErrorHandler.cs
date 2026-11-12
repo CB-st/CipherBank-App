@@ -14,6 +14,8 @@ public sealed class ErrorHandler : IErrorHandler
 {
     private readonly INavigationService _navigation;
     private readonly Func<IAuthService> _createAuth;
+    private readonly Lock _sessionInvalidationLock = new();
+    private readonly HashSet<int> _sessionInvalidationsInProgress = new();
     private int _loginRedirectInProgress;
 
     public ErrorHandler(INavigationService navigation, Func<IAuthService> createAuth)
@@ -62,7 +64,7 @@ public sealed class ErrorHandler : IErrorHandler
 
     private async Task InvalidateSessionAndRedirectToLoginAsync(IAuthService auth, int generation)
     {
-        if (!TryBeginLoginRedirect())
+        if (!TryBeginSessionInvalidation(generation))
         {
             return;
         }
@@ -74,6 +76,40 @@ public sealed class ErrorHandler : IErrorHandler
                 return;
             }
 
+            await RedirectToLoginAsync();
+        }
+        finally
+        {
+            EndSessionInvalidation(generation);
+        }
+    }
+
+    private bool TryBeginSessionInvalidation(int generation)
+    {
+        lock (_sessionInvalidationLock)
+        {
+            // Allow newer sessions to expire during older logouts; see the newer-session regression test.
+            return _sessionInvalidationsInProgress.Add(generation);
+        }
+    }
+
+    private void EndSessionInvalidation(int generation)
+    {
+        lock (_sessionInvalidationLock)
+        {
+            _sessionInvalidationsInProgress.Remove(generation);
+        }
+    }
+
+    private async Task RedirectToLoginAsync()
+    {
+        if (!TryBeginLoginRedirect())
+        {
+            return;
+        }
+
+        try
+        {
             if (!SessionExpiry.IsLoginRoute(_navigation.CurrentRoute))
             {
                 await _navigation.GoToAsync(Routes.Login);

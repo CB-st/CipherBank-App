@@ -177,7 +177,11 @@ public sealed partial class AuthService(ILogger<AuthService> logger, HttpClient 
                 return Task.CompletedTask;
             },
             capturedGeneration: session.Value.Generation);
-        LogUserLoggedOut(logger);
+        if (cleared)
+        {
+            LogUserLoggedOut(logger);
+        }
+
         return cleared;
     }
 

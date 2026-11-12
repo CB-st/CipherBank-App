@@ -66,6 +66,79 @@ public class ErrorHandlerTests
     }
 
     [Fact]
+    public async Task HandleApiErrorsAsync_NewerSessionUnauthorizedDuringOlderLogout_ClearsNewerSessionAndNavigatesOnce()
+    {
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
+        TaskCompletionSource logoutEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseLogout = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        auth.SetupSequence(service => service.CaptureSessionAsync()).ReturnsAsync(1).ReturnsAsync(2);
+        auth.Setup(service => service.LogoutAsync(1)).Returns(async () =>
+        {
+            logoutEntered.TrySetResult();
+            await releaseLogout.Task;
+            return false;
+        });
+        auth.Setup(service => service.LogoutAsync(2)).ReturnsAsync(true);
+        navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(Task.CompletedTask);
+        ErrorHandler handler = CreateHandler(navigation, auth);
+
+        Task<bool> first = handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
+        await logoutEntered.Task;
+        bool second;
+        try
+        {
+            second = await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
+        }
+        finally
+        {
+            releaseLogout.SetResult();
+        }
+
+        (await first).Should().BeFalse();
+        second.Should().BeFalse();
+        auth.Verify(service => service.LogoutAsync(1), Times.Once);
+        auth.Verify(service => service.LogoutAsync(2), Times.Once);
+        navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleApiErrorsAsync_DifferentGenerationsUnauthorizedDuringRedirect_NavigatesOnce()
+    {
+        Mock<INavigationService> navigation = new();
+        Mock<IAuthService> auth = new();
+        TaskCompletionSource navigationEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseNavigation = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        auth.SetupSequence(service => service.CaptureSessionAsync()).ReturnsAsync(1).ReturnsAsync(2);
+        auth.Setup(service => service.LogoutAsync(It.IsAny<int>())).ReturnsAsync(true);
+        navigation.SetupGet(service => service.CurrentRoute).Returns((string?)null);
+        navigation.Setup(service => service.GoToAsync(Routes.Login)).Returns(async () =>
+        {
+            navigationEntered.TrySetResult();
+            await releaseNavigation.Task;
+        });
+        ErrorHandler handler = CreateHandler(navigation, auth);
+
+        Task<bool> first = handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
+        await navigationEntered.Task;
+        bool second;
+        try
+        {
+            second = await handler.HandleApiErrorsAsync(() => throw Unauthorized(), _ => { });
+        }
+        finally
+        {
+            releaseNavigation.SetResult();
+        }
+
+        (await first).Should().BeFalse();
+        second.Should().BeFalse();
+        auth.Verify(service => service.LogoutAsync(1), Times.Once);
+        auth.Verify(service => service.LogoutAsync(2), Times.Once);
+        navigation.Verify(service => service.GoToAsync(Routes.Login), Times.Once);
+    }
+
+    [Fact]
     public async Task HandleApiErrorsAsync_DirectUnauthorizedHttpRequest_ClearsSessionBeforeLoginRedirect()
     {
         Mock<INavigationService> navigation = new();
