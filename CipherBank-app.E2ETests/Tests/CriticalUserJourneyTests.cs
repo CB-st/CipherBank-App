@@ -25,10 +25,11 @@ public class CriticalUserJourneyTests : IDisposable
 
     public CriticalUserJourneyTests()
     {
-        // Configure Appium driver based on target platform.
-        // Prefer APPIUM_SERVER_URL from scripts/e2e-android.sh; else APPIUM_PORT (default 4723).
+        // Configure Appium driver based on target platform
+        // This setup assumes Appium server is running locally
         var platform = Environment.GetEnvironmentVariable("TEST_PLATFORM") ?? "android";
-        var serverUrl = ResolveAppiumServerUrl();
+
+        string serverUrl = ResolveAppiumServerUrl();
 
         if (platform.Equals("ios", StringComparison.OrdinalIgnoreCase))
         {

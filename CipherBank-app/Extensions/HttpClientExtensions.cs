@@ -1,8 +1,9 @@
 // <copyright file="HttpClientExtensions.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
 using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading.RateLimiting;
 using CipherBank_app.Configuration;
@@ -23,7 +24,6 @@ public static class HttpClientExtensions
     /// Registers a typed HttpClient with CipherBank's standard configuration:
     /// certificate pinning, rate limiting, auth headers, and resilience.
     /// </summary>
-    /// <typeparam name="TClient">The typed client to register.</typeparam>
     public static IHttpClientBuilder AddCipherBankHttpClient<TClient>(
         this IServiceCollection services,
         Action<IServiceProvider, HttpClient>? configure = null)
@@ -32,9 +32,9 @@ public static class HttpClientExtensions
         var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
         SlidingWindowRateLimiter limiter = GetSharedRateLimiter(services);
 
-        IHttpClientBuilder builder = services.AddHttpClient<TClient>((sp, http) =>
+        var builder = services.AddHttpClient<TClient>((sp, http) =>
         {
-            ISettingsService settings = sp.GetRequiredService<ISettingsService>();
+            var settings = sp.GetRequiredService<ISettingsService>();
             http.BaseAddress = new Uri(settings.CipherBankEndpointBase);
             http.Timeout = TimeSpan.FromSeconds(30);
             http.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -43,7 +43,6 @@ public static class HttpClientExtensions
                 http.DefaultRequestHeaders.Add("X-Client-Version", appVersion);
                 http.DefaultRequestHeaders.Add("X-Platform", DeviceInfo.Platform.ToString());
             }
-
             configure?.Invoke(sp, http);
         })
         .ConfigurePrimaryHttpMessageHandler(sp =>
@@ -56,13 +55,39 @@ public static class HttpClientExtensions
     }
 
     /// <summary>
+    /// Registers an unauthenticated HttpClient for the public quote surface
+    /// (<c>/currencies</c>, <c>/quote</c>, <c>/iquote</c>, <c>/test</c>).
+    /// </summary>
+    public static IHttpClientBuilder AddPublicApiHttpClient<TClient>(
+        this IServiceCollection services,
+        Action<IServiceProvider, HttpClient>? configure = null)
+        where TClient : class
+    {
+        SlidingWindowRateLimiter limiter = GetSharedRateLimiter(services);
+        var builder = services.AddHttpClient<TClient>((sp, http) =>
+        {
+            var settings = sp.GetRequiredService<ISettingsService>();
+            var network = sp.GetRequiredService<IOptions<NetworkOptions>>().Value;
+            http.BaseAddress = new Uri(network.Resolve(settings.Environment).PublicApiBase);
+            http.Timeout = TimeSpan.FromSeconds(30);
+            http.DefaultRequestHeaders.Add("Accept", "application/json");
+            configure?.Invoke(sp, http);
+        })
+        .ConfigurePrimaryHttpMessageHandler(sp =>
+            sp.GetRequiredService<IPlatformHttpMessageHandlerFactory>().CreateHandler());
+
+        AddResilience(builder, limiter);
+        return builder;
+    }
+
+    /// <summary>
     /// Registers the HealthCheck named HttpClient with certificate pinning for connection testing.
     /// </summary>
     public static IServiceCollection AddHealthCheckClient(this IServiceCollection services)
     {
         services.AddHttpClient("HealthCheck")
             .ConfigurePrimaryHttpMessageHandler(sp =>
-                sp.GetRequiredService<IPlatformHttpMessageHandlerFactory>().CreateHandler());
+            sp.GetRequiredService<IPlatformHttpMessageHandlerFactory>().CreateHandler());
         services.AddTransient<IHealthCheckClient, HealthCheckClient>();
         return services;
     }
@@ -82,7 +107,7 @@ public static class HttpClientExtensions
     }
 
     /// <summary>
-    /// One limiter for product HTTP clients.
+    /// One limiter for product and public HTTP clients.
     /// Use: High (typed client registration). Scope: HttpClientExtensions.
     /// </summary>
     private static SlidingWindowRateLimiter GetSharedRateLimiter(IServiceCollection services)

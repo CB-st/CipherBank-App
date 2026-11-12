@@ -27,6 +27,11 @@ internal static class CipherBankCoreOptionsRegistration
         services.AddRequiredOptions(configuration, new CryptographyOptions())
             .ValidateOnStart();
         services.AddValidatedPersistenceOptions(configuration);
+        services.AddRequiredOptions(configuration, new HostBehaviorOptions())
+            .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
+            .ValidateOnStart();
+        services.AddOptions<NetworkOptions>()
+            .Bind(configuration.GetSection(NetworkOptions.SectionName));
         services.AddRequiredOptions(configuration, new CoraOptions());
         services.AddRequiredOptions(configuration, new CarouselLayoutConfig());
     }
