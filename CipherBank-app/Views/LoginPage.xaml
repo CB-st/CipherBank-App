@@ -43,24 +43,24 @@
                 <!-- Credentials -->
                 <controls:GlassCard>
                     <VerticalStackLayout Spacing="14">
-                        <Label Text="Username" Style="{StaticResource Eyebrow}" />
+                        <Label Text="Display name (optional)" Style="{StaticResource Eyebrow}" />
                         <Border Style="{StaticResource InputBorder}">
                             <Entry
                                 x:Name="UsernameEntry"
                                 AutomationId="UsernameEntry"
-                                Placeholder="Username"
+                                Placeholder="Display name (optional)"
                                 Text="{Binding Username}"
                                 IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"
                                 ReturnType="Next"
                                 Completed="OnUsernameCompleted" />
                         </Border>
 
-                        <Label Text="Password" Style="{StaticResource Eyebrow}" />
+                        <Label Text="Custody PIN" Style="{StaticResource Eyebrow}" />
                         <Border Style="{StaticResource InputBorder}">
                             <Entry
                                 x:Name="PasswordEntry"
                                 AutomationId="PasswordEntry"
-                                Placeholder="Password"
+                                Placeholder="Custody PIN"
                                 Text="{Binding Password}"
                                 IsPassword="True"
                                 IsEnabled="{Binding IsBusy, Converter={StaticResource InvertedBoolConverter}}"

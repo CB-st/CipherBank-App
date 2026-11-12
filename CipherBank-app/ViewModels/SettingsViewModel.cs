@@ -4,6 +4,8 @@
 
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
+using CipherBank_app.Session;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -17,7 +19,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<SettingsViewModel> _logger;
     private readonly ISettingsService _settings;
-    private readonly IAuthService _authService;
+    private readonly ProductSessionAuthority _sessions;
+    private readonly IAppSession? _appSession;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
     private readonly IHealthCheckClient _healthCheck;
@@ -28,15 +31,17 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public SettingsViewModel(
         ILogger<SettingsViewModel> logger,
         ISettingsService settings,
-        IAuthService authService,
+        IProductSessionStore sessions,
         INavigationService navigation,
         IDialogService dialog,
         IHealthCheckClient healthCheck,
-        IAppThemeSetter themeSetter)
+        IAppThemeSetter themeSetter,
+        IAppSession? appSession = null)
     {
         _logger = logger;
         _settings = settings;
-        _authService = authService;
+        _sessions = ProductSessionAuthority.For(sessions);
+        _appSession = appSession;
         _navigation = navigation;
         _dialog = dialog;
         _healthCheck = healthCheck;
@@ -193,7 +198,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 // avoid clobbering the custom ApiEndpoint saved above.
                 _settings.Environment = SelectedEnvironment;
                 LogEnvironmentChanged(_logger, previousEnvironment, SelectedEnvironment);
-                await _authService.LogoutAsync();
+                RevokeSession();
 
                 // Apply theme before leaving so the change persists into the login screen.
                 ApplyTheme();
@@ -315,6 +320,19 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         LogSettingsReset(_logger);
     }
 
+    private void RevokeSession()
+    {
+        if (_appSession is not null)
+        {
+            _appSession.Lock();
+        }
+        else
+        {
+            // Legacy direct construction still joins the same final-store authority.
+            _sessions.Invalidate();
+        }
+    }
+
     /// <summary>
     /// Logs out the current user.
     /// </summary>
@@ -334,7 +352,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         try
         {
             LogUserLoggingOut(_logger);
-            await _authService.LogoutAsync();
+            RevokeSession();
             await _navigation.GoToAsync(Routes.Login);
             LogUserLoggedOut(_logger);
         }
