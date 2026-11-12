@@ -10,6 +10,9 @@ public sealed class HostBehaviorOptions
     private static readonly HashSet<string> ValidLogLevels =
         ["Verbose", "Debug", "Information", "Warning", "Error", "Fatal"];
 
+    /// <summary>Gets or sets explicit development-only permission to send lab session proof.</summary>
+    public bool UseLabSessionProof { get; set; }
+
     public bool UseMockServices { get; set; }
 
     public bool IncludeDiagnosticHeaders { get; set; }

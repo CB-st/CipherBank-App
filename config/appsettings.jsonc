@@ -37,8 +37,10 @@
     "BaseCurrency": "USD",
     "LockIdleSeconds": 120
   },
+  // Deployment must supply ProductSession:StreamEndpoint as an absolute wss URL.
   "HostBehaviorOptions": {
     "UseMockServices": false,
+    "UseLabSessionProof": false,
     "IncludeDiagnosticHeaders": false,
     "ShowDevelopmentIndicators": false,
     "MinimumLogLevel": "Information",
