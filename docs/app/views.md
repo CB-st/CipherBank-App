@@ -69,9 +69,11 @@ Legacy home page. Minimal content.
 
 **File**: `Views/WalletPage.xaml`
 
-**Bindings**: TotalBalanceUsd, IsLoading, ErrorMessage, Wallets, SelectedWallet, SendToAddress, SendAmount, IsSending, SendCryptoCommand, Transactions, IsLoadingTransactions
+**Bindings**: TotalBalanceUsd, IsLoading, ErrorMessage, WalletCards, FocusedWalletCard, SelectedWallet, SendToAddress, SendAmount, IsSending, SendCryptoCommand, Transactions, IsLoadingTransactions
 
-**UI**: Portfolio summary card (TotalBalanceUsd), CollectionView of wallets (horizontal), Send Crypto section (address, amount, Send button), Recent Transactions CollectionView. EmptyView for wallet/transactions.
+**Wallet deck**: `ArcCardDeck.ItemsSource` binds to `WalletCards`; `ArcCardDeck.FocusedItem` binds two-way to `FocusedWalletCard`.
+
+**UI**: Portfolio summary card (TotalBalanceUsd), ArcCardDeck wallet deck, Send Crypto section (address, amount, Send button), Recent Transactions CollectionView. EmptyView for transactions.
 
 ---
 

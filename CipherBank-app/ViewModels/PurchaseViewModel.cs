@@ -234,7 +234,6 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     /// <summary>
     /// Calculates the total cost including fees.
     /// </summary>
-    [RelayCommand]
     private void CalculateTotalCost()
     {
         if (SelectedCrypto == null || Amount <= 0)
