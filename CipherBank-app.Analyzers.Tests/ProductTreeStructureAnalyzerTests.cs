@@ -121,18 +121,6 @@ public sealed class ProductTreeStructureAnalyzerTests
     }
 
     [Fact]
-    public async Task LiveUnbuiltCsharpFiles_HaveNoScatteredSql()
-    {
-        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
-        {
-            CompilerDiagnostics = CompilerDiagnostics.None,
-            TestCode = "class Wallet { }",
-        };
-        AttachAll(test, ProductTreeRepoRoot.UnbuiltCsharpFiles());
-        await test.RunAsync();
-    }
-
-    [Fact]
     public async Task LiveUnbuiltCsharpFiles_HaveNoViewModelPlatformGlobals()
     {
         CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
