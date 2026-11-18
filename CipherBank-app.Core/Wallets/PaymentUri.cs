@@ -12,7 +12,7 @@ public static class PaymentUri
     private const int DefaultShortenHeadLength = 8;
     private const int DefaultShortenTailLength = 6;
 
-    private static readonly HashSet<string> FiatCurrencies = ["USD", "EUR", "JPY"];
+    private static readonly HashSet<AssetSymbol> FiatCurrencies = [AssetSymbol.Usd, AssetSymbol.Eur, AssetSymbol.Jpy];
 
     /// <summary>Builds a receive URI. Empty addresses return an empty string.</summary>
     public static string Build(string symbol, string address)
@@ -40,7 +40,7 @@ public static class PaymentUri
             return string.Empty;
         }
 
-        if (FiatCurrencies.Contains(parsed.Value))
+        if (FiatCurrencies.Contains(parsed))
         {
             return new Uri(
                 $"cipherbank:receive/{parsed.Value}?address={Uri.EscapeDataString(addr)}",

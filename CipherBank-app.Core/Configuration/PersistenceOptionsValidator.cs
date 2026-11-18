@@ -12,7 +12,6 @@ internal sealed class PersistenceOptionsValidator : IValidateOptions<Persistence
     /// <inheritdoc />
     public ValidateOptionsResult Validate(string? name, PersistenceOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
         List<string> failures = [];
         if (string.IsNullOrWhiteSpace(options.DatabaseName))
         {

@@ -36,11 +36,11 @@ public class UserDataCryptoCatalogTests
             [new UserDataPlainBlock("prefs", UserDataBlockTypes.Prefs, """{"ok":true}""")],
             catalog.Active.Blocks);
 
-        Dictionary<string, string> opened = UserDataPackCodec.OpenPack(
+        IReadOnlyDictionary<string, string> opened = UserDataPackCodec.OpenPack(
             pack,
             "alice",
             keys.Kek,
-            catalog.Active.Blocks);
+            catalog.Active.Blocks).Blocks;
 
         opened["prefs"].Should().Be("""{"ok":true}""");
     }

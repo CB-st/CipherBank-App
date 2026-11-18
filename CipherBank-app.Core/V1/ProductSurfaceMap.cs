@@ -36,17 +36,15 @@ public static class ProductSurfaceMap
             DateTimeOffset.UnixEpoch);
     }
 
-    public static WalletCardItem ToWalletCard(HoldingDto holding)
-    {
-        ArgumentNullException.ThrowIfNull(holding);
-        return new WalletCardItem(
-            ToWallet(holding),
-            ParseDecimal(holding.UsdValue),
-            ParseDecimal(holding.Change24HPct));
-    }
+    public static Wallet ToWallet(CreateWalletResultDto created) => ToWallet(created, TimeProvider.System);
 
-    public static Wallet ToWallet(CreateWalletResultDto created)
+    /// <summary>Maps a create-wallet result using <paramref name="clock"/> for the creation time.</summary>
+    /// <param name="created">The create-wallet response.</param>
+    /// <param name="clock">Time source for the wallet's creation timestamp.</param>
+    /// <returns>The new wallet with a zero balance.</returns>
+    public static Wallet ToWallet(CreateWalletResultDto created, TimeProvider clock)
     {
+        ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(created);
         return new Wallet(
             created.WalletId,
@@ -54,7 +52,16 @@ public static class ProductSurfaceMap
             string.IsNullOrWhiteSpace(created.Label) ? created.Symbol : created.Label,
             0m,
             created.Address ?? string.Empty,
-            DateTimeOffset.UtcNow);
+            clock.GetUtcNow());
+    }
+
+    public static WalletCardItem ToWalletCard(HoldingDto holding)
+    {
+        ArgumentNullException.ThrowIfNull(holding);
+        return new WalletCardItem(
+            ToWallet(holding),
+            ParseDecimal(holding.UsdValue),
+            ParseDecimal(holding.Change24HPct));
     }
 
     private static decimal ParseDecimal(string value)

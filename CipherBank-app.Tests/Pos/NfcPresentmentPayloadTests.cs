@@ -72,4 +72,13 @@ public class NfcPresentmentPayloadTests
     [InlineData("""{"v":1,"sessionId":"\t","tokenRef":"tok"}""")]
     public void TryParse_RejectsMissingOrNullIdentifier(string json)
         => NfcPresentmentPayload.TryParse(json).Should().BeNull();
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("42")]
+    [InlineData("{\"v\":null,\"sessionId\":\"sess\",\"tokenRef\":\"tok\"}")]
+    [InlineData("{\"sessionId\":\"sess\",\"tokenRef\":\"tok\",\"merchantId\":42}")]
+    public void TryParse_RejectsInvalidJsonShape(string json)
+        => NfcPresentmentPayload.TryParse(json).Should().BeNull();
 }

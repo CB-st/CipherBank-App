@@ -12,7 +12,6 @@ internal sealed class SyncSchedulerOptionsValidator : IValidateOptions<SyncSched
     /// <inheritdoc />
     public ValidateOptionsResult Validate(string? name, SyncSchedulerOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
         if (options.MaxConcurrency == 0
             || (options.MaxConcurrency >= SyncSchedulerOptions.MinConcurrency
                 && options.MaxConcurrency <= SyncSchedulerOptions.MaxAllowedConcurrency))

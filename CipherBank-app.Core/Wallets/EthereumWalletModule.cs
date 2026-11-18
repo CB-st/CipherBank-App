@@ -12,7 +12,7 @@ using Nethereum.Util;
 namespace CipherBank_app.Wallets;
 
 /// <summary>BIP44 Ethereum account module.</summary>
-public sealed partial class EthereumWalletModule : IWalletModule
+public sealed partial class EthereumWalletModule : AddressDerive, IWalletModule
 {
     /// <summary>Fractional digits between 1 ETH and 1 wei. ERC-681 <c>value</c> is an integer wei count.</summary>
     private const int WeiDecimalPlaces = 18;
@@ -36,16 +36,6 @@ public sealed partial class EthereumWalletModule : IWalletModule
     public bool IsValidAddress(string address) => EthAddressRegex().IsMatch(address);
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
-    {
-        Nethereum.HdWallet.Wallet wallet = new Nethereum.HdWallet.Wallet(MnemonicHelper.Normalize(mnemonic), null);
-        Nethereum.Web3.Accounts.Account account = wallet.GetAccount(accountIndex);
-        string path = $"m/44'/60'/0'/0/{accountIndex}";
-        string checksum = new AddressUtil().ConvertToChecksumAddress(account.Address);
-        return new DerivedAddress(checksum, path, accountIndex);
-    }
-
-    /// <inheritdoc />
     public Uri BuildReceiveUri(string address, string? amount, string? label, string? message)
     {
         _ = label;
@@ -54,6 +44,16 @@ public sealed partial class EthereumWalletModule : IWalletModule
         // Nominal ETH (for example 0.1) is not a wei count. Encode an exact integer.
         string? wei = string.IsNullOrWhiteSpace(amount) ? null : ToWei(amount);
         return PaymentUri.Account("ethereum", "value", address, wei);
+    }
+
+    /// <inheritdoc />
+    protected override DerivedAddress DeriveCore(string mnemonic, int accountIndex)
+    {
+        Nethereum.HdWallet.Wallet wallet = new Nethereum.HdWallet.Wallet(MnemonicHelper.Normalize(mnemonic), null);
+        Nethereum.Web3.Accounts.Account account = wallet.GetAccount(accountIndex);
+        string path = ReceivePath(44, 60, accountIndex);
+        string checksum = new AddressUtil().ConvertToChecksumAddress(account.Address);
+        return new DerivedAddress(checksum, path, accountIndex);
     }
 
     /// <summary>

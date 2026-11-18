@@ -2,14 +2,13 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using CipherBank_app.Custody;
 using CipherBank_app.Models;
 using NBitcoin;
 
 namespace CipherBank_app.Wallets;
 
 /// <summary>BIP84 native segwit Litecoin module.</summary>
-public sealed class LitecoinWalletModule : IWalletModule
+public sealed class LitecoinWalletModule : AddressDerive, IWalletModule
 {
     /// <inheritdoc />
     public AssetSymbol Symbol => AssetSymbol.Ltc;
@@ -40,18 +39,16 @@ public sealed class LitecoinWalletModule : IWalletModule
     }
 
     /// <inheritdoc />
-    public DerivedAddress? TryDerive(string mnemonic, int accountIndex)
+    public Uri BuildReceiveUri(string address, string? amount, string? label, string? message)
+        => PaymentUri.Bip21("litecoin", address, amount, label, message);
+
+    /// <inheritdoc />
+    protected override DerivedAddress DeriveCore(string mnemonic, int accountIndex)
     {
-        Mnemonic parsed = MnemonicHelper.Parse(mnemonic);
-        ExtKey root = parsed.DeriveExtKey();
-        string path = $"m/84'/2'/0'/0/{accountIndex}";
-        ExtKey key = root.Derive(new KeyPath(path));
+        string path = ReceivePath(84, 2, accountIndex);
+        ExtKey key = DeriveKey(mnemonic, path);
         WitKeyId wit = key.Neuter().PubKey.WitHash;
         string address = new BitcoinWitPubKeyAddress(wit, NBitcoin.Altcoins.Litecoin.Instance.Mainnet).ToString();
         return new DerivedAddress(address, path, accountIndex);
     }
-
-    /// <inheritdoc />
-    public Uri BuildReceiveUri(string address, string? amount, string? label, string? message)
-        => PaymentUri.Bip21("litecoin", address, amount, label, message);
 }

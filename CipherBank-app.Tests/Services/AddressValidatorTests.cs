@@ -13,6 +13,26 @@ namespace CipherBank_app.Tests.Services;
 /// </summary>
 public class AddressValidatorTests
 {
+    [Fact]
+    public void IsValidBitcoinAddress_Bip173VectorWithDigits_ReturnsTrue()
+    {
+        // BIP-173 mainnet P2WPKH example: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+        const string address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+        AddressValidator.IsValidBitcoinAddress(address).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData('1')]
+    [InlineData('b')]
+    [InlineData('i')]
+    [InlineData('o')]
+    public void IsValidBitcoinAddress_ForbiddenBech32DataCharacter_ReturnsFalse(char character)
+    {
+        const string address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
+        string invalid = address[..10] + character + address[11..];
+        AddressValidator.IsValidBitcoinAddress(invalid).Should().BeFalse();
+    }
+
     [Theory]
     [InlineData("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", true)] // Genesis block address
     [InlineData("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2", true)] // P2PKH

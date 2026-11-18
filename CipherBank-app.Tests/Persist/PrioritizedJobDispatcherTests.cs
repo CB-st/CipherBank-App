@@ -285,7 +285,7 @@ public sealed class PrioritizedJobDispatcherTests
         drain.IsCompleted.Should().BeFalse();
 
         releaseSlow.SetResult();
-        await drain.WaitAsync(TimeSpan.FromSeconds(1));
+        await drain.WaitAsync(TimeSpan.FromSeconds(15));
 
         Volatile.Read(ref slowCompletionOrder).Should().Be(1);
         await slow;

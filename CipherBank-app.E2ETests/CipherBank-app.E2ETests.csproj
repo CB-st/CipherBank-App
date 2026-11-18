@@ -28,7 +28,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="AwesomeAssertions" />
     <!-- Appium.NET for mobile UI testing -->
     <PackageReference Include="Appium.WebDriver" />
     <PackageReference Include="Selenium.WebDriver" />
