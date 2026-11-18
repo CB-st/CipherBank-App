@@ -51,10 +51,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial WalletCardItem? FocusedWalletCard { get; set; }
 
-    /// <summary>Gets or sets the total wallet balance.</summary>
-    [ObservableProperty]
-    public partial decimal TotalBalance { get; set; }
-
     /// <summary>Gets or sets the total wallet balance in USD.</summary>
     [ObservableProperty]
     public partial decimal TotalBalanceUsd { get; set; }
@@ -91,13 +87,11 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         ILogger<WalletViewModel> logger,
         IProductClient product,
         IErrorHandler errorHandler,
-        INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
         _product = product;
         _errorHandler = errorHandler;
-        _ = navigation; // Reserved for future navigation needs
         _dialog = dialog;
     }
 
