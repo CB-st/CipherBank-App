@@ -26,6 +26,8 @@ internal static class OptionsValidationMessages
 
     internal static string DefaultRecipientsInvalid => Require(nameof(DefaultRecipientsInvalid));
 
+    internal static string UserPreferenceDefaultsInvalid => Require(nameof(UserPreferenceDefaultsInvalid));
+
     private static string Require(string name)
         => _manager.GetString(name, CultureInfo.InvariantCulture)
            ?? throw new InvalidOperationException($"Missing resource string '{name}'.");

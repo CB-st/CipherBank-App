@@ -71,4 +71,28 @@
   <data name="PinChangeVaultNotReady" xml:space="preserve">
     <value>Unlock your wallet before changing your PIN.</value>
   </data>
+  <data name="StepUpPayment" xml:space="preserve">
+    <value>Confirm payment</value>
+  </data>
+  <data name="StepUpConvert" xml:space="preserve">
+    <value>Confirm conversion</value>
+  </data>
+  <data name="StepUpPosAuthorize" xml:space="preserve">
+    <value>Authorize POS session</value>
+  </data>
+  <data name="StepUpPosPresent" xml:space="preserve">
+    <value>Present payment credential</value>
+  </data>
+  <data name="StepUpRevealKeys" xml:space="preserve">
+    <value>Reveal recovery phrase</value>
+  </data>
+  <data name="StepUpDerive" xml:space="preserve">
+    <value>Derive wallet keys</value>
+  </data>
+  <data name="StepUpBackupExport" xml:space="preserve">
+    <value>Export recovery file</value>
+  </data>
+  <data name="StepUpConfirmAction" xml:space="preserve">
+    <value>Confirm action</value>
+  </data>
 </root>

@@ -13,6 +13,30 @@ namespace CipherBank_app.Models;
 [JsonConverter(typeof(AssetSymbolJsonConverter))]
 public sealed record AssetSymbol
 {
+    /// <summary>Bitcoin.</summary>
+    public static readonly AssetSymbol Btc = new("BTC");
+
+    /// <summary>Ethereum.</summary>
+    public static readonly AssetSymbol Eth = new("ETH");
+
+    /// <summary>Litecoin.</summary>
+    public static readonly AssetSymbol Ltc = new("LTC");
+
+    /// <summary>Dogecoin.</summary>
+    public static readonly AssetSymbol Doge = new("DOGE");
+
+    /// <summary>Monero.</summary>
+    public static readonly AssetSymbol Xmr = new("XMR");
+
+    /// <summary>US dollar quote currency.</summary>
+    public static readonly AssetSymbol Usd = new("USD");
+
+    /// <summary>Euro quote currency.</summary>
+    public static readonly AssetSymbol Eur = new("EUR");
+
+    /// <summary>Japanese yen quote currency.</summary>
+    public static readonly AssetSymbol Jpy = new("JPY");
+
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetSymbol"/> class.
     /// </summary>
