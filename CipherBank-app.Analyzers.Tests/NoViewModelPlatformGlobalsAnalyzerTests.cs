@@ -491,6 +491,17 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                                 _ = Tasks.Task.Name;
                             }
 
+                            void OtherMethodControls()
+                            {
+                                var Controls = new Theme();
+                                _ = Controls.Application.Current;
+                            }
+
+                            void UsesPlatformWithCrossMethodControls()
+                            {
+                                _ = Controls.Application.Current;
+                            }
+
                             void UsesPlatform()
                             {
                                 _ = {|CB1005:Tasks.Task<int>.Run|}(() => 1);
@@ -509,6 +520,54 @@ public sealed class NoViewModelPlatformGlobalsAnalyzerTests
                                 }
 
                                 _ = {|CB1005:Tasks.Task<int>.Run|}(() => 1);
+                            }
+                        }
+
+                        class CrossMethodControlsViewModel
+                        {
+                            void OtherMethodControls()
+                            {
+                                var Controls = new Theme();
+                                _ = Controls.Application.Current;
+                            }
+
+                            void UsesPlatformWithCrossMethodControls()
+                            {
+                                _ = {|CB1005:Controls.Application.Current|};
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task IgnoresWhileConditionPatternInAdditionalViewModelFileAsync()
+    {
+        CSharpAnalyzerTest<NoViewModelPlatformGlobalsAnalyzer, DefaultVerifier> test = new()
+        {
+            CompilerDiagnostics = CompilerDiagnostics.None,
+            TestCode = "class Anchor { }",
+            TestState =
+            {
+                AdditionalFiles =
+                {
+                    ("CipherBank-app/ViewModels/WhilePatternViewModel.cs", """
+                        using Microsoft.Maui;
+
+                        class WhilePatternViewModel
+                        {
+                            void Read(object value)
+                            {
+                                while (value is Theme Controls)
+                                {
+                                    _ = Controls.Application.Current;
+                                }
+
+                                _ = {|CB1005:Controls.Application.Current|};
                             }
                         }
                         """),

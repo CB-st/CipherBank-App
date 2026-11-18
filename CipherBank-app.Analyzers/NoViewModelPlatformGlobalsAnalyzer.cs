@@ -164,10 +164,11 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// <remarks>
     /// Limits: this is a syntax-only fallback for unbuilt sibling ViewModels; there is no semantic
     /// model. It reports fully qualified names and partial roots opened by a using directive.
-    /// Shadowing is approximated from enclosing type members, parameters, enclosing-block locals and
-    /// loop/using/fixed locals. It does not model lambda or local-function captures, pattern or out
-    /// variables, using static or alias directives, or partial types split across files, so misses
-    /// and false positives are possible. Compiled ViewModels use the semantic model and are unaffected.
+    /// Shadowing is approximated from enclosing type members, parameters, enclosing-block locals,
+    /// loop/using/fixed locals, and pattern or out designations that the walk visits, including a
+    /// while condition. It does not model lambda or local-function captures, using static or alias
+    /// directives, or partial types split across files, so misses and false positives are possible.
+    /// Compiled ViewModels use the semantic model and are unaffected.
     /// </remarks>
     private static void ReportAdditionalFile(CompilationAnalysisContext context, AdditionalText file)
     {
@@ -661,7 +662,8 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
     /// <summary>
     /// True when a block, switch section or loop/using/fixed statement declares a local with that
     /// name that is visible inside it. Variables a <c>for</c>, <c>foreach</c>, <c>using</c> or
-    /// <c>fixed</c> statement declares are visible only inside that statement.
+    /// <c>fixed</c> statement declares are visible only inside that statement. A pattern or
+    /// <c>out</c> designation in a <c>while</c> condition is visible inside that statement.
     /// Use: Medium (additional-file fallback only). Scope: this analyzer.
     /// </summary>
     private static bool StatementScopeDeclaresValue(SyntaxNode scope, string name)
@@ -669,12 +671,27 @@ public sealed class NoViewModelPlatformGlobalsAnalyzer : DiagnosticAnalyzer
         {
             ForEachStatementSyntax loop => loop.Identifier.ValueText == name,
             ForStatementSyntax { Declaration: { } declaration } => DeclaresVariable(declaration, name),
+            WhileStatementSyntax loop => ConditionDesignatesValue(loop.Condition, name),
             UsingStatementSyntax { Declaration: { } declaration } => DeclaresVariable(declaration, name),
             FixedStatementSyntax fixedStatement => DeclaresVariable(fixedStatement.Declaration, name),
             BlockSyntax block => block.Statements.Any(statement => StatementDeclaresValue(statement, name)),
             SwitchSectionSyntax section => section.Statements.Any(statement => StatementDeclaresValue(statement, name)),
             _ => false,
         };
+
+    /// <summary>
+    /// True when a condition designates a pattern or <c>out</c> variable with that name.
+    /// Designations inside a nested lambda, local function, or other nested scope do not count.
+    /// Use: Medium (additional-file fallback only). Scope: this analyzer.
+    /// </summary>
+    /// <param name="condition">Loop condition that may contain a pattern or <c>out</c> designation.</param>
+    /// <param name="name">Identifier to look for.</param>
+    /// <returns>True when the condition designates that name in the enclosing statement's scope.</returns>
+    private static bool ConditionDesignatesValue(SyntaxNode condition, string name)
+        => condition
+            .DescendantNodesAndSelf(child => child == condition || !IsOwnScopeStatement(child))
+            .Any(child => child is SingleVariableDesignationSyntax designation
+                && designation.Identifier.ValueText == name);
 
     /// <summary>
     /// True when a variable declaration declares that name.
