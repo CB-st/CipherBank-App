@@ -1,0 +1,94 @@
+// <copyright file="CipherBankCoreDiTests.cs" company="CipherBank">
+// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// </copyright>
+
+using CipherBank_app.Configuration;
+using CipherBank_app.Cora;
+using CipherBank_app.Custody;
+using CipherBank_app.Persist;
+using CipherBank_app.Pos;
+using CipherBank_app.Wallets;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using Moq;
+using Xunit;
+
+namespace CipherBank_app.Tests.Configuration;
+
+public class CipherBankCoreDiTests
+{
+    /// <summary>
+    /// Resolves the platform-neutral Core registrations from defaults configuration.
+    /// Use: Medium (DI smoke / new_coverage). Scope: CipherBankCoreDiTests.
+    /// </summary>
+    [Fact]
+    public void AddCipherBankCore_ResolvesPersistCryptoAndCopyServices()
+    {
+        string databaseDirectory = Path.Combine(Path.GetTempPath(), "cb-di-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(databaseDirectory);
+
+        ServiceCollection services = new ServiceCollection();
+        services.AddCipherBankCore(CipherBankDefaultsConfiguration.Build("Development"), databaseDirectory);
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<ICryptoBox>().Should().BeOfType<AesGcmCryptoBox>();
+        provider.GetRequiredService<ICoraLineProvider>().Should().BeOfType<CoraLineProvider>();
+        provider.GetRequiredService<IEmvExchangeSimulator>().Should().BeOfType<EmvExchangeSimulator>();
+        FileInfo databaseFile = provider.GetRequiredService<FileInfo>();
+        PersistenceOptions persistence = provider.GetRequiredService<IOptions<PersistenceOptions>>().Value;
+        databaseFile.Name.Should().Be(persistence.DatabaseName);
+        persistence.DefaultRecipients.Select(row => row.Id).Should().Equal(
+            "seed:rent-4th-st",
+            "seed:utilities-co");
+        provider.GetRequiredService<IWalletRepository>().Should().BeOfType<WalletRepository>();
+        provider.GetRequiredService<IRecipientRepository>().Should().BeOfType<RecipientRepository>();
+        provider.GetRequiredService<IRecipientSeedInitializer>().Should().BeOfType<RecipientSeedInitializer>();
+        provider.GetRequiredService<IMarketRepository>().Should().BeOfType<MarketRepository>();
+        provider.GetRequiredService<IPrefsStore>().Should().BeOfType<PrefsStore>();
+        provider.GetRequiredService<ILocalDatabaseInitializer>().Should().BeOfType<LocalDatabaseInitializer>();
+        provider.GetRequiredService<AppStartupCoordinator>().Should().BeOfType<AppStartupCoordinator>();
+        provider.GetRequiredService<IRateSnapshotStore>().Should().BeOfType<SqliteRateSnapshotStore>();
+        provider.GetRequiredService<ISingleFlightJobFactory>().Should().BeOfType<SingleFlightJobFactory>();
+        provider.GetRequiredService<IPrioritizedJobDispatcher>().Should().BeOfType<PrioritizedJobDispatcher>();
+        provider.GetRequiredService<ISyncJobScheduler>().Should().BeOfType<SyncJobScheduler>();
+    }
+
+    /// <summary>
+    /// Rejects null/blank host arguments before any service is registered.
+    /// Use: Low. Scope: CipherBankCoreDiTests argument guards.
+    /// </summary>
+    [Fact]
+    public void AddCipherBankCore_RejectsInvalidArguments()
+    {
+        ServiceCollection services = new ServiceCollection();
+        Action nullConfig = () => services.AddCipherBankCore(null!, Path.GetTempPath());
+        Action blankDir = () => services.AddCipherBankCore(CipherBankDefaultsConfiguration.Build(), " ");
+
+        nullConfig.Should().Throw<ArgumentNullException>();
+        blankDir.Should().Throw<ArgumentException>();
+    }
+
+    /// <summary>
+    /// Resolves each custody service after the host ports are registered.
+    /// Use: Medium (DI smoke). Scope: AddCustodyServices.
+    /// </summary>
+    [Fact]
+    public void AddCustodyServices_ResolvesEachCustodyService()
+    {
+        ServiceCollection services = new ServiceCollection();
+        services.AddSingleton(TimeProvider.System);
+        services.AddSingleton(Mock.Of<ISecureStore>());
+        services.AddSingleton(Mock.Of<IStepUpChallenges>());
+        services.AddSingleton(Mock.Of<IWalletRepository>());
+        services.AddCustodyServices(CipherBankDefaultsConfiguration.Build("Development"));
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<ICryptoBox>().Should().BeOfType<AesGcmCryptoBox>();
+        provider.GetRequiredService<IPinService>().Should().BeOfType<PinService>();
+        provider.GetRequiredService<ICustodyService>().Should().BeOfType<CustodyService>();
+        provider.GetRequiredService<IMnemonicBackupService>().Should().BeOfType<MnemonicBackupService>();
+        provider.GetRequiredService<IStepUpAuth>().Should().BeOfType<StepUpAuthService>();
+        provider.GetRequiredService<ILocalWalletSeeder>().Should().BeOfType<LocalWalletSeeder>();
+    }
+}

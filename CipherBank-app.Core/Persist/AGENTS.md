@@ -41,7 +41,7 @@ override CI Sonar: new issues on Persist code still fail the gate.
   invariant-uppercase normalization; EF entities, V1 DTOs, prefs JSON, and
   HTTP payloads remain strings at their boundaries. Do not replace listed
   assets with an enum or duplicate symbol normalization in adapters.
-- `SyncSchedulerOptions.MaxConcurrency` default `0` means unset.
+- `SyncSchedulerOptions.MaxConcurrency` defaults to `SyncSchedulerOptions.AutoConcurrency` (`0`), meaning auto (half the processor count, clamped 1–8).
   `Resolve()` is `Clamp(Ceiling(ProcessorCount / 2.0), 1, 8)`.
   `SyncJobScheduler` composes `SingleFlightJobFactory` and
   `PrioritizedJobDispatcher`. Typed record keys provide value identity and

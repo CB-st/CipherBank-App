@@ -27,4 +27,7 @@
   <data name="DefaultRecipientsInvalid" xml:space="preserve">
     <value>DefaultRecipients must have unique non-blank ids and names.</value>
   </data>
+  <data name="UserPreferenceDefaultsInvalid" xml:space="preserve">
+    <value>User preference defaults are invalid.</value>
+  </data>
 </root>

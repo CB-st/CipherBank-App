@@ -39,6 +39,22 @@ public static class UserFacingStrings
 
     public static string PinChangeVaultNotReady => Get(nameof(PinChangeVaultNotReady));
 
+    public static string StepUpPayment => Get(nameof(StepUpPayment));
+
+    public static string StepUpConvert => Get(nameof(StepUpConvert));
+
+    public static string StepUpPosAuthorize => Get(nameof(StepUpPosAuthorize));
+
+    public static string StepUpPosPresent => Get(nameof(StepUpPosPresent));
+
+    public static string StepUpRevealKeys => Get(nameof(StepUpRevealKeys));
+
+    public static string StepUpDerive => Get(nameof(StepUpDerive));
+
+    public static string StepUpBackupExport => Get(nameof(StepUpBackupExport));
+
+    public static string StepUpConfirmAction => Get(nameof(StepUpConfirmAction));
+
     public static string AchRoutingNumberMustBeDigits(int digitCount)
         => string.Format(CultureInfo.CurrentCulture, Get(nameof(AchRoutingNumberMustBeDigits)), digitCount);
 
