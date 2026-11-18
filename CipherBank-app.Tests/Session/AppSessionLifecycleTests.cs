@@ -8,6 +8,7 @@ using CipherBank_app.Custody;
 using CipherBank_app.Persist;
 using CipherBank_app.Session;
 using CipherBank_app.Tests.Persist;
+using CipherBank_app.V1;
 using CipherBank_app.Wallets;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -20,6 +21,17 @@ namespace CipherBank_app.Tests.Session;
 /// <summary>Verifies session lifecycle boundaries using deterministic ports and time.</summary>
 public sealed class AppSessionLifecycleTests
 {
+    [Fact]
+    public void CustomCoordinator_RequiresExplicitSharedAuthority()
+    {
+        Assert.Throws<ArgumentException>(() => new AppSession(
+            Mock.Of<ICustodyService>(),
+            Mock.Of<IProductSessionCoordinator>(),
+            Mock.Of<ILocalWalletSeeder>(),
+            Mock.Of<IPrefsStore>(),
+            TimeProvider.System));
+    }
+
     /// <summary>Boot loads wallet presence and selects the configured or fallback idle timeout.</summary>
     [Theory]
     [InlineData(true, 180, 180000)]
@@ -86,7 +98,7 @@ public sealed class AppSessionLifecycleTests
         custody.Setup(c => c.CanUnlockWithDeviceOwnerAsync()).ReturnsAsync(true);
         custody.Setup(c => c.UnlockWithDeviceSecretAsync()).ReturnsAsync(true);
         Mock<IProductSessionCoordinator> product = new();
-        product.Setup(p => p.StartAsync(true, CancellationToken.None))
+        product.Setup(p => p.StartAsync(true, It.Is<CancellationToken>(ct => ct.CanBeCanceled)))
             .ReturnsAsync(new ProductSessionStartResult("session-token", seconds));
         AppSession session = Create(custody, product.Object);
 
@@ -95,7 +107,7 @@ public sealed class AppSessionLifecycleTests
 
         session.AccessToken.Should().Be("session-token");
         session.IdleMs.Should().Be(expectedMs);
-        product.Verify(p => p.StartAsync(true, CancellationToken.None), Times.Once);
+        product.Verify(p => p.StartAsync(true, It.Is<CancellationToken>(ct => ct.CanBeCanceled)), Times.Once);
     }
 
     /// <summary>All recognized startup failures clear product state and relock custody.</summary>
@@ -114,7 +126,7 @@ public sealed class AppSessionLifecycleTests
         Mock<ICustodyService> custody = new();
         custody.Setup(c => c.UnlockAsync("123456")).ReturnsAsync(true);
         Mock<IProductSessionCoordinator> product = new();
-        product.Setup(p => p.StartAsync(true, CancellationToken.None)).ThrowsAsync(CreateFailure(failure));
+        product.Setup(p => p.StartAsync(true, It.Is<CancellationToken>(ct => ct.CanBeCanceled))).ThrowsAsync(CreateFailure(failure));
         product.Setup(p => p.DisconnectAsync()).Returns(Task.CompletedTask);
         AppSession session = Create(custody, product.Object);
 
@@ -137,7 +149,7 @@ public sealed class AppSessionLifecycleTests
         Mock<ICustodyService> custody = new();
         custody.Setup(c => c.UnlockAsync("123456")).ReturnsAsync(true);
         Mock<IProductSessionCoordinator> product = new();
-        product.Setup(p => p.StartAsync(true, CancellationToken.None)).ReturnsAsync(new ProductSessionStartResult("next", 60));
+        product.Setup(p => p.StartAsync(true, It.Is<CancellationToken>(ct => ct.CanBeCanceled))).ReturnsAsync(new ProductSessionStartResult("next", 60));
         product.Setup(p => p.DisconnectAsync()).ThrowsAsync(CreateFailure(failure));
         AppSession session = Create(custody, product.Object);
 
@@ -155,7 +167,7 @@ public sealed class AppSessionLifecycleTests
         custody.SetupGet(c => c.IsUnlocked).Returns(true);
         custody.Setup(c => c.UnlockAsync("123456")).ReturnsAsync(true);
         Mock<IProductSessionCoordinator> product = new();
-        product.Setup(p => p.StartAsync(true, CancellationToken.None)).ReturnsAsync(new ProductSessionStartResult("token", 1));
+        product.Setup(p => p.StartAsync(true, It.Is<CancellationToken>(ct => ct.CanBeCanceled))).ReturnsAsync(new ProductSessionStartResult("token", 1));
         product.Setup(p => p.DisconnectAsync()).Returns(Task.CompletedTask);
         ManualClock clock = new();
         AppSession session = Create(custody, product.Object, clock: clock);
@@ -184,7 +196,7 @@ public sealed class AppSessionLifecycleTests
         Mock<ICustodyService> custody = new();
         custody.Setup(c => c.UnlockAsync("123456")).ReturnsAsync(true);
         Mock<IProductSessionCoordinator> product = new();
-        product.Setup(p => p.StartAsync(true, CancellationToken.None)).ReturnsAsync(new ProductSessionStartResult("token", 60));
+        product.Setup(p => p.StartAsync(true, It.Is<CancellationToken>(ct => ct.CanBeCanceled))).ReturnsAsync(new ProductSessionStartResult("token", 60));
         product.Setup(p => p.DisconnectAsync()).Returns(Task.CompletedTask);
         AppSession session = Create(custody, product.Object);
         await session.UnlockAsync("123456");
@@ -210,7 +222,8 @@ public sealed class AppSessionLifecycleTests
             product ?? Mock.Of<IProductSessionCoordinator>(),
             Mock.Of<ILocalWalletSeeder>(),
             prefs ?? Mock.Of<IPrefsStore>(),
-            clock ?? new ManualClock());
+            clock ?? new ManualClock(),
+            ProductSessionAuthority.For(new InMemoryProductSessionStore()));
 
     private static Exception CreateFailure(string failure) => failure switch
     {

@@ -82,7 +82,6 @@ public class PrefsSyncAndStreamTests
                     return Task.CompletedTask;
                 },
                 default));
-        await Task.Delay(80);
         runs.Should().Be(1);
         debounce.FireCount.Should().Be(1);
     }

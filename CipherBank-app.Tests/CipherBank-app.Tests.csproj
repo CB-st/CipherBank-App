@@ -13,6 +13,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Moq" />
+    <!-- Existing host dependencies compile the real linked LoginViewModel and its generators. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="NBitcoin" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
@@ -40,6 +43,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CipherBank-app.Core\CipherBank-app.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../CipherBank-app/Services/Handlers/AuthHeaderHandler.cs" Link="Host/AuthHeaderHandler.cs" />
+    <!-- The linked handler normally receives this extension import from the MAUI host. -->
+    <Using Include="Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions" Static="true" />
+    <Compile Include="../CipherBank-app/ViewModels/LoginViewModel.cs" Link="Host/LoginViewModel.cs" />
+    <Compile Include="../CipherBank-app/Services/INavigationService.cs" Link="Host/INavigationService.cs" />
+    <Compile Include="../CipherBank-app/Services/IDialogService.cs" Link="Host/IDialogService.cs" />
+    <Compile Include="../CipherBank-app/Services/ISettingsService.cs" Link="Host/ISettingsService.cs" />
+    <Compile Include="../CipherBank-app/Constants/Routes.cs" Link="Host/Routes.cs" />
   </ItemGroup>
 
 </Project>

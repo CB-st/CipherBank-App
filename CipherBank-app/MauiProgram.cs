@@ -122,7 +122,16 @@ public static class MauiProgram
             mauiAppBuilder.Configuration,
             new DirectoryInfo(FileSystem.Current.AppDataDirectory));
         mauiAppBuilder.Services.AddCustodyFeature(mauiAppBuilder.Configuration);
-        mauiAppBuilder.Services.AddProductSessionServices();
+        HostBehaviorOptions sessionBehavior = mauiAppBuilder.Configuration
+            .GetRequiredSection(nameof(HostBehaviorOptions)).Get<HostBehaviorOptions>()
+            ?? throw new InvalidOperationException("Host behavior configuration is missing.");
+        bool isDevelopment = string.Equals(
+            typeof(MauiProgram).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration,
+            "Debug",
+            StringComparison.OrdinalIgnoreCase);
+        mauiAppBuilder.Services.AddProductSessionServices(sessionBehavior.UseLabSessionProof, isDevelopment);
+        mauiAppBuilder.Services.AddProductSessionStream(
+            mauiAppBuilder.Configuration["ProductSession:StreamEndpoint"]);
 
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();

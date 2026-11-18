@@ -29,14 +29,13 @@ public class CryptoBoxTests
     }
 
     /// <summary>
-    /// Versioned seals open on the 0x01 layout, legacy seals still open, and a flipped ciphertext bit is rejected.
+    /// Versioned seals open on the 0x01 layout and a flipped ciphertext bit is rejected.
     /// Use: High (custody blob). Scope: AesGcmCryptoBox.Open.
     /// </summary>
     [Fact]
-    public void Open_RoundTripsVersionedAndLegacyLayouts_AndRejectsTamper()
+    public void Open_RoundTripsVersionedLayout_AndRejectsTamper()
     {
-        CryptographyOptions options = CryptographyOptions.Default;
-        AesGcmCryptoBox box = new AesGcmCryptoBox(options);
+        AesGcmCryptoBox box = new AesGcmCryptoBox(CryptographyOptions.Default);
         const string pin = "123456";
         const string plaintext = "custody-secret";
 
@@ -45,15 +44,45 @@ public class CryptoBoxTests
         versionedBytes[0].Should().Be(0x01);
         box.Open(versioned, pin).Should().Be(plaintext);
 
-        box.Open(LegacyBlob(box, options, pin, plaintext, saltPrefix: null), pin).Should().Be(plaintext);
-        box.Open(LegacyBlob(box, options, pin, plaintext, saltPrefix: 0x01), pin).Should().Be(plaintext);
-
         versionedBytes[^1] ^= 0x01;
         Action tampered = () => box.Open(Convert.ToBase64String(versionedBytes), pin);
         tampered.Should().Throw<CryptographicException>();
     }
 
-    private static string LegacyBlob(
+    /// <summary>
+    /// A blob without the version byte is rejected even when its own tag would authenticate,
+    /// including when the first salt byte happens to equal the version marker.
+    /// Use: High (custody blob). Scope: AesGcmCryptoBox.Open.
+    /// </summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData((byte)0x01)]
+    public void Open_RejectsUnversionedLayout(byte? saltPrefix)
+    {
+        CryptographyOptions options = CryptographyOptions.Default;
+        AesGcmCryptoBox box = new AesGcmCryptoBox(options);
+        Action act = () => box.Open(UnversionedBlob(box, options, "123456", "custody-secret", saltPrefix), "123456");
+        act.Should().Throw<CryptographicException>();
+    }
+
+    /// <summary>
+    /// A wrong version byte or a blob too short to hold the header is rejected.
+    /// Use: High (custody blob). Scope: AesGcmCryptoBox.Open.
+    /// </summary>
+    [Fact]
+    public void Open_RejectsWrongVersionAndShortBlob()
+    {
+        AesGcmCryptoBox box = new AesGcmCryptoBox(CryptographyOptions.Default);
+        byte[] bytes = Convert.FromBase64String(box.Seal("custody-secret", "123456"));
+        bytes[0] = 0x02;
+        Action wrongVersion = () => box.Open(Convert.ToBase64String(bytes), "123456");
+        wrongVersion.Should().Throw<CryptographicException>();
+
+        Action tooShort = () => box.Open(Convert.ToBase64String(new byte[] { 0x01, 0x00 }), "123456");
+        tooShort.Should().Throw<CryptographicException>();
+    }
+
+    private static string UnversionedBlob(
         AesGcmCryptoBox box,
         CryptographyOptions options,
         string pin,
