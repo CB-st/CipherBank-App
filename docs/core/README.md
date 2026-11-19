@@ -42,7 +42,14 @@ CipherBank-app.Core/
 
 ## Component References
 
+- [AuthToken](AuthToken.md)
+- [Wallet](Wallet.md)
+- [Transaction](Transaction.md)
+- [CryptoCurrency](CryptoCurrency.md)
+- [PriceHistory](PriceHistory.md)
+- [PricePoint](PricePoint.md)
+
 This area index will link to focused type pages as they are added. Planned
-examples include `docs/core/Wallet.md`, `docs/core/IAuthService.md`, and
+examples include `docs/core/IAuthService.md` and
 `docs/core/AddressValidator.md`. These references are planned; create each page
 before adding it as a Markdown link.

@@ -51,8 +51,15 @@ All API clients use `AddStandardResilienceHandler` with:
 
 ## Component References
 
+- [AuthService](AuthService.md)
+- [AuthHeaderHandler](AuthHeaderHandler.md)
+- [WalletService](WalletService.md)
+- [TransactionService](TransactionService.md)
+- [CryptoApiService](CryptoApiService.md)
+- [BalanceResponse](BalanceResponse.md)
+
 This area index will link to focused type pages as they are added, using the
 source-mirroring convention in [Documentation Conventions](../conventions.md).
-Planned examples include `docs/app/AuthService.md`,
-`docs/app/DashboardViewModel.md`, and `docs/app/AndroidCertificatePinningHandler.md`.
+Planned examples include `docs/app/DashboardViewModel.md` and
+`docs/app/AndroidCertificatePinningHandler.md`.
 These references are planned; create each page before adding it as a Markdown link.
