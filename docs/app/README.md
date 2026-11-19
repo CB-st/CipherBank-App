@@ -60,6 +60,6 @@ All API clients use `AddStandardResilienceHandler` with:
 
 This area index will link to focused type pages as they are added, using the
 source-mirroring convention in [Documentation Conventions](../conventions.md).
-Planned examples include `docs/app/AuthService.md`,
-`docs/app/DashboardViewModel.md`, and `docs/app/AndroidCertificatePinningHandler.md`.
+Planned examples include `docs/app/DashboardViewModel.md` and
+`docs/app/AndroidCertificatePinningHandler.md`.
 These references are planned; create each page before adding it as a Markdown link.

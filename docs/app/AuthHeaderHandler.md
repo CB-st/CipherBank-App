@@ -19,7 +19,7 @@ Constructor takes a non-null `IServiceProvider`; it resolves `IAuthService` and 
 
 ## Failure behavior
 
-Auth lookup, token retrieval, and refresh exceptions are caught and logged when a logger is available; the handler continues to `base.SendAsync` without adding a header. Cancellation passed to refresh is forwarded; exceptions from the final base send propagate.
+Auth lookup, token retrieval, and refresh exceptions are caught and logged when a logger is available; the handler continues to `base.SendAsync` without adding a header. In the current `IAuthService`-unavailable branch, the early `base.SendAsync` call is inside the `try`; if it throws, the catch logs it and execution falls through to a second, final `base.SendAsync` call, whose exceptions propagate. Cancellation passed to refresh is forwarded.
 
 ## Tests/Validation
 - Gap: no dedicated `AuthHeaderHandler` test file was found under `CipherBank-app.Tests`.

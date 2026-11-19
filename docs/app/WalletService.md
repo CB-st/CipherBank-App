@@ -27,10 +27,10 @@ Injected `ILogger<WalletService>` and `HttpClient`; wallet ID, `AssetSymbol`, an
 
 ## Failure behavior
 
-Blank IDs and null symbols fail argument validation. `HttpRequestException` for non-404 reads and other HTTP operations is wrapped in `InvalidOperationException`; create conflict is reported as `InvalidOperationException` (“already exists”). JSON parse and cancellation errors are not caught by the service.
+Blank IDs and null symbols fail argument validation. `HttpRequestException` for `GetWalletsAsync`, non-404 `GetWalletAsync`/`GetWalletBalanceAsync` reads, and other HTTP operations is wrapped in `InvalidOperationException`; only single-wallet and balance reads map 404 to `KeyNotFoundException`. Create conflict is reported as `InvalidOperationException` (“already exists”). JSON parse and cancellation errors are not caught by the service.
 
 ## Tests/Validation
-- [`WalletServiceTests.cs`](../../CipherBank-app.Tests/Services/WalletServiceTests.cs)
+- [`WalletServiceTests.cs`](../../CipherBank-app.Tests/Services/WalletServiceTests.cs) mocks `IWalletService` (with interface convenience overloads); it does not instantiate or exercise the concrete HTTP implementation.
 
 ## Related docs
 - [Wallet](../core/Wallet.md)

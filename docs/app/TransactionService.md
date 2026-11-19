@@ -30,7 +30,7 @@ Injected `ILogger<TransactionService>` and `HttpClient`; identifiers, asset symb
 Blank identifiers/destination and nonpositive amounts fail argument validation; null purchase symbol fails `ArgumentNullException`; short/long destination fails `ArgumentException`. History/status 404s map to `KeyNotFoundException`. Purchase 400 maps to `ArgumentException`, 402 to `InvalidOperationException`. Send 400 maps to `ArgumentException`, 404 to `KeyNotFoundException`, and 422 to `InvalidOperationException` for insufficient balance. Other `HttpRequestException`s are wrapped in `InvalidOperationException`. Null purchase/send/status bodies also cause `InvalidOperationException`. Cancellation and JSON parse failures propagate.
 
 ## Tests/Validation
-- [`TransactionServiceTests.cs`](../../CipherBank-app.Tests/Services/TransactionServiceTests.cs)
+- [`TransactionServiceTests.cs`](../../CipherBank-app.Tests/Services/TransactionServiceTests.cs) mocks `ITransactionService` (with interface convenience overloads); it does not instantiate or exercise the concrete HTTP implementation.
 
 ## Related docs
 - [Transaction](../core/Transaction.md)

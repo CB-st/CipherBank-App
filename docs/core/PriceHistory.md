@@ -20,7 +20,7 @@ Constructed from an asset symbol, point list, and period bounds; computations us
 An empty list is handled as described above. The type does not declare validation for null lists.
 
 ## Tests/Validation
-- Gap: no dedicated `PriceHistory` model test file was found under `CipherBank-app.Tests/Models`.
+- [`PriceHistoryTests.cs`](../../CipherBank-app.Tests/Models/PriceHistoryTests.cs) covers the model.
 - [`CryptoAPIServiceTests.cs`](../../CipherBank-app.Tests/Services/CryptoAPIServiceTests.cs) covers history service responses.
 
 ## Related docs

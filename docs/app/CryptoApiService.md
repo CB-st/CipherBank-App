@@ -26,7 +26,7 @@ Injected `ILogger<CryptoApiService>` and `HttpClient`; `AssetSymbol`, period, qu
 Null symbols and blank period/query fail argument validation. A null single-price/history response or a 404 maps to `KeyNotFoundException`; other HTTP request failures are wrapped in `InvalidOperationException`. Null collection responses return empty lists. Cancellation and JSON parse failures propagate.
 
 ## Tests/Validation
-- [`CryptoAPIServiceTests.cs`](../../CipherBank-app.Tests/Services/CryptoAPIServiceTests.cs)
+- [`CryptoAPIServiceTests.cs`](../../CipherBank-app.Tests/Services/CryptoAPIServiceTests.cs) mocks `ICryptoApiService` (with interface convenience overloads); it does not instantiate or exercise the concrete HTTP implementation.
 
 ## Related docs
 - [CryptoCurrency](../core/CryptoCurrency.md)

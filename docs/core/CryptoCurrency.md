@@ -20,7 +20,7 @@ Constructed from market data and an optional icon URI; no collaborators.
 The type declares no explicit validation or failure behavior.
 
 ## Tests/Validation
-- Gap: no dedicated `CryptoCurrency` model test file was found under `CipherBank-app.Tests/Models`.
+- [`CryptoCurrencyTests.cs`](../../CipherBank-app.Tests/Models/CryptoCurrencyTests.cs) covers the model.
 - [`CryptoAPIServiceTests.cs`](../../CipherBank-app.Tests/Services/CryptoAPIServiceTests.cs) covers service responses using this model.
 
 ## Related docs
