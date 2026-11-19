@@ -74,6 +74,35 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
         return "/" + path.TrimStart('/');
     }
 
+    private static bool IsAuthEndpoint(string path)
+    {
+        string normalized = path.TrimEnd('/');
+        return normalized.EndsWith("/auth/login", StringComparison.OrdinalIgnoreCase) ||
+               normalized.EndsWith("/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
+               normalized.EndsWith("/auth/register", StringComparison.OrdinalIgnoreCase);
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "AuthService not available; request will fail")]
+    private static partial void LogAuthServiceNotAvailable(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Added Bearer token to request for {Uri}")]
+    private static partial void LogAddedBearerToken(ILogger logger, Uri? uri);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Token expired or expiring soon, attempting refresh")]
+    private static partial void LogTokenExpiredAttemptingRefresh(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Refreshed token and added to request")]
+    private static partial void LogRefreshedTokenAdded(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Token refresh did not provide a usable access token")]
+    private static partial void LogRefreshTokenFailed(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No stored token available for {Uri}")]
+    private static partial void LogNoStoredToken(ILogger logger, Uri? uri);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Error adding auth header; request will fail")]
+    private static partial void LogErrorAddingAuthHeader(ILogger logger, Exception ex);
+
     private async Task<string> ResolveBearerTokenAsync(Uri? requestUri, CancellationToken cancellationToken)
     {
         IAuthService? authService = _serviceProvider.GetService(typeof(IAuthService)) as IAuthService;
@@ -143,32 +172,4 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
         throw new HttpRequestException("Token refresh did not provide a usable access token.");
     }
 
-    private static bool IsAuthEndpoint(string path)
-    {
-        string normalized = path.TrimEnd('/');
-        return normalized.EndsWith("/auth/login", StringComparison.OrdinalIgnoreCase) ||
-               normalized.EndsWith("/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
-               normalized.EndsWith("/auth/register", StringComparison.OrdinalIgnoreCase);
-    }
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "AuthService not available; request will fail")]
-    private static partial void LogAuthServiceNotAvailable(ILogger logger);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Added Bearer token to request for {Uri}")]
-    private static partial void LogAddedBearerToken(ILogger logger, Uri? uri);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Token expired or expiring soon, attempting refresh")]
-    private static partial void LogTokenExpiredAttemptingRefresh(ILogger logger);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Refreshed token and added to request")]
-    private static partial void LogRefreshedTokenAdded(ILogger logger);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Token refresh did not provide a usable access token")]
-    private static partial void LogRefreshTokenFailed(ILogger logger);
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "No stored token available for {Uri}")]
-    private static partial void LogNoStoredToken(ILogger logger, Uri? uri);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Error adding auth header; request will fail")]
-    private static partial void LogErrorAddingAuthHeader(ILogger logger, Exception ex);
 }
