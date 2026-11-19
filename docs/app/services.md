@@ -125,7 +125,7 @@ Centralizes catch logic for `HttpRequestException`, `UnauthorizedAccessException
 
 The shared typed clients currently use this handler for all non-auth requests, which are treated as protected. Diagnostic `X-Client-Version` and `X-Platform` headers remain diagnostic and do not negotiate API capabilities. This handler does not authorize future user-data reads based on stored tokens alone; those reads require their own server-side authorization contract.
 
-**Tests/Validation**: `CipherBank-app.Tests/Services/AuthHeaderHandlerTests.cs` covers missing credentials, refresh failure, refresh success, and anonymous auth endpoints. Run `dotnet test --filter AuthHeaderHandler`.
+**Tests/Validation**: `CipherBank-app.Tests/Services/AuthHeaderHandlerTests.cs` covers missing credentials, refresh failure, refresh success, and anonymous auth endpoints. Run `dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj --filter AuthHeaderHandler /p:CollectCoverage=false`.
 
 ---
 

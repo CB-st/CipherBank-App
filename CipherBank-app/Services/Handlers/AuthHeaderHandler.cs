@@ -4,6 +4,7 @@
 
 using System.Net.Http.Headers;
 using CipherBank_app.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Services.Handlers;
@@ -27,7 +28,9 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         // Skip auth header for login/refresh endpoints
-        var requestPath = request.RequestUri?.AbsolutePath ?? string.Empty;
+        var requestPath = request.RequestUri is { IsAbsoluteUri: true } uri
+            ? uri.AbsolutePath
+            : "/" + (request.RequestUri?.OriginalString ?? string.Empty).TrimStart('/');
         if (IsAuthEndpoint(requestPath))
         {
             return await base.SendAsync(request, cancellationToken);
@@ -38,33 +41,65 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
             IAuthService? authService = _serviceProvider.GetService<IAuthService>();
             if (authService == null)
             {
-                if (_logger != null) LogAuthServiceNotAvailable(_logger);
+                if (_logger != null)
+                {
+                    LogAuthServiceNotAvailable(_logger);
+                }
+
                 throw new HttpRequestException("Authentication service is unavailable.");
             }
 
             AuthToken? token = await authService.GetStoredTokenAsync();
             if (token == null || string.IsNullOrWhiteSpace(token.AccessToken))
             {
-                if (_logger != null) LogNoStoredToken(_logger, request.RequestUri);
+                if (_logger != null)
+                {
+                    LogNoStoredToken(_logger, request.RequestUri);
+                }
+
                 throw new HttpRequestException("No access token is available for this request.");
             }
 
             if (token.ExpiresUtc <= DateTimeOffset.UtcNow.AddMinutes(5))
             {
-                if (_logger != null) LogTokenExpiredAttemptingRefresh(_logger);
+                if (_logger != null)
+                {
+                    LogTokenExpiredAttemptingRefresh(_logger);
+                }
+
+                if (string.IsNullOrWhiteSpace(token.RefreshToken))
+                {
+                    if (_logger != null)
+                    {
+                        LogRefreshTokenFailed(_logger);
+                    }
+
+                    throw new HttpRequestException("Token refresh did not provide a usable access token.");
+                }
+
                 token = await authService.RefreshAsync(token.RefreshToken, cancellationToken);
                 if (token == null || string.IsNullOrWhiteSpace(token.AccessToken) ||
                     token.ExpiresUtc <= DateTimeOffset.UtcNow)
                 {
-                    if (_logger != null) LogRefreshTokenFailed(_logger);
+                    if (_logger != null)
+                    {
+                        LogRefreshTokenFailed(_logger);
+                    }
+
                     throw new HttpRequestException("Token refresh did not provide a usable access token.");
                 }
 
-                if (_logger != null) LogRefreshedTokenAdded(_logger);
+                if (_logger != null)
+                {
+                    LogRefreshedTokenAdded(_logger);
+                }
             }
 
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-            if (_logger != null) LogAddedBearerToken(_logger, request.RequestUri);
+            if (_logger != null)
+            {
+                LogAddedBearerToken(_logger, request.RequestUri);
+            }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -76,7 +111,11 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
         }
         catch (Exception ex)
         {
-            if (_logger != null) LogErrorAddingAuthHeader(_logger, ex);
+            if (_logger != null)
+            {
+                LogErrorAddingAuthHeader(_logger, ex);
+            }
+
             throw new HttpRequestException("Unable to authenticate this request.", ex);
         }
 
@@ -85,12 +124,13 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
 
     private static bool IsAuthEndpoint(string path)
     {
-        return path.Contains("/auth/login", StringComparison.OrdinalIgnoreCase) ||
-               path.Contains("/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
-               path.Contains("/auth/register", StringComparison.OrdinalIgnoreCase);
+        string normalized = path.TrimEnd('/');
+        return normalized.EndsWith("/auth/login", StringComparison.OrdinalIgnoreCase) ||
+               normalized.EndsWith("/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
+               normalized.EndsWith("/auth/register", StringComparison.OrdinalIgnoreCase);
     }
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "AuthService not available, proceeding without auth header")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "AuthService not available; request will fail")]
     private static partial void LogAuthServiceNotAvailable(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Added Bearer token to request for {Uri}")]
