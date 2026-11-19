@@ -22,8 +22,7 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         _logger = serviceProvider.GetService(typeof(ILogger<AuthHeaderHandler>)) as ILogger<AuthHeaderHandler>;
-    }
-
+}
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         if (IsAuthEndpoint(ExtractPath(request.RequestUri)))
