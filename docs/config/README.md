@@ -130,3 +130,7 @@ Optional: `bootstrap`, `plugins`, `include`/`exclude` for inspections.
 **Test**: TestResult.xml, coverage*.json, coverage*.xml
 
 **Docs**: /*.md, /*.mmd (top-level markdown and Mermaid files)
+
+## Related Documentation
+
+- [Documentation Conventions](../conventions.md) – Component page structure and mirrored paths

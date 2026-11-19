@@ -38,3 +38,11 @@ CipherBank-app.Core/
 
 - [models.md](models.md) – All Core models
 - [services.md](services.md) – All Core interfaces and utilities
+- [Documentation Conventions](../conventions.md) – Component page structure and mirrored paths
+
+## Component References
+
+This area index will link to focused type pages as they are added. Planned
+examples include `docs/core/Wallet.md`, `docs/core/IAuthService.md`, and
+`docs/core/AddressValidator.md`. These references are planned; create each page
+before adding it as a Markdown link.

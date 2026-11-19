@@ -76,3 +76,4 @@ artifact, not produced on this slice.
 - [unit-tests.md](unit-tests.md)
 - [integration-tests.md](integration-tests.md)
 - [e2e-tests.md](e2e-tests.md)
+- [Documentation Conventions](../conventions.md) – Component page structure and verification links

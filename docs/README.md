@@ -29,23 +29,24 @@ dotnet build -f net10.0-windows10.0.19041.0 -t:Run
 
 ## Documentation Index
 
-| Document | Description |
-|----------|-------------|
-| [architecture.md](architecture.md) | Architecture, data flow, security, HTTP pipeline |
-| [agentic/MODULE_COMPOSITION.md](agentic/MODULE_COMPOSITION.md) | Explicit feature registration and ViewModel/platform boundaries |
-| [core/README.md](core/README.md) | Core library overview |
-| [core/models.md](core/models.md) | Core models (Wallet, Transaction, CryptoCurrency, etc.) |
-| [core/services.md](core/services.md) | Core service interfaces and utilities |
-| [app/README.md](app/README.md) | MAUI app overview, DI, MauiProgram |
-| [app/services.md](app/services.md) | Service implementations, HTTP handlers, mocks |
-| [app/viewmodels.md](app/viewmodels.md) | ViewModels and commands |
-| [app/views.md](app/views.md) | Views/Pages and XAML bindings |
-| [app/converters.md](app/converters.md) | Value converters |
-| [app/platforms.md](app/platforms.md) | Platform-specific code (certificate pinning) |
-| [tests/README.md](tests/README.md) | Test strategy overview |
-| [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
-| [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
-| [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end tests |
-| [config/README.md](config/README.md) | Build config, analyzers, tooling |
-| [config/sonar/README.md](config/sonar/README.md) | Sonar quality-gate policy and local SonarQube-for-IDE setup |
-| [review/REVIEW_DECISIONS.md](review/REVIEW_DECISIONS.md) | Declined/deviated reviewer asks with researched rationale |
+### L1 — Architecture
+
+- [Architecture](architecture.md) — system boundaries, data flow, security, HTTP pipeline, navigation, and persistence.
+
+### L2 — Area indexes
+
+Start with an area index for focused topic pages and future type references:
+
+| Area index | Scope |
+|------------|-------|
+| [app/](app/README.md) | MAUI startup, composition, services, UI, and platform adapters |
+| [core/](core/README.md) | Domain models, service contracts, and Core utilities |
+| [tests/](tests/README.md) | Analyzer, unit, integration, and end-to-end verification |
+| [config/](config/README.md) | Build configuration, analyzers, and tooling |
+
+### Guides and policy
+
+- [Documentation conventions](conventions.md) — page shape, source links, and mirrored paths.
+- [Module composition](agentic/MODULE_COMPOSITION.md) — explicit feature registration and ViewModel/platform boundaries.
+- [Certificate pinning setup](config/CERTIFICATE_PINNING_SETUP.md) — platform certificate configuration.
+- [Review decisions](review/REVIEW_DECISIONS.md) — declined or changed reviewer requests and rationale.
