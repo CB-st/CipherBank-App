@@ -4,7 +4,6 @@
 
 using System.Net.Http.Headers;
 using CipherBank_app.Models;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CipherBank_app.Services.Handlers;
@@ -22,80 +21,20 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
     public AuthHeaderHandler(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _logger = serviceProvider.GetService<ILogger<AuthHeaderHandler>>();
+        _logger = serviceProvider.GetService(typeof(ILogger<AuthHeaderHandler>)) as ILogger<AuthHeaderHandler>;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        // Skip auth header for login/refresh endpoints
-        var requestPath = request.RequestUri is { IsAbsoluteUri: true } uri
-            ? uri.AbsolutePath
-            : "/" + (request.RequestUri?.OriginalString ?? string.Empty).TrimStart('/');
-        if (IsAuthEndpoint(requestPath))
+        if (IsAuthEndpoint(ExtractPath(request.RequestUri)))
         {
             return await base.SendAsync(request, cancellationToken);
         }
 
         try
         {
-            IAuthService? authService = _serviceProvider.GetService<IAuthService>();
-            if (authService == null)
-            {
-                if (_logger != null)
-                {
-                    LogAuthServiceNotAvailable(_logger);
-                }
-
-                throw new HttpRequestException("Authentication service is unavailable.");
-            }
-
-            AuthToken? token = await authService.GetStoredTokenAsync();
-            if (token == null || string.IsNullOrWhiteSpace(token.AccessToken))
-            {
-                if (_logger != null)
-                {
-                    LogNoStoredToken(_logger, request.RequestUri);
-                }
-
-                throw new HttpRequestException("No access token is available for this request.");
-            }
-
-            if (token.ExpiresUtc <= DateTimeOffset.UtcNow.AddMinutes(5))
-            {
-                if (_logger != null)
-                {
-                    LogTokenExpiredAttemptingRefresh(_logger);
-                }
-
-                if (string.IsNullOrWhiteSpace(token.RefreshToken))
-                {
-                    if (_logger != null)
-                    {
-                        LogRefreshTokenFailed(_logger);
-                    }
-
-                    throw new HttpRequestException("Token refresh did not provide a usable access token.");
-                }
-
-                token = await authService.RefreshAsync(token.RefreshToken, cancellationToken);
-                if (token == null || string.IsNullOrWhiteSpace(token.AccessToken) ||
-                    token.ExpiresUtc <= DateTimeOffset.UtcNow)
-                {
-                    if (_logger != null)
-                    {
-                        LogRefreshTokenFailed(_logger);
-                    }
-
-                    throw new HttpRequestException("Token refresh did not provide a usable access token.");
-                }
-
-                if (_logger != null)
-                {
-                    LogRefreshedTokenAdded(_logger);
-                }
-            }
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            string token = await ResolveBearerTokenAsync(request.RequestUri, cancellationToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             if (_logger != null)
             {
                 LogAddedBearerToken(_logger, request.RequestUri);
@@ -120,6 +59,88 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
         }
 
         return await base.SendAsync(request, cancellationToken);
+    }
+
+    private static string ExtractPath(Uri? requestUri)
+    {
+        if (requestUri is { IsAbsoluteUri: true })
+        {
+            return requestUri.AbsolutePath;
+        }
+
+        string raw = requestUri?.OriginalString ?? string.Empty;
+        int cut = raw.IndexOfAny(['?', '#']);
+        string path = cut >= 0 ? raw[..cut] : raw;
+        return "/" + path.TrimStart('/');
+    }
+
+    private async Task<string> ResolveBearerTokenAsync(Uri? requestUri, CancellationToken cancellationToken)
+    {
+        IAuthService? authService = _serviceProvider.GetService(typeof(IAuthService)) as IAuthService;
+        if (authService is null)
+        {
+            if (_logger is not null)
+            {
+                LogAuthServiceNotAvailable(_logger);
+            }
+
+            throw new HttpRequestException("Authentication service is unavailable.");
+        }
+
+        AuthToken? token = await authService.GetStoredTokenAsync();
+        if (token is null || string.IsNullOrWhiteSpace(token.AccessToken))
+        {
+            if (_logger is not null)
+            {
+                LogNoStoredToken(_logger, requestUri);
+            }
+
+            throw new HttpRequestException("No access token is available for this request.");
+        }
+
+        return token.ExpiresUtc <= DateTimeOffset.UtcNow.AddMinutes(5)
+            ? await RefreshTokenAsync(authService, token, cancellationToken)
+            : token.AccessToken;
+    }
+
+    private async Task<string> RefreshTokenAsync(
+        IAuthService authService,
+        AuthToken currentToken,
+        CancellationToken cancellationToken)
+    {
+        if (_logger is not null)
+        {
+            LogTokenExpiredAttemptingRefresh(_logger);
+        }
+
+        if (string.IsNullOrWhiteSpace(currentToken.RefreshToken))
+        {
+            return FailRefresh();
+        }
+
+        AuthToken? refreshed = await authService.RefreshAsync(currentToken.RefreshToken, cancellationToken);
+        if (refreshed is null || string.IsNullOrWhiteSpace(refreshed.AccessToken) ||
+            refreshed.ExpiresUtc <= DateTimeOffset.UtcNow)
+        {
+            return FailRefresh();
+        }
+
+        if (_logger is not null)
+        {
+            LogRefreshedTokenAdded(_logger);
+        }
+
+        return refreshed.AccessToken;
+    }
+
+    private string FailRefresh()
+    {
+        if (_logger is not null)
+        {
+            LogRefreshTokenFailed(_logger);
+        }
+
+        throw new HttpRequestException("Token refresh did not provide a usable access token.");
     }
 
     private static bool IsAuthEndpoint(string path)

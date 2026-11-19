@@ -53,12 +53,14 @@ public sealed class AuthHeaderHandlerTests
         auth.Setup(service => service.GetStoredTokenAsync()).ReturnsAsync(
             new AuthToken(" ", "refresh", DateTimeOffset.UtcNow.AddHours(1)));
         using ServiceProvider provider = CreateProvider(auth.Object);
-        using AuthHeaderHandler handler = CreateHandler(provider, _ => { });
+        int sendCount = 0;
+        using AuthHeaderHandler handler = CreateHandler(provider, _ => sendCount++);
         using HttpMessageInvoker invoker = new(handler);
 
         Func<Task> act = async () => await invoker.SendAsync(CreateRequest("wallets"), CancellationToken.None);
 
         await act.Should().ThrowAsync<HttpRequestException>();
+        sendCount.Should().Be(0);
         auth.Verify(service => service.RefreshAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -69,12 +71,14 @@ public sealed class AuthHeaderHandlerTests
         auth.Setup(service => service.GetStoredTokenAsync()).ReturnsAsync(
             new AuthToken("stale", " ", DateTimeOffset.UtcNow.AddMinutes(1)));
         using ServiceProvider provider = CreateProvider(auth.Object);
-        using AuthHeaderHandler handler = CreateHandler(provider, _ => { });
+        int sendCount = 0;
+        using AuthHeaderHandler handler = CreateHandler(provider, _ => sendCount++);
         using HttpMessageInvoker invoker = new(handler);
 
         Func<Task> act = async () => await invoker.SendAsync(CreateRequest("wallets"), CancellationToken.None);
 
         await act.Should().ThrowAsync<HttpRequestException>();
+        sendCount.Should().Be(0);
         auth.Verify(service => service.RefreshAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -109,12 +113,15 @@ public sealed class AuthHeaderHandlerTests
         auth.Setup(service => service.GetStoredTokenAsync()).ReturnsAsync(
             new AuthToken("valid", "refresh", DateTimeOffset.UtcNow.AddHours(1)));
         using ServiceProvider provider = CreateProvider(auth.Object);
-        using AuthHeaderHandler handler = CreateHandler(provider, _ => { });
+        AuthenticationHeaderValue? authorization = null;
+        using AuthHeaderHandler handler = CreateHandler(provider, request => authorization = request.Headers.Authorization);
         using HttpMessageInvoker invoker = new(handler);
 
         using HttpResponseMessage response = await invoker.SendAsync(CreateRequest("wallets"), CancellationToken.None);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        authorization?.Scheme.Should().Be("Bearer");
+        authorization?.Parameter.Should().Be("valid");
         auth.Verify(service => service.RefreshAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -232,6 +239,21 @@ public sealed class AuthHeaderHandlerTests
         using HttpMessageInvoker invoker = new(handler);
 
         Func<Task> act = async () => await invoker.SendAsync(new HttpRequestMessage(HttpMethod.Get, "wallets"), CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+        sendCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenRelativeUriQueryContainsAuthPath_RequiresAuthentication()
+    {
+        using ServiceProvider provider = CreateProvider();
+        int sendCount = 0;
+        using AuthHeaderHandler handler = CreateHandler(provider, _ => sendCount++);
+        using HttpMessageInvoker invoker = new(handler);
+
+        Func<Task> act = async () => await invoker.SendAsync(
+            new HttpRequestMessage(HttpMethod.Get, "wallets?next=/auth/login"), CancellationToken.None);
 
         await act.Should().ThrowAsync<HttpRequestException>();
         sendCount.Should().Be(0);
