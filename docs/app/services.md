@@ -121,7 +121,11 @@ Centralizes catch logic for `HttpRequestException`, `UnauthorizedAccessException
 
 **File**: `Services/Handlers/AuthHeaderHandler.cs`
 
-`DelegatingHandler` that injects Bearer token from `IAuthService`. Skips `/auth/login`, `/auth/refresh`, `/auth/register`. Auto-refreshes token if expiring within 5 minutes.
+`DelegatingHandler` that attaches a Bearer token from `IAuthService` to protected requests. Skips `/auth/login`, `/auth/refresh`, and `/auth/register` so those endpoints can be called anonymously. A token expiring within five minutes is refreshed before the request is sent. If the auth service is unavailable, no token exists, token retrieval fails, or refresh fails to return a usable token, the handler throws `HttpRequestException` and does not send the request to the transport. Cancellation requested by the caller continues to propagate as `OperationCanceledException`.
+
+The shared typed clients currently use this handler for all non-auth requests, which are treated as protected. Diagnostic `X-Client-Version` and `X-Platform` headers remain diagnostic and do not negotiate API capabilities. This handler does not authorize future user-data reads based on stored tokens alone; those reads require their own server-side authorization contract.
+
+**Tests/Validation**: `CipherBank-app.Tests/Services/AuthHeaderHandlerTests.cs` covers missing credentials, refresh failure, refresh success, and anonymous auth endpoints. Run `dotnet test CipherBank-app.Tests/CipherBank-app.Tests.csproj --filter AuthHeaderHandler /p:CollectCoverage=false`.
 
 ---
 
