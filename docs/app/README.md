@@ -51,6 +51,13 @@ All API clients use `AddStandardResilienceHandler` with:
 
 ## Component References
 
+- [AuthService](AuthService.md)
+- [AuthHeaderHandler](AuthHeaderHandler.md)
+- [WalletService](WalletService.md)
+- [TransactionService](TransactionService.md)
+- [CryptoApiService](CryptoApiService.md)
+- [BalanceResponse](BalanceResponse.md)
+
 This area index will link to focused type pages as they are added, using the
 source-mirroring convention in [Documentation Conventions](../conventions.md).
 Planned examples include `docs/app/AuthService.md`,
