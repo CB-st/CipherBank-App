@@ -36,7 +36,7 @@ public sealed class SensitiveLogRedactionCallSiteTests
 
     private static string ReadRepoFile(string relativePath)
     {
-        DirectoryInfo? directory = new DirectoryInfo(AppContext.BaseDirectory);
+        DirectoryInfo? directory = new(AppContext.BaseDirectory);
         while (directory is not null)
         {
             string solution = Path.Combine(directory.FullName, "CipherBank-app.sln");
