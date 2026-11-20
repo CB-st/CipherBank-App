@@ -1,5 +1,7 @@
+is_global = true
+
 # The linked MAUI handler retains its host copyright text under the test project's StyleCop settings.
-[CipherBank-app/Services/Handlers/AuthHeaderHandler.cs]
+[@RepositoryRoot@/CipherBank-app/Services/Handlers/AuthHeaderHandler.cs]
 dotnet_diagnostic.SA1636.severity = none
 
 # M7 changes the linked login model to the host copyright text as well.
