@@ -141,40 +141,7 @@ public static class UserDataPackCodec
 
         foreach (UserDataBlockWire? block in pack.Blocks)
         {
-            if (block is null || string.IsNullOrEmpty(block.Type))
-            {
-                failed.Add(CreateMalformedFailure(block));
-                continue;
-            }
-
-            if (skipUnknownTypes && !UserDataBlockTypes.IsKnown(block.Type))
-            {
-                continue;
-            }
-
-            if (string.IsNullOrEmpty(block.Id)
-                || block.NonceBase64 is null
-                || block.TagBase64 is null
-                || block.CiphertextBase64 is null)
-            {
-                failed.Add(CreateMalformedFailure(block));
-                continue;
-            }
-
-            try
-            {
-                opened[block.Id] = blockCipher.Open(block, kek, usernameHashHex, pack.ContentVersion);
-            }
-            catch (CryptographicException)
-            {
-                // Keep authenticated blocks, but report the failure so the caller can mark it dirty.
-                failed.Add(new UserDataBlockFailure(block.Id, block.Type, UserDataBlockFailureReason.AuthenticationFailed));
-            }
-            catch (FormatException)
-            {
-                // Malformed Base64 nonce/tag/ciphertext: report it rather than returning a silent partial restore.
-                failed.Add(CreateMalformedFailure(block));
-            }
+            OpenEntry(block, kek, usernameHashHex, pack.ContentVersion, blockCipher, skipUnknownTypes, (opened, failed));
         }
 
         return new UserDataPackOpenResult(opened, failed);
@@ -244,8 +211,56 @@ public static class UserDataPackCodec
         ReadOnlySpan<byte> nonce)
         => DefaultBlocks.SealWithNonce(plain, kek, usernameHashHex, contentVersion, nonce);
 
+    private static void OpenEntry(
+        UserDataBlockWire? block,
+        ReadOnlySpan<byte> kek,
+        string usernameHashHex,
+        uint contentVersion,
+        IUserDataBlockCipher blockCipher,
+        bool skipUnknownTypes,
+        (Dictionary<string, string> Opened, List<UserDataBlockFailure> Failed) results)
+    {
+        if (block is null || string.IsNullOrWhiteSpace(block.Type))
+        {
+            results.Failed.Add(CreateMalformedFailure(block));
+            return;
+        }
+
+        if (skipUnknownTypes && !UserDataBlockTypes.IsKnown(block.Type))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(block.Id)
+            || block.NonceBase64 is null
+            || block.TagBase64 is null
+            || block.CiphertextBase64 is null)
+        {
+            results.Failed.Add(CreateMalformedFailure(block));
+            return;
+        }
+
+        try
+        {
+            results.Opened[block.Id] = blockCipher.Open(block, kek, usernameHashHex, contentVersion);
+        }
+        catch (CryptographicException)
+        {
+            // Keep authenticated blocks, but report the failure so the caller can mark it dirty.
+            results.Failed.Add(new UserDataBlockFailure(block.Id, block.Type, UserDataBlockFailureReason.AuthenticationFailed));
+        }
+        catch (FormatException)
+        {
+            // Malformed Base64 nonce/tag/ciphertext: report it rather than returning a silent partial restore.
+            results.Failed.Add(CreateMalformedFailure(block));
+        }
+    }
+
     private static UserDataBlockFailure CreateMalformedFailure(UserDataBlockWire? block)
-        => new(block?.Id ?? string.Empty, block?.Type ?? string.Empty, UserDataBlockFailureReason.Malformed);
+        => new(NormalizeHeaderValue(block?.Id), NormalizeHeaderValue(block?.Type), UserDataBlockFailureReason.Malformed);
+
+    private static string NormalizeHeaderValue(string? value)
+        => string.IsNullOrWhiteSpace(value) ? string.Empty : value;
 
     private static void EnsureKek(ReadOnlySpan<byte> kek)
     {

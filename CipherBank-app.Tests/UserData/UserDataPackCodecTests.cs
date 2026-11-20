@@ -165,14 +165,16 @@ public class UserDataPackCodecTests
     }
 
     [Theory]
-    [InlineData("nonce_b64", false)]
-    [InlineData("tag_b64", false)]
-    [InlineData("ciphertext_b64", false)]
-    [InlineData("id", false)]
-    [InlineData("type", false)]
-    [InlineData("id", true)]
-    [InlineData("type", true)]
-    public void OpenPack_DecodedNullOrMissingBlockField_ReportsMalformedAndKeepsGoodBlock(string field, bool removeField)
+    [InlineData("nonce_b64", false, null)]
+    [InlineData("tag_b64", false, null)]
+    [InlineData("ciphertext_b64", false, null)]
+    [InlineData("id", false, null)]
+    [InlineData("type", false, null)]
+    [InlineData("id", true, null)]
+    [InlineData("type", true, null)]
+    [InlineData("id", false, "   ")]
+    [InlineData("type", false, "   ")]
+    public void OpenPack_DecodedMalformedBlockField_ReportsMalformedAndKeepsGoodBlock(string field, bool removeField, string? fieldValue)
     {
         using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
         const string badBlockId = "config";
@@ -193,7 +195,7 @@ public class UserDataPackCodecTests
         }
         else
         {
-            badBlock[field] = null;
+            badBlock[field] = fieldValue;
         }
 
         UserDataPackOpenResult result = UserDataPackCodec.OpenPack(DecodePackJson(json), Username, keys.Kek);
@@ -210,23 +212,27 @@ public class UserDataPackCodecTests
     public void OpenPack_DecodedUnknownTypeWithNullNonce_SkipsBlockByDefault()
     {
         using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
-        UserDataPackWire pack = UserDataPackCodec.SealPack(
-            Username,
-            contentVersion: 1,
-            keys.Kek,
-            [
-                new UserDataPlainBlock("extension", "future_extension", "{}"),
-                new UserDataPlainBlock(UserDataBlockTypes.Prefs, UserDataBlockTypes.Prefs, "{}"),
-            ]);
+        UserDataPackWire pack = DecodePackWithUnknownTypeAndNullNonce(keys.Kek);
 
-        JsonObject json = EncodePackJson(pack);
-        json["blocks"]![0]!["nonce_b64"] = null;
-
-        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(DecodePackJson(json), Username, keys.Kek);
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
 
         result.Blocks.Should().HaveCount(1).And.Contain(UserDataBlockTypes.Prefs, "{}");
         result.IsComplete.Should().BeTrue();
         result.FailedBlocks.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void OpenPack_DecodedUnknownTypeWithNullNonce_SkippingDisabledReportsMalformedAndKeepsGoodBlock()
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        UserDataPackWire pack = DecodePackWithUnknownTypeAndNullNonce(keys.Kek);
+
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(pack, Username, keys.Kek, skipUnknownTypes: false);
+
+        result.Blocks.Should().HaveCount(1).And.Contain(UserDataBlockTypes.Prefs, "{}");
+        result.IsComplete.Should().BeFalse();
+        result.FailedBlocks.Should().ContainSingle().Which.Should().Be(
+            new UserDataBlockFailure("extension", "future_extension", UserDataBlockFailureReason.Malformed));
     }
 
     [Fact]
@@ -263,6 +269,22 @@ public class UserDataPackCodecTests
 
         UserDataPackCodec.OpenBlock(block, keys.Kek, hash, 1)
             .Should().Be("""{"APPEARANCE":"dark"}""");
+    }
+
+    private static UserDataPackWire DecodePackWithUnknownTypeAndNullNonce(ReadOnlySpan<byte> kek)
+    {
+        UserDataPackWire pack = UserDataPackCodec.SealPack(
+            Username,
+            contentVersion: 1,
+            kek,
+            [
+                new UserDataPlainBlock("extension", "future_extension", "{}"),
+                new UserDataPlainBlock(UserDataBlockTypes.Prefs, UserDataBlockTypes.Prefs, "{}"),
+            ]);
+
+        JsonObject json = EncodePackJson(pack);
+        json["blocks"]![0]!["nonce_b64"] = null;
+        return DecodePackJson(json);
     }
 
     private static JsonObject EncodePackJson(UserDataPackWire pack)
