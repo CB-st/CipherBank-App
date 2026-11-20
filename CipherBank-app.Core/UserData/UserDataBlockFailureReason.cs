@@ -10,6 +10,8 @@ public enum UserDataBlockFailureReason
     /// <summary>AES-GCM authentication failed (tampered, torn or wrong key).</summary>
     AuthenticationFailed,
 
-    /// <summary>Nonce, tag or ciphertext was not valid Base64.</summary>
+    /// <summary>
+    /// The block entry was null, its id or type was null or missing, or its nonce, tag, or ciphertext was null or invalid Base64.
+    /// </summary>
     Malformed,
 }
