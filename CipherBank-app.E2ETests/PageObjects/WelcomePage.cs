@@ -8,19 +8,13 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Welcome / create-account entry (CB-ACCOUNT-001 / US-ONB-01).</summary>
-public class WelcomePage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class WelcomePage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By CreateButton = By.Id("WelcomeCreateWalletButton");
     private static readonly By ReturningButton = By.Id("WelcomeReturningButton");
     private static readonly By RestoreBackupButton = By.Id("WelcomeRestoreFromBackupButton");
-
-    /// <summary>
-    /// Initializes WelcomePage with its Appium/test collaborators. Use: High. Scope: one WelcomePage instance.
-    /// </summary>
-    public WelcomePage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Waits until the WelcomePage anchor control is visible. Use: High. Scope: WelcomePage.

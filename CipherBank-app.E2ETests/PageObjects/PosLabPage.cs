@@ -8,18 +8,12 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Page object for POS Lab.</summary>
-public class PosLabPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class PosLabPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By StartSessionButton = By.Id("PosStartSessionButton");
     private static readonly By SimulateButton = By.Id("PosSimulateButton");
-
-    /// <summary>
-    /// Initializes PosLabPage with its Appium/test collaborators. Use: High. Scope: one PosLabPage instance.
-    /// </summary>
-    public PosLabPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Starts session from PosLabPage. Use: High. Scope: PosLabPage.

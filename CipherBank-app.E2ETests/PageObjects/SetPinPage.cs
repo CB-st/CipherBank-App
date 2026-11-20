@@ -12,21 +12,14 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Assumes the app has already navigated past Keys + BackupQuiz and the SetPin XAML is the foreground page.
 /// Use: High (account wave). Scope: SetPin AutomationIds on Android/iOS.
 /// </summary>
-public class SetPinPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class SetPinPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By PinEntry = By.Id("SetPinEntry");
     private static readonly By ConfirmEntry = By.Id("SetPinConfirmEntry");
     private static readonly By SealButton = By.Id("SetPinSealButton");
     private static readonly By ErrorLabel = By.Id("SetPinErrorLabel");
-
-    /// <summary>
-    /// Binds this page object to the shared Appium session.
-    /// Use: High (every SetPin interaction). Scope: SetPinPage instance.
-    /// </summary>
-    public SetPinPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Blocks until the seal control is present (page ready for PIN entry).

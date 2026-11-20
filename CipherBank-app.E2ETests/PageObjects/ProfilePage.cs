@@ -8,7 +8,9 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Page object for Profile tab (Security card first, then Preferences/Vault/Backup).</summary>
-public class ProfilePage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class ProfilePage(AppiumDriver driver) : BasePage(driver)
 {
     private const string BackupPasswordId = "ProfileBackupPasswordEntry";
     private const string BackupPasswordConfirmId = "ProfileBackupPasswordConfirmEntry";
@@ -21,14 +23,6 @@ public class ProfilePage : BasePage
     private static readonly By ChangePinButton = By.Id("ProfileChangePinButton");
     private static readonly By LockButton = By.Id("ProfileLockButton");
     private static readonly By MnemonicRevealLabel = By.Id(MnemonicRevealLabelId);
-
-    /// <summary>
-    /// Initializes ProfilePage with its Appium/test collaborators. Use: High. Scope: one ProfilePage instance.
-    /// </summary>
-    public ProfilePage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Anchors on the Security card's Change PIN button: it sits at the top of the Profile ScrollView, so it

@@ -45,10 +45,11 @@ public sealed class RecoveryFileVault
     /// Use: Medium (capture + restore checks). Scope: the device Downloads collection.
     /// </summary>
     public static IReadOnlyList<string> ListDeviceExports() =>
-        Adb.ShellLines($"ls -1t {DeviceDownloadsDir} 2>/dev/null")
-            .Where(line => line.StartsWith(ExportPrefix, StringComparison.Ordinal)
-                           && line.EndsWith(ExportSuffix, StringComparison.Ordinal))
-            .ToArray();
+        [
+            .. Adb.ShellLines($"ls -1t {DeviceDownloadsDir} 2>/dev/null")
+                .Where(line => line.StartsWith(ExportPrefix, StringComparison.Ordinal)
+                               && line.EndsWith(ExportSuffix, StringComparison.Ordinal)),
+        ];
 
     /// <summary>
     /// Removes recovery files left on the device by earlier runs so a capture cannot pick up a stale export

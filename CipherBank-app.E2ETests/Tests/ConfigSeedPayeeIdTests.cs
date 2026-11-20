@@ -27,9 +27,10 @@ public sealed class ConfigSeedPayeeIdTests
         };
         using JsonDocument document = JsonDocument.Parse(json, options);
         JsonElement rows = document.RootElement.GetProperty("PersistenceOptions").GetProperty("DefaultRecipients");
-        string[] ids = rows.EnumerateArray()
-            .Select(row => row.GetProperty("Id").GetString() ?? string.Empty)
-            .ToArray();
+        string[] ids =
+        [
+            .. rows.EnumerateArray().Select(row => row.GetProperty("Id").GetString() ?? string.Empty),
+        ];
         ids.Should().Equal("seed:rent-4th-st", "seed:utilities-co");
         foreach (string id in ids)
         {

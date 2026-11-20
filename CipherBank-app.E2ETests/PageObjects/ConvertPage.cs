@@ -8,21 +8,15 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Page object for Convert tab.</summary>
-public class ConvertPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class ConvertPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By FromPicker = By.Id("ConvertFromPicker");
     private static readonly By ToPicker = By.Id("ConvertToPicker");
     private static readonly By AmountEntry = By.Id("ConvertAmountEntry");
     private static readonly By LockQuoteButton = By.Id("ConvertLockQuoteButton");
     private static readonly By ConvertSubmitButton = By.Id("ConvertSubmitButton");
-
-    /// <summary>
-    /// Initializes ConvertPage with its Appium/test collaborators. Use: High. Scope: one ConvertPage instance.
-    /// </summary>
-    public ConvertPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Reports whether asset Pickers are visible on ConvertPage. Use: High. Scope: ConvertPage.

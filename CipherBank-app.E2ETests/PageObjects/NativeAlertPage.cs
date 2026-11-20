@@ -12,18 +12,12 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// MAUI maps the <c>accept</c> label to the dialog's positive button and <c>cancel</c> to its negative
 /// button, so stories choose a side rather than matching button text (which the platform may re-case).
 /// </summary>
-public class NativeAlertPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class NativeAlertPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By AcceptButton = By.Id("android:id/button1");
     private static readonly By DeclineButton = By.Id("android:id/button2");
-
-    /// <summary>
-    /// Initializes NativeAlertPage with its Appium/test collaborators. Use: High. Scope: one NativeAlertPage instance.
-    /// </summary>
-    public NativeAlertPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>Blocks until a dialog is up. Use: Medium (each dialog-bearing action). Scope: this page object.</summary>
     public override void WaitForPageLoad() => WaitForElement(AcceptButton);

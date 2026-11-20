@@ -157,10 +157,10 @@ public class CoraShellSmokeTests
     /// </summary>
     private static bool TryLockFromProfile(AppiumDriver driver, out UnlockPage unlock)
     {
-        unlock = new UnlockPage(driver);
+        unlock = new(driver);
         try
         {
-            HomePage home = new HomePage(driver);
+            HomePage home = new(driver);
             home.GoToHomeTab();
             ProfilePage profile = home.GoToProfileTab();
             profile.WaitForPageLoad();
@@ -214,13 +214,13 @@ public class CoraShellSmokeTests
     private UnlockPage EnsureUnlockScreen(string storyId)
     {
         AppiumDriver driver = _fixture!.Driver;
-        UnlockPage unlock = new UnlockPage(driver);
+        UnlockPage unlock = new(driver);
         if (unlock.IsLoaded())
         {
             return unlock;
         }
 
-        WelcomePage welcome = new WelcomePage(driver);
+        WelcomePage welcome = new(driver);
         StoryGuard.RequireScreen(
             !welcome.IsLoaded(),
             storyId,
@@ -231,7 +231,7 @@ public class CoraShellSmokeTests
         if (!TryLockFromProfile(driver, out unlock) || !unlock.IsLoaded())
         {
             RelaunchSealedApp(driver);
-            unlock = new UnlockPage(driver);
+            unlock = new(driver);
         }
 
         StoryGuard.RequireScreen(

@@ -318,7 +318,11 @@ public class AccountStories
     /// hard-codes a second secret and stays at the 12-character minimum the app enforces.
     /// Use: Low (once per recovery story). Scope: this test class.
     /// </summary>
-    private static string ReversePassword(string password) => new(password.Reverse().ToArray());
+    private static string ReversePassword(string password)
+    {
+        char[] reversed = [.. password.Reverse()];
+        return new(reversed);
+    }
 
     /// <summary>
     /// Derives a same-length PIN that shares no digit with <paramref name="pin"/>, giving the rejection leg a

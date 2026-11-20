@@ -38,7 +38,7 @@ public class SealedWalletHandoffTests
     {
         Skip.If(_fixture is null, "E2E_RUN not set");
         StoryJournal journal = _fixture!.Journal;
-        UnlockPage unlock = new UnlockPage(_fixture.Driver);
+        UnlockPage unlock = new(_fixture.Driver);
         unlock.IsLoaded().Should().BeTrue(
             "sealed handoff must leave UnlockPinEntry before CoraShellSmokeTests (AccountStories Fact order is not a contract)");
 

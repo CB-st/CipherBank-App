@@ -8,19 +8,13 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Page object for Unlock (PIN) screen.</summary>
-public class UnlockPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class UnlockPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By PinField = By.Id("UnlockPinEntry");
     private static readonly By UnlockButton = By.Id("UnlockButton");
     private static readonly By ErrorLabel = By.Id("UnlockErrorLabel");
-
-    /// <summary>
-    /// Initializes UnlockPage with its Appium/test collaborators. Use: High. Scope: one UnlockPage instance.
-    /// </summary>
-    public UnlockPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Whether the Unlock PIN button is visible (device already has a sealed wallet).

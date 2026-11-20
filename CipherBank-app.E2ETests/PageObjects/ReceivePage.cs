@@ -8,19 +8,13 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Page object for Receive tab.</summary>
-public class ReceivePage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class ReceivePage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By RefreshButton = By.Id("ReceiveRefreshButton");
     private static readonly By QrImage = By.Id("ReceiveQrImage");
     private static readonly By AddressLabel = By.Id("ReceiveAddressLabel");
-
-    /// <summary>
-    /// Initializes ReceivePage with its Appium/test collaborators. Use: High. Scope: one ReceivePage instance.
-    /// </summary>
-    public ReceivePage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Performs refresh Qr for ReceivePage. Use: High. Scope: ReceivePage.

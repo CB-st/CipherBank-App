@@ -54,7 +54,7 @@ public sealed class AppiumFixture : IDisposable
 
         AppiumDriver driver = DriverBootstrap.CreateDriver();
         driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(ImplicitWaitSeconds);
-        AppiumFixture fixture = new AppiumFixture(driver, new StoryJournal());
+        AppiumFixture fixture = new(driver, new StoryJournal());
         if (IsSealedDeviceProfile())
         {
             fixture.EnsureSealedUnlockOrThrow();
@@ -89,19 +89,19 @@ public sealed class AppiumFixture : IDisposable
     /// </summary>
     private void EnsureSealedUnlockOrThrow()
     {
-        UnlockPage unlock = new UnlockPage(Driver);
+        UnlockPage unlock = new(Driver);
         if (unlock.IsLoaded())
         {
             return;
         }
 
-        WelcomePage welcome = new WelcomePage(Driver);
+        WelcomePage welcome = new(Driver);
         if (!welcome.IsLoaded() && TryLockFromShell(out unlock) && unlock.IsLoaded())
         {
             return;
         }
 
-        DeviceState device = new DeviceState(Driver, Journal);
+        DeviceState device = new(Driver, Journal);
         HomePage home = device.SealedAsync().GetAwaiter().GetResult();
         UnlockPage locked = home.GoToProfileTab().LockApp();
         locked.WaitForPageLoad();
@@ -117,10 +117,10 @@ public sealed class AppiumFixture : IDisposable
     /// </summary>
     private bool TryLockFromShell(out UnlockPage unlock)
     {
-        unlock = new UnlockPage(Driver);
+        unlock = new(Driver);
         try
         {
-            HomePage home = new HomePage(Driver);
+            HomePage home = new(Driver);
             home.GoToHomeTab();
             ProfilePage profile = home.GoToProfileTab();
             profile.WaitForPageLoad();

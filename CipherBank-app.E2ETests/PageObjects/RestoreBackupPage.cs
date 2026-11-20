@@ -12,21 +12,15 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// file") used by CB-ACCOUNT-002: pick a ciphered recovery file through the system document picker, enter
 /// the recovery password, and let <c>RestoreBackupViewModel</c> decrypt it and hand the mnemonic to SetPin.
 /// </summary>
-public class RestoreBackupPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class RestoreBackupPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By PickFileButton = By.Id("RestoreBackupPickFileButton");
     private static readonly By PasswordEntry = By.Id("RestoreBackupPasswordEntry");
     private static readonly By OpenButton = By.Id("RestoreBackupOpenButton");
     private static readonly By ErrorLabel = By.Id("RestoreBackupErrorLabel");
     private static readonly By FileStatusLabel = By.Id("RestoreBackupFileStatusLabel");
-
-    /// <summary>
-    /// Initializes RestoreBackupPage with its Appium/test collaborators. Use: High. Scope: one RestoreBackupPage instance.
-    /// </summary>
-    public RestoreBackupPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>Blocks until the file-chooser control is on screen. Use: High (CB-ACCOUNT-002). Scope: this page object.</summary>
     public override void WaitForPageLoad() => WaitForElement(PickFileButton);

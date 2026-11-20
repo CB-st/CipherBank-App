@@ -14,7 +14,9 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// It belongs to the platform, not the Shell, so it is located by DocumentsUI resource ids and visible
 /// text instead of AutomationIds.
 /// </summary>
-public class AndroidDocumentPickerPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class AndroidDocumentPickerPage(AppiumDriver driver) : BasePage(driver)
 {
     private const string DocumentsUiPackageFragment = "documentsui";
     private const string DownloadsRootLabel = "Downloads";
@@ -23,14 +25,6 @@ public class AndroidDocumentPickerPage : BasePage
 
     private static readonly By ShowRootsButton =
         By.XPath("//*[@content-desc='Show roots' or @content-desc='Show roots and folders']");
-
-    /// <summary>
-    /// Initializes AndroidDocumentPickerPage with its Appium/test collaborators. Use: High. Scope: one AndroidDocumentPickerPage instance.
-    /// </summary>
-    public AndroidDocumentPickerPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Blocks until DocumentsUI is the foreground package, i.e. the app really handed off to the system

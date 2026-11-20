@@ -61,7 +61,5 @@ public static class Adb
     /// Use: Medium (device file listings). Scope: one adb process.
     /// </summary>
     public static IReadOnlyList<string> ShellLines(string command) =>
-        Shell(command)
-            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToArray();
+        Shell(command).Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 }

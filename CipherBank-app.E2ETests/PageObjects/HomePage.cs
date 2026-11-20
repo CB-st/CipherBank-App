@@ -8,7 +8,9 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Page object for Home tab.</summary>
-public class HomePage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class HomePage(AppiumDriver driver) : BasePage(driver)
 {
     private const string MoreTabLabel = "More";
 
@@ -23,14 +25,6 @@ public class HomePage : BasePage
     private static readonly By ReceiveButton = By.Id("HomeReceiveButton");
     private static readonly By ProfileTabItem =
         By.XPath("//*[@text='Profile' or @content-desc='Profile' or @label='Profile']");
-
-    /// <summary>
-    /// Initializes HomePage with its Appium/test collaborators. Use: High. Scope: one HomePage instance.
-    /// </summary>
-    public HomePage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Reports whether the HomePage anchor control is visible. Use: High. Scope: HomePage.

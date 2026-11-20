@@ -11,7 +11,9 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Change PIN surface (Profile → Security → Change PIN) used by CB-ACCOUNT-PIN-CHANGE: current PIN plus
 /// new/confirm entries, an error label for rejected attempts and a status label for the applied change.
 /// </summary>
-public class ChangePinPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class ChangePinPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By CurrentEntry = By.Id("ChangePinCurrentEntry");
     private static readonly By NewEntry = By.Id("ChangePinEntry");
@@ -20,14 +22,6 @@ public class ChangePinPage : BasePage
     private static readonly By CancelButton = By.Id("ChangePinCancelButton");
     private static readonly By ErrorLabel = By.Id("ChangePinErrorLabel");
     private static readonly By StatusLabel = By.Id("ChangePinStatusLabel");
-
-    /// <summary>
-    /// Initializes ChangePinPage with its Appium/test collaborators. Use: High. Scope: one ChangePinPage instance.
-    /// </summary>
-    public ChangePinPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>Whether the Change PIN submit control is on screen. Use: Medium. Scope: this page object.</summary>
     public bool IsLoaded() => IsElementDisplayed(SubmitButton);

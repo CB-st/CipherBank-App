@@ -14,7 +14,9 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// AlertDialog rather than a XAML page, so it is located by framework resource ids instead of AutomationIds.
 /// Guards Profile's Reveal-mnemonic and Create-backup-file actions.
 /// </summary>
-public class StepUpPinPromptPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class StepUpPinPromptPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By PositiveButton = By.Id("android:id/button1");
 
@@ -27,14 +29,6 @@ public class StepUpPinPromptPage : BasePage
         By.XPath("//*[contains(@resource-id, ':id/custom')]//android.widget.EditText");
 
     private static readonly By DialogInput = By.XPath("//android.widget.EditText");
-
-    /// <summary>
-    /// Initializes StepUpPinPromptPage with its Appium/test collaborators. Use: High. Scope: one StepUpPinPromptPage instance.
-    /// </summary>
-    public StepUpPinPromptPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>Blocks until the prompt's confirm button is up. Use: Medium (each step-up). Scope: this page object.</summary>
     public override void WaitForPageLoad() => WaitForElement(PositiveButton);

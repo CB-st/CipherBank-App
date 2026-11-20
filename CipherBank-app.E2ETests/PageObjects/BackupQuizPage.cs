@@ -9,21 +9,15 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Confirm three recovery words (CB-ACCOUNT-001 backup quiz; US-ONB-03 negative).</summary>
-public class BackupQuizPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class BackupQuizPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By PageRoot = By.Id("BackupQuizPage");
     private static readonly By PromptLabels = By.Id("BackupQuizPrompt");
     private static readonly By AnswerEntries = By.Id("BackupQuizAnswerEntry");
     private static readonly By VerifyButton = By.Id("BackupQuizVerifyButton");
     private static readonly By ErrorLabel = By.Id("BackupQuizErrorLabel");
-
-    /// <summary>
-    /// Initializes BackupQuizPage with its Appium/test collaborators. Use: High. Scope: one BackupQuizPage instance.
-    /// </summary>
-    public BackupQuizPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Waits until the BackupQuizPage anchor control is visible. Use: High. Scope: BackupQuizPage.
@@ -104,7 +98,7 @@ public class BackupQuizPage : BasePage
             return -1;
         }
 
-        string digits = new string(prompt[(hashIndex + 1)..].Where(char.IsDigit).ToArray());
+        char[] digits = [.. prompt[(hashIndex + 1)..].Where(char.IsDigit)];
         return int.TryParse(digits, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : -1;
     }
 }

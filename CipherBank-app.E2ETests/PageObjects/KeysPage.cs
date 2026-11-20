@@ -8,19 +8,13 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Recovery phrase screen (CB-ACCOUNT-001 backup step).</summary>
-public class KeysPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class KeysPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By PageRoot = By.Id("KeysPage");
     private static readonly By MnemonicLabel = By.Id("KeysMnemonicLabel");
     private static readonly By ContinueButton = By.Id("KeysContinueButton");
-
-    /// <summary>
-    /// Initializes KeysPage with its Appium/test collaborators. Use: High. Scope: one KeysPage instance.
-    /// </summary>
-    public KeysPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Waits until the KeysPage anchor control is visible. Use: High. Scope: KeysPage.

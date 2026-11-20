@@ -8,7 +8,9 @@ using OpenQA.Selenium.Appium;
 namespace CipherBank_app.E2ETests.PageObjects;
 
 /// <summary>Page object for Send / ACH payee surfaces.</summary>
-public class SendPage : BasePage
+/// <remarks>Use: High during screen interactions. Scope: one page object.</remarks>
+/// <param name="driver">The current Appium session.</param>
+public class SendPage(AppiumDriver driver) : BasePage(driver)
 {
     private static readonly By SavedPayeesPicker = By.Id("SendSavedPayeesPicker");
     private static readonly By RecipientEntry = By.Id("SendRecipientEntry");
@@ -23,14 +25,6 @@ public class SendPage : BasePage
     private static readonly By AmountEntry = By.Id("SendAmountEntry");
     private static readonly By SpeedPicker = By.Id("SendSpeedPicker");
     private static readonly By SubmitButton = By.Id("SendSubmitButton");
-
-    /// <summary>
-    /// Initializes SendPage with its Appium/test collaborators. Use: High. Scope: one SendPage instance.
-    /// </summary>
-    public SendPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
 
     /// <summary>
     /// Reports whether parity Surfaces are visible on SendPage. Use: High. Scope: SendPage.
