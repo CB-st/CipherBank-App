@@ -15,19 +15,11 @@ namespace CipherBank_app.E2ETests.Tests;
 /// this collection runs under <c>E2E_DEVICE_PROFILE=sealed</c> so <see cref="AppiumFixture"/> lands on Unlock.
 /// Use: High (<c>scripts/e2e-android.sh --all</c> between AccountStories and CoraShellSmokeTests).
 /// </summary>
+/// <param name="holder">The shared Appium fixture holder for this test instance.</param>
 [Collection("E2E Tests")]
-public class SealedWalletHandoffTests
+public class SealedWalletHandoffTests(AppiumFixtureHolder holder)
 {
-    private readonly AppiumFixture? _fixture;
-
-    /// <summary>
-    /// Receives the shared Appium session from <see cref="AppiumFixtureHolder"/> (null when E2E_RUN is unset).
-    /// Use: High (once per test instance). Scope: SealedWalletHandoffTests session.
-    /// </summary>
-    public SealedWalletHandoffTests(AppiumFixtureHolder holder)
-    {
-        _fixture = holder.Fixture;
-    }
+    private readonly AppiumFixture? _fixture = holder.Fixture;
 
     /// <summary>
     /// Asserts Unlock after fixture bootstrap: already Unlock, Profile→Lock from Home, or Welcome→Fresh→seal→Lock.

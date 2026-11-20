@@ -33,7 +33,5 @@ public class StoryBacklogTests
     [Theory(Skip = "MAUI Appium story backlog — implement when Expo parity lands; see docs/tests/STORY_ID_MAP.md")]
     [MemberData(nameof(BacklogCases))]
     public void Story_PendingMauiAppium(string cbId, string usId, string title, string status, string surface)
-    {
-        _ = (cbId, usId, title, status, surface);
-    }
+        => _ = (cbId, usId, title, status, surface);
 }

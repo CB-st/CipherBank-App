@@ -14,7 +14,10 @@ namespace CipherBank_app.E2ETests.Support;
 /// It never creates, decrypts or rewrites recovery content.
 /// Use: Medium (a few adb calls per recovery story). Scope: one story run's export artifact.
 /// </summary>
-public sealed class RecoveryFileVault
+/// <param name="hostDir">
+/// Directory for pulled copies of exports. Defaults to <c>E2E_RECOVERY_DIR</c> or <c>artifacts/e2e-recovery</c>.
+/// </param>
+public sealed class RecoveryFileVault(string? hostDir = null)
 {
     private const string DeviceDownloadsDir = "/sdcard/Download";
     private const string ExportPrefix = "cipherbank-recovery-";
@@ -25,17 +28,8 @@ public sealed class RecoveryFileVault
     private static readonly TimeSpan ExportTimeout = TimeSpan.FromSeconds(45);
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(500);
 
-    private readonly string _hostDir;
-
-    /// <summary>
-    /// Resolves the host artifact directory (E2E_RECOVERY_DIR, default <c>artifacts/e2e-recovery</c>) that
-    /// holds pulled copies of exported files. Use: Medium (once per story). Scope: this vault instance.
-    /// </summary>
-    public RecoveryFileVault(string? hostDir = null)
-    {
-        _hostDir = RepoPaths.ResolveFromRoot(
-            hostDir ?? Environment.GetEnvironmentVariable("E2E_RECOVERY_DIR") ?? "artifacts/e2e-recovery");
-    }
+    private readonly string _hostDir = RepoPaths.ResolveFromRoot(
+        hostDir ?? Environment.GetEnvironmentVariable("E2E_RECOVERY_DIR") ?? "artifacts/e2e-recovery");
 
     /// <summary>The export captured by <see cref="CaptureExport"/>, or null before the app has exported one.</summary>
     public RecoveryExport? Captured { get; private set; }

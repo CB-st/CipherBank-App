@@ -13,30 +13,22 @@ namespace CipherBank_app.E2ETests.Support;
 /// Owns the single Appium session (driver + journal) for an E2E run.
 /// Use: High (once per test collection). Scope: process-wide Appium session.
 /// </summary>
-public sealed class AppiumFixture : IDisposable
+/// <remarks>Use <see cref="CreateOrThrow"/> to configure and create the shared session.</remarks>
+/// <param name="driver">The Appium session this fixture owns.</param>
+/// <param name="journal">The journal shared by stories in the session.</param>
+public sealed class AppiumFixture(AppiumDriver driver, StoryJournal journal) : IDisposable
 {
     private const int ImplicitWaitSeconds = 10;
-
-    /// <summary>
-    /// Preferred construction path is <see cref="CreateOrThrow"/>; the ctor is public only so StyleCop
-    /// member order stays consistent (properties before factory + nested bootstrap helpers).
-    /// Use: Low (CreateOrThrow). Scope: this fixture.
-    /// </summary>
-    public AppiumFixture(AppiumDriver driver, StoryJournal journal)
-    {
-        Driver = driver;
-        Journal = journal;
-    }
 
     /// <summary>True when the run opted into device execution via E2E_RUN=1.</summary>
     public static bool IsEnabled =>
         string.Equals(Environment.GetEnvironmentVariable("E2E_RUN"), "1", StringComparison.Ordinal);
 
     /// <summary>Gets driver for AppiumFixture.</summary>
-    public AppiumDriver Driver { get; }
+    public AppiumDriver Driver { get; } = driver;
 
     /// <summary>Gets journal for AppiumFixture.</summary>
-    public StoryJournal Journal { get; }
+    public StoryJournal Journal { get; } = journal;
 
     /// <summary>
     /// Builds the Appium session for this run. Returns null when E2E_RUN is unset (callers Skip);

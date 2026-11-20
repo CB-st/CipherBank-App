@@ -12,21 +12,14 @@ namespace CipherBank_app.E2ETests.Support;
 /// Establishes deterministic device custody state before a story Fact.
 /// Use: High (each account/device story). Scope: Appium session.
 /// </summary>
-public sealed class DeviceState
+/// <param name="driver">The current Appium session.</param>
+/// <param name="journal">The journal for custody setup steps.</param>
+public sealed class DeviceState(AppiumDriver driver, StoryJournal journal)
 {
     private static readonly TimeSpan RelaunchSettleDelay = TimeSpan.FromSeconds(1);
 
-    private readonly AppiumDriver _driver;
-    private readonly StoryJournal _journal;
-
-    /// <summary>
-    /// Initializes DeviceState with its Appium/test collaborators. Use: High. Scope: one DeviceState instance.
-    /// </summary>
-    public DeviceState(AppiumDriver driver, StoryJournal journal)
-    {
-        _driver = driver;
-        _journal = journal;
-    }
+    private readonly AppiumDriver _driver = driver;
+    private readonly StoryJournal _journal = journal;
 
     /// <summary>
     /// Clears app data and relaunches so the app boots to Welcome (no sealed wallet on device).

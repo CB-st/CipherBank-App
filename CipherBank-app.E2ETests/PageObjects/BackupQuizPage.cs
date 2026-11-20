@@ -98,7 +98,8 @@ public class BackupQuizPage(AppiumDriver driver) : BasePage(driver)
             return -1;
         }
 
-        char[] digits = [.. prompt[(hashIndex + 1)..].Where(char.IsDigit)];
+        char[] digitChars = [.. prompt[(hashIndex + 1)..].Where(char.IsDigit)];
+        string digits = new(digitChars);
         return int.TryParse(digits, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n) ? n : -1;
     }
 }

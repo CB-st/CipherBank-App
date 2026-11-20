@@ -20,21 +20,13 @@ namespace CipherBank_app.E2ETests.Tests;
 /// Requires <c>E2E_RUN=1</c> and <c>ANDROID_APK_PATH</c> (or <c>IOS_APP_PATH</c>); skips (not a soft-pass)
 /// when E2E_RUN is unset.
 /// </summary>
+/// <param name="holder">The shared Appium fixture holder for this test instance.</param>
 [Collection("E2E Tests")]
-public class AccountStories
+public class AccountStories(AppiumFixtureHolder holder)
 {
     private const string RecoveryHint = "e2e run";
 
-    private readonly AppiumFixture? _fixture;
-
-    /// <summary>
-    /// Receives the shared Appium session from <see cref="AppiumFixtureHolder"/> (null when E2E_RUN is unset).
-    /// Use: High (once per test instance). Scope: AccountStories session.
-    /// </summary>
-    public AccountStories(AppiumFixtureHolder holder)
-    {
-        _fixture = holder.Fixture;
-    }
+    private readonly AppiumFixture? _fixture = holder.Fixture;
 
     /// <summary>
     /// Drives the full CB-ACCOUNT-001 create-account flow (Welcome → Keys → BackupQuiz → SetPin → Home) on a

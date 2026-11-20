@@ -21,19 +21,11 @@ namespace CipherBank_app.E2ETests.Tests;
 /// instead of Unlock (wrong precondition for this suite). Fresh-install account stories (CB-ACCOUNT-001,
 /// US-ONB-04) live in <see cref="AccountStories"/>.
 /// </summary>
+/// <param name="holder">The shared Appium fixture holder for this test instance.</param>
 [Collection("E2E Tests")]
-public class CoraShellSmokeTests
+public class CoraShellSmokeTests(AppiumFixtureHolder holder)
 {
-    private readonly AppiumFixture? _fixture;
-
-    /// <summary>
-    /// Receives the shared Appium session from <see cref="AppiumFixtureHolder"/> (null when E2E_RUN is unset).
-    /// Use: High (once per test instance). Scope: CoraShellSmokeTests session.
-    /// </summary>
-    public CoraShellSmokeTests(AppiumFixtureHolder holder)
-    {
-        _fixture = holder.Fixture;
-    }
+    private readonly AppiumFixture? _fixture = holder.Fixture;
 
     /// <summary>
     /// Verifies the US LCK 01 CNV 01 RCV 01 Unlock Convert Quote Receive Qr E2E contract. Use: High. Scope: CoraShellSmokeTests.
