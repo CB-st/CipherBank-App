@@ -47,6 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EditorConfigFiles Include="../CipherBank-app.Tests.linked-host.editorconfig" />
     <Compile Include="../CipherBank-app/Services/Handlers/AuthHeaderHandler.cs" Link="Host/AuthHeaderHandler.cs" />
     <Compile Include="../CipherBank-app/ViewModels/LoginViewModel.cs" Link="Host/LoginViewModel.cs" />
     <Compile Include="../CipherBank-app/Services/INavigationService.cs" Link="Host/INavigationService.cs" />
