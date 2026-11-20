@@ -82,7 +82,7 @@ public class PinChangeTests
     [Fact]
     public async Task ChangePinAsync_OnPinService_VerifiesBeforeReplacing()
     {
-        PinService pin = new PinService(new MemStore());
+        PinService pin = new(new MemStore());
         await pin.SetPinAsync(CurrentPin);
 
         (await pin.ChangePinAsync("000000", NextPin)).Should().BeFalse();
@@ -100,9 +100,9 @@ public class PinChangeTests
     [Fact]
     public async Task Change_RefusedOnLegacyBlob_WithoutDeviceSecret_PreservesOldPin()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         string mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
 
         PinChangeOutcome outcome = await new PinChangeCoordinator(custody).ChangeAsync(CurrentPin, NextPin, NextPin);
@@ -122,9 +122,9 @@ public class PinChangeTests
     [Fact]
     public async Task Change_AllowedAfterMigration_KeepsMnemonicReachableWithNewPin()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         string mnemonic = await SeedLegacyPinDerivedBlobAsync(store, pin);
         (await custody.UnlockAsync(CurrentPin)).Should().BeTrue();
 
@@ -143,9 +143,9 @@ public class PinChangeTests
     [Fact]
     public async Task CustodyChangePin_ReportsDeviceSecretMissing_DistinctFromWrongPin()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         await SeedLegacyPinDerivedBlobAsync(store, pin);
 
         (await custody.ChangePinAsync(CurrentPin, NextPin))
@@ -183,9 +183,9 @@ public class PinChangeTests
     /// </summary>
     private static async Task<(PinService Pin, PinChangeCoordinator Coordinator)> SeededAsync()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         await custody.SealAsync(MnemonicHelper.Generate(), CurrentPin);
         return (pin, new PinChangeCoordinator(custody));
     }

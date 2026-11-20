@@ -70,7 +70,7 @@ public sealed partial class MockWalletService : IWalletService
         await SimulateNetworkDelayAsync(cancellationToken);
 
         LogReturnedWallets(_logger, _wallets.Count);
-        return _wallets.ToList();
+        return [.. _wallets];
     }
 
     public async Task<Wallet> GetWalletAsync(string id, CancellationToken cancellationToken)
@@ -116,10 +116,10 @@ public sealed partial class MockWalletService : IWalletService
             throw new InvalidOperationException($"Wallet for {cryptoSymbol} already exists");
         }
 
-        var cryptoName = GetCryptoName(cryptoSymbol);
-        var address = GenerateAddress(cryptoSymbol);
+        string cryptoName = GetCryptoName(cryptoSymbol);
+        string address = GenerateAddress(cryptoSymbol);
 
-        var wallet = new Wallet(
+        Wallet wallet = new(
             GenerateWalletId(),
             cryptoSymbol,
             cryptoName,
@@ -138,51 +138,46 @@ public sealed partial class MockWalletService : IWalletService
     /// </summary>
     internal void UpdateWalletBalance(string walletId, decimal newBalance)
     {
-        var index = _wallets.FindIndex(w => w.Id == walletId);
-        if (index >= 0)
+        int index = _wallets.FindIndex(w => w.Id == walletId);
+        if (index < 0)
         {
-            _wallets[index] = _wallets[index] with { Balance = newBalance };
-            LogUpdatedBalance(_logger, walletId, newBalance);
+            return;
         }
+
+        _wallets[index] = _wallets[index] with { Balance = newBalance };
+        LogUpdatedBalance(_logger, walletId, newBalance);
     }
 
     /// <summary>
     /// Internal method to get a wallet by symbol for transaction processing.
     /// </summary>
-    internal Wallet? GetWalletBySymbol(AssetSymbol symbol)
-    {
-        return _wallets.FirstOrDefault(w => w.CryptoSymbol == symbol);
-    }
+    internal Wallet? GetWalletBySymbol(AssetSymbol symbol) => _wallets.FirstOrDefault(w => w.CryptoSymbol == symbol);
 
     private static string GenerateWalletId() => Guid.NewGuid().ToString("N")[..16];
 
     private static string GenerateBitcoinAddress()
     {
         const string chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-        var address = "bc1q" + new string(Enumerable.Range(0, 39)
-            .Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
+        string address = "bc1q" + new string([.. Enumerable.Range(0, 39).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)])]);
         return address;
     }
 
     private static string GenerateEthereumAddress()
     {
         const string hexChars = "0123456789abcdef";
-        return "0x" + new string(Enumerable.Range(0, 40)
-            .Select(_ => hexChars[RandomNumberGenerator.GetInt32(hexChars.Length)]).ToArray());
+        return "0x" + new string([.. Enumerable.Range(0, 40).Select(_ => hexChars[RandomNumberGenerator.GetInt32(hexChars.Length)])]);
     }
 
     private static string GenerateSolanaAddress()
     {
         const string chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-        return new string(Enumerable.Range(0, 44)
-            .Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
+        return new string([.. Enumerable.Range(0, 44).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)])]);
     }
 
     private static string GenerateDogecoinAddress()
     {
         const string chars = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-        return "D" + new string(Enumerable.Range(0, 33)
-            .Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
+        return "D" + new string([.. Enumerable.Range(0, 33).Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)])]);
     }
 
     private static string GenerateAddress(AssetSymbol symbol) => symbol.Value switch
@@ -211,7 +206,7 @@ public sealed partial class MockWalletService : IWalletService
 
     private static async Task SimulateNetworkDelayAsync(CancellationToken cancellationToken)
     {
-        var delay = RandomNumberGenerator.GetInt32(MinLatencyMs, MaxLatencyMs);
+        int delay = RandomNumberGenerator.GetInt32(MinLatencyMs, MaxLatencyMs);
         await Task.Delay(delay, cancellationToken);
     }
 

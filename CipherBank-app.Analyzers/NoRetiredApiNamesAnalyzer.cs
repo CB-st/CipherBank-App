@@ -28,7 +28,7 @@ public sealed class NoRetiredApiNamesAnalyzer : DiagnosticAnalyzer
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-        => ImmutableArray.Create(CipherBankDiagnostics.RetiredApiName);
+        => [CipherBankDiagnostics.RetiredApiName];
 
     /// <summary>
     /// Registers a compilation action over compilation trees and additional files.
@@ -82,9 +82,7 @@ public sealed class NoRetiredApiNamesAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        SyntaxTree tree;
-        SourceText text;
-        if (!AdditionalSource.TryParseCSharp(file, context.CancellationToken, out tree, out text))
+        if (!AdditionalSource.TryParseCSharp(file, context.CancellationToken, out SyntaxTree tree, out SourceText text))
         {
             return;
         }

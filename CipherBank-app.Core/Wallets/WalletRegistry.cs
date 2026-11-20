@@ -10,7 +10,7 @@ namespace CipherBank_app.Wallets;
 /// <summary>Modular wallet registry. Each supported asset is its own <see cref="IWalletModule"/>.</summary>
 public static class WalletRegistry
 {
-    private static readonly FrozenDictionary<AssetSymbol, IWalletModule> Modules =
+    private static readonly FrozenDictionary<AssetSymbol, IWalletModule> _modules =
         new IWalletModule[]
         {
             new BitcoinWalletModule(),
@@ -24,12 +24,12 @@ public static class WalletRegistry
     public static IWalletModule Get(AssetSymbol symbol)
     {
         ArgumentNullException.ThrowIfNull(symbol);
-        return Modules.TryGetValue(symbol, out IWalletModule? module)
+        return _modules.TryGetValue(symbol, out IWalletModule? module)
             ? module
             : new FallbackWalletModule(symbol);
     }
 
     /// <summary>Returns dedicated modules in ticker order. Fallbacks are not included.</summary>
     public static IReadOnlyList<IWalletModule> All()
-        => Modules.Values.OrderBy(module => module.Symbol.Value, StringComparer.Ordinal).ToList();
+        => _modules.Values.OrderBy(module => module.Symbol.Value, StringComparer.Ordinal).ToList();
 }
