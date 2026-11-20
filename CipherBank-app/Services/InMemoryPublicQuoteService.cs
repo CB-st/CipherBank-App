@@ -18,10 +18,7 @@ public sealed class InMemoryPublicQuoteService : IPublicQuoteService
         ["USD"] = 1.00m,
     };
 
-    public Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(true);
-    }
+    public Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 
     public Task<IReadOnlyList<AssetSymbol>> GetCurrenciesAsync(CancellationToken cancellationToken = default)
     {
