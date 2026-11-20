@@ -22,11 +22,11 @@ public partial class PayPage : ContentPage
                 or nameof(PayViewModel.MixTotal)
                 or null)
             {
-                MixBar.Sources = _vm.MixSources.ToList();
+                MixBar.Sources = [.. _vm.MixSources];
                 MixBar.Total = _vm.MixTotal;
             }
         };
-        MixBar.Sources = _vm.MixSources.ToList();
+        MixBar.Sources = [.. _vm.MixSources];
         MixBar.Total = _vm.MixTotal;
     }
 }

@@ -70,7 +70,7 @@ public partial class HomeViewModel : ObservableObject
         UserPreferenceDefaults defaults)
     {
         _defaults = defaults;
-        _enabledCurrencies = defaults.EnabledCurrencies.Select(symbol => symbol.Value).ToArray();
+        _enabledCurrencies = [.. defaults.EnabledCurrencies.Select(symbol => symbol.Value)];
         _api = api;
         _prefs = prefs;
         _wallets = wallets;
@@ -366,7 +366,7 @@ public partial class HomeViewModel : ObservableObject
         ShowLocalWallets = !combined && IsVis("localWallets");
         ShowCombinedAssets = combined && (IsVis("holdings") || IsVis("localWallets"));
 
-        List<(string Key, bool Visible, Action<int> SetRow)> slots = new List<(string Key, bool Visible, Action<int> SetRow)>();
+        List<(string Key, bool Visible, Action<int> SetRow)> slots = [];
         bool combinedPlaced = false;
         foreach (string key in prefs.HomeOrder)
         {
@@ -549,13 +549,16 @@ public partial class HomeViewModel : ObservableObject
             for (int i = 0; i < symbols.Length; i++)
             {
                 var pts = await _api.GetHistoryAsync(symbols[i], SelectedRange);
-                PricePoint[] ohlc = pts.Select(point => new PricePoint(
-                    DateTimeOffset.FromUnixTimeMilliseconds(point.T), (decimal)point.V, null)).ToArray();
+                PricePoint[] ohlc =
+                [
+                    .. pts.Select(point => new PricePoint(
+                        DateTimeOffset.FromUnixTimeMilliseconds(point.T), (decimal)point.V, null)),
+                ];
                 string symbol = symbols[i];
                 await _syncJobScheduler.EnqueueAsync(
                     new PersistOhlcJobKey(symbol),
                     ct => _marketRepository.UpsertOhlcAsync(symbol, ohlc, ct));
-                var chartPts = pts.Select(p => new Point(p.T, p.V)).ToList();
+                List<Point> chartPts = [.. pts.Select(p => new Point(p.T, p.V))];
                 if (i == 0)
                 {
                     foreach (var p in chartPts)
@@ -601,12 +604,14 @@ public partial class HomeViewModel : ObservableObject
     {
         IReadOnlyList<string> enabled = prefs.EnabledCurrencies.Count > 0
             ? prefs.EnabledCurrencies
-            : _defaults.EnabledCurrencies.Select(symbol => symbol.Value).ToArray();
-        string[] heldEnabledSymbols = Holdings.Select(holding => holding.Symbol)
-            .Concat(LocalWallets.Select(wallet => wallet.Symbol.Value))
-            .Where(symbol => enabled.Contains(symbol, StringComparer.OrdinalIgnoreCase))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+            : [.. _defaults.EnabledCurrencies.Select(symbol => symbol.Value)];
+        string[] heldEnabledSymbols =
+        [
+            .. Holdings.Select(holding => holding.Symbol)
+                .Concat(LocalWallets.Select(wallet => wallet.Symbol.Value))
+                .Where(symbol => enabled.Contains(symbol, StringComparer.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase),
+        ];
 
         return _syncJobScheduler.EnqueueAsync(
             new RefreshRatesJobKey(),
@@ -621,18 +626,20 @@ public partial class HomeViewModel : ObservableObject
     {
         IReadOnlyList<string> enabled = prefs.EnabledCurrencies.Count > 0
             ? prefs.EnabledCurrencies
-            : _defaults.EnabledCurrencies.Select(symbol => symbol.Value).ToArray();
+            : [.. _defaults.EnabledCurrencies.Select(symbol => symbol.Value)];
 
-        var held = Holdings.Select(h => h.Symbol)
-            .Concat(LocalWallets.Select(w => w.Symbol.Value))
-            .Where(s => enabled.Contains(s, StringComparer.OrdinalIgnoreCase))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(3)
-            .ToList();
+        List<string> held =
+        [
+            .. Holdings.Select(h => h.Symbol)
+                .Concat(LocalWallets.Select(w => w.Symbol.Value))
+                .Where(s => enabled.Contains(s, StringComparer.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(3),
+        ];
 
         if (held.Count == 0)
         {
-            held = enabled.Take(3).ToList();
+            held = [.. enabled.Take(3)];
         }
 
         if (held.Count == 0)
@@ -640,7 +647,7 @@ public partial class HomeViewModel : ObservableObject
             held = ["BTC", "USD"];
         }
 
-        return held.ToArray();
+        return [.. held];
     }
 
     [RelayCommand]

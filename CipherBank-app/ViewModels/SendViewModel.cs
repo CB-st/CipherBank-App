@@ -175,9 +175,10 @@ public partial class SendViewModel : ObservableObject
             return;
         }
 
-        string routing = new string(NewRouting.Where(char.IsDigit).ToArray());
+        char[] routingDigits = [.. NewRouting.Where(char.IsDigit)];
+        string routing = new(routingDigits);
         string account = NewAccount.Trim();
-        AchRecipientRow row = new AchRecipientRow(
+        AchRecipientRow row = new(
             Guid.NewGuid().ToString("N"),
             NewRecipientName.Trim(),
             NewHolder.Trim(),

@@ -17,27 +17,19 @@ namespace CipherBank_app.ViewModels;
 /// only the entry fields and the surfaced error/status text, while all validation and the verify-then-replace
 /// path live in Core (and are unit-tested there).
 /// </summary>
-public partial class ChangePinViewModel : ObservableObject
+public partial class ChangePinViewModel(
+    PinChangeCoordinator pinChange,
+    INavigationService nav,
+    IAppSession session,
+    ILogger<ChangePinViewModel> logger) : ObservableObject
 {
     /// <summary>Shown instead of an exception message so no internal detail reaches the PIN screen.</summary>
     private const string UnexpectedErrorMessage = "Could not change your PIN. Please try again.";
 
-    private readonly PinChangeCoordinator _pinChange;
-    private readonly INavigationService _nav;
-    private readonly IAppSession _session;
-    private readonly ILogger<ChangePinViewModel> _logger;
-
-    public ChangePinViewModel(
-        PinChangeCoordinator pinChange,
-        INavigationService nav,
-        IAppSession session,
-        ILogger<ChangePinViewModel> logger)
-    {
-        _pinChange = pinChange;
-        _nav = nav;
-        _session = session;
-        _logger = logger;
-    }
+    private readonly PinChangeCoordinator _pinChange = pinChange;
+    private readonly INavigationService _nav = nav;
+    private readonly IAppSession _session = session;
+    private readonly ILogger<ChangePinViewModel> _logger = logger;
 
     [ObservableProperty]
     private string currentPin = string.Empty;
