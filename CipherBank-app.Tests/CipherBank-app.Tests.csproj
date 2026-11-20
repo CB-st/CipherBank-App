@@ -33,7 +33,6 @@
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <!-- Desktop e_sqlite3 pin (NU1903); Android uses sqlitepclraw.lib.e_sqlite3.android from Core -->
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
