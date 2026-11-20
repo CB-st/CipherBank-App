@@ -22,16 +22,32 @@ namespace CipherBank_app.ViewModels;
 /// <summary>
 /// ViewModel for the Login page handling user authentication.
 /// </summary>
+#if DEBUG
 public partial class LoginViewModel : ObservableObject, IDisposable
+#else
+public partial class LoginViewModel(
+    ILogger<LoginViewModel> logger,
+    IAppSession session,
+    INavigationService navigation,
+    IDialogService dialog,
+    ProductSessionAuthority? authority = null)
+    : ObservableObject, IDisposable
+#endif
 {
+#if DEBUG
     private readonly ILogger<LoginViewModel> _logger;
     private readonly IAppSession _session;
     private readonly ProductSessionAuthority? _authority;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
-#if DEBUG
     private readonly ISettingsService _settings;
     private readonly bool _useMockServices;
+#else
+    private readonly ILogger<LoginViewModel> _logger = logger;
+    private readonly IAppSession _session = session;
+    private readonly ProductSessionAuthority? _authority = authority;
+    private readonly INavigationService _navigation = navigation;
+    private readonly IDialogService _dialog = dialog;
 #endif
     private readonly object _loginGate = new();
     private CancellationTokenSource? _cts;
@@ -57,20 +73,6 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 
         // Check if we're in a test environment
         UpdateEnvironmentIndicator();
-    }
-#else
-    public LoginViewModel(
-        ILogger<LoginViewModel> logger,
-        IAppSession session,
-        INavigationService navigation,
-        IDialogService dialog,
-        ProductSessionAuthority? authority = null)
-    {
-        _logger = logger;
-        _session = session;
-        _authority = authority;
-        _navigation = navigation;
-        _dialog = dialog;
     }
 #endif
 
