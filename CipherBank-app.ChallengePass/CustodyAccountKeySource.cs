@@ -9,15 +9,10 @@ using CipherBank_app.Custody;
 namespace CipherBank_app.ChallengePass;
 
 /// <summary>Derives A1 / A2 account keys from unlocked custody BIP39 entropy.</summary>
-public sealed class CustodyAccountKeySource : IAccountKeySource
+public sealed class CustodyAccountKeySource(ICustodyService custody) : IAccountKeySource
 {
-    private readonly ICustodyService _custody;
+    private readonly ICustodyService _custody = custody;
     private readonly HybridMlKemX25519Agreement _hybrid = new();
-
-    public CustodyAccountKeySource(ICustodyService custody)
-    {
-        _custody = custody;
-    }
 
     /// <summary>
     /// Derives the A1 account key pair from unlocked custody entropy; zeroes entropy after use.

@@ -27,7 +27,7 @@ internal static class PortableChaCha20Poly1305
 
         byte[] ciphertext = new byte[plaintext.Length];
         byte[] tag = new byte[TagSize];
-        using ChaCha20Poly1305 aead = new ChaCha20Poly1305(key);
+        using ChaCha20Poly1305 aead = new(key);
         aead.Encrypt(nonce, plaintext, ciphertext, tag);
         byte[] result = new byte[ciphertext.Length + TagSize];
         ciphertext.CopyTo(result.AsSpan(0, ciphertext.Length));
@@ -56,7 +56,7 @@ internal static class PortableChaCha20Poly1305
         ReadOnlySpan<byte> ciphertext = ciphertextAndTag[..ctLen];
         ReadOnlySpan<byte> tag = ciphertextAndTag[ctLen..];
         byte[] plaintext = new byte[ctLen];
-        using ChaCha20Poly1305 aead = new ChaCha20Poly1305(key);
+        using ChaCha20Poly1305 aead = new(key);
         aead.Decrypt(nonce, ciphertext, tag, plaintext);
         return plaintext;
     }
