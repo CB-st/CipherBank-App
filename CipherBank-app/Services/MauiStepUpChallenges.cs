@@ -7,21 +7,14 @@ using CipherBank_app.Custody;
 namespace CipherBank_app.Services;
 
 /// <summary>MAUI prompt/biometric adapter for Core step-up.</summary>
-public sealed class MauiStepUpChallenges : IStepUpChallenges
+public sealed class MauiStepUpChallenges(
+    IBiometricService biometrics,
+    IDialogService dialogs,
+    ISettingsService settings) : IStepUpChallenges
 {
-    private readonly IBiometricService _biometrics;
-    private readonly IDialogService _dialogs;
-    private readonly ISettingsService _settings;
-
-    public MauiStepUpChallenges(
-        IBiometricService biometrics,
-        IDialogService dialogs,
-        ISettingsService settings)
-    {
-        _biometrics = biometrics;
-        _dialogs = dialogs;
-        _settings = settings;
-    }
+    private readonly IBiometricService _biometrics = biometrics;
+    private readonly IDialogService _dialogs = dialogs;
+    private readonly ISettingsService _settings = settings;
 
     public bool BiometricsPreferred => _settings.BiometricAuthEnabled;
 

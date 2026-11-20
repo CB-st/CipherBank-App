@@ -275,10 +275,7 @@ public partial class ConvertViewModel : ObservableObject, IDisposable
         => rate.ToString("0.########", CultureInfo.InvariantCulture);
 
     [RelayCommand]
-    private void SwapAssets()
-    {
-        (FromAsset, ToAsset) = (ToAsset, FromAsset);
-    }
+    private void SwapAssets() => (FromAsset, ToAsset) = (ToAsset, FromAsset);
 
     [RelayCommand]
     private async Task LockQuoteAsync()

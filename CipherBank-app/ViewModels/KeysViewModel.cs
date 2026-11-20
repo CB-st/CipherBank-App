@@ -42,10 +42,7 @@ public partial class KeysViewModel : ObservableObject
     private string coraLine = string.Empty;
 
     [RelayCommand]
-    private async Task CopyAsync()
-    {
-        await _clipboard.SetTextAsync(Mnemonic);
-    }
+    private async Task CopyAsync() => await _clipboard.SetTextAsync(Mnemonic);
 
     /// <summary>
     /// Parks the mnemonic in scoped hold, clears this page's copy, and opens BackupQuiz (no route query).
