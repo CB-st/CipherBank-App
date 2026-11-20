@@ -35,26 +35,24 @@ public sealed class RecoveryFileVault(string? hostDir = null)
     public RecoveryExport? Captured { get; private set; }
 
     /// <summary>
-    /// Lists recovery-file names currently in the device Downloads directory, newest last-written first.
+    /// Lists names matching the app's generated recovery-export format in device Downloads, newest last-written first.
     /// Use: Medium (capture + restore checks). Scope: the device Downloads collection.
     /// </summary>
     public static IReadOnlyList<string> ListDeviceExports() =>
-        [
-            .. Adb.ShellLines($"ls -1t {DeviceDownloadsDir} 2>/dev/null")
-                .Where(line => line.StartsWith(ExportPrefix, StringComparison.Ordinal)
-                               && line.EndsWith(ExportSuffix, StringComparison.Ordinal)),
-        ];
+        // Replace control characters on the device so a filename cannot span multiple listing lines.
+        DeviceExportNames.FilterGeneratedExportNames(
+            Adb.Shell($"ls -1t -q {DeviceDownloadsDir} 2>/dev/null").Split('\n'));
 
     /// <summary>
-    /// Removes recovery files left on the device by earlier runs so a capture cannot pick up a stale export
-    /// and silently prove nothing. Use: Medium (once per recovery story, before the export).
+    /// Removes recovery exports left on the device by earlier runs so a capture picks up the current export.
+    /// Non-matching names are never deleted. Use: Medium (once per recovery story, before the export).
     /// Scope: the device Downloads collection.
     /// </summary>
     public static void ClearDeviceExports()
     {
         foreach (string name in ListDeviceExports())
         {
-            Adb.Shell($"rm -f {DeviceDownloadsDir}/{name}");
+            Adb.Shell(DeviceExportNames.BuildRemoveCommand(DeviceDownloadsDir, name));
         }
 
         DeviceExportIo.RescanSharedStorage();
