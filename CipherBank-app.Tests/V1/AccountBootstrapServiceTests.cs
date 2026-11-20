@@ -15,9 +15,9 @@ public class AccountBootstrapServiceTests
     [Fact]
     public async Task ApplyAsync_SkipsRecipientWhenAccountLast4Missing()
     {
-        MemPrefs prefs = new MemPrefs();
-        MemRecipients recipients = new MemRecipients();
-        BootstrapApi api = new BootstrapApi(new AccountBootstrapDto
+        MemPrefs prefs = new();
+        MemRecipients recipients = new();
+        BootstrapApi api = new(new AccountBootstrapDto
         {
             Prefs = new PrefsWireDto { DefaultSendSpeed = "instant", CoraEnabled = true },
             Recipients =
@@ -45,7 +45,7 @@ public class AccountBootstrapServiceTests
             },
         });
 
-        AccountBootstrapService svc = new AccountBootstrapService(api, prefs, recipients);
+        AccountBootstrapService svc = new(api, prefs, recipients);
         await svc.ApplyAsync(CancellationToken.None);
 
         recipients.Rows.Should().ContainSingle(r => r.Id == "with-last4");
@@ -53,15 +53,10 @@ public class AccountBootstrapServiceTests
         recipients.Rows.Single().AccountMask.Should().Be(AchRecipientValidation.MaskAccount("****4021"));
     }
 
-    private sealed class BootstrapApi : IProductClient
+    private sealed class BootstrapApi(AccountBootstrapDto bootstrap) : IProductClient
     {
-        private readonly AccountBootstrapDto _bootstrap;
+        private readonly AccountBootstrapDto _bootstrap = bootstrap;
         private readonly InMemoryProductClient _inner = new();
-
-        public BootstrapApi(AccountBootstrapDto bootstrap)
-        {
-            _bootstrap = bootstrap;
-        }
 
         public Task<AccountBootstrapDto> GetAccountBootstrapAsync(CancellationToken ct)
             => Task.FromResult(_bootstrap);
