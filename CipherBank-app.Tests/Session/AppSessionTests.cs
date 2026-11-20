@@ -25,11 +25,11 @@ public class AppSessionTests
     [Fact]
     public async Task FinishSetup_UnlocksSeedsWalletsAndSession()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
-        FakeWallets wallets = new FakeWallets();
-        InMemoryProductSessionStore productSessions = new InMemoryProductSessionStore();
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
+        FakeWallets wallets = new();
+        InMemoryProductSessionStore productSessions = new();
         AppSession session = CreateSession(custody, wallets, productSessions: productSessions);
 
         string mnemonic = MnemonicHelper.Generate();
@@ -46,9 +46,9 @@ public class AppSessionTests
     [Fact]
     public async Task IdleLock_LocksAfterTimeout()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         AppSession session = CreateSession(custody, new FakeWallets());
         await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         session.IdleMs = 1;
@@ -60,11 +60,11 @@ public class AppSessionTests
     [Fact]
     public async Task Unlock_PullsBootstrapRecipients_WithoutTouchingCustodySeal()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
-        MemRecipients recipients = new MemRecipients();
-        FakePrefs prefs = new FakePrefs();
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
+        MemRecipients recipients = new();
+        FakePrefs prefs = new();
         AppSession session = CreateSession(custody, new FakeWallets(), prefs, recipients);
         await session.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         session.Lock();
@@ -79,10 +79,10 @@ public class AppSessionTests
     [Fact]
     public async Task Unlock_WhenCreateSessionFails_RelocksCustody()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
-        InMemoryProductSessionStore productSessions = new InMemoryProductSessionStore();
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
+        InMemoryProductSessionStore productSessions = new();
         AppSession okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
         await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         okSession.Lock();
@@ -101,10 +101,10 @@ public class AppSessionTests
     [Fact]
     public async Task Unlock_WhenCreateSessionThrowsHttpRequestException_RelocksCustody()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
-        InMemoryProductSessionStore productSessions = new InMemoryProductSessionStore();
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
+        InMemoryProductSessionStore productSessions = new();
         AppSession okSession = CreateSession(custody, new FakeWallets(), productSessions: productSessions);
         await okSession.FinishCustodySetupAsync(MnemonicHelper.Generate(), "123456");
         okSession.Lock();
@@ -132,11 +132,11 @@ public class AppSessionTests
         recipients ??= new MemRecipients();
         api ??= new InMemoryProductClient();
         productSessions ??= new InMemoryProductSessionStore();
-        InMemoryStreamService stream = new InMemoryStreamService();
-        StreamHub hub = new StreamHub(stream);
-        PrefsSyncService prefsSync = new PrefsSyncService(prefs, api);
-        AccountBootstrapService bootstrap = new AccountBootstrapService(api, prefs, recipients);
-        ProductSessionCoordinator productSession = new ProductSessionCoordinator(
+        InMemoryStreamService stream = new();
+        StreamHub hub = new(stream);
+        PrefsSyncService prefsSync = new(prefs, api);
+        AccountBootstrapService bootstrap = new(api, prefs, recipients);
+        ProductSessionCoordinator productSession = new(
             api,
             stream,
             hub,
@@ -144,7 +144,7 @@ public class AppSessionTests
             prefsSync,
             bootstrap,
             productSessions);
-        return new AppSession(
+        return new(
             custody,
             productSession,
             new LocalWalletSeeder(wallets),
@@ -154,7 +154,7 @@ public class AppSessionTests
 
     private static IProductClient CreateFailingApi(Exception exception)
     {
-        Mock<IProductClient> api = new Mock<IProductClient>(MockBehavior.Strict);
+        Mock<IProductClient> api = new(MockBehavior.Strict);
         api.Setup(value => value.CreateSessionAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.FromException<SessionDto>(exception));
         return api.Object;

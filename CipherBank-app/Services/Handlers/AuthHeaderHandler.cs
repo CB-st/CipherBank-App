@@ -13,48 +13,53 @@ namespace CipherBank_app.Services.Handlers;
 /// HTTP message handler that injects Bearer tokens from the product session store.
 /// Use: High (every authenticated product HTTP call). Scope: Shell HTTP pipeline.
 /// </summary>
-public sealed partial class AuthHeaderHandler : DelegatingHandler
+public sealed partial class AuthHeaderHandler(IServiceProvider serviceProvider, TimeProvider timeProvider) : DelegatingHandler
 {
     private const int ProductTokenSkewMinutes = 1;
 
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<AuthHeaderHandler>? _logger;
-    private readonly TimeProvider _timeProvider;
-
-    public AuthHeaderHandler(IServiceProvider serviceProvider, TimeProvider timeProvider)
-    {
-        _timeProvider = timeProvider;
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _logger = serviceProvider.GetService<ILogger<AuthHeaderHandler>>();
-    }
+    private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    private readonly ILogger<AuthHeaderHandler>? _logger = serviceProvider.GetService<ILogger<AuthHeaderHandler>>();
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         string requestPath = request.RequestUri?.AbsolutePath ?? string.Empty;
         if (IsUnauthenticatedEndpoint(requestPath))
         {
+            ProductSessionAuthority? dispatchAuthority = _serviceProvider.GetService<ProductSessionAuthority>();
+            if (dispatchAuthority is not null)
+            {
+                ProductSessionDispatch.Check(request, dispatchAuthority, cancellationToken);
+            }
+
             return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
+        ProductSessionSnapshot? product = null;
+        ProductSessionAuthority? authority = null;
         try
         {
             IProductSessionStore? productSessions = _serviceProvider.GetService<IProductSessionStore>();
             if (productSessions is not null)
             {
-                (string Access, string Refresh, DateTimeOffset Expires)? product = await productSessions.GetAsync().ConfigureAwait(false);
-                if (product is { } p && p.Expires > _timeProvider.GetUtcNow().AddMinutes(ProductTokenSkewMinutes))
+                authority = _serviceProvider.GetService<ProductSessionAuthority>() ?? ProductSessionAuthority.For(productSessions);
+                product = await ProductSessionDispatch.ReadAsync(request, authority, CancellationToken.None).ConfigureAwait(false);
+                if (product is { } p && p.Expires > timeProvider.GetUtcNow().AddMinutes(ProductTokenSkewMinutes))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", p.Access);
-                    return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             if (_logger is not null)
             {
                 LogErrorAddingAuthHeader(_logger, ex);
             }
+        }
+
+        if (product is not null)
+        {
+            authority!.Check(product.Operation, CancellationToken.None);
         }
 
         return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);

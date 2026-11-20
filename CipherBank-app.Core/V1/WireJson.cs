@@ -23,10 +23,9 @@ internal static class WireJson
             return null;
         }
 
-        return el.EnumerateArray()
+        return [.. el.EnumerateArray()
             .Where(item => item.ValueKind == JsonValueKind.String)
-            .Select(item => item.GetString() ?? string.Empty)
-            .ToList();
+            .Select(item => item.GetString() ?? string.Empty)];
     }
 
     /// <summary>

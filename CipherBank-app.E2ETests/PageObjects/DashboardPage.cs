@@ -11,7 +11,7 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Page object for the Dashboard page.
 /// Provides methods to interact with the main dashboard and navigate to other pages.
 /// </summary>
-public class DashboardPage : BasePage
+public class DashboardPage(AppiumDriver driver) : BasePage(driver)
 {
     // Element locators
     private static readonly By _welcomeLabel = By.Id("WelcomeLabel");
@@ -23,26 +23,15 @@ public class DashboardPage : BasePage
     private static readonly By _refreshButton = By.Id("RefreshButton");
     private static readonly By _transactionsList = By.Id("RecentTransactionsList");
 
-    public DashboardPage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
-
     /// <summary>
     /// Gets the welcome message text.
     /// </summary>
-    public string GetWelcomeMessage()
-    {
-        return GetElementText(_welcomeLabel);
-    }
+    public string GetWelcomeMessage() => GetElementText(_welcomeLabel);
 
     /// <summary>
     /// Gets the total balance displayed.
     /// </summary>
-    public string GetTotalBalance()
-    {
-        return GetElementText(_totalBalanceLabel);
-    }
+    public string GetTotalBalance() => GetElementText(_totalBalanceLabel);
 
     /// <summary>
     /// Navigates to the Wallet page.
@@ -65,10 +54,7 @@ public class DashboardPage : BasePage
     /// <summary>
     /// Navigates to the Settings page.
     /// </summary>
-    public void GoToSettings()
-    {
-        ClickElement(_settingsButton);
-    }
+    public void GoToSettings() => ClickElement(_settingsButton);
 
     /// <summary>
     /// Logs out and returns to the Login page.
@@ -91,18 +77,12 @@ public class DashboardPage : BasePage
     /// <summary>
     /// Checks if the user is logged in by verifying dashboard elements.
     /// </summary>
-    public bool IsLoggedIn()
-    {
-        return IsElementDisplayed(_welcomeLabel) && IsElementDisplayed(_totalBalanceLabel);
-    }
+    public bool IsLoggedIn() => IsElementDisplayed(_welcomeLabel) && IsElementDisplayed(_totalBalanceLabel);
 
     /// <summary>
     /// Checks if recent transactions are displayed.
     /// </summary>
-    public bool HasRecentTransactions()
-    {
-        return IsElementDisplayed(_transactionsList);
-    }
+    public bool HasRecentTransactions() => IsElementDisplayed(_transactionsList);
 
     public override void WaitForPageLoad()
     {

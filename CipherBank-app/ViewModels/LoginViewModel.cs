@@ -8,6 +8,7 @@ using CipherBank_app.Configuration;
 #endif
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
+using CipherBank_app.Session;
 using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -24,27 +25,31 @@ namespace CipherBank_app.ViewModels;
 public partial class LoginViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<LoginViewModel> _logger;
-    private readonly IProductClient _product;
+    private readonly IAppSession _session;
+    private readonly ProductSessionAuthority? _authority;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
 #if DEBUG
     private readonly ISettingsService _settings;
     private readonly bool _useMockServices;
 #endif
+    private readonly object _loginGate = new();
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
 #if DEBUG
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
-        IProductClient product,
+        IAppSession session,
         INavigationService navigation,
         IDialogService dialog,
         ISettingsService settings,
-        IOptions<HostBehaviorOptions> hostBehavior)
+        IOptions<HostBehaviorOptions> hostBehavior,
+        ProductSessionAuthority? authority = null)
     {
         _logger = logger;
-        _product = product;
+        _session = session;
+        _authority = authority;
         _navigation = navigation;
         _dialog = dialog;
         _settings = settings;
@@ -56,12 +61,14 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 #else
     public LoginViewModel(
         ILogger<LoginViewModel> logger,
-        IProductClient product,
+        IAppSession session,
         INavigationService navigation,
-        IDialogService dialog)
+        IDialogService dialog,
+        ProductSessionAuthority? authority = null)
     {
         _logger = logger;
-        _product = product;
+        _session = session;
+        _authority = authority;
         _navigation = navigation;
         _dialog = dialog;
     }
@@ -95,7 +102,10 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     /// </summary>
     public void CancelLogin()
     {
-        _cts?.Cancel();
+        lock (_loginGate)
+        {
+            _cts?.Cancel();
+        }
     }
 
     /// <inheritdoc/>
@@ -105,65 +115,132 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    private void RollbackLogin(ProductSessionOperation? identity)
+    {
+        if (identity is not null)
+        {
+            try
+            {
+                // Lock owns revocation; admit it only while this login still owns the session.
+                _authority!.Commit(identity, _session.Lock);
+            }
+            catch (OperationCanceledException)
+            {
+                // A newer unlock owns custody and credentials now.
+            }
+        }
+        else
+        {
+            _session.Lock();
+        }
+    }
+
     [RelayCommand]
     private async Task SignInAsync()
     {
-        if (IsBusy)
+        CancellationTokenSource operation;
+        lock (_loginGate)
         {
-            return;
-        }
+            if (_disposed || _cts is not null)
+            {
+                return;
+            }
 
-        // Cancel any existing operation
-        _cts?.Cancel();
-        _cts = new CancellationTokenSource();
+            operation = new CancellationTokenSource();
+            _cts = operation;
+        }
 
         IsBusy = true;
         ErrorMessage = null;
+        ProductSessionOperation? identity = null;
 
         try
         {
-            if (string.IsNullOrWhiteSpace(Username))
-            {
-                ErrorMessage = "Please enter a username";
-                return;
-            }
-
             if (string.IsNullOrWhiteSpace(Password))
             {
-                ErrorMessage = "Please enter a password";
+                ErrorMessage = "Please enter your custody PIN";
                 return;
             }
 
-            LogAttemptingLogin(_logger, Username);
-            await _product.CreateSessionAsync(_cts.Token);
+            LogAttemptingLogin(_logger);
+
+            // IAppSession has no cancellation overload: observe completion, then roll back
+            // cancelled unlocks before navigation. Never abandon a live startup task.
+            bool unlocked;
+            if (_session is AppSession app && _authority is not null)
+            {
+                identity = _authority.Begin();
+                unlocked = await app.UnlockAsync(Password, identity);
+            }
+            else
+            {
+                unlocked = await _session.UnlockAsync(Password);
+            }
+
+            operation.Token.ThrowIfCancellationRequested();
+
+            if (!unlocked)
+            {
+                ErrorMessage = "Unable to unlock. Check your custody PIN and session configuration.";
+                return;
+            }
+
+            // Navigation is the commit point; page disappearance during this transition
+            // must not undo the completed session.
             LogLoginSuccessful(_logger);
-            await _navigation.GoToAsync(Routes.Dashboard);
+            if (identity is not null)
+            {
+                Task transition = Task.CompletedTask;
+                _authority!.Commit(identity, () =>
+                {
+                    operation.Token.ThrowIfCancellationRequested();
+                    transition = _navigation.GoToAsync(Routes.Dashboard);
+                });
+                await transition;
+            }
+            else
+            {
+                await _navigation.GoToAsync(Routes.Dashboard);
+            }
         }
         catch (HttpRequestException ex)
         {
+            RollbackLogin(identity);
             LogNetworkError(_logger, ex);
             ErrorMessage = "Network error. Please check your connection and try again.";
             await _dialog.ShowAlertAsync("Connection Error", ErrorMessage, "OK");
         }
         catch (OperationCanceledException)
         {
+            RollbackLogin(identity);
             LogLoginCancelled(_logger);
             ErrorMessage = "Login cancelled";
         }
         catch (InvalidOperationException ex)
         {
+            RollbackLogin(identity);
             LogInvalidOperation(_logger, ex);
             ErrorMessage = "Invalid credentials or server error";
             await _dialog.ShowAlertAsync("Login Failed", ErrorMessage, "OK");
         }
         catch (Exception ex)
         {
+            RollbackLogin(identity);
             LogUnexpectedError(_logger, ex);
             ErrorMessage = "An unexpected error occurred. Please try again.";
             await _dialog.ShowAlertAsync("Error", ErrorMessage, "OK");
         }
         finally
         {
+            Password = string.Empty;
+
+            // Serialize cancellation with disposal; the awaited operation retains ownership.
+            lock (_loginGate)
+            {
+                operation.Dispose();
+                _cts = null;
+            }
+
             IsBusy = false;
         }
     }
@@ -175,12 +252,11 @@ public partial class LoginViewModel : ObservableObject, IDisposable
         if (_useMockServices)
         {
             Username = "testuser";
-            Password = "password123";
-            StatusMessage = "Test credentials filled";
+            Password = string.Empty;
             LogTestCredentialsUsed(_logger);
 
-            // Optionally auto-login
-            await SignInAsync();
+            // Custody PINs are device-specific, including in development.
+            StatusMessage = "Enter the custody PIN for this device";
         }
         else
         {
@@ -213,8 +289,8 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 #endif
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
-    [LoggerMessage(Level = LogLevel.Information, Message = "Attempting login for user: {Username}")]
-    private static partial void LogAttemptingLogin(ILogger logger, string username);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Attempting custody unlock")]
+    private static partial void LogAttemptingLogin(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Login successful, navigating to main page")]
     private static partial void LogLoginSuccessful(ILogger logger);
@@ -239,14 +315,19 @@ public partial class LoginViewModel : ObservableObject, IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        lock (_loginGate)
         {
-            if (disposing)
+            if (_disposed)
             {
-                _cts?.Dispose();
+                return;
             }
 
             _disposed = true;
+            if (disposing)
+            {
+                // SignInAsync owns disposal after the awaited lifecycle finishes.
+                _cts?.Cancel();
+            }
         }
     }
 }

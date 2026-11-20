@@ -4,6 +4,7 @@
 
 using CipherBank_app.Constants;
 using CipherBank_app.Services;
+using CipherBank_app.Session;
 using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -18,7 +19,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<SettingsViewModel> _logger;
     private readonly ISettingsService _settings;
-    private readonly IProductSessionStore _sessions;
+    private readonly ProductSessionAuthority _sessions;
+    private readonly IAppSession? _appSession;
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
     private readonly IHealthCheckClient _healthCheck;
@@ -33,11 +35,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         INavigationService navigation,
         IDialogService dialog,
         IHealthCheckClient healthCheck,
-        IAppThemeSetter themeSetter)
+        IAppThemeSetter themeSetter,
+        IAppSession? appSession = null)
     {
         _logger = logger;
         _settings = settings;
-        _sessions = sessions;
+        _sessions = ProductSessionAuthority.For(sessions);
+        _appSession = appSession;
         _navigation = navigation;
         _dialog = dialog;
         _healthCheck = healthCheck;
@@ -186,7 +190,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _settings.DeveloperModeEnabled = DeveloperModeEnabled;
 
             // Clear auth tokens and return to login if environment changed
-            var previousEnvironment = _settings.Environment;
+            string previousEnvironment = _settings.Environment;
             if (previousEnvironment != SelectedEnvironment)
             {
                 // The Environment setter cascades its default endpoint into
@@ -194,7 +198,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 // avoid clobbering the custom ApiEndpoint saved above.
                 _settings.Environment = SelectedEnvironment;
                 LogEnvironmentChanged(_logger, previousEnvironment, SelectedEnvironment);
-                _sessions.Clear();
+                RevokeSession();
 
                 // Apply theme before leaving so the change persists into the login screen.
                 ApplyTheme();
@@ -251,7 +255,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             LogTestingConnection(_logger, ApiEndpoint);
 
-            var isHealthy = await _healthCheck.CheckHealthAsync(ApiEndpoint, _cts.Token);
+            bool isHealthy = await _healthCheck.CheckHealthAsync(ApiEndpoint, _cts.Token);
 
             if (isHealthy)
             {
@@ -296,7 +300,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ResetToDefaultsAsync()
     {
-        var confirm = await _dialog.ShowConfirmAsync(
+        bool confirm = await _dialog.ShowConfirmAsync(
             "Reset Settings",
             "Are you sure you want to reset all settings to defaults?",
             "Reset");
@@ -316,13 +320,26 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         LogSettingsReset(_logger);
     }
 
+    private void RevokeSession()
+    {
+        if (_appSession is not null)
+        {
+            _appSession.Lock();
+        }
+        else
+        {
+            // Legacy direct construction still joins the same final-store authority.
+            _sessions.Invalidate();
+        }
+    }
+
     /// <summary>
     /// Logs out the current user.
     /// </summary>
     [RelayCommand]
     private async Task LogoutAsync()
     {
-        var confirm = await _dialog.ShowConfirmAsync(
+        bool confirm = await _dialog.ShowConfirmAsync(
             "Log Out",
             "Are you sure you want to log out?",
             "Log Out");
@@ -335,7 +352,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         try
         {
             LogUserLoggingOut(_logger);
-            _sessions.Clear();
+            RevokeSession();
             await _navigation.GoToAsync(Routes.Login);
             LogUserLoggedOut(_logger);
         }
@@ -354,7 +371,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ShowAboutAsync()
     {
-        var aboutMessage =
+        string aboutMessage =
             "Version 1.0.0\n\n" +
             "A secure cryptocurrency wallet and trading application.\n\n" +
             "© 2026 CipherBank. All rights reserved.";
@@ -377,7 +394,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
             if (!DeveloperModeEnabled)
             {
-                var confirm = await _dialog.ShowConfirmAsync(
+                bool confirm = await _dialog.ShowConfirmAsync(
                     "Enable Developer Mode?",
                     "Developer mode allows you to switch environments and use mock services. This is for development purposes only.",
                     "Enable");
@@ -475,14 +492,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            if (disposing)
-            {
-                _cts?.Dispose();
-            }
-
-            _disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            _cts?.Dispose();
+        }
+
+        _disposed = true;
     }
 }

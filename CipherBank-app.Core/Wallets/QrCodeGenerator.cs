@@ -23,9 +23,9 @@ public static class QrCodeGenerator
     /// <summary>Encodes <paramref name="payload"/> as a PNG QR at <paramref name="pixelsPerModule"/>.</summary>
     public static QrPng ToPng(string payload, int pixelsPerModule)
     {
-        using QRCodeGenerator generator = new QRCodeGenerator();
+        using QRCodeGenerator generator = new();
         using QRCodeData data = generator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.M);
-        PngByteQRCode png = new PngByteQRCode(data);
+        PngByteQRCode png = new(data);
         return new QrPng(png.GetGraphic(pixelsPerModule));
     }
 }
