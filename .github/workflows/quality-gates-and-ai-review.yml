@@ -258,7 +258,7 @@ jobs:
   # Waits on `coverage` and `context-author-gate`.
   context:
     needs: [coverage, context-author-gate]
-    if: ${{ needs.context-author-gate.outputs.allowed == 'true' }}
+    if: ${{ needs.context-author-gate.outputs.allowed == 'true' && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'sandbox') }}
     permissions:
       contents: read
       pull-requests: read
