@@ -50,7 +50,7 @@ public sealed partial class BackupFileService : IBackupFileService
         }
 
         using Stream stream = await result.OpenReadAsync().ConfigureAwait(false);
-        using MemoryStream buffer = new MemoryStream();
+        using MemoryStream buffer = new();
         await stream.CopyToAsync(buffer, ct).ConfigureAwait(false);
         return buffer.ToArray();
     }

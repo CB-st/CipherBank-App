@@ -11,17 +11,12 @@ namespace CipherBank_app.Services;
 /// Live challenge issuer for A2: server seals with the channel key from the prior key-share.
 /// Uses <c>POST /v1/session/challenge</c> with empty account key (server binds via KEY_SHARE session).
 /// </summary>
-public sealed class HttpPqChannelChallengeSource : IPqChannelChallengeSource
+public sealed class HttpPqChannelChallengeSource(Lazy<IProductClient> api, IPqChannel channel)
+    : IPqChannelChallengeSource
 {
     // Lazy breaks DI cycle with HttpProductClient ↔ challenge/pass builders.
-    private readonly Lazy<IProductClient> _api;
-    private readonly IPqChannel _channel;
-
-    public HttpPqChannelChallengeSource(Lazy<IProductClient> api, IPqChannel channel)
-    {
-        _api = api;
-        _channel = channel;
-    }
+    private readonly Lazy<IProductClient> _api = api;
+    private readonly IPqChannel _channel = channel;
 
     public Task<SessionChallengeDto> RequestChallengeAsync(CancellationToken ct = default)
     {
