@@ -61,16 +61,9 @@ public sealed class MarketRateHydratorTests
         cache.UpsertCalls.Should().Be(0);
     }
 
-    private sealed class FixedTimeProvider : TimeProvider
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
-        private readonly DateTimeOffset _utcNow;
-
-        public FixedTimeProvider(DateTimeOffset utcNow)
-        {
-            _utcNow = utcNow;
-        }
-
-        public override DateTimeOffset GetUtcNow() => _utcNow;
+        public override DateTimeOffset GetUtcNow() => utcNow;
     }
 
     private sealed class MemoryRatesCache : IRateSnapshotStore

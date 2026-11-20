@@ -57,10 +57,7 @@ public sealed class MarketRateHydrator
         CancellationToken ct)
     {
         DateTimeOffset now = _timeProvider.GetUtcNow();
-        AssetSymbol[] requestedSymbols = symbols
-            .Where(symbol => symbol is not null)
-            .Distinct()
-            .ToArray();
+        AssetSymbol[] requestedSymbols = [..symbols.Distinct()];
         if (requestedSymbols.Length == 0)
         {
             return;
