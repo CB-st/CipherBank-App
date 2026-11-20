@@ -9,13 +9,8 @@ using Microsoft.EntityFrameworkCore;
 namespace CipherBank_app.Persist;
 
 /// <summary>EF Core model for the on-device, non-secret CipherBank database.</summary>
-public sealed class CipherBankDbContext : DbContext
+public sealed class CipherBankDbContext(DbContextOptions<CipherBankDbContext> options) : DbContext(options)
 {
-    public CipherBankDbContext(DbContextOptions<CipherBankDbContext> options)
-        : base(options)
-    {
-    }
-
     internal DbSet<WalletEntity> Wallets => Set<WalletEntity>();
 
     internal DbSet<RecipientEntity> Recipients => Set<RecipientEntity>();

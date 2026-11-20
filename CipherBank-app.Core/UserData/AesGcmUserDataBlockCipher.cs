@@ -65,7 +65,7 @@ public sealed class AesGcmUserDataBlockCipher : IUserDataBlockCipher
         byte[] tag = Convert.FromBase64String(block.TagBase64);
         byte[] ciphertext = Convert.FromBase64String(block.CiphertextBase64);
         byte[] aad = UserDataAad.Build(usernameHashHex, block.Type, block.Id, contentVersion);
-        UserDataSymmetricBlob blob = new UserDataSymmetricBlob(nonce, tag, ciphertext);
+        UserDataSymmetricBlob blob = new(nonce, tag, ciphertext);
         byte[] plain = _symmetric.Open(blob, kek, aad);
         try
         {

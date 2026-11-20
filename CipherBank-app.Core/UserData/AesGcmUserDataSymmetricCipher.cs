@@ -43,7 +43,7 @@ public sealed class AesGcmUserDataSymmetricCipher : IUserDataSymmetricCipher
 
         try
         {
-            using AesGcm aes = new AesGcm(key32, UserDataConstants.TagSize);
+            using AesGcm aes = new(key32, UserDataConstants.TagSize);
             aes.Encrypt(nonce, plainCopy, ciphertext, tag, aad.Length == 0 ? null : aadCopy);
             return new UserDataSymmetricBlob(nonce, tag, ciphertext);
         }
@@ -75,7 +75,7 @@ public sealed class AesGcmUserDataSymmetricCipher : IUserDataSymmetricCipher
         byte[] aadCopy = aad.Length == 0 ? [] : aad.ToArray();
         try
         {
-            using AesGcm aes = new AesGcm(key32, UserDataConstants.TagSize);
+            using AesGcm aes = new(key32, UserDataConstants.TagSize);
             aes.Decrypt(
                 blob.Nonce,
                 blob.Ciphertext,

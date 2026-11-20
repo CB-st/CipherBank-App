@@ -110,7 +110,7 @@ public sealed partial class MockAuthService : IAuthService
             return Task.FromResult(true);
         }
 
-        var isExpired = _currentToken.ExpiresUtc <= DateTimeOffset.UtcNow.AddMinutes(5);
+        bool isExpired = _currentToken.ExpiresUtc <= DateTimeOffset.UtcNow.AddMinutes(5);
         LogTokenExpirationCheck(_logger, isExpired, _currentToken.ExpiresUtc);
         return Task.FromResult(isExpired);
     }

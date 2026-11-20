@@ -16,7 +16,7 @@ public class UserDataCryptoCatalogTests
     [Fact]
     public void DefaultCatalog_UsesRsaAesGcmSuite()
     {
-        UserDataCryptoCatalog catalog = new UserDataCryptoCatalog();
+        UserDataCryptoCatalog catalog = new();
         catalog.ActiveSuiteId.Should().Be(UserDataConstants.SuiteRsaAesGcmV1);
         catalog.Active.Enroll.AlgorithmId.Should().Be(UserDataConstants.EnrollAlgorithmRsaOaepSha256V1);
         catalog.Active.Blocks.AlgorithmId.Should().Be(UserDataConstants.SymmetricAlgorithmAesGcmV1);
@@ -26,7 +26,7 @@ public class UserDataCryptoCatalogTests
     [Fact]
     public void Suite_SealOpenPack_ViaCatalogBlocks()
     {
-        UserDataCryptoCatalog catalog = new UserDataCryptoCatalog();
+        UserDataCryptoCatalog catalog = new();
         using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
 
         UserDataPackWire pack = UserDataPackCodec.SealPack(
@@ -48,7 +48,7 @@ public class UserDataCryptoCatalogTests
     [Fact]
     public void Symmetric_InternalSealOpen_RoundTrips()
     {
-        UserDataCryptoCatalog catalog = new UserDataCryptoCatalog();
+        UserDataCryptoCatalog catalog = new();
         using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
         byte[] plain = "internal-secret"u8.ToArray();
         byte[] aad = "aad"u8.ToArray();
@@ -61,7 +61,7 @@ public class UserDataCryptoCatalogTests
     [Fact]
     public void SetActive_UnknownSuite_Throws()
     {
-        UserDataCryptoCatalog catalog = new UserDataCryptoCatalog();
+        UserDataCryptoCatalog catalog = new();
         Action act = () => catalog.SetActive(UserDataConstants.SuitePqAesGcmV1);
         act.Should().Throw<ArgumentException>();
     }

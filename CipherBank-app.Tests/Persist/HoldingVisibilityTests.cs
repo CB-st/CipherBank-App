@@ -14,12 +14,12 @@ public class HoldingVisibilityTests
     [Fact]
     public void Split_PlacesEnabledSymbolsCaseInsensitivelyInVisibleHoldings()
     {
-        HoldingDto[] holdings = new[]
-        {
+        HoldingDto[] holdings =
+        [
             new HoldingDto { Symbol = "btc" },
             new HoldingDto { Symbol = "ETH" },
-            new HoldingDto { Symbol = "usd" },
-        };
+            new HoldingDto { Symbol = "usd" }
+        ];
 
         HoldingVisibilityResult result = HoldingVisibility.Split(
             holdings,
@@ -33,17 +33,17 @@ public class HoldingVisibilityTests
     [Fact]
     public void Split_UsesDefaultEnabledCurrenciesWhenNoneAreConfigured()
     {
-        HoldingDto[] holdings = new[]
-        {
+        HoldingDto[] holdings =
+        [
             new HoldingDto { Symbol = "BTC" },
             new HoldingDto { Symbol = "XMR" },
             new HoldingDto { Symbol = "USD" },
-            new HoldingDto { Symbol = "ETH" },
-        };
+            new HoldingDto { Symbol = "ETH" }
+        ];
 
         HoldingVisibilityResult result = HoldingVisibility.Split(
             holdings,
-            Array.Empty<string>(),
+            [],
             TestPreferenceDefaults.Value);
 
         result.Visible.Select(holding => holding.Symbol).Should().Equal("BTC", "XMR", "USD");

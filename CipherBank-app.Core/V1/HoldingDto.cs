@@ -10,7 +10,7 @@ namespace CipherBank_app.V1;
 public sealed class HoldingDto
 {
     [JsonPropertyName("SYMBOL")]
-    public string Symbol { get; set; } = string.Empty;
+    public string Symbol { get; init; } = string.Empty;
 
     [JsonPropertyName("NAME")]
     public string Name { get; set; } = string.Empty;
