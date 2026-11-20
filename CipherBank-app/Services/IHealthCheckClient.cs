@@ -5,12 +5,12 @@
 namespace CipherBank_app.Services;
 
 /// <summary>
-/// Client for health-checking API connectivity with certificate pinning and app configuration.
+/// Client for probing public API connectivity with certificate pinning and app configuration.
 /// </summary>
 public interface IHealthCheckClient
 {
     /// <summary>
-    /// Checks connectivity to the health endpoint at the given base URL.
+    /// Checks connectivity via <c>POST /test</c> at the given base URL.
     /// Uses the app's certificate pinning and handler chain.
     /// </summary>
     Task<bool> CheckHealthAsync(string baseUrl, CancellationToken cancellationToken = default);

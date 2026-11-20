@@ -91,11 +91,11 @@ public sealed class ConfigurationTests
     }
 
     [Fact]
-    public void Build_Development_KeepsDatabaseNameWhenOverlayOmitsIt()
+    public void Build_Development_UsesDevelopmentOverlayDatabaseName()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build("Development");
 
-        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.dev.db");
     }
 
     [Fact]
@@ -107,11 +107,11 @@ public sealed class ConfigurationTests
     }
 
     [Fact]
-    public void Build_WindowsOverlay_KeepsDatabaseNameWhenOverlayOmitsIt()
+    public void Build_WindowsOverlay_UsesWindowsOverlayDatabaseName()
     {
         IConfiguration configuration = CipherBankDefaultsConfiguration.Build(windowsOverlay: true);
 
-        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.db");
+        configuration["PersistenceOptions:DatabaseName"].Should().Be("cipherbank.win.db");
     }
 
     [Fact]
