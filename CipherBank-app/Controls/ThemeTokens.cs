@@ -11,7 +11,7 @@ namespace CipherBank_app.Controls;
 internal static class ThemeTokens
 {
     public static Color Get(string key) =>
-        Application.Current?.Resources.TryGetValue(key, out var value) == true && value is Color color
+        Application.Current?.Resources.TryGetValue(key, out object? value) == true && value is Color color
             ? color
             : Colors.Transparent;
 }

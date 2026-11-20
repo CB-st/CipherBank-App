@@ -21,11 +21,11 @@ internal static class ProductTreeRepoRoot
     private const string MauiPackageReference = "<PackageReference Include=\"CommunityToolkit.Mvvm\" />";
 
     private static readonly string[] _unbuiltProjectDirectories =
-    {
+    [
         "CipherBank-app",
         "CipherBank-app.IntegrationTests",
-        "CipherBank-app.E2ETests",
-    };
+        "CipherBank-app.E2ETests"
+    ];
 
     /// <summary>
     /// Walks parents of the test output directory until the solution root is found.
@@ -55,12 +55,7 @@ internal static class ProductTreeRepoRoot
     internal static string Read(string relativePath)
     {
         string fullPath = Path.Combine(Find(), relativePath.Replace('/', Path.DirectorySeparatorChar));
-        if (!File.Exists(fullPath))
-        {
-            throw new FileNotFoundException($"Product file missing at {fullPath}", fullPath);
-        }
-
-        return File.ReadAllText(fullPath);
+        return !File.Exists(fullPath) ? throw new FileNotFoundException($"Product file missing at {fullPath}", fullPath) : File.ReadAllText(fullPath);
     }
 
     /// <summary>
@@ -86,12 +81,7 @@ internal static class ProductTreeRepoRoot
             }
         }
 
-        if (files.Count == 0)
-        {
-            throw new InvalidOperationException("No unbuilt C# files found under the MAUI, Integration, or E2E trees.");
-        }
-
-        return files;
+        return files.Count == 0 ? throw new InvalidOperationException("No unbuilt C# files found under the MAUI, Integration, or E2E trees.") : files;
     }
 
     /// <summary>
