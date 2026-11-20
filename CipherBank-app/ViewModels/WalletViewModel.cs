@@ -397,9 +397,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     [LoggerMessage(Level = LogLevel.Information, Message = "Loading wallets")]
     private static partial void LogLoadingWallets(ILogger logger);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not get price for {Symbol}")]
-    private static partial void LogCouldNotGetPrice(ILogger logger, Exception ex, string symbol);
-
     [LoggerMessage(Level = LogLevel.Information, Message = "Loaded {Count} wallets with total value ${Value:N2}")]
     private static partial void LogLoadedWallets(ILogger logger, int count, decimal value);
 

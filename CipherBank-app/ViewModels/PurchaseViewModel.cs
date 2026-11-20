@@ -315,12 +315,12 @@ public partial class PurchaseViewModel(
         catch (InvalidOperationException ex)
         {
             LogPurchaseFailed(logger, ex, ex.Message);
-            await dialog.ShowAlertAsync("Purchase Failed", ex.Message, "OK");
+            await dialog.ShowAlertAsync("Purchase Failed", ex.Message);
         }
         catch (ArgumentException ex)
         {
             LogInvalidPurchaseParameters(logger, ex);
-            await dialog.ShowAlertAsync("Invalid Input", ex.Message, "OK");
+            await dialog.ShowAlertAsync("Invalid Input", ex.Message);
         }
         catch (OperationCanceledException)
         {
