@@ -22,7 +22,7 @@ Sonar does not always annotate the GitHub PR; use the `sonar-context-<sha>` work
 |----------------|----------------|-----------|
 | **CA1707** RootNamespace `CipherBank_app` | Underscored root namespace matches the shipping assembly / historical package id; renaming is a cross-repo break. Suppressed via `NoWarn` on Core/ChallengePass. | Coordinated rename |
 | **Record / property initializers** (e.g. `PricePoint` optional volume) | Not method optional parameters (S2360); changing record shape is API churn without maintainability win. | Leave |
-| **MockProductApi fixture literals** | One-off demo balances / timestamps are story fixtures; named where reused. | Keep naming new reused literals |
+| **InMemoryProductClient fixture literals** | One-off demo balances / timestamps are story fixtures; named where reused. | Keep naming new reused literals |
 
 ## Burned clusters (2026-07 full burndown)
 

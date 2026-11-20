@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewModels="clr-namespace:__VIEWMODEL_NAMESPACE__"
+    x:Class="__NAMESPACE__.__PAGE__"
+    x:DataType="viewModels:__VIEWMODEL__"
+    Title="__TITLE__">
+
+    <Grid RowDefinitions="Auto,*" Padding="16" RowSpacing="16">
+        <VerticalStackLayout Spacing="4">
+            <Label Text="__TITLE__" Style="{StaticResource PageHeader}" />
+            <Label Text="__PURPOSE__" Style="{StaticResource SecondaryText}" />
+        </VerticalStackLayout>
+
+        <Grid Grid.Row="1">
+            <ActivityIndicator
+                IsRunning="{Binding IsBusy}"
+                IsVisible="{Binding IsBusy}" />
+
+            <VerticalStackLayout
+                IsVisible="{Binding IsEmpty}"
+                Spacing="8"
+                VerticalOptions="Center">
+                <Label Text="__EMPTY_TITLE__" Style="{StaticResource TitleMedium}" />
+                <Label Text="__EMPTY_BODY__" Style="{StaticResource Body}" />
+            </VerticalStackLayout>
+
+            <ScrollView IsVisible="{Binding HasContent}">
+                <VerticalStackLayout Spacing="16">
+                    <!-- Feature content. Reuse named typography and component styles. -->
+                </VerticalStackLayout>
+            </ScrollView>
+        </Grid>
+    </Grid>
+</ContentPage>

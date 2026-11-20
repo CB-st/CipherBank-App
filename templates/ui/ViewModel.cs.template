@@ -1,0 +1,37 @@
+// <copyright file="__VIEWMODEL__.cs" company="CipherBank">
+// Copyright (c) CipherBank. All rights reserved.
+// </copyright>
+
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+namespace __NAMESPACE__;
+
+/// <summary>Owns presentation state for __PAGE__ without depending on MAUI globals.</summary>
+public partial class __VIEWMODEL__ : ObservableObject
+{
+    private readonly __SERVICE_INTERFACE__ _service;
+
+    [ObservableProperty]
+    private bool isBusy;
+
+    public __VIEWMODEL__(__SERVICE_INTERFACE__ service)
+    {
+        _service = service;
+    }
+
+    /// <summary>Loads the page state and surfaces a user-safe failure. Use: Medium. Scope: one page activation.</summary>
+    [RelayCommand]
+    private async Task LoadAsync(CancellationToken cancellationToken)
+    {
+        IsBusy = true;
+        try
+        {
+            await _service.LoadAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}
