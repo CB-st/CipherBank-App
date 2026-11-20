@@ -7,20 +7,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace CipherBank_app.ViewModels;
 
 /// <summary>One quiz row for the 3-word backup confirmation.</summary>
-public partial class BackupQuizRow : ObservableObject
+public partial class BackupQuizRow(int index, string expectedWord) : ObservableObject
 {
-    public BackupQuizRow(int index, string expectedWord)
-    {
-        Index = index;
-        ExpectedWord = expectedWord;
-        Prompt = $"Word #{index + 1}";
-    }
+    public int Index { get; } = index;
 
-    public int Index { get; }
+    public string ExpectedWord { get; } = expectedWord;
 
-    public string ExpectedWord { get; }
-
-    public string Prompt { get; }
+    public string Prompt { get; } = $"Word #{index + 1}";
 
     [ObservableProperty]
     private string answer = string.Empty;
