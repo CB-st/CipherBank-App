@@ -47,7 +47,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EditorConfigFiles Include="../CipherBank-app.Tests.linked-host.editorconfig" />
     <Compile Include="../CipherBank-app/Services/Handlers/AuthHeaderHandler.cs" Link="Host/AuthHeaderHandler.cs" />
     <Compile Include="../CipherBank-app/ViewModels/LoginViewModel.cs" Link="Host/LoginViewModel.cs" />
     <Compile Include="../CipherBank-app/Services/INavigationService.cs" Link="Host/INavigationService.cs" />
@@ -56,5 +55,18 @@
     <Compile Include="../CipherBank-app/Services/SessionProofMode.cs" Link="Host/SessionProofMode.cs" />
     <Compile Include="../CipherBank-app/Constants/Routes.cs" Link="Host/Routes.cs" />
   </ItemGroup>
+
+  <Target Name="AddLinkedHostCopyrightConfig" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <_LinkedHostConfigFile>$(IntermediateOutputPath)LinkedHostCopyright.globalconfig</_LinkedHostConfigFile>
+      <_LinkedHostConfigRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/..').Replace('\', '/'))</_LinkedHostConfigRoot>
+      <_LinkedHostConfigText>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)/../CipherBank-app.Tests.linked-host.editorconfig').Replace('@RepositoryRoot@', '$(_LinkedHostConfigRoot)'))</_LinkedHostConfigText>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_LinkedHostConfigFile)" Lines="$(_LinkedHostConfigText)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <EditorConfigFiles Include="$(_LinkedHostConfigFile)" />
+      <FileWrites Include="$(_LinkedHostConfigFile)" />
+    </ItemGroup>
+  </Target>
 
 </Project>
