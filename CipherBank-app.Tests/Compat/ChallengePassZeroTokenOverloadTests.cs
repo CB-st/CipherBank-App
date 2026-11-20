@@ -23,15 +23,15 @@ public class ChallengePassZeroTokenOverloadTests
     [Fact]
     public async Task ChallengePassPorts_ZeroTokenOverloads_ForwardNone()
     {
-        RecordingSessionChallengeClient sessions = new RecordingSessionChallengeClient();
+        RecordingSessionChallengeClient sessions = new();
         ISessionChallengeClient sessionPort = sessions;
         await sessionPort.RequestChallengeAsync("wire");
 
-        RecordingKeyShareClient keyShare = new RecordingKeyShareClient();
+        RecordingKeyShareClient keyShare = new();
         IPqKeyShareClient keySharePort = keyShare;
         await keySharePort.EstablishAsync(null!);
 
-        RecordingChannelChallengeSource channel = new RecordingChannelChallengeSource();
+        RecordingChannelChallengeSource channel = new();
         IPqChannelChallengeSource channelPort = channel;
         await channelPort.RequestChallengeAsync();
 

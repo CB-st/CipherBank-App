@@ -73,7 +73,7 @@ public static class ChallengePassServiceCollectionExtensions
             throw new ArgumentException(ChallengePassValidationMessages.ActiveSuiteNotInstalled, nameof(options));
         }
 
-        ChallengePassOptions snapshot = new ChallengePassOptions { ActiveSuiteId = options.ActiveSuiteId };
+        ChallengePassOptions snapshot = new() { ActiveSuiteId = options.ActiveSuiteId };
         services.AddSingleton<IOptions<ChallengePassOptions>>(Options.Create(snapshot));
         return AddChallengePassServices(services, _ => snapshot.ActiveSuiteId);
     }
@@ -114,7 +114,7 @@ public static class ChallengePassServiceCollectionExtensions
 
         services.AddSingleton<IChallengePassCatalog>(sp =>
         {
-            List<ChallengePassSuite> suites = sp.GetServices<ChallengePassSuite>().ToList();
+            List<ChallengePassSuite> suites = [.. sp.GetServices<ChallengePassSuite>()];
             return new ChallengePassCatalog(suites, activeSuiteId(sp));
         });
 
