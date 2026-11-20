@@ -239,11 +239,11 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     /// Loads transaction history for the selected wallet.
     /// </summary>
     [RelayCommand]
-    private async Task LoadTransactionsAsync()
+    private Task LoadTransactionsAsync()
     {
         if (SelectedWallet == null || IsLoadingTransactions)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         _cts?.Cancel();
@@ -269,6 +269,8 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         {
             IsLoadingTransactions = false;
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
