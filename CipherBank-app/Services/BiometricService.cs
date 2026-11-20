@@ -41,7 +41,7 @@ public sealed class BiometricService : IBiometricService
         ArgumentException.ThrowIfNullOrWhiteSpace(reason);
         try
         {
-            AuthenticationRequest request = new AuthenticationRequest
+            AuthenticationRequest request = new()
             {
                 Title = "CipherBank",
                 Subtitle = reason,
