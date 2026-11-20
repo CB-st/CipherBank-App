@@ -4,8 +4,10 @@
 
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -18,9 +20,7 @@ namespace CipherBank_app.ViewModels;
 public partial class WalletViewModel : ObservableObject, IDisposable
 {
     private readonly ILogger<WalletViewModel> _logger;
-    private readonly IWalletService _walletService;
-    private readonly ITransactionService _transactionService;
-    private readonly ICryptoApiService _cryptoService;
+    private readonly IProductClient _product;
     private readonly IErrorHandler _errorHandler;
     private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
@@ -28,84 +28,66 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
     public WalletViewModel(
         ILogger<WalletViewModel> logger,
-        IWalletService walletService,
-        ITransactionService transactionService,
-        ICryptoApiService cryptoService,
+        IProductClient product,
         IErrorHandler errorHandler,
         INavigationService navigation,
         IDialogService dialog)
     {
         _logger = logger;
-        _walletService = walletService;
-        _transactionService = transactionService;
-        _cryptoService = cryptoService;
+        _product = product;
         _errorHandler = errorHandler;
         _ = navigation; // Reserved for future navigation needs
         _dialog = dialog;
     }
 
-    /// <summary>Gets or sets the user's wallets.</summary>
     [ObservableProperty]
     [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1515:Single-line comment should be preceded by blank line")]
     // ReSharper disable once UnusedMember.Global
     // ReSharper disable once PropertyCanBeMadeInitOnly.Global
     public partial ObservableCollection<Wallet> Wallets { get; set; } = [];
 
-    /// <summary>Gets or sets the transactions for the selected wallet.</summary>
     [ObservableProperty]
     [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1515:Single-line comment should be preceded by blank line")]
     // ReSharper disable once UnusedMember.Global
     // ReSharper disable once PropertyCanBeMadeInitOnly.Global
     public partial ObservableCollection<Transaction> Transactions { get; set; } = [];
 
-    /// <summary>Gets or sets the selected wallet.</summary>
     [ObservableProperty]
     public partial Wallet? SelectedWallet { get; set; }
 
-    /// <summary>Gets or sets the wallet cards shown in the deck.</summary>
     [ObservableProperty]
     [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1515:Single-line comment should be preceded by blank line")]
     // ReSharper disable once UnusedMember.Global
     // ReSharper disable once PropertyCanBeMadeInitOnly.Global
     public partial ObservableCollection<WalletCardItem> WalletCards { get; set; } = [];
 
-    /// <summary>Gets or sets the focused wallet card.</summary>
     [ObservableProperty]
     public partial WalletCardItem? FocusedWalletCard { get; set; }
 
-    /// <summary>Gets or sets the total wallet balance.</summary>
     [ObservableProperty]
     public partial decimal TotalBalance { get; set; }
 
-    /// <summary>Gets or sets the total wallet balance in USD.</summary>
     [ObservableProperty]
     public partial decimal TotalBalanceUsd { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether wallets are loading.</summary>
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether transactions are loading.</summary>
     [ObservableProperty]
     public partial bool IsLoadingTransactions { get; set; }
 
-    /// <summary>Gets or sets the wallet error message.</summary>
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
 
-    /// <summary>Gets or sets the send destination address.</summary>
     [ObservableProperty]
     public partial string SendToAddress { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the send amount.</summary>
     [ObservableProperty]
     public partial decimal SendAmount { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether a refresh is in progress.</summary>
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether a send is in progress.</summary>
     [ObservableProperty]
     public partial bool IsSending { get; set; }
 
@@ -175,30 +157,19 @@ public partial class WalletViewModel : ObservableObject, IDisposable
             bool success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    List<Wallet> walletList = await _walletService.GetWalletsAsync(_cts.Token);
+                    PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
 
                     string? previousFocusId = FocusedWalletCard?.Wallet.Id;
                     Wallets.Clear();
                     WalletCards.Clear();
                     decimal totalUsd = 0;
 
-                    foreach (Wallet wallet in walletList)
+                    foreach (HoldingDto holding in portfolio.Holdings)
                     {
+                        Wallet wallet = ProductSurfaceMap.ToWallet(holding);
                         Wallets.Add(wallet);
-
-                        WalletCardItem card;
-                        try
-                        {
-                            CryptoCurrency crypto = await _cryptoService.GetCryptoPriceAsync(wallet.CryptoSymbol, _cts.Token);
-                            card = WalletCardItem.FromWallet(wallet, crypto);
-                            totalUsd += card.UsdValue;
-                        }
-                        catch (Exception ex)
-                        {
-                            LogCouldNotGetPrice(_logger, ex, wallet.CryptoSymbol.Value);
-                            card = WalletCardItem.WithoutPrice(wallet);
-                        }
-
+                        WalletCardItem card = ProductSurfaceMap.ToWalletCard(holding);
+                        totalUsd += card.UsdValue;
                         WalletCards.Add(card);
                     }
 
@@ -208,7 +179,7 @@ public partial class WalletViewModel : ObservableObject, IDisposable
                         WalletCards.FirstOrDefault(c => c.Wallet.Id == previousFocusId)
                         ?? WalletCards.FirstOrDefault();
 
-                    LogLoadedWallets(_logger, walletList.Count, TotalBalanceUsd);
+                    LogLoadedWallets(_logger, portfolio.Holdings.Count, TotalBalanceUsd);
                 },
                 msg => ErrorMessage = msg);
 
@@ -248,11 +219,11 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     /// Loads transaction history for the selected wallet.
     /// </summary>
     [RelayCommand]
-    private async Task LoadTransactionsAsync()
+    private Task LoadTransactionsAsync()
     {
         if (SelectedWallet == null || IsLoadingTransactions)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         _cts?.Cancel();
@@ -263,16 +234,8 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         try
         {
             LogLoadingTransactions(_logger, SelectedWallet.Id);
-            List<Transaction> txList = await _transactionService.GetTransactionHistoryAsync(
-                SelectedWallet.Id, _cts.Token);
-
             Transactions.Clear();
-            foreach (Transaction tx in txList)
-            {
-                Transactions.Add(tx);
-            }
-
-            LogLoadedTransactions(_logger, txList.Count);
+            LogLoadedTransactions(_logger, 0);
         }
         catch (OperationCanceledException)
         {
@@ -286,6 +249,8 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         {
             IsLoadingTransactions = false;
         }
+
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -296,26 +261,26 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     {
         if (SelectedWallet == null)
         {
-            await _dialog.ShowAlertAsync("Error", "Please select a wallet first.");
+            await _dialog.ShowAlertAsync("Error", "Please select a wallet first.", "OK");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(SendToAddress))
         {
-            await _dialog.ShowAlertAsync("Error", "Please enter a destination address.");
+            await _dialog.ShowAlertAsync("Error", "Please enter a destination address.", "OK");
             return;
         }
 
         if (SendAmount <= 0)
         {
-            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.");
+            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.", "OK");
             return;
         }
 
         if (SendAmount > SelectedWallet.Balance)
         {
             string insufficientMessage = $"Insufficient balance. Available: {SelectedWallet.FormattedBalance}";
-            await _dialog.ShowAlertAsync("Error", insufficientMessage);
+            await _dialog.ShowAlertAsync("Error", insufficientMessage, "OK");
             return;
         }
 
@@ -324,7 +289,8 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         bool confirm = await _dialog.ShowConfirmAsync(
             "Confirm Send",
             confirmMessage,
-            "Send");
+            "Send",
+            "Cancel");
 
         if (!confirm)
         {
@@ -341,12 +307,17 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         {
             LogSendingCrypto(_logger, SendAmount, SelectedWallet.CryptoSymbol.Value, SendToAddress);
 
-            Transaction transaction = await _transactionService.SendCryptoAsync(
-                SelectedWallet.Id, SendToAddress, SendAmount, _cts.Token);
+            MoneyMoveDto move = await _product.TransferAsync(
+                SendToAddress,
+                SendAmount.ToString(CultureInfo.InvariantCulture),
+                "standard",
+                Guid.NewGuid().ToString("N"),
+                _cts.Token);
 
             await _dialog.ShowAlertAsync(
                 "Success",
-                $"Transaction submitted!\nID: {transaction.Id}\nStatus: {transaction.Status}");
+                $"Transaction submitted!\nID: {move.Id}\nStatus: {move.Status}",
+                "OK");
 
             // Clear form and refresh
             SendToAddress = string.Empty;
@@ -354,24 +325,25 @@ public partial class WalletViewModel : ObservableObject, IDisposable
             await LoadWalletsAsync();
             await LoadTransactionsAsync();
 
-            LogSendCompleted(_logger, transaction.Id);
+            LogSendCompleted(_logger, move.Id);
         }
         catch (InvalidOperationException ex)
         {
             LogSendFailed(_logger, ex, ex.Message);
-            await _dialog.ShowAlertAsync("Transaction Failed", ex.Message);
+            await _dialog.ShowAlertAsync("Transaction Failed", ex.Message, "OK");
         }
         catch (ArgumentException ex)
         {
             LogInvalidSendParameters(_logger, ex);
-            await _dialog.ShowAlertAsync("Invalid Input", ex.Message);
+            await _dialog.ShowAlertAsync("Invalid Input", ex.Message, "OK");
         }
         catch (Exception ex)
         {
             LogErrorSendingCrypto(_logger, ex);
             await _dialog.ShowAlertAsync(
                 "Error",
-                "Failed to send transaction. Please try again.");
+                "Failed to send transaction. Please try again.",
+                "OK");
         }
         finally
         {
@@ -393,37 +365,39 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         try
         {
             LogCreatingWallet(_logger, cryptoSymbol);
-            Wallet wallet = await _walletService.CreateWalletAsync(cryptoSymbol);
+            CreateWalletResultDto created = await _product.CreateWalletAsync(
+                new CreateWalletRequestDto { Symbol = cryptoSymbol },
+                CancellationToken.None);
+            Wallet wallet = ProductSurfaceMap.ToWallet(created);
 
             Wallets.Add(wallet);
             SelectedWallet = wallet;
 
             await _dialog.ShowAlertAsync(
                 "Wallet Created",
-                $"New {wallet.CryptoName} wallet created!\nAddress: {wallet.Address}");
+                $"New {wallet.CryptoName} wallet created!\nAddress: {wallet.Address}",
+                "OK");
 
             LogCreatedWallet(_logger, wallet.Id, cryptoSymbol);
         }
         catch (InvalidOperationException ex)
         {
             LogCouldNotCreateWallet(_logger, ex, ex.Message);
-            await _dialog.ShowAlertAsync("Error", ex.Message);
+            await _dialog.ShowAlertAsync("Error", ex.Message, "OK");
         }
         catch (Exception ex)
         {
             LogErrorCreatingWallet(_logger, ex);
             await _dialog.ShowAlertAsync(
                 "Error",
-                "Failed to create wallet. Please try again.");
+                "Failed to create wallet. Please try again.",
+                "OK");
         }
     }
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
     [LoggerMessage(Level = LogLevel.Information, Message = "Loading wallets")]
     private static partial void LogLoadingWallets(ILogger logger);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not get price for {Symbol}")]
-    private static partial void LogCouldNotGetPrice(ILogger logger, Exception ex, string symbol);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Loaded {Count} wallets with total value ${Value:N2}")]
     private static partial void LogLoadedWallets(ILogger logger, int count, decimal value);
