@@ -12,7 +12,7 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Page object for the Purchase page.
 /// Provides methods to interact with cryptocurrency purchase functionality.
 /// </summary>
-public class PurchasePage : BasePage
+public class PurchasePage(AppiumDriver driver) : BasePage(driver)
 {
     // Element locators
     private static readonly By _viewAllButton = By.Id("ViewAllButton");
@@ -26,18 +26,13 @@ public class PurchasePage : BasePage
     private static readonly By _feeLabel = By.Id("FeeLabel");
     private static readonly By _backButton = By.Id("BackButton");
 
-    public PurchasePage(AppiumDriver driver)
-        : base(driver)
-    {
-    }
-
     /// <summary>
     /// Selects a cryptocurrency to purchase.
     /// </summary>
     public PurchasePage SelectCrypto(string symbol)
     {
         ClickElement(_viewAllButton);
-        var cryptoOption = By.XPath($"//*[contains(@text, '{symbol}')]");
+        By cryptoOption = By.XPath($"//*[contains(@text, '{symbol}')]");
         ClickElement(cryptoOption);
         return this;
     }
@@ -93,50 +88,32 @@ public class PurchasePage : BasePage
     /// <summary>
     /// Checks if the purchase was successful.
     /// </summary>
-    public bool IsPurchaseSuccessful()
-    {
-        return IsElementDisplayed(_successMessage);
-    }
+    public bool IsPurchaseSuccessful() => IsElementDisplayed(_successMessage);
 
     /// <summary>
     /// Gets the success message text.
     /// </summary>
-    public string GetSuccessMessage()
-    {
-        return GetElementText(_successMessage);
-    }
+    public string GetSuccessMessage() => GetElementText(_successMessage);
 
     /// <summary>
     /// Checks if an error occurred.
     /// </summary>
-    public bool HasError()
-    {
-        return IsElementDisplayed(_errorMessage);
-    }
+    public bool HasError() => IsElementDisplayed(_errorMessage);
 
     /// <summary>
     /// Gets the error message text.
     /// </summary>
-    public string GetErrorMessage()
-    {
-        return GetElementText(_errorMessage);
-    }
+    public string GetErrorMessage() => GetElementText(_errorMessage);
 
     /// <summary>
     /// Gets the estimated crypto amount for the purchase.
     /// </summary>
-    public string GetEstimatedCrypto()
-    {
-        return GetElementText(_estimatedCryptoLabel);
-    }
+    public string GetEstimatedCrypto() => GetElementText(_estimatedCryptoLabel);
 
     /// <summary>
     /// Gets the transaction fee.
     /// </summary>
-    public string GetFee()
-    {
-        return GetElementText(_feeLabel);
-    }
+    public string GetFee() => GetElementText(_feeLabel);
 
     /// <summary>
     /// Goes back to the dashboard.

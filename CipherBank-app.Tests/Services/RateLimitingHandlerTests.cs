@@ -19,10 +19,10 @@ public class RateLimitingHandlerTests
     public async Task RateLimiter_HighVolumeScenario_EnforcesLimit()
     {
         // Arrange - Simulate high-volume request scenario
-        var rateLimiter = new RateLimiter(null, 100, TimeSpan.FromMinutes(1));
+        RateLimiter rateLimiter = new(null, 100, TimeSpan.FromMinutes(1));
 
         // Act - Make 100 requests (the limit)
-        var successCount = 0;
+        int successCount = 0;
         for (int i = 0; i < 100; i++)
         {
             if (await rateLimiter.TryAcquireAsync())
@@ -35,7 +35,7 @@ public class RateLimitingHandlerTests
         successCount.Should().Be(100);
 
         // 101st request should fail
-        var overLimit = await rateLimiter.TryAcquireAsync();
+        bool overLimit = await rateLimiter.TryAcquireAsync();
         overLimit.Should().BeFalse();
     }
 
@@ -43,8 +43,8 @@ public class RateLimitingHandlerTests
     public async Task RateLimiter_ConcurrentRequests_ThreadSafe()
     {
         // Arrange
-        var rateLimiter = new RateLimiter(null, 50, TimeSpan.FromMinutes(1));
-        var tasks = new Task<bool>[100];
+        RateLimiter rateLimiter = new(null, 50, TimeSpan.FromMinutes(1));
+        Task<bool>[] tasks = new Task<bool>[100];
 
         // Act - Make 100 concurrent requests
         for (int i = 0; i < 100; i++)
@@ -52,10 +52,10 @@ public class RateLimitingHandlerTests
             tasks[i] = rateLimiter.TryAcquireAsync();
         }
 
-        var results = await Task.WhenAll(tasks);
+        bool[] results = await Task.WhenAll(tasks);
 
         // Assert - Exactly 50 should succeed (the limit)
-        var successCount = results.Count(r => r);
+        int successCount = results.Count(r => r);
         successCount.Should().Be(50);
     }
 
@@ -63,7 +63,7 @@ public class RateLimitingHandlerTests
     public async Task RateLimiter_BurstThenWait_ResetsCorrectly()
     {
         // Arrange - Short window for testing
-        var rateLimiter = new RateLimiter(null, 5, TimeSpan.FromMilliseconds(200));
+        RateLimiter rateLimiter = new(null, 5, TimeSpan.FromMilliseconds(200));
 
         // Act - Burst of requests
         for (int i = 0; i < 5; i++)
@@ -79,7 +79,7 @@ public class RateLimitingHandlerTests
         await Task.Delay(250);
 
         // Should be able to make requests again
-        var afterWait = await rateLimiter.TryAcquireAsync();
+        bool afterWait = await rateLimiter.TryAcquireAsync();
         afterWait.Should().BeTrue();
     }
 
@@ -87,8 +87,8 @@ public class RateLimitingHandlerTests
     public async Task RateLimiter_GetWaitTime_ProvidesAccurateEstimate()
     {
         // Arrange
-        var windowDuration = TimeSpan.FromMilliseconds(500);
-        var rateLimiter = new RateLimiter(null, 1, windowDuration);
+        TimeSpan windowDuration = TimeSpan.FromMilliseconds(500);
+        RateLimiter rateLimiter = new(null, 1, windowDuration);
 
         // Act
         await rateLimiter.TryAcquireAsync();
