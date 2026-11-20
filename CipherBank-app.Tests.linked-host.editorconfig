@@ -5,5 +5,5 @@ is_global = true
 dotnet_diagnostic.SA1636.severity = none
 
 # M7 changes the linked login model to the host copyright text as well.
-[CipherBank-app/ViewModels/LoginViewModel.cs]
+[@RepositoryRoot@/CipherBank-app/ViewModels/LoginViewModel.cs]
 dotnet_diagnostic.SA1636.severity = none
