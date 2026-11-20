@@ -44,9 +44,9 @@ public partial class HomePage : ContentPage
     /// </summary>
     private void RefreshCharts()
     {
-        _spark.Series = _vm.Sparkline.ToList();
+        _spark.Series = [.. _vm.Sparkline];
         SparkView.Invalidate();
-        _compare.Series = _vm.CompareSeries.ToList();
+        _compare.Series = [.. _vm.CompareSeries];
         CompareView.Invalidate();
     }
 }

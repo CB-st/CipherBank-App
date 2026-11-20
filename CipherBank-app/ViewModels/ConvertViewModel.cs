@@ -223,16 +223,16 @@ public partial class ConvertViewModel : ObservableObject, IDisposable
 
     private static List<string> FallbackAssets()
     {
-        var list = WalletRegistry.All()
-            .Select(m => m.Symbol.Value)
-            .Where(CurrencySymbolMap.IsSupported)
-            .ToList();
+        List<string> list =
+        [
+            .. WalletRegistry.All().Select(m => m.Symbol.Value).Where(CurrencySymbolMap.IsSupported),
+        ];
         if (!list.Contains("USD", StringComparer.OrdinalIgnoreCase))
         {
             list.Insert(0, "USD");
         }
 
-        return list.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s).ToList();
+        return [.. list.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(s => s)];
     }
 
     private void RefreshInfoRows()

@@ -65,8 +65,8 @@ public sealed class FundingMixBar : ContentView
                 continue;
             }
 
-            _bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(share, GridUnitType.Star) });
-            BoxView segment = new BoxView
+            _bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new(share, GridUnitType.Star) });
+            BoxView segment = new()
             {
                 Color = src.Color,
                 CornerRadius = 4,
@@ -75,7 +75,7 @@ public sealed class FundingMixBar : ContentView
             col++;
         }
 
-        VerticalStackLayout legend = new VerticalStackLayout { Spacing = 4 };
+        VerticalStackLayout legend = new() { Spacing = 4 };
         foreach (var src in Sources)
         {
             double pct = (src.Value / Total) * 100;

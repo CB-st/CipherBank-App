@@ -15,24 +15,17 @@ namespace CipherBank_app.Services;
 /// <summary>
 /// HTTP client for CipherBank public POST endpoints on api.cipherbank.money.
 /// </summary>
-public sealed partial class PublicApiClient : IPublicQuoteService
+public sealed partial class PublicApiClient(HttpClient http, ILogger<PublicApiClient> logger, TimeProvider timeProvider)
+    : IPublicQuoteService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
     };
 
-    private readonly HttpClient _http;
-    private readonly ILogger<PublicApiClient> _logger;
-
-    private readonly TimeProvider _timeProvider;
-
-    public PublicApiClient(HttpClient http, ILogger<PublicApiClient> logger, TimeProvider timeProvider)
-    {
-        _timeProvider = timeProvider;
-        _http = http;
-        _logger = logger;
-    }
+    private readonly HttpClient _http = http;
+    private readonly ILogger<PublicApiClient> _logger = logger;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     public async Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default)
     {
@@ -86,7 +79,7 @@ public sealed partial class PublicApiClient : IPublicQuoteService
         AssetSymbol outputSymbol,
         CancellationToken cancellationToken = default)
     {
-        Dictionary<string, object> body = new Dictionary<string, object>
+        Dictionary<string, object> body = new()
         {
             ["INPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(inputSymbol.Value),
             ["INPUT_AMOUNT"] = decimal.ToDouble(inputAmount),
@@ -104,7 +97,7 @@ public sealed partial class PublicApiClient : IPublicQuoteService
         AssetSymbol outputSymbol,
         CancellationToken cancellationToken = default)
     {
-        Dictionary<string, object> body = new Dictionary<string, object>
+        Dictionary<string, object> body = new()
         {
             ["INPUT_CURRENCY"] = CurrencySymbolMap.ToApiCurrency(inputSymbol.Value),
             ["OUTPUT_AMOUNT"] = decimal.ToDouble(outputAmount),
@@ -121,7 +114,7 @@ public sealed partial class PublicApiClient : IPublicQuoteService
         object body,
         CancellationToken cancellationToken)
     {
-        using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, path.TrimStart('/'));
+        using HttpRequestMessage request = new(HttpMethod.Post, path.TrimStart('/'));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Date = _timeProvider.GetUtcNow();
         request.Content = new StringContent(

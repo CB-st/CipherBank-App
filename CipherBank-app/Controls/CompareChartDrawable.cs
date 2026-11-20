@@ -18,7 +18,7 @@ public sealed class CompareChartDrawable : IDrawable
         ThemeTokens.Get("Danger"),
     ];
 
-    public IReadOnlyList<ChartSeries> Series { get; set; } = Array.Empty<ChartSeries>();
+    public IReadOnlyList<ChartSeries> Series { get; set; } = [];
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
@@ -27,13 +27,12 @@ public sealed class CompareChartDrawable : IDrawable
             return;
         }
 
-        var indexed = Series.Select(s =>
-        {
-            var pts = ChartMath.ToIndexed(s.Points);
-            return (s.Label, Pts: pts, Stroke: s.Stroke);
-        }).ToList();
+        List<(string Label, IReadOnlyList<Point> Pts, Color Stroke)> indexed =
+        [
+            .. Series.Select(s => (s.Label, ChartMath.ToIndexed(s.Points), s.Stroke)),
+        ];
 
-        var all = indexed.SelectMany(s => s.Pts).Select(p => p.Y).ToList();
+        List<double> all = [.. indexed.SelectMany(s => s.Pts).Select(p => p.Y)];
         if (all.Count < 2)
         {
             return;
@@ -49,7 +48,7 @@ public sealed class CompareChartDrawable : IDrawable
                 continue;
             }
 
-            PathF geo = new PathF();
+            PathF geo = new();
             geo.MoveTo(pathResult.Points[0].X, pathResult.Points[0].Y);
             for (int j = 1; j < pathResult.Points.Count; j++)
             {

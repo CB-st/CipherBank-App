@@ -10,7 +10,7 @@ namespace CipherBank_app.Controls;
 /// <summary>GraphicsView drawable for a single sparkline series.</summary>
 public sealed class SparklineDrawable : IDrawable
 {
-    public IReadOnlyList<Point> Series { get; set; } = Array.Empty<Point>();
+    public IReadOnlyList<Point> Series { get; set; } = [];
 
     public Color Stroke { get; set; } = ThemeTokens.Get("Gold");
 
@@ -27,7 +27,7 @@ public sealed class SparklineDrawable : IDrawable
             return;
         }
 
-        PathF geo = new PathF();
+        PathF geo = new();
         geo.MoveTo(path.Points[0].X, path.Points[0].Y);
         for (int i = 1; i < path.Points.Count; i++)
         {
