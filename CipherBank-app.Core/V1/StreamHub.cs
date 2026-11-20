@@ -5,16 +5,11 @@
 namespace CipherBank_app.V1;
 
 /// <inheritdoc />
-public sealed class StreamHub : IStreamHub
+public sealed class StreamHub(IStreamService stream) : IStreamHub
 {
-    private readonly IStreamService _stream;
+    private readonly IStreamService _stream = stream;
     private readonly object _gate = new();
     private bool _hooked;
-
-    public StreamHub(IStreamService stream)
-    {
-        _stream = stream;
-    }
 
     public event EventHandler<StreamEventArgs>? EventReceived;
 

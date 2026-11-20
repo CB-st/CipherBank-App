@@ -29,7 +29,7 @@ public class CipherBankCoreDiTests
         string databaseDirectory = Path.Combine(Path.GetTempPath(), "cb-di-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(databaseDirectory);
 
-        ServiceCollection services = new ServiceCollection();
+        ServiceCollection services = new();
         services.AddCipherBankCore(CipherBankDefaultsConfiguration.Build("Development"), databaseDirectory);
         using ServiceProvider provider = services.BuildServiceProvider();
 
@@ -66,7 +66,7 @@ public class CipherBankCoreDiTests
     [Fact]
     public void AddCipherBankCore_RejectsInvalidArguments()
     {
-        ServiceCollection services = new ServiceCollection();
+        ServiceCollection services = new();
         Action nullConfig = () => services.AddCipherBankCore(null!, Path.GetTempPath());
         Action blankDir = () => services.AddCipherBankCore(CipherBankDefaultsConfiguration.Build(), " ");
 
@@ -81,7 +81,7 @@ public class CipherBankCoreDiTests
     [Fact]
     public void AddCustodyServices_ResolvesEachCustodyService()
     {
-        ServiceCollection services = new ServiceCollection();
+        ServiceCollection services = new();
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton(Mock.Of<ISecureStore>());
         services.AddSingleton(Mock.Of<IStepUpChallenges>());

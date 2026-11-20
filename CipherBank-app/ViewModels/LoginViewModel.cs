@@ -317,14 +317,16 @@ public partial class LoginViewModel : ObservableObject, IDisposable
     {
         lock (_loginGate)
         {
-            if (!_disposed)
+            if (_disposed)
             {
-                _disposed = true;
-                if (disposing)
-                {
-                    // SignInAsync owns disposal after the awaited lifecycle finishes.
-                    _cts?.Cancel();
-                }
+                return;
+            }
+
+            _disposed = true;
+            if (disposing)
+            {
+                // SignInAsync owns disposal after the awaited lifecycle finishes.
+                _cts?.Cancel();
             }
         }
     }

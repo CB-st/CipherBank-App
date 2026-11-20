@@ -28,7 +28,7 @@ public class CoreZeroTokenOverloadTests
     [Fact]
     public async Task ProductApi_ZeroTokenOverloads_ForwardNone()
     {
-        RecordingProductApi stub = new RecordingProductApi();
+        RecordingProductApi stub = new();
         IProductClient api = stub;
 
         await api.GetPortfolioAsync();
@@ -63,14 +63,14 @@ public class CoreZeroTokenOverloadTests
     [Fact]
     public async Task Services_ZeroTokenOverloads_ForwardNone()
     {
-        RecordingQuoteService quotes = new RecordingQuoteService();
+        RecordingQuoteService quotes = new();
         IPublicQuoteService quoteApi = quotes;
         await quoteApi.TestConnectionAsync();
         await quoteApi.GetCurrenciesAsync();
         await quoteApi.GetInverseQuoteAsync("BTC", 1m, "USD");
         await quoteApi.GetQuoteAsync("BTC", 1m, "USD");
 
-        RecordingPrefsSync prefs = new RecordingPrefsSync();
+        RecordingPrefsSync prefs = new();
         IPrefsSyncService prefsApi = prefs;
         await prefsApi.PullMergeAsync();
         await prefsApi.SaveAndPushAsync(new UserPrefs(TestPreferenceDefaults.Value));
@@ -86,16 +86,16 @@ public class CoreZeroTokenOverloadTests
     [Fact]
     public async Task Custody_ZeroTokenOverloads_ForwardNone()
     {
-        RecordingStepUpAuth stepUp = new RecordingStepUpAuth();
+        RecordingStepUpAuth stepUp = new();
         IStepUpAuth auth = stepUp;
         await auth.RequireAsync(AuthReason.PosPresent);
 
-        RecordingStepUpChallenges challenges = new RecordingStepUpChallenges();
+        RecordingStepUpChallenges challenges = new();
         IStepUpChallenges prompts = challenges;
         await prompts.TryBiometricsAsync("prompt");
         await prompts.PromptForPinAsync("prompt");
 
-        RecordingBackupService backup = new RecordingBackupService();
+        RecordingBackupService backup = new();
         IMnemonicBackupService backups = backup;
         await backups.CreateBackupFileAsync("mnemonic", "password");
         await backups.CreateBackupFileAsync("mnemonic", "password", "hint");
@@ -113,9 +113,9 @@ public class CoreZeroTokenOverloadTests
     [Fact]
     public async Task NfcPresentment_ZeroTokenOverloads_ForwardNoneAndDefaultWindow()
     {
-        RecordingNfcPresentment stub = new RecordingNfcPresentment();
+        RecordingNfcPresentment stub = new();
         INfcPresentmentService nfc = stub;
-        NfcPresentmentPayload payload = new NfcPresentmentPayload { SessionId = "s", TokenRef = "t" };
+        NfcPresentmentPayload payload = new() { SessionId = "s", TokenRef = "t" };
 
         await nfc.PresentAsync(payload, CancellationToken.None);
         await nfc.PresentAsync(payload, TimeSpan.FromSeconds(5));
@@ -135,12 +135,12 @@ public class CoreZeroTokenOverloadTests
     [Fact]
     public async Task ConcreteHelpers_ZeroTokenOverloads_Run()
     {
-        EventDebouncer debouncer = new EventDebouncer(TimeSpan.Zero);
+        EventDebouncer debouncer = new(TimeSpan.Zero);
         await debouncer.DebounceAsync(() => Task.CompletedTask);
         debouncer.FireCount.Should().Be(1);
 
-        EmvExchangeSimulator simulator = new EmvExchangeSimulator();
-        List<string> stages = new List<string>();
+        EmvExchangeSimulator simulator = new();
+        List<string> stages = new();
         await foreach (string stage in simulator.RunAsync())
         {
             stages.Add(stage);

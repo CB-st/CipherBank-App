@@ -172,10 +172,8 @@ public sealed class ProductTreeStructureAnalyzerTests
     /// Use: Low (structure Facts). Scope: this test class.
     /// </summary>
     private static void Attach<TAnalyzer>(CSharpAnalyzerTest<TAnalyzer, DefaultVerifier> test, string relativePath)
-        where TAnalyzer : DiagnosticAnalyzer, new()
-    {
+        where TAnalyzer : DiagnosticAnalyzer, new() =>
         test.TestState.AdditionalFiles.Add((relativePath, ProductTreeRepoRoot.Read(relativePath)));
-    }
 
     /// <summary>
     /// Attaches every enumerated unbuilt C# file as additional analyzer input.

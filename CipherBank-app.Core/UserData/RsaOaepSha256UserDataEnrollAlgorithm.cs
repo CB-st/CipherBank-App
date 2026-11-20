@@ -42,7 +42,7 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
         try
         {
             SecureRandom random = CreateDeterministicRandom(seedCopy);
-            RsaKeyPairGenerator keyGen = new RsaKeyPairGenerator();
+            RsaKeyPairGenerator keyGen = new();
             keyGen.Init(new KeyGenerationParameters(random, UserDataConstants.RsaKeySizeBits));
             AsymmetricCipherKeyPair pair = keyGen.GenerateKeyPair();
 
@@ -104,16 +104,16 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
     /// </summary>
     private static SecureRandom CreateDeterministicRandom(byte[] enrollSeed64)
     {
-        DigestRandomGenerator digestRandom = new DigestRandomGenerator(new Sha256Digest());
+        DigestRandomGenerator digestRandom = new(new Sha256Digest());
         digestRandom.AddSeedMaterial(enrollSeed64);
-        return new SecureRandom(digestRandom);
+        return new(digestRandom);
     }
 
     /// <summary>
     /// RSAES-OAEP with SHA-256 / MGF1-SHA-256. Use: High (encrypt/decrypt). Scope: enroll algorithm.
     /// </summary>
     private static OaepEncoding CreateOaepEngine()
-        => new OaepEncoding(new RsaEngine(), new Sha256Digest(), new Sha256Digest(), encodingParams: null);
+        => new(new RsaEngine(), new Sha256Digest(), new Sha256Digest(), encodingParams: null);
 
     /// <summary>
     /// Formats SPKI DER as PEM PUBLIC KEY. Use: Medium (DeriveKeyPair). Scope: enroll algorithm.
@@ -121,7 +121,7 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
     private static string EncodeSpkiPem(byte[] spkiDer)
     {
         string b64 = Convert.ToBase64String(spkiDer);
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new();
         sb.AppendLine("-----BEGIN PUBLIC KEY-----");
         for (int i = 0; i < b64.Length; i += PemBase64LineLength)
         {
@@ -138,7 +138,7 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
     /// </summary>
     private static AsymmetricKeyParameter ParsePublicKeyPem(string publicKeyPem)
     {
-        using StringReader reader = new StringReader(publicKeyPem);
+        using StringReader reader = new(publicKeyPem);
         object? parsed = new PemReader(reader).ReadObject();
         return parsed switch
         {

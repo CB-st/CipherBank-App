@@ -381,7 +381,7 @@ public sealed class ProductSessionAuthority : IDisposable
                 }
             }
 
-            var stored = await _backing.GetAsync().ConfigureAwait(false);
+            (string Access, string Refresh, DateTimeOffset Expires)? stored = await _backing.GetAsync().ConfigureAwait(false);
             lock (_state)
             {
                 CheckCore(operation);

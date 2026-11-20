@@ -14,8 +14,8 @@ public class BiometricUnlockContractTests
     [Fact]
     public async Task Seal_StoresDeviceSecret_AndUnlockWithDeviceSecret_WorksWithoutPin()
     {
-        MemStore store = new MemStore();
-        CustodyService custody = new CustodyService(store, new PinService(store));
+        MemStore store = new();
+        CustodyService custody = new(store, new PinService(store));
         string mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         custody.Lock();
@@ -28,13 +28,13 @@ public class BiometricUnlockContractTests
     [Fact]
     public async Task LegacyPinBlob_MigratesOnPinUnlock_ThenDeviceSecretWorks()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
+        MemStore store = new();
+        PinService pin = new(store);
         await pin.SetPinAsync("654321");
         string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
         await store.SetAsync("cb_custody_blob", CryptoBox.Seal(CryptographyOptions.Default, mnemonic, "654321"));
 
-        CustodyService custody = new CustodyService(store, pin);
+        CustodyService custody = new(store, pin);
         (await custody.CanUnlockWithDeviceOwnerAsync()).Should().BeFalse();
         (await custody.UnlockAsync("654321")).Should().BeTrue();
         custody.Lock();
@@ -47,8 +47,8 @@ public class BiometricUnlockContractTests
     [Fact]
     public async Task InterruptedMigration_DeviceSecretWithoutRewrittenBlob_RecoversViaPin()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
+        MemStore store = new();
+        PinService pin = new(store);
         await pin.SetPinAsync("246810");
         string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
         await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(CryptographyOptions.Default, mnemonic, "246810"));
@@ -56,7 +56,7 @@ public class BiometricUnlockContractTests
         // Simulate old bug: device secret persisted, blob still PIN-sealed.
         await store.SetAsync(CustodyService.DeviceSecretKey, Convert.ToBase64String(new byte[32]));
 
-        CustodyService custody = new CustodyService(store, pin);
+        CustodyService custody = new(store, pin);
         (await custody.UnlockAsync("246810")).Should().BeTrue();
         custody.ExportMnemonic().Should().Be(mnemonic);
         custody.Lock();
@@ -68,8 +68,8 @@ public class BiometricUnlockContractTests
     [Fact]
     public async Task InterruptedMigration_StagedSecretBeforePromote_UnlocksWithDeviceSecret()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
+        MemStore store = new();
+        PinService pin = new(store);
         await pin.SetPinAsync("135791");
         string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
         string deviceSecret = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
@@ -77,7 +77,7 @@ public class BiometricUnlockContractTests
         await store.SetAsync(CustodyService.BlobKey, CryptoBox.Seal(CryptographyOptions.Default, mnemonic, deviceSecret));
 
         // DeviceSecretKey never promoted.
-        CustodyService custody = new CustodyService(store, pin);
+        CustodyService custody = new(store, pin);
         (await custody.CanUnlockWithDeviceOwnerAsync()).Should().BeTrue();
         (await custody.UnlockWithDeviceSecretAsync()).Should().BeTrue();
         custody.ExportMnemonic().Should().Be(mnemonic);
@@ -88,8 +88,8 @@ public class BiometricUnlockContractTests
     [Fact]
     public async Task UnlockWithDeviceSecret_FailsWhenMissing()
     {
-        MemStore store = new MemStore();
-        CustodyService custody = new CustodyService(store, new PinService(store));
+        MemStore store = new();
+        CustodyService custody = new(store, new PinService(store));
         (await custody.UnlockWithDeviceSecretAsync()).Should().BeFalse();
     }
 

@@ -133,7 +133,7 @@ public sealed class H1H2AppSessionRegressionTests
     {
         Mock<IPrefsStore> prefs = new();
         prefs.Setup(p => p.LoadAsync()).ReturnsAsync(new UserPrefs(TestPreferenceDefaults.Value));
-        return new AppSession(
+        return new(
             custody,
             product,
             Mock.Of<ILocalWalletSeeder>(),

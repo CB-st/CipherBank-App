@@ -12,20 +12,33 @@ using Microsoft.EntityFrameworkCore;
 namespace CipherBank_app.Session;
 
 /// <inheritdoc />
-public sealed class ProductSessionCoordinator : IProductSessionCoordinator, IDisposable
+[method: SuppressMessage(
+    "Major Code Smell",
+    "S107:Methods should not have too many parameters",
+    Justification = AuthorityConstructorJustification)]
+public sealed class ProductSessionCoordinator(
+    IProductClient client,
+    IStreamService stream,
+    IStreamHub streamHub,
+    IPrefsStore prefs,
+    IPrefsSyncService prefsSync,
+    IAccountBootstrapService bootstrap,
+    IProductSessionStore productSessions,
+    ProductSessionAuthority? authority)
+    : IProductSessionCoordinator, IDisposable
 {
     private const string AuthorityConstructorJustification =
         "S107: DI greedy ctor wires client/stream/hub/prefs/sync/bootstrap/store/authority; " +
         "an options bag would change the Maui DI shape used by upper #98/#37-#40. " +
         "Owner: #44 session maintainers; revisit when the upper stack lands.";
 
-    private readonly IProductClient _client;
-    private readonly IStreamService _stream;
-    private readonly IStreamHub _streamHub;
-    private readonly IPrefsStore _prefs;
-    private readonly IPrefsSyncService _prefsSync;
-    private readonly IAccountBootstrapService _bootstrap;
-    private readonly ProductSessionAuthority _productSessions;
+    private readonly IProductClient _client = client;
+    private readonly IStreamService _stream = stream;
+    private readonly IStreamHub _streamHub = streamHub;
+    private readonly IPrefsStore _prefs = prefs;
+    private readonly IPrefsSyncService _prefsSync = prefsSync;
+    private readonly IAccountBootstrapService _bootstrap = bootstrap;
+    private readonly ProductSessionAuthority _productSessions = authority ?? ProductSessionAuthority.For(productSessions);
     private readonly SemaphoreSlim _streamLane = new(1, 1);
     private ProductSessionOperation? _streamOwner;
 
@@ -39,29 +52,6 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator, IDis
         IProductSessionStore productSessions)
         : this(client, stream, streamHub, prefs, prefsSync, bootstrap, productSessions, null)
     {
-    }
-
-    [SuppressMessage(
-        "Major Code Smell",
-        "S107:Methods should not have too many parameters",
-        Justification = AuthorityConstructorJustification)]
-    public ProductSessionCoordinator(
-        IProductClient client,
-        IStreamService stream,
-        IStreamHub streamHub,
-        IPrefsStore prefs,
-        IPrefsSyncService prefsSync,
-        IAccountBootstrapService bootstrap,
-        IProductSessionStore productSessions,
-        ProductSessionAuthority? authority)
-    {
-        _client = client;
-        _stream = stream;
-        _streamHub = streamHub;
-        _prefs = prefs;
-        _prefsSync = prefsSync;
-        _bootstrap = bootstrap;
-        _productSessions = authority ?? ProductSessionAuthority.For(productSessions);
     }
 
     internal ProductSessionAuthority Authority => _productSessions;
@@ -174,7 +164,7 @@ public sealed class ProductSessionCoordinator : IProductSessionCoordinator, IDis
 
             // Invalidation must escape all best-effort refresh catches.
             _productSessions.Check(operation, ct);
-            return new ProductSessionStartResult(session.AccessToken, lockIdleSeconds);
+            return new(session.AccessToken, lockIdleSeconds);
         }
         catch
         {

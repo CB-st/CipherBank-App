@@ -148,7 +148,7 @@ public sealed class H1H2LoginOwnershipTests
 #if DEBUG
         Mock<ISettingsService> settings = new();
         settings.SetupGet(s => s.Environment).Returns("Production");
-        return new LoginViewModel(
+        return new(
             NullLogger<LoginViewModel>.Instance,
             rig.App,
             navigation,
@@ -157,7 +157,7 @@ public sealed class H1H2LoginOwnershipTests
             Options.Create(new HostBehaviorOptions()),
             authority);
 #else
-        return new LoginViewModel(NullLogger<LoginViewModel>.Instance, rig.App, navigation, Mock.Of<IDialogService>(), authority);
+        return new(NullLogger<LoginViewModel>.Instance, rig.App, navigation, Mock.Of<IDialogService>(), authority);
 #endif
     }
 }
