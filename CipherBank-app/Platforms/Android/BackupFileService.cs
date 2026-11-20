@@ -29,7 +29,7 @@ public sealed partial class BackupFileService
             return null;
         }
 
-        Android.Content.ContentValues values = new Android.Content.ContentValues();
+        Android.Content.ContentValues values = new();
         values.Put(Android.Provider.MediaStore.IMediaColumns.DisplayName, fileName);
         values.Put(Android.Provider.MediaStore.IMediaColumns.MimeType, RecoveryMimeType);
         values.Put(Android.Provider.MediaStore.IMediaColumns.RelativePath, Android.OS.Environment.DirectoryDownloads);

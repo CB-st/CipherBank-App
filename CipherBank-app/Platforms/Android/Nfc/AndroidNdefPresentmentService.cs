@@ -47,10 +47,7 @@ public sealed class AndroidNdefPresentmentService : INfcPresentmentService
         }
 
         string json = payload.ToJson();
-        var message = new NdefMessage(new[]
-        {
-            NdefRecord.CreateTextRecord("en", json)!,
-        });
+        var message = new NdefMessage([NdefRecord.CreateTextRecord("en", json)!]);
 
         var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var callback = new NdefWriterCallback(tag =>
@@ -123,11 +120,9 @@ public sealed class AndroidNdefPresentmentService : INfcPresentmentService
         return await tcs.Task.ConfigureAwait(false);
     }
 
-    private sealed class NdefWriterCallback : Java.Lang.Object, NfcAdapter.IReaderCallback
+    private sealed class NdefWriterCallback(Action<Tag> onTag) : Java.Lang.Object, NfcAdapter.IReaderCallback
     {
-        private readonly Action<Tag> _onTag;
-
-        public NdefWriterCallback(Action<Tag> onTag) => _onTag = onTag;
+        private readonly Action<Tag> _onTag = onTag;
 
         public void OnTagDiscovered(Tag? tag)
         {
