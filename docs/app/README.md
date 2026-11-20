@@ -48,3 +48,11 @@ All API clients use `AddStandardResilienceHandler` with:
 - [views.md](views.md) – Views/Pages
 - [converters.md](converters.md) – Value converters
 - [platforms.md](platforms.md) – Platform-specific code
+
+## Component References
+
+This area index will link to focused type pages as they are added, using the
+source-mirroring convention in [Documentation Conventions](../conventions.md).
+Planned examples include `docs/app/AuthService.md`,
+`docs/app/DashboardViewModel.md`, and `docs/app/AndroidCertificatePinningHandler.md`.
+These references are planned; create each page before adding it as a Markdown link.
