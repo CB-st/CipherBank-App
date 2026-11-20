@@ -41,6 +41,6 @@ public sealed class BoolToColorConverter : BindableObject, IValueConverter
         => value is true ? TrueColor : FalseColor;
 
     /// <summary>Rejects reverse conversion because status colors are presentation-only. Use: Low. Scope: converter.</summary>
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException("Status colors cannot be converted back to a boolean.");
 }

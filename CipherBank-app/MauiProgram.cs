@@ -77,7 +77,7 @@ public static class MauiProgram
             throw new InvalidOperationException("Host behavior configuration is invalid.");
         }
 
-        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
+        string logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
 
         LoggerConfiguration config = new LoggerConfiguration()
             .MinimumLevel.Is(minimumLevel)
@@ -117,12 +117,21 @@ public static class MauiProgram
                 new HostBehaviorOptions())
             .Validate(static options => options.IsValid(), "Host behavior options are invalid.")
             .ValidateOnStart();
-        mauiAppBuilder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+        mauiAppBuilder.Services.AddSingleton(TimeProvider.System);
         mauiAppBuilder.Services.AddPersistenceFeature(
             mauiAppBuilder.Configuration,
             new DirectoryInfo(FileSystem.Current.AppDataDirectory));
         mauiAppBuilder.Services.AddCustodyFeature(mauiAppBuilder.Configuration);
-        mauiAppBuilder.Services.AddProductSessionServices();
+        HostBehaviorOptions sessionBehavior = mauiAppBuilder.Configuration
+            .GetRequiredSection(nameof(HostBehaviorOptions)).Get<HostBehaviorOptions>()
+            ?? throw new InvalidOperationException("Host behavior configuration is missing.");
+        bool isDevelopment = string.Equals(
+            typeof(MauiProgram).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration,
+            "Debug",
+            StringComparison.OrdinalIgnoreCase);
+        mauiAppBuilder.Services.AddProductSessionServices(sessionBehavior.UseLabSessionProof, isDevelopment);
+        mauiAppBuilder.Services.AddProductSessionStream(
+            mauiAppBuilder.Configuration["ProductSession:StreamEndpoint"]);
 
         // Settings Service (singleton - needed first for other service configuration)
         mauiAppBuilder.Services.AddSingleton<ISettingsService, SettingsService>();

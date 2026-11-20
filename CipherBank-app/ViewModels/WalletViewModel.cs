@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
@@ -40,15 +41,24 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     }
 
     [ObservableProperty]
+    [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1515:Single-line comment should be preceded by blank line")]
+    // ReSharper disable once UnusedMember.Global
+    // ReSharper disable once PropertyCanBeMadeInitOnly.Global
     public partial ObservableCollection<Wallet> Wallets { get; set; } = [];
 
     [ObservableProperty]
+    [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1515:Single-line comment should be preceded by blank line")]
+    // ReSharper disable once UnusedMember.Global
+    // ReSharper disable once PropertyCanBeMadeInitOnly.Global
     public partial ObservableCollection<Transaction> Transactions { get; set; } = [];
 
     [ObservableProperty]
     public partial Wallet? SelectedWallet { get; set; }
 
     [ObservableProperty]
+    [SuppressMessage("StyleCop.CSharp.LayoutRules", "SA1515:Single-line comment should be preceded by blank line")]
+    // ReSharper disable once UnusedMember.Global
+    // ReSharper disable once PropertyCanBeMadeInitOnly.Global
     public partial ObservableCollection<WalletCardItem> WalletCards { get; set; } = [];
 
     [ObservableProperty]
@@ -101,16 +111,18 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     // handler only fires when the card's data actually differs from the current one.
     partial void OnFocusedWalletCardChanged(WalletCardItem? value)
     {
-        var newWallet = value?.Wallet;
+        Wallet? newWallet = value?.Wallet;
         bool walletChanged = newWallet?.Id != SelectedWallet?.Id;
 
         SelectedWallet = newWallet;
 
-        if (walletChanged)
+        if (!walletChanged)
         {
-            SendToAddress = string.Empty;
-            SendAmount = 0;
+            return;
         }
+
+        SendToAddress = string.Empty;
+        SendAmount = 0;
     }
 
     partial void OnSelectedWalletChanged(Wallet? value)
@@ -142,12 +154,12 @@ public partial class WalletViewModel : ObservableObject, IDisposable
         {
             LogLoadingWallets(_logger);
 
-            var success = await _errorHandler.HandleApiErrorsAsync(
+            bool success = await _errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
                     PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
 
-                    var previousFocusId = FocusedWalletCard?.Wallet.Id;
+                    string? previousFocusId = FocusedWalletCard?.Wallet.Id;
                     Wallets.Clear();
                     WalletCards.Clear();
                     decimal totalUsd = 0;
@@ -171,14 +183,9 @@ public partial class WalletViewModel : ObservableObject, IDisposable
                 },
                 msg => ErrorMessage = msg);
 
-            if (!success)
+            if (!success && ErrorMessage == null)
             {
-                if (ErrorMessage == null)
-                {
-                    LogLoadWalletsCancelled(_logger);
-                }
-
-                return;
+                LogLoadWalletsCancelled(_logger);
             }
         }
         catch (Exception ex)
@@ -270,14 +277,14 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
         if (SendAmount > SelectedWallet.Balance)
         {
-            var insufficientMessage = $"Insufficient balance. Available: {SelectedWallet.FormattedBalance}";
+            string insufficientMessage = $"Insufficient balance. Available: {SelectedWallet.FormattedBalance}";
             await _dialog.ShowAlertAsync("Error", insufficientMessage, "OK");
             return;
         }
 
         // Confirm transaction
-        var confirmMessage = $"Send {SendAmount:F8} {SelectedWallet.CryptoSymbol} to:\n{SendToAddress}";
-        var confirm = await _dialog.ShowConfirmAsync(
+        string confirmMessage = $"Send {SendAmount:F8} {SelectedWallet.CryptoSymbol} to:\n{SendToAddress}";
+        bool confirm = await _dialog.ShowConfirmAsync(
             "Confirm Send",
             confirmMessage,
             "Send",
@@ -390,9 +397,6 @@ public partial class WalletViewModel : ObservableObject, IDisposable
     [LoggerMessage(Level = LogLevel.Information, Message = "Loading wallets")]
     private static partial void LogLoadingWallets(ILogger logger);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not get price for {Symbol}")]
-    private static partial void LogCouldNotGetPrice(ILogger logger, Exception ex, string symbol);
-
     [LoggerMessage(Level = LogLevel.Information, Message = "Loaded {Count} wallets with total value ${Value:N2}")]
     private static partial void LogLoadedWallets(ILogger logger, int count, decimal value);
 
@@ -447,14 +451,16 @@ public partial class WalletViewModel : ObservableObject, IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            if (disposing)
-            {
-                _cts?.Dispose();
-            }
-
-            _disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            _cts?.Dispose();
+        }
+
+        _disposed = true;
     }
 }

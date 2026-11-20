@@ -29,7 +29,7 @@ public static class HttpClientExtensions
         Action<IServiceProvider, HttpClient>? configure = null)
         where TClient : class
     {
-        var appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
+        string appVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
         SlidingWindowRateLimiter limiter = GetSharedRateLimiter(services);
 
         IHttpClientBuilder builder = services.AddHttpClient<TClient>((sp, http) =>

@@ -27,12 +27,12 @@ public class CriticalUserJourneyTests : IDisposable
     {
         // Configure Appium driver based on target platform.
         // Prefer APPIUM_SERVER_URL from scripts/e2e-android.sh; else APPIUM_PORT (default 4723).
-        var platform = Environment.GetEnvironmentVariable("TEST_PLATFORM") ?? "android";
-        var serverUrl = ResolveAppiumServerUrl();
+        string platform = Environment.GetEnvironmentVariable("TEST_PLATFORM") ?? "android";
+        string serverUrl = ResolveAppiumServerUrl();
 
         if (platform.Equals("ios", StringComparison.OrdinalIgnoreCase))
         {
-            var options = new AppiumOptions
+            AppiumOptions options = new()
             {
                 PlatformName = "iOS",
                 AutomationName = "XCUITest",
@@ -45,7 +45,7 @@ public class CriticalUserJourneyTests : IDisposable
         }
         else
         {
-            var options = new AppiumOptions
+            AppiumOptions options = new()
             {
                 PlatformName = "Android",
                 AutomationName = "UiAutomator2",
@@ -82,7 +82,7 @@ public class CriticalUserJourneyTests : IDisposable
     public void LoginFlow_WithValidCredentials_ShouldShowDashboard()
     {
         // Arrange
-        var loginPage = new LoginPage(_driver);
+        LoginPage loginPage = new(_driver);
         loginPage.WaitForPageLoad();
 
         // Act
@@ -101,7 +101,7 @@ public class CriticalUserJourneyTests : IDisposable
     public void LoginFlow_WithInvalidCredentials_ShouldShowError()
     {
         // Arrange
-        var loginPage = new LoginPage(_driver);
+        LoginPage loginPage = new(_driver);
         loginPage.WaitForPageLoad();
 
         // Act
@@ -121,7 +121,7 @@ public class CriticalUserJourneyTests : IDisposable
     public void PurchaseFlow_CompletePurchase_ShouldSucceed()
     {
         // Arrange - Login first
-        var loginPage = new LoginPage(_driver);
+        LoginPage loginPage = new(_driver);
         loginPage.WaitForPageLoad();
         DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
@@ -143,7 +143,7 @@ public class CriticalUserJourneyTests : IDisposable
     public void SendFlow_CompleteSend_ShouldSucceed()
     {
         // Arrange - Login first
-        var loginPage = new LoginPage(_driver);
+        LoginPage loginPage = new(_driver);
         loginPage.WaitForPageLoad();
         DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
@@ -152,7 +152,7 @@ public class CriticalUserJourneyTests : IDisposable
         WalletPage walletPage = dashboardPage.GoToWallet();
         walletPage.WaitForPageLoad();
 
-        var recipientAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Example address
+        string recipientAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Example address
         walletPage.SendCrypto(recipientAddress, 0.001m);
 
         // Assert - Verify transaction is in history
@@ -166,7 +166,7 @@ public class CriticalUserJourneyTests : IDisposable
     public void LogoutFlow_ShouldReturnToLogin()
     {
         // Arrange - Login first
-        var loginPage = new LoginPage(_driver);
+        LoginPage loginPage = new(_driver);
         loginPage.WaitForPageLoad();
         DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();
@@ -186,7 +186,7 @@ public class CriticalUserJourneyTests : IDisposable
     public void CriticalPath_LoginPurchaseLogout_ShouldComplete()
     {
         // Step 1: Login
-        var loginPage = new LoginPage(_driver);
+        LoginPage loginPage = new(_driver);
         loginPage.WaitForPageLoad();
         DashboardPage dashboardPage = loginPage.LoginAs(_testUsername, _testPassword);
         dashboardPage.WaitForPageLoad();

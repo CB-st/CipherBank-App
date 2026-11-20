@@ -8,6 +8,8 @@ using System.Text.RegularExpressions;
 using CipherBank_app.Custody;
 using CipherBank_app.Models;
 using Nethereum.Util;
+using Nethereum.Web3.Accounts;
+using Wallet = Nethereum.HdWallet.Wallet;
 
 namespace CipherBank_app.Wallets;
 
@@ -30,7 +32,7 @@ public sealed partial class EthereumWalletModule : AddressDerive, IWalletModule
     public bool UsesServerWallets => false;
 
     /// <inheritdoc />
-    public string? Notes => "BIP44 m/44'/60'/0'/0/i from on-device BIP39";
+    public string Notes => "BIP44 m/44'/60'/0'/0/i from on-device BIP39";
 
     /// <inheritdoc />
     public bool IsValidAddress(string address) => EthAddressRegex().IsMatch(address);
@@ -49,8 +51,8 @@ public sealed partial class EthereumWalletModule : AddressDerive, IWalletModule
     /// <inheritdoc />
     protected override DerivedAddress DeriveCore(string mnemonic, int accountIndex)
     {
-        Nethereum.HdWallet.Wallet wallet = new Nethereum.HdWallet.Wallet(MnemonicHelper.Normalize(mnemonic), null);
-        Nethereum.Web3.Accounts.Account account = wallet.GetAccount(accountIndex);
+        Wallet wallet = new(MnemonicHelper.Normalize(mnemonic), null);
+        Account account = wallet.GetAccount(accountIndex);
         string path = ReceivePath(44, 60, accountIndex);
         string checksum = new AddressUtil().ConvertToChecksumAddress(account.Address);
         return new DerivedAddress(checksum, path, accountIndex);

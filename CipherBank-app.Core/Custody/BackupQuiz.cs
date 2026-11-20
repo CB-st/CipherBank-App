@@ -47,7 +47,7 @@ public static class BackupQuiz
         }
 
         int take = Math.Min(count, words.Length);
-        int[] indices = Enumerable.Range(0, words.Length).ToArray();
+        int[] indices = [.. Enumerable.Range(0, words.Length)];
 
         for (int i = 0; i < take; i++)
         {
