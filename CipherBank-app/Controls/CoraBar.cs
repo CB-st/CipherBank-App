@@ -33,7 +33,7 @@ public sealed class CoraBar : ContentView
     {
         AutomationId = "CoraBar";
 
-        _lineLabel = new Label
+        _lineLabel = new()
         {
             LineBreakMode = LineBreakMode.WordWrap,
             VerticalOptions = LayoutOptions.Center,
@@ -41,7 +41,7 @@ public sealed class CoraBar : ContentView
         };
         _lineLabel.SetDynamicResource(VisualElement.StyleProperty, "CoraLineText");
 
-        Label avatarGlyph = new Label
+        Label avatarGlyph = new()
         {
             Text = "C",
             HorizontalOptions = LayoutOptions.Center,
@@ -51,30 +51,30 @@ public sealed class CoraBar : ContentView
         };
         avatarGlyph.SetDynamicResource(VisualElement.StyleProperty, "CoraAvatarGlyph");
 
-        Border avatar = new Border
+        Border avatar = new()
         {
             WidthRequest = 42,
             HeightRequest = 42,
             BackgroundColor = ThemeTokens.Get("CoraAvatarWell"),
             StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(21) },
+            StrokeShape = new RoundRectangle { CornerRadius = new(21) },
             VerticalOptions = LayoutOptions.Center,
             Content = avatarGlyph,
         };
 
-        Border frame = new Border
+        Border frame = new()
         {
-            Padding = new Thickness(10),
+            Padding = new(10),
             BackgroundColor = ThemeTokens.Get("DeepPurple"),
             StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(18) },
+            StrokeShape = new RoundRectangle { CornerRadius = new(18) },
             Content = new Grid
             {
-                ColumnDefinitions = new ColumnDefinitionCollection
-                {
+                ColumnDefinitions =
+                [
                     new(GridLength.Auto),
                     new(GridLength.Star),
-                },
+                ],
                 ColumnSpacing = 11,
                 Children = { avatar, _lineLabel },
             },

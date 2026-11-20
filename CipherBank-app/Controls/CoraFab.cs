@@ -37,32 +37,32 @@ public sealed class CoraFab : ContentView
     {
         HorizontalOptions = LayoutOptions.End;
         VerticalOptions = LayoutOptions.End;
-        Margin = new Thickness(0, 0, 16, 72);
+        Margin = new(0, 0, 16, 72);
         InputTransparent = false;
         ZIndex = 20;
         AutomationId = "CoraFab";
         SemanticProperties.SetDescription(this, "Cora assistant");
 
-        _lineLabel = new Label
+        _lineLabel = new()
         {
             LineBreakMode = LineBreakMode.WordWrap,
         };
         _lineLabel.SetDynamicResource(VisualElement.StyleProperty, "CoraLineText");
 
-        Label eyebrow = new Label
+        Label eyebrow = new()
         {
             Text = "CORA BYTE",
         };
         eyebrow.SetDynamicResource(VisualElement.StyleProperty, "CoraEyebrow");
 
-        _bubble = new Border
+        _bubble = new()
         {
             IsVisible = false,
             MaximumWidthRequest = 240,
-            Padding = new Thickness(14),
+            Padding = new(14),
             BackgroundColor = ThemeTokens.Get("DeepPurple"),
             StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(18) },
+            StrokeShape = new RoundRectangle { CornerRadius = new(18) },
             Content = new VerticalStackLayout
             {
                 Spacing = 6,
@@ -70,7 +70,7 @@ public sealed class CoraFab : ContentView
             },
         };
 
-        Label avatarGlyph = new Label
+        Label avatarGlyph = new()
         {
             Text = "C",
             HorizontalOptions = LayoutOptions.Center,
@@ -80,19 +80,19 @@ public sealed class CoraFab : ContentView
         };
         avatarGlyph.SetDynamicResource(VisualElement.StyleProperty, "CoraFabGlyph");
 
-        Border avatar = new Border
+        Border avatar = new()
         {
             WidthRequest = 56,
             HeightRequest = 56,
             BackgroundColor = ThemeTokens.Get("WelcomeFrame"),
             Stroke = new SolidColorBrush(ThemeTokens.Get("Gold")),
             StrokeThickness = 2,
-            StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(28) },
+            StrokeShape = new RoundRectangle { CornerRadius = new(28) },
             HorizontalOptions = LayoutOptions.End,
             Content = avatarGlyph,
         };
 
-        TapGestureRecognizer tap = new TapGestureRecognizer();
+        TapGestureRecognizer tap = new();
         tap.Tapped += (_, _) =>
         {
             _open = !_open;
@@ -107,7 +107,7 @@ public sealed class CoraFab : ContentView
         SemanticProperties.SetDescription(avatar, "Toggle Cora assistant");
 
 
-        _root = new VerticalStackLayout
+        _root = new()
         {
             Spacing = 10,
             HorizontalOptions = LayoutOptions.End,
