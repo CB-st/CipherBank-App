@@ -15,7 +15,7 @@ public class LocalWalletSeederTests
     [Fact]
     public async Task EnsureDerivedAsync_UpdatesAddressWhenDerivedRowExistsForDifferentSeed()
     {
-        FakeWallets wallets = new FakeWallets();
+        FakeWallets wallets = new();
         wallets.Rows.Add(new LocalWalletDescriptor(
             "old-btc",
             "BTC",
@@ -26,7 +26,7 @@ public class LocalWalletSeederTests
             "derived",
             DateTimeOffset.UtcNow));
 
-        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+        LocalWalletSeeder seeder = new(wallets);
         const string mnemonic =
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
@@ -42,8 +42,8 @@ public class LocalWalletSeederTests
     [Fact]
     public async Task EnsureDerivedAsync_RejectsNullSymbol()
     {
-        FakeWallets wallets = new FakeWallets();
-        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+        FakeWallets wallets = new();
+        LocalWalletSeeder seeder = new(wallets);
 
         Func<Task> act = () => seeder.EnsureDerivedAsync("abandon about", [new AssetSymbol("BTC"), null!]);
 
@@ -58,8 +58,8 @@ public class LocalWalletSeederTests
     [Fact]
     public async Task EnsureDerivedAsync_DeduplicatesNormalizedSymbols()
     {
-        FakeWallets wallets = new FakeWallets();
-        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+        FakeWallets wallets = new();
+        LocalWalletSeeder seeder = new(wallets);
         const string mnemonic =
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
@@ -78,8 +78,8 @@ public class LocalWalletSeederTests
     [Fact]
     public async Task EnsureDerivedAsync_DeduplicatesAcrossAssetsAndSkipsNonDerivable()
     {
-        FakeWallets wallets = new FakeWallets();
-        LocalWalletSeeder seeder = new LocalWalletSeeder(wallets);
+        FakeWallets wallets = new();
+        LocalWalletSeeder seeder = new(wallets);
         const string mnemonic =
             "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 

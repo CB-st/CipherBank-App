@@ -4,6 +4,7 @@
 
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using SQLitePCL;
 
 namespace CipherBank_app.Persist;
 
@@ -75,7 +76,7 @@ public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
             }
         }
         catch (SqliteException exception)
-            when (exception.SqliteErrorCode == SQLitePCL.raw.SQLITE_NOTADB)
+            when (exception.SqliteErrorCode == raw.SQLITE_NOTADB)
         {
             discard = true;
         }

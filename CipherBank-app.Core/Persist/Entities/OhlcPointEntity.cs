@@ -12,10 +12,10 @@ namespace CipherBank_app.Persist.Entities;
 public sealed record OhlcPointEntity
 {
     /// <summary>Listed asset ticker. String, not an enum — the set is not closed.</summary>
-    public string Symbol { get; set; } = string.Empty;
+    public string Symbol { get; init; } = string.Empty;
 
     /// <summary>Unix timestamp for this value-series point.</summary>
-    public long Timestamp { get; set; }
+    public long Timestamp { get; init; }
 
     /// <summary>Quoted price at the timestamp.</summary>
     public decimal Price { get; set; }

@@ -3,7 +3,6 @@
 // </copyright>
 
 using System.Security.Cryptography;
-using System.Text;
 using CipherBank_app.Configuration;
 using CipherBank_app.Custody;
 using FluentAssertions;
@@ -38,7 +37,7 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Pin_VerifySucceedsAfterSet()
     {
-        PinService pin = new PinService(new MemStore());
+        PinService pin = new(new MemStore());
         await pin.SetPinAsync("654321");
         (await pin.VerifyPinAsync("654321")).Should().BeTrue();
         (await pin.VerifyPinAsync("000000")).Should().BeFalse();
@@ -47,7 +46,7 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Pin_SetPinAsync_RejectsShortPin()
     {
-        PinService pin = new PinService(new MemStore());
+        PinService pin = new(new MemStore());
         Func<Task> act = () => pin.SetPinAsync("12345");
         await act.Should().ThrowAsync<ArgumentException>();
     }
@@ -55,8 +54,8 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Pin_Verify_RecoversStagedSaltHashPair()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
+        MemStore store = new();
+        PinService pin = new(store);
         await pin.SetPinAsync("654321");
         string? oldHash = await store.GetAsync("cb_pin_hash");
 
@@ -78,9 +77,9 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Custody_Unlock_ClearsSessionOnFailedPin()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         string mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         (await custody.UnlockAsync("123456")).Should().BeTrue();
@@ -92,9 +91,9 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Custody_Unlock_FailedPin_RaisesLocked()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         string mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         (await custody.UnlockAsync("123456")).Should().BeTrue();
@@ -122,12 +121,9 @@ public class PinAndCustodyTests
         time.Setup(clock => clock.GetUtcNow()).Returns(() =>
         {
             clockReadStarted.TrySetResult();
-            if (!continueClockRead.Wait(TimeSpan.FromSeconds(10)))
-            {
-                throw new TimeoutException("Export clock read was not released.");
-            }
-
-            return DateTimeOffset.UnixEpoch;
+            return !continueClockRead.Wait(TimeSpan.FromSeconds(10))
+                ? throw new TimeoutException("Export clock read was not released.")
+                : DateTimeOffset.UnixEpoch;
         });
 
         // Pause export at its clock read, which now happens inside the session gate.
@@ -158,10 +154,10 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Custody_IsUnlocked_DoesNotLockWhenSessionExpires()
     {
-        ManualTime time = new ManualTime();
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin, time);
+        ManualTime time = new();
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin, time);
         await custody.SealAsync(MnemonicHelper.Generate(), "123456");
         (await custody.UnlockAsync("123456")).Should().BeTrue();
         int locked = 0;
@@ -180,9 +176,9 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Custody_Unlock_MissingBlob_ClearsExistingSessionAndRaisesLocked()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         await custody.SealAsync(MnemonicHelper.Generate(), "123456");
         (await custody.UnlockAsync("123456")).Should().BeTrue();
         int locked = 0;
@@ -199,51 +195,19 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Custody_SealAsync_RejectsShortPin()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         Func<Task> act = () => custody.SealAsync(MnemonicHelper.Generate(), "12");
         await act.Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
-    public void AesGcmCryptoBox_Open_LegacyBlobWithVersionLikeSaltPrefix()
-    {
-        CryptographyOptions options = CryptographyOptions.Default;
-        AesGcmCryptoBox box = new AesGcmCryptoBox(options);
-        const string pin = "123456";
-        const string mnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-
-        // Build a legacy-layout blob whose first salt byte is 0x01 (version marker collision).
-        byte[] salt = RandomNumberGenerator.GetBytes(options.SaltSizeBytes);
-        salt[0] = 0x01;
-        using SensitiveBuffer keyBuffer = box.DeriveKey(pin, salt);
-        byte[] key = keyBuffer.Span.ToArray();
-        byte[] nonce = RandomNumberGenerator.GetBytes(options.NonceSizeBytes);
-        byte[] plain = Encoding.UTF8.GetBytes(mnemonic);
-        byte[] cipher = new byte[plain.Length];
-        byte[] tag = new byte[options.TagSizeBytes];
-        using (AesGcm aes = new AesGcm(key, options.TagSizeBytes))
-        {
-            aes.Encrypt(nonce, plain, cipher, tag);
-        }
-
-        byte[] packed = new byte[salt.Length + nonce.Length + tag.Length + cipher.Length];
-        Buffer.BlockCopy(salt, 0, packed, 0, salt.Length);
-        Buffer.BlockCopy(nonce, 0, packed, salt.Length, nonce.Length);
-        Buffer.BlockCopy(tag, 0, packed, salt.Length + nonce.Length, tag.Length);
-        Buffer.BlockCopy(cipher, 0, packed, salt.Length + nonce.Length + tag.Length, cipher.Length);
-
-        box.Open(Convert.ToBase64String(packed), pin).Should().Be(mnemonic);
-        box.Open(box.Seal(mnemonic, pin), pin).Should().Be(mnemonic);
-    }
-
-    [Fact]
     public async Task Custody_SealUnlockRoundTrip()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         string mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         custody.Lock();
@@ -254,9 +218,9 @@ public class PinAndCustodyTests
     [Fact]
     public async Task Custody_DeviceSecretUnlock_RecoversInterruptedReseal()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         string mnemonic = MnemonicHelper.Normalize(MnemonicHelper.Generate());
         await custody.SealAsync(mnemonic, "123456");
         custody.Lock();

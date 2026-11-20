@@ -49,8 +49,8 @@ public class GlassCard : ContentView
     {
         _bodyHost = new ContentView { Padding = new Thickness(18) };
 
-        _tint = new BoxView { InputTransparent = true };
-        var layers = new Grid();
+        _tint = new() { InputTransparent = true };
+        Grid layers = new();
 
         _blur = new BlurBackdropView { InputTransparent = true };
         layers.Children.Add(_blur);
@@ -81,7 +81,7 @@ public class GlassCard : ContentView
     public double CornerRadius
     {
         get => (double)GetValue(CornerRadiusProperty);
-        set => SetValue(CornerRadiusProperty, value);
+        init => SetValue(CornerRadiusProperty, value);
     }
 
     public View? Body
