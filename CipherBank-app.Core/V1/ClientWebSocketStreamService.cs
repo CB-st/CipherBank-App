@@ -46,9 +46,9 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
 
             // Capture socket + token before scheduling so a later Disconnect/Connect
             // cannot make the old loop read replacement fields.
-            CancellationTokenSource cts = new CancellationTokenSource();
+            CancellationTokenSource cts = new();
             CancellationToken loopToken = cts.Token;
-            ClientWebSocket ws = new ClientWebSocket();
+            ClientWebSocket ws = new();
             _cts = cts;
             _ws = ws;
             await ws.ConnectAsync(_uri, ct).ConfigureAwait(false);
@@ -167,7 +167,7 @@ public sealed class ClientWebSocketStreamService : IStreamService, IAsyncDisposa
     private async Task ReceiveLoopAsync(WebSocket ws, CancellationToken ct)
     {
         byte[] buffer = new byte[ReceiveBufferBytes];
-        using MemoryStream message = new MemoryStream();
+        using MemoryStream message = new();
         while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
             WebSocketReceiveResult result = await ws.ReceiveAsync(buffer, ct).ConfigureAwait(false);

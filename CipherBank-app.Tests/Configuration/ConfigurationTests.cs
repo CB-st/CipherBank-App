@@ -28,10 +28,10 @@ public sealed class ConfigurationTests
             .Get<SyncSchedulerOptions>();
 
         cryptography.Should().NotBeNull();
-        cryptography!.IsValid().Should().BeTrue();
+        cryptography.IsValid().Should().BeTrue();
         cryptography.MatchesPersistedProfile().Should().BeTrue();
         scheduler.Should().NotBeNull();
-        scheduler!.MaxConcurrency.Should().Be(0);
+        scheduler.MaxConcurrency.Should().Be(SyncSchedulerOptions.AutoConcurrency);
         scheduler.Resolve().Should().BeInRange(
             SyncSchedulerOptions.MinConcurrency,
             SyncSchedulerOptions.MaxAllowedConcurrency);
@@ -154,7 +154,7 @@ public sealed class ConfigurationTests
     [Fact]
     public void CryptographyOptions_NonDefaultProfile_FailsValidation()
     {
-        Dictionary<string, string?> values = new Dictionary<string, string?>
+        Dictionary<string, string?> values = new()
         {
             ["CryptographyOptions:KeySizeBytes"] = "16",
         };
@@ -162,7 +162,7 @@ public sealed class ConfigurationTests
             .AddConfiguration(CipherBankDefaultsConfiguration.Build())
             .AddInMemoryCollection(values)
             .Build();
-        ServiceCollection services = new ServiceCollection();
+        ServiceCollection services = new();
         services.AddCipherBankCoreOptions(configuration);
         using ServiceProvider provider = services.BuildServiceProvider();
 
@@ -174,7 +174,7 @@ public sealed class ConfigurationTests
     [Fact]
     public void SyncSchedulerOptions_NonDefaultConcurrency_FailsValidation()
     {
-        Dictionary<string, string?> values = new Dictionary<string, string?>
+        Dictionary<string, string?> values = new()
         {
             ["SyncSchedulerOptions:MaxConcurrency"] = "99",
         };
@@ -182,7 +182,7 @@ public sealed class ConfigurationTests
             .AddConfiguration(CipherBankDefaultsConfiguration.Build())
             .AddInMemoryCollection(values)
             .Build();
-        ServiceCollection services = new ServiceCollection();
+        ServiceCollection services = new();
         services.AddCipherBankCoreOptions(configuration);
         using ServiceProvider provider = services.BuildServiceProvider();
 

@@ -14,24 +14,22 @@ namespace CipherBank_app.E2ETests.PageObjects;
 /// Base page object class providing common functionality for all page objects.
 /// Implements the Page Object Model pattern for maintainable UI tests.
 /// </summary>
-public abstract class BasePage
+public abstract class BasePage(AppiumDriver driver)
 {
     /// <summary>
     /// Default wait timeout for element visibility.
     /// </summary>
     protected static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
 
-    protected BasePage(AppiumDriver driver)
-    {
-        Driver = driver ?? throw new ArgumentNullException(nameof(driver));
-        Wait = new WebDriverWait(driver, DefaultTimeout);
-    }
+    /// <summary>
+    /// Gets the Appium driver used by this page object.
+    /// </summary>
+    protected AppiumDriver Driver { get; } = driver ?? throw new ArgumentNullException(nameof(driver));
 
-    /// <summary>Shared Appium session for this page object.</summary>
-    protected AppiumDriver Driver { get; }
-
-    /// <summary>Explicit wait bound to <see cref="DefaultTimeout"/>.</summary>
-    protected WebDriverWait Wait { get; }
+    /// <summary>
+    /// Gets the explicit wait helper for this page object.
+    /// </summary>
+    protected WebDriverWait Wait { get; } = new(driver, DefaultTimeout);
 
     /// <summary>
     /// Checks if an element is displayed.
@@ -91,10 +89,7 @@ public abstract class BasePage
     /// <summary>
     /// Gets the text content of an element.
     /// </summary>
-    protected string GetElementText(By locator)
-    {
-        return WaitForElement(locator).Text;
-    }
+    protected string GetElementText(By locator) => WaitForElement(locator).Text;
 
     /// <summary>
     /// Taps a Shell tab (or any control) by visible text — used when AutomationId is not on the tab bar.
