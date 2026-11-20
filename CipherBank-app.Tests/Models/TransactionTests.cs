@@ -70,7 +70,7 @@ public class TransactionTests
     public void FormattedAmount_ReturnsCorrectFormat()
     {
         // Arrange
-        Transaction transaction = new Transaction(
+        Transaction transaction = new(
             "tx123",
             TransactionType.Purchase,
             0.12345678m,
@@ -92,7 +92,7 @@ public class TransactionTests
     public void FormattedFee_ReturnsCorrectFormat()
     {
         // Arrange
-        Transaction transaction = new Transaction(
+        Transaction transaction = new(
             "tx123",
             TransactionType.Purchase,
             1m,

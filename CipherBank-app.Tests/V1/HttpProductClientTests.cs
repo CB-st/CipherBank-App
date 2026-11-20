@@ -15,7 +15,7 @@ public sealed class HttpProductClientTests
     [Fact]
     public async Task GetPortfolioAsync_DeserializesSnapshot()
     {
-        StubHandler handler = new StubHandler(_ => JsonResponse(
+        StubHandler handler = new(_ => JsonResponse(
             """{"TOTAL_USD":"10.00","CHANGE_24H_PCT":"1.2","HOLDINGS":[]}"""));
         HttpProductClient client = CreateClient(handler);
 
@@ -28,9 +28,9 @@ public sealed class HttpProductClientTests
     [Fact]
     public async Task CreateSessionAsync_SavesTokensFromResponse()
     {
-        StubHandler handler = new StubHandler(_ => JsonResponse(
+        StubHandler handler = new(_ => JsonResponse(
             """{"ACCESS_TOKEN":"access-1","REFRESH_TOKEN":"refresh-1","EXPIRES_AT":1720900000000}"""));
-        InMemoryProductSessionStore sessions = new InMemoryProductSessionStore();
+        InMemoryProductSessionStore sessions = new();
         HttpProductClient client = CreateClient(handler, sessions);
 
         SessionDto session = await client.CreateSessionAsync(CancellationToken.None);
@@ -44,7 +44,7 @@ public sealed class HttpProductClientTests
     public async Task GetAsync_RefreshesOnce_OnUnauthorized()
     {
         int portfolioCalls = 0;
-        StubHandler handler = new StubHandler(req =>
+        StubHandler handler = new(req =>
         {
             if (req.Path == "v1/session/refresh")
             {
@@ -66,7 +66,7 @@ public sealed class HttpProductClientTests
             return new HttpResponseMessage(HttpStatusCode.NotFound);
         });
 
-        InMemoryProductSessionStore sessions = new InMemoryProductSessionStore();
+        InMemoryProductSessionStore sessions = new();
         await sessions.SaveAsync(new SessionDto
         {
             AccessToken = "access-1",
@@ -86,7 +86,7 @@ public sealed class HttpProductClientTests
     [Fact]
     public async Task GetPrefsAsync_ReturnsNull_OnHttpFailure()
     {
-        StubHandler handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.BadGateway));
+        StubHandler handler = new(_ => new HttpResponseMessage(HttpStatusCode.BadGateway));
         HttpProductClient client = CreateClient(handler);
 
         PrefsWireDto? prefs = await client.GetPrefsAsync(CancellationToken.None);
@@ -97,7 +97,7 @@ public sealed class HttpProductClientTests
     [Fact]
     public async Task ConvertAsync_SendsIdempotencyHeader()
     {
-        StubHandler handler = new StubHandler(_ => JsonResponse(
+        StubHandler handler = new(_ => JsonResponse(
             """{"STATUS":"ok","AMOUNT":"1"}"""));
         HttpProductClient client = CreateClient(handler);
 
@@ -112,7 +112,7 @@ public sealed class HttpProductClientTests
     [Fact]
     public async Task CreateSessionChallengeAndKeyShare_RoundTrip()
     {
-        StubHandler handler = new StubHandler(req =>
+        StubHandler handler = new(req =>
         {
             if (req.Path == "v1/session/challenge")
             {
@@ -141,7 +141,7 @@ public sealed class HttpProductClientTests
     [Fact]
     public async Task ProductSurface_PostsAndGets_CommonRoutes()
     {
-        StubHandler handler = new StubHandler(req =>
+        StubHandler handler = new(req =>
         {
             if (req.Method == HttpMethod.Get)
             {
@@ -187,7 +187,7 @@ public sealed class HttpProductClientTests
         StubHandler handler,
         IProductSessionStore? sessions = null)
     {
-        HttpClient http = new HttpClient(handler)
+        HttpClient http = new(handler)
         {
             BaseAddress = new Uri("https://product.test/"),
         };
@@ -198,19 +198,14 @@ public sealed class HttpProductClientTests
     }
 
     private static HttpResponseMessage JsonResponse(string json)
-        => new HttpResponseMessage(HttpStatusCode.OK)
+        => new(HttpStatusCode.OK)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json"),
         };
 
-    private sealed class StubHandler : HttpMessageHandler
+    private sealed class StubHandler(Func<RecordedRequest, HttpResponseMessage> responder) : HttpMessageHandler
     {
-        private readonly Func<RecordedRequest, HttpResponseMessage> _responder;
-
-        public StubHandler(Func<RecordedRequest, HttpResponseMessage> responder)
-        {
-            _responder = responder;
-        }
+        private readonly Func<RecordedRequest, HttpResponseMessage> _responder = responder;
 
         public List<RecordedRequest> Requests { get; } = [];
 
@@ -224,7 +219,7 @@ public sealed class HttpProductClientTests
             string? idem = request.Headers.TryGetValues("Idempotency-Key", out IEnumerable<string>? values)
                 ? values.FirstOrDefault()
                 : null;
-            RecordedRequest recorded = new RecordedRequest(request.Method, path, idem);
+            RecordedRequest recorded = new(request.Method, path, idem);
             Requests.Add(recorded);
             return Task.FromResult(_responder(recorded));
         }

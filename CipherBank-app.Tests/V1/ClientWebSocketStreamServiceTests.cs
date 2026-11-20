@@ -17,9 +17,9 @@ public class ClientWebSocketStreamServiceTests
     [Fact]
     public async Task DisconnectAsync_WhenNeverConnected_IsIdempotent()
     {
-        await using ClientWebSocketStreamService fromUri = new ClientWebSocketStreamService(
+        await using ClientWebSocketStreamService fromUri = new(
             new Uri("wss://example.invalid/stream"));
-        await using ClientWebSocketStreamService fromString = new ClientWebSocketStreamService(
+        await using ClientWebSocketStreamService fromString = new(
             "wss://example.invalid/stream");
 
         fromUri.IsConnected.Should().BeFalse();

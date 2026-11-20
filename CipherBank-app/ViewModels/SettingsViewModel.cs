@@ -190,7 +190,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _settings.DeveloperModeEnabled = DeveloperModeEnabled;
 
             // Clear auth tokens and return to login if environment changed
-            var previousEnvironment = _settings.Environment;
+            string previousEnvironment = _settings.Environment;
             if (previousEnvironment != SelectedEnvironment)
             {
                 // The Environment setter cascades its default endpoint into
@@ -255,7 +255,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             LogTestingConnection(_logger, ApiEndpoint);
 
-            var isHealthy = await _healthCheck.CheckHealthAsync(ApiEndpoint, _cts.Token);
+            bool isHealthy = await _healthCheck.CheckHealthAsync(ApiEndpoint, _cts.Token);
 
             if (isHealthy)
             {
@@ -300,7 +300,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ResetToDefaultsAsync()
     {
-        var confirm = await _dialog.ShowConfirmAsync(
+        bool confirm = await _dialog.ShowConfirmAsync(
             "Reset Settings",
             "Are you sure you want to reset all settings to defaults?",
             "Reset");
@@ -339,7 +339,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task LogoutAsync()
     {
-        var confirm = await _dialog.ShowConfirmAsync(
+        bool confirm = await _dialog.ShowConfirmAsync(
             "Log Out",
             "Are you sure you want to log out?",
             "Log Out");
@@ -371,7 +371,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task ShowAboutAsync()
     {
-        var aboutMessage =
+        string aboutMessage =
             "Version 1.0.0\n\n" +
             "A secure cryptocurrency wallet and trading application.\n\n" +
             "© 2026 CipherBank. All rights reserved.";
@@ -394,7 +394,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
             if (!DeveloperModeEnabled)
             {
-                var confirm = await _dialog.ShowConfirmAsync(
+                bool confirm = await _dialog.ShowConfirmAsync(
                     "Enable Developer Mode?",
                     "Developer mode allows you to switch environments and use mock services. This is for development purposes only.",
                     "Enable");
@@ -492,14 +492,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            if (disposing)
-            {
-                _cts?.Dispose();
-            }
-
-            _disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            _cts?.Dispose();
+        }
+
+        _disposed = true;
     }
 }

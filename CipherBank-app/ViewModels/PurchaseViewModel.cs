@@ -17,31 +17,18 @@ namespace CipherBank_app.ViewModels;
 /// <summary>
 /// ViewModel for the Purchase page allowing users to buy cryptocurrency.
 /// </summary>
-public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, IDisposable
+public partial class PurchaseViewModel(
+    ILogger<PurchaseViewModel> logger,
+    IProductClient product,
+    IErrorHandler errorHandler,
+    INavigationService navigation,
+    IDialogService dialog)
+    : ObservableObject, IQueryAttributable, IDisposable
 {
     private const decimal FeePercentage = 0.015m; // 1.5% fee
 
-    private readonly ILogger<PurchaseViewModel> _logger;
-    private readonly IProductClient _product;
-    private readonly IErrorHandler _errorHandler;
-    private readonly INavigationService _navigation;
-    private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
     private bool _disposed;
-
-    public PurchaseViewModel(
-        ILogger<PurchaseViewModel> logger,
-        IProductClient product,
-        IErrorHandler errorHandler,
-        INavigationService navigation,
-        IDialogService dialog)
-    {
-        _logger = logger;
-        _product = product;
-        _errorHandler = errorHandler;
-        _navigation = navigation;
-        _dialog = dialog;
-    }
 
     [ObservableProperty]
     public partial ObservableCollection<CryptoCurrency> AvailableCryptos { get; set; } = [];
@@ -81,11 +68,13 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     /// </summary>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (query.TryGetValue("symbol", out var symbolObj) && symbolObj is string symbol)
+        if (!query.TryGetValue("symbol", out object? symbolObj) || symbolObj is not string symbol)
         {
-            LogReceivedSymbol(_logger, symbol);
-            _ = SelectCryptoBySymbolAsync(symbol);
+            return;
         }
+
+        LogReceivedSymbol(logger, symbol);
+        _ = SelectCryptoBySymbolAsync(symbol);
     }
 
     /// <summary>
@@ -94,7 +83,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     public void OnDisappearing()
     {
         _cts?.Cancel();
-        LogPurchaseDisappearing(_logger);
+        LogPurchaseDisappearing(logger);
     }
 
     /// <inheritdoc/>
@@ -124,7 +113,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
     partial void OnAmountTextChanged(string value)
     {
-        if (decimal.TryParse(value, out var parsed) && parsed >= 0)
+        if (decimal.TryParse(value, out decimal parsed) && parsed >= 0)
         {
             Amount = parsed;
             CalculateTotalCost();
@@ -140,13 +129,13 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     {
         await LoadAvailableCryptosAsync();
 
-        var crypto = AvailableCryptos.FirstOrDefault(c =>
+        CryptoCurrency? crypto = AvailableCryptos.FirstOrDefault(c =>
             AssetSymbol.TryParse(symbol, out AssetSymbol? wanted) && c.Symbol == wanted);
 
         if (crypto != null)
         {
             SelectedCrypto = crypto;
-            LogPreSelectedSymbol(_logger, symbol);
+            LogPreSelectedSymbol(logger, symbol);
         }
     }
 
@@ -169,13 +158,13 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
         try
         {
-            LogLoadingCryptos(_logger);
+            LogLoadingCryptos(logger);
 
-            var success = await _errorHandler.HandleApiErrorsAsync(
+            bool success = await errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
                     AvailableCryptos.Clear();
-                    PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
+                    PortfolioDto portfolio = await product.GetPortfolioAsync(_cts.Token);
                     foreach (HoldingDto holding in portfolio.Holdings.Where(h => CurrencySymbolMap.IsSupported(h.Symbol)))
                     {
                         AvailableCryptos.Add(ProductSurfaceMap.ToCryptoCurrency(holding));
@@ -185,13 +174,13 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
                     {
                         // Reloaded records are new instances; re-resolve the selection by
                         // symbol so the deck recenters on the refreshed item.
-                        var restored = SelectedCrypto != null
+                        CryptoCurrency? restored = SelectedCrypto != null
                             ? AvailableCryptos.FirstOrDefault(c => c.Symbol == SelectedCrypto.Symbol)
                             : null;
                         SelectedCrypto = restored ?? AvailableCryptos.First();
                     }
 
-                    LogLoadedCryptos(_logger, AvailableCryptos.Count);
+                    LogLoadedCryptos(logger, AvailableCryptos.Count);
                 },
                 msg => ErrorMessage = msg);
 
@@ -199,7 +188,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             {
                 if (ErrorMessage == null)
                 {
-                    LogLoadCryptosCancelled(_logger);
+                    LogLoadCryptosCancelled(logger);
                 }
 
                 return;
@@ -207,7 +196,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         }
         catch (Exception ex)
         {
-            LogUnexpectedErrorLoadingCryptos(_logger, ex);
+            LogUnexpectedErrorLoadingCryptos(logger, ex);
             ErrorMessage = "Failed to load cryptocurrencies. Please try again.";
         }
         finally
@@ -229,11 +218,11 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             return;
         }
 
-        var subtotal = Amount * SelectedCrypto.CurrentPrice;
+        decimal subtotal = Amount * SelectedCrypto.CurrentPrice;
         Fee = subtotal * FeePercentage;
         TotalCost = subtotal + Fee;
 
-        LogCalculatedPurchase(_logger, Amount, SelectedCrypto.Symbol.Value, subtotal, Fee, TotalCost);
+        LogCalculatedPurchase(logger, Amount, SelectedCrypto.Symbol.Value, subtotal, Fee, TotalCost);
     }
 
     /// <summary>
@@ -244,18 +233,18 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     {
         if (SelectedCrypto == null)
         {
-            await _dialog.ShowAlertAsync("Error", "Please select a cryptocurrency.", "OK");
+            await dialog.ShowAlertAsync("Error", "Please select a cryptocurrency.");
             return;
         }
 
         if (Amount <= 0)
         {
-            await _dialog.ShowAlertAsync("Error", "Please enter a valid amount.", "OK");
+            await dialog.ShowAlertAsync("Error", "Please enter a valid amount.");
             return;
         }
 
         // Confirm purchase
-        var confirmMessage =
+        string confirmMessage =
             $"Buy {Amount:F8} {SelectedCrypto.Symbol} ({SelectedCrypto.Name})\n\n" +
             $"Subtotal: ${Amount * SelectedCrypto.CurrentPrice:F2}\n" +
             $"Fee (1.5%): ${Fee:F2}\n" +
@@ -266,7 +255,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             confirmMessage += $"\nNote: {PaymentNote}";
         }
 
-        var confirm = await _dialog.ShowConfirmAsync(
+        bool confirm = await dialog.ShowConfirmAsync(
             "Confirm Purchase",
             confirmMessage,
             "Purchase",
@@ -285,20 +274,20 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
         try
         {
-            LogPurchasing(_logger, Amount, SelectedCrypto.Symbol.Value);
+            LogPurchasing(logger, Amount, SelectedCrypto.Symbol.Value);
 
-            MoneyMoveDto move = await _product.ConvertAsync(
+            MoneyMoveDto move = await product.ConvertAsync(
                 "USD",
                 SelectedCrypto.Symbol.Value,
                 Amount.ToString(CultureInfo.InvariantCulture),
                 Guid.NewGuid().ToString("N"),
                 _cts.Token);
 
-            var successMessage =
+            string successMessage =
                 $"Successfully purchased {Amount:F8} {SelectedCrypto.Symbol}!\n\n" +
                 $"Transaction ID: {move.Id}\n" +
                 $"Status: {move.Status}";
-            await _dialog.ShowAlertAsync(
+            await dialog.ShowAlertAsync(
                 "Purchase Complete",
                 successMessage,
                 "OK");
@@ -309,10 +298,10 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
             PaymentNote = string.Empty;
             CalculateTotalCost();
 
-            LogPurchaseCompleted(_logger, move.Id);
+            LogPurchaseCompleted(logger, move.Id);
 
             // Optionally navigate to wallet
-            var viewWallet = await _dialog.ShowConfirmAsync(
+            bool viewWallet = await dialog.ShowConfirmAsync(
                 "View Wallet?",
                 "Would you like to view your wallet?",
                 "Yes",
@@ -320,27 +309,27 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
             if (viewWallet)
             {
-                await _navigation.GoToAsync(Routes.Wallet);
+                await navigation.GoToAsync(Routes.Wallet);
             }
         }
         catch (InvalidOperationException ex)
         {
-            LogPurchaseFailed(_logger, ex, ex.Message);
-            await _dialog.ShowAlertAsync("Purchase Failed", ex.Message, "OK");
+            LogPurchaseFailed(logger, ex, ex.Message);
+            await dialog.ShowAlertAsync("Purchase Failed", ex.Message, "OK");
         }
         catch (ArgumentException ex)
         {
-            LogInvalidPurchaseParameters(_logger, ex);
-            await _dialog.ShowAlertAsync("Invalid Input", ex.Message, "OK");
+            LogInvalidPurchaseParameters(logger, ex);
+            await dialog.ShowAlertAsync("Invalid Input", ex.Message, "OK");
         }
         catch (OperationCanceledException)
         {
-            LogPurchaseCancelled(_logger);
+            LogPurchaseCancelled(logger);
         }
         catch (Exception ex)
         {
-            LogErrorProcessingPurchase(_logger, ex);
-            await _dialog.ShowAlertAsync(
+            LogErrorProcessingPurchase(logger, ex);
+            await dialog.ShowAlertAsync(
                 "Error",
                 "Failed to complete purchase. Please try again.",
                 "OK");
@@ -357,7 +346,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
     [RelayCommand]
     private void SetPresetAmount(string usdAmountString)
     {
-        if (SelectedCrypto == null || !decimal.TryParse(usdAmountString, out var usdAmount))
+        if (SelectedCrypto == null || !decimal.TryParse(usdAmountString, out decimal usdAmount))
         {
             return;
         }
@@ -366,7 +355,7 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
         AmountText = Amount.ToString("F8", CultureInfo.CurrentCulture);
         CalculateTotalCost();
 
-        LogSetPresetAmount(_logger, usdAmount, Amount, SelectedCrypto.Symbol.Value);
+        LogSetPresetAmount(logger, usdAmount, Amount, SelectedCrypto.Symbol.Value);
     }
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
@@ -418,14 +407,16 @@ public partial class PurchaseViewModel : ObservableObject, IQueryAttributable, I
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            if (disposing)
-            {
-                _cts?.Dispose();
-            }
-
-            _disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            _cts?.Dispose();
+        }
+
+        _disposed = true;
     }
 }

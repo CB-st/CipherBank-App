@@ -9,36 +9,25 @@ using CipherBank_app.Persist;
 namespace CipherBank_app.Wallets;
 
 /// <inheritdoc />
-public sealed class LocalWalletSeeder : ILocalWalletSeeder
+public sealed class LocalWalletSeeder(IWalletRepository wallets, TimeProvider timeProvider) : ILocalWalletSeeder
 {
-    private static readonly AssetSymbol[] DefaultSymbols = [AssetSymbol.Btc, AssetSymbol.Eth];
-    private readonly IWalletRepository _wallets;
-    private readonly TimeProvider _timeProvider;
+    private static readonly AssetSymbol[] _defaultSymbols = [AssetSymbol.Btc, AssetSymbol.Eth];
 
     public LocalWalletSeeder(IWalletRepository wallets)
         : this(wallets, TimeProvider.System)
     {
     }
 
-    public LocalWalletSeeder(IWalletRepository wallets, TimeProvider timeProvider)
-    {
-        _wallets = wallets;
-        _timeProvider = timeProvider ?? TimeProvider.System;
-    }
-
     public Task EnsureDerivedAsync(string mnemonic)
-        => EnsureDerivedAsync(mnemonic, DefaultSymbols);
+        => EnsureDerivedAsync(mnemonic, _defaultSymbols);
 
     public Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
     {
         ArgumentNullException.ThrowIfNull(symbols);
         AssetSymbol[] list = [.. symbols];
-        if (Array.Exists(list, symbol => symbol is null))
-        {
-            throw new ArgumentException("Symbols must not contain null entries.", nameof(symbols));
-        }
-
-        return EnsureDerivedCoreAsync(mnemonic, list);
+        return Array.Exists(list, symbol => symbol is null)
+            ? throw new ArgumentException("Symbols must not contain null entries.", nameof(symbols))
+            : EnsureDerivedCoreAsync(mnemonic, list);
     }
 
     /// <summary>
@@ -48,7 +37,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
     /// </summary>
     private async Task EnsureDerivedCoreAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
     {
-        IReadOnlyList<LocalWalletDescriptor> existing = await _wallets.ListAsync().ConfigureAwait(false);
+        IReadOnlyList<LocalWalletDescriptor> existing = await wallets.ListAsync().ConfigureAwait(false);
         HashSet<AssetSymbol> seen = [];
         foreach (AssetSymbol symbol in symbols)
         {
@@ -59,7 +48,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
             }
 
             // CanDerive and a null derive are the same gate. TryDerive is the one check.
-            if (WalletRegistry.Get(symbol).TryDerive(mnemonic) is not DerivedAddress derived)
+            if (WalletRegistry.Get(symbol).TryDerive(mnemonic) is not { } derived)
             {
                 continue;
             }
@@ -75,7 +64,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
                     continue;
                 }
 
-                await _wallets.UpsertAsync(existingDerived with
+                await wallets.UpsertAsync(existingDerived with
                 {
                     Address = derived.Address,
                     Path = derived.Path,
@@ -84,7 +73,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
                 continue;
             }
 
-            await _wallets.UpsertAsync(new LocalWalletDescriptor(
+            await wallets.UpsertAsync(new LocalWalletDescriptor(
                 Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture),
                 symbol,
                 $"{symbol} Primary",
@@ -92,7 +81,7 @@ public sealed class LocalWalletSeeder : ILocalWalletSeeder
                 derived.Path,
                 derived.AccountIndex,
                 "derived",
-                _timeProvider.GetUtcNow())).ConfigureAwait(false);
+                timeProvider.GetUtcNow())).ConfigureAwait(false);
         }
     }
 }

@@ -5,24 +5,19 @@
 namespace CipherBank_app.V1;
 
 /// <summary>In-memory in-process stream that ticks rates periodically (lab/dev stand-in for the wire stream).</summary>
-public sealed class InMemoryStreamService : IStreamService, IAsyncDisposable
+public sealed class InMemoryStreamService(TimeProvider timeProvider) : IStreamService, IAsyncDisposable
 {
     // --- Tick cadence (only fires when subscribers exist) ---
     private const int BalanceUpdateEveryNthSecond = 2;
     private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(5);
 
-    private readonly TimeProvider _timeProvider;
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     private CancellationTokenSource? _cts;
     private Task? _loop;
 
     public InMemoryStreamService()
         : this(TimeProvider.System)
     {
-    }
-
-    public InMemoryStreamService(TimeProvider timeProvider)
-    {
-        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public event EventHandler<StreamEventArgs>? EventReceived;

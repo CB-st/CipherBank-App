@@ -3,7 +3,6 @@
 // </copyright>
 
 using System.Globalization;
-
 using CipherBank_app.Charts;
 using FluentAssertions;
 using Microsoft.Maui.Graphics;
@@ -16,7 +15,7 @@ public class ChartMathTests
     [Fact]
     public void ToPath_Empty_ReturnsEmptyGeometry()
     {
-        ChartPathResult result = ChartMath.ToPath(Array.Empty<Point>(), 100, 40);
+        ChartPathResult result = ChartMath.ToPath([], 100, 40);
         result.Line.Should().BeEmpty();
         result.Area.Should().BeEmpty();
         result.Points.Should().BeEmpty();
@@ -25,7 +24,7 @@ public class ChartMathTests
     [Fact]
     public void ToPath_WithTwoPoints_ProducesLineAndArea()
     {
-        Point[] series = new[] { new Point(0, 1), new Point(1, 2) };
+        Point[] series = [new Point(0, 1), new Point(1, 2)];
         ChartPathResult result = ChartMath.ToPath(series, 100, 40);
         result.Line.Should().StartWith("M");
         result.Area.Should().EndWith("Z");
@@ -39,7 +38,7 @@ public class ChartMathTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
-            Point[] series = new[] { new Point(0, 1.5), new Point(1, 2.5) };
+            Point[] series = [new Point(0, 1.5), new Point(1, 2.5)];
             ChartPathResult result = ChartMath.ToPath(series, 100, 40);
             result.Line.Should().NotContain(",");
             result.Area.Should().NotContain(",");
@@ -54,14 +53,14 @@ public class ChartMathTests
     [Fact]
     public void ToIndexed_NormalizesToPercentChange()
     {
-        Point[] series = new[] { new Point(0, 100), new Point(1, 110) };
+        Point[] series = [new Point(0, 100), new Point(1, 110)];
         IReadOnlyList<Point> indexed = ChartMath.ToIndexed(series);
         indexed[0].Y.Should().BeApproximately(0, 0.0001);
         indexed[1].Y.Should().BeApproximately(10, 0.0001);
     }
 
     [Fact]
-    public void ToIndexed_Empty_ReturnsEmpty() => ChartMath.ToIndexed(Array.Empty<Point>()).Should().BeEmpty();
+    public void ToIndexed_Empty_ReturnsEmpty() => ChartMath.ToIndexed([]).Should().BeEmpty();
 
     [Fact]
     public void ToPath_ZeroSpans_CentersCoordinates()

@@ -4,6 +4,7 @@
 
 using CipherBank_app.Models;
 using NBitcoin;
+using NBitcoin.Altcoins;
 
 namespace CipherBank_app.Wallets;
 
@@ -23,14 +24,15 @@ public sealed class LitecoinWalletModule : AddressDerive, IWalletModule
     public bool UsesServerWallets => false;
 
     /// <inheritdoc />
-    public string? Notes => "BIP84 native segwit m/84'/2'/0'/0/i";
+    public string Notes => "BIP84 native segwit m/84'/2'/0'/0/i";
 
     /// <inheritdoc />
     public bool IsValidAddress(string address)
     {
         try
         {
-            return BitcoinAddress.Create(address, NBitcoin.Altcoins.Litecoin.Instance.Mainnet) is not null;
+            BitcoinAddress.Create(address, Litecoin.Instance.Mainnet);
+            return true;
         }
         catch (Exception ex) when (ex is FormatException or ArgumentException or NotSupportedException)
         {
@@ -48,7 +50,7 @@ public sealed class LitecoinWalletModule : AddressDerive, IWalletModule
         string path = ReceivePath(84, 2, accountIndex);
         ExtKey key = DeriveKey(mnemonic, path);
         WitKeyId wit = key.Neuter().PubKey.WitHash;
-        string address = new BitcoinWitPubKeyAddress(wit, NBitcoin.Altcoins.Litecoin.Instance.Mainnet).ToString();
+        string address = new BitcoinWitPubKeyAddress(wit, Litecoin.Instance.Mainnet).ToString();
         return new DerivedAddress(address, path, accountIndex);
     }
 }

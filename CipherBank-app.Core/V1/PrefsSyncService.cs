@@ -8,24 +8,17 @@ using CipherBank_app.Persist;
 namespace CipherBank_app.V1;
 
 /// <inheritdoc />
-public sealed class PrefsSyncService : IPrefsSyncService
+public sealed class PrefsSyncService(IPrefsStore store, IProductClient api, ProductSessionAuthority? authority) : IPrefsSyncService
 {
-    private readonly IPrefsStore _store;
-    private readonly IProductClient _api;
-    private readonly ProductSessionAuthority? _authority;
+    private readonly IPrefsStore _store = store;
+    private readonly IProductClient _api = api;
+    private readonly ProductSessionAuthority? _authority = authority;
 
     public PrefsSyncService(
         IPrefsStore store,
         IProductClient api)
         : this(store, api, null)
     {
-    }
-
-    public PrefsSyncService(IPrefsStore store, IProductClient api, ProductSessionAuthority? authority)
-    {
-        _store = store;
-        _authority = authority;
-        _api = api;
     }
 
     public Task PullMergeAsync(CancellationToken ct)
