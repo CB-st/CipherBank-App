@@ -8,14 +8,9 @@ namespace CipherBank_app.ChallengePass.Hybrid;
 /// Seal slot adapter: Seal/Open via established <see cref="IPqChannel"/>.
 /// Recipient key arguments are ignored (channel already bound by key-share).
 /// </summary>
-public sealed class ChannelSealAlgorithm : ISealAlgorithm
+public sealed class ChannelSealAlgorithm(IPqChannel channel) : ISealAlgorithm
 {
-    private readonly IPqChannel _channel;
-
-    public ChannelSealAlgorithm(IPqChannel channel)
-    {
-        _channel = channel;
-    }
+    private readonly IPqChannel _channel = channel;
 
     public string AlgorithmId => _channel.ChannelAlgorithmId;
 

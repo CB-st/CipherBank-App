@@ -19,7 +19,7 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public void Seal_open_round_trip_with_x25519_chacha()
     {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
+        X25519ChaChaSealAlgorithm algo = new();
         byte[] seed = RandomNumberGenerator.GetBytes(32);
         AccountKeyPair pair = algo.DeriveKeyPair(seed);
         byte[] plain = "cipherbank-challenge"u8.ToArray();
@@ -34,8 +34,8 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public void Template_framing_is_challenge_id_null_nonce()
     {
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        byte[] nonce = Enumerable.Range(1, 16).Select(i => (byte)i).ToArray();
+        ChallengeIdNonceSha256Template template = new();
+        byte[] nonce = [.. Enumerable.Range(1, 16).Select(i => (byte)i)];
         byte[] p = template.BuildChallengePlaintext(new ChallengeBindContext
         {
             ChallengeId = "ch_abc",
@@ -51,10 +51,10 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public async Task Two_step_structure_produces_pass_without_seed_fields()
     {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        InMemorySessionChallengeClient client = new InMemorySessionChallengeClient(algo, template);
-        TwoStepChallengePassStructure structure = new TwoStepChallengePassStructure(client);
+        X25519ChaChaSealAlgorithm algo = new();
+        ChallengeIdNonceSha256Template template = new();
+        InMemorySessionChallengeClient client = new(algo, template);
+        TwoStepChallengePassStructure structure = new(client);
 
         AccountKeyPair account = algo.DeriveKeyPair(RandomNumberGenerator.GetBytes(32));
         string wire = WireEncoding.ToWire(account.PublicKey);
@@ -79,11 +79,11 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public async Task Two_step_structure_MismatchedChallenge_ZeroesOpenedAndParsedBuffers()
     {
-        TrackingSealAlgorithm algorithm = new TrackingSealAlgorithm();
-        TrackingChallengeTemplate template = new TrackingChallengeTemplate("different-id");
-        TwoStepChallengePassStructure structure = new TwoStepChallengePassStructure(
+        TrackingSealAlgorithm algorithm = new();
+        TrackingChallengeTemplate template = new("different-id");
+        TwoStepChallengePassStructure structure = new(
             new FixedChallengeClient());
-        AccountKeyPair account = new AccountKeyPair([1], [2]);
+        AccountKeyPair account = new([1], [2]);
 
         Func<Task> act = () => structure.BuildSessionOpenBodyAsync(
             algorithm,
@@ -101,20 +101,20 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public void Catalog_swaps_active_suite_slot()
     {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        InMemorySessionChallengeClient client = new InMemorySessionChallengeClient(algo, template);
-        TwoStepChallengePassStructure structure = new TwoStepChallengePassStructure(client);
+        X25519ChaChaSealAlgorithm algo = new();
+        ChallengeIdNonceSha256Template template = new();
+        InMemorySessionChallengeClient client = new(algo, template);
+        TwoStepChallengePassStructure structure = new(client);
 
-        ChallengePassSuite a1 = new ChallengePassSuite(
+        ChallengePassSuite a1 = new(
             ChallengePassServiceCollectionExtensions.SuiteA1Id,
             algo,
             template,
             structure);
 
         // Alternate suite: same algo/structure, same template instance — proves SetActive swap.
-        ChallengePassSuite alt = new ChallengePassSuite("alt-template-v1", algo, template, structure);
-        ChallengePassCatalog catalog = new ChallengePassCatalog([a1, alt], a1.SuiteId);
+        ChallengePassSuite alt = new("alt-template-v1", algo, template, structure);
+        ChallengePassCatalog catalog = new([a1, alt], a1.SuiteId);
 
         catalog.ActiveSuiteId.Should().Be(a1.SuiteId);
         catalog.SetActive("alt-template-v1");
@@ -126,19 +126,19 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public async Task Proof_builder_uses_active_suite()
     {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        InMemorySessionChallengeClient client = new InMemorySessionChallengeClient(algo, template);
-        TwoStepChallengePassStructure structure = new TwoStepChallengePassStructure(client);
+        X25519ChaChaSealAlgorithm algo = new();
+        ChallengeIdNonceSha256Template template = new();
+        InMemorySessionChallengeClient client = new(algo, template);
+        TwoStepChallengePassStructure structure = new(client);
         AccountKeyPair account = algo.DeriveKeyPair(RandomNumberGenerator.GetBytes(32));
 
-        ChallengePassSuite suite = new ChallengePassSuite(
+        ChallengePassSuite suite = new(
             ChallengePassServiceCollectionExtensions.SuiteA1Id,
             algo,
             template,
             structure);
-        ChallengePassCatalog catalog = new ChallengePassCatalog([suite], suite.SuiteId);
-        ChallengePassSessionProofBuilder builder = new ChallengePassSessionProofBuilder(catalog, new StaticAccountKeySource(account));
+        ChallengePassCatalog catalog = new([suite], suite.SuiteId);
+        ChallengePassSessionProofBuilder builder = new(catalog, new StaticAccountKeySource(account));
 
         object body = await builder.BuildOpenBodyAsync(CancellationToken.None);
         Assert.IsType<SessionPassDto>(body);
@@ -151,19 +151,19 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public async Task Proof_builder_a1_survives_second_build_after_private_key_wipe()
     {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        InMemorySessionChallengeClient client = new InMemorySessionChallengeClient(algo, template);
-        TwoStepChallengePassStructure structure = new TwoStepChallengePassStructure(client);
+        X25519ChaChaSealAlgorithm algo = new();
+        ChallengeIdNonceSha256Template template = new();
+        InMemorySessionChallengeClient client = new(algo, template);
+        TwoStepChallengePassStructure structure = new(client);
         AccountKeyPair account = algo.DeriveKeyPair(RandomNumberGenerator.GetBytes(32));
 
-        ChallengePassSuite suite = new ChallengePassSuite(
+        ChallengePassSuite suite = new(
             ChallengePassServiceCollectionExtensions.SuiteA1Id,
             algo,
             template,
             structure);
-        ChallengePassCatalog catalog = new ChallengePassCatalog([suite], suite.SuiteId);
-        ChallengePassSessionProofBuilder builder = new ChallengePassSessionProofBuilder(catalog, new StaticAccountKeySource(account));
+        ChallengePassCatalog catalog = new([suite], suite.SuiteId);
+        ChallengePassSessionProofBuilder builder = new(catalog, new StaticAccountKeySource(account));
 
         object first = await builder.BuildOpenBodyAsync(CancellationToken.None);
         object second = await builder.BuildOpenBodyAsync(CancellationToken.None);
@@ -178,19 +178,19 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public void Fixture_copies_ctor_buffers_so_dispose_does_not_wipe_caller()
     {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
+        X25519ChaChaSealAlgorithm algo = new();
         AccountKeyPair account = algo.DeriveKeyPair(RandomNumberGenerator.GetBytes(32));
-        byte[] originalPrivate = account.PrivateKey.ToArray();
-        HybridPrivateIdentity hybrid = new HybridPrivateIdentity
+        byte[] originalPrivate = [.. account.PrivateKey];
+        HybridPrivateIdentity hybrid = new()
         {
             X25519PublicKey = [1, 2, 3],
             X25519PrivateKey = [4, 5, 6],
             MlKemPublicKey = [7, 8, 9],
             MlKemPrivateKey = [10, 11, 12],
         };
-        byte[] originalKem = hybrid.MlKemPrivateKey.ToArray();
+        byte[] originalKem = [.. hybrid.MlKemPrivateKey];
 
-        using (StaticAccountKeySource source = new StaticAccountKeySource(account, hybrid))
+        using (StaticAccountKeySource source = new(account, hybrid))
         {
             CryptographicOperations.ZeroMemory(account.PrivateKey);
             CryptographicOperations.ZeroMemory(hybrid.MlKemPrivateKey);
@@ -210,11 +210,11 @@ public sealed class ChallengePassModuleTests
     [Fact]
     public void Fixture_dispose_does_not_zero_caller_buffers()
     {
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
+        X25519ChaChaSealAlgorithm algo = new();
         AccountKeyPair account = algo.DeriveKeyPair(RandomNumberGenerator.GetBytes(32));
-        byte[] originalPrivate = account.PrivateKey.ToArray();
+        byte[] originalPrivate = [.. account.PrivateKey];
 
-        StaticAccountKeySource source = new StaticAccountKeySource(account);
+        StaticAccountKeySource source = new(account);
         source.Dispose();
 
         account.PrivateKey.Should().Equal(originalPrivate);
@@ -255,14 +255,9 @@ public sealed class ChallengePassModuleTests
         public byte[] Open(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> recipientPrivateKey) => Opened;
     }
 
-    private sealed class TrackingChallengeTemplate : IChallengeTemplate
+    private sealed class TrackingChallengeTemplate(string challengeId) : IChallengeTemplate
     {
-        private readonly string _challengeId;
-
-        public TrackingChallengeTemplate(string challengeId)
-        {
-            _challengeId = challengeId;
-        }
+        private readonly string _challengeId = challengeId;
 
         public ParsedChallenge? Parsed { get; private set; }
 

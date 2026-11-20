@@ -31,7 +31,7 @@ public sealed class PqSymmetricChannel : IPqChannel, IDisposable
         }
 
         Clear();
-        _key = channelKey32.ToArray();
+        _key = [.. channelKey32];
         KeyShareId = keyShareId;
     }
 
