@@ -7,13 +7,18 @@ using CipherBank_app.Persist;
 namespace CipherBank_app.V1;
 
 /// <inheritdoc />
-public sealed class AccountBootstrapService : IAccountBootstrapService
+public sealed class AccountBootstrapService(
+    IProductClient api,
+    IPrefsStore prefs,
+    IRecipientRepository recipients,
+    TimeProvider timeProvider,
+    ProductSessionAuthority? authority) : IAccountBootstrapService
 {
-    private readonly IProductClient _api;
-    private readonly IPrefsStore _prefs;
-    private readonly IRecipientRepository _recipients;
-    private readonly TimeProvider _timeProvider;
-    private readonly ProductSessionAuthority? _authority;
+    private readonly IProductClient _api = api;
+    private readonly IPrefsStore _prefs = prefs;
+    private readonly IRecipientRepository _recipients = recipients;
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+    private readonly ProductSessionAuthority? _authority = authority;
 
     public AccountBootstrapService(IProductClient api, IPrefsStore prefs, IRecipientRepository recipients)
         : this(api, prefs, recipients, TimeProvider.System)
@@ -27,20 +32,6 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
         TimeProvider timeProvider)
         : this(api, prefs, recipients, timeProvider, null)
     {
-    }
-
-    public AccountBootstrapService(
-        IProductClient api,
-        IPrefsStore prefs,
-        IRecipientRepository recipients,
-        TimeProvider timeProvider,
-        ProductSessionAuthority? authority)
-    {
-        _api = api;
-        _authority = authority;
-        _prefs = prefs;
-        _recipients = recipients;
-        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public Task ApplyAsync(CancellationToken ct)
@@ -70,7 +61,7 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
                 continue;
             }
 
-            string digits = new string(routing.Where(char.IsDigit).ToArray());
+            string digits = new([.. routing.Where(char.IsDigit)]);
             if (digits.Length != AchRecipientValidation.RoutingNumberDigitCount)
             {
                 continue;

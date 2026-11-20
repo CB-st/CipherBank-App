@@ -21,7 +21,7 @@ public sealed class InMemoryProductClientSurfaceTests
     [Fact]
     public async Task InMemoryProductClient_HappyPaths_ReturnFixtures()
     {
-        InMemoryProductClient api = new InMemoryProductClient();
+        InMemoryProductClient api = new();
 
         PortfolioDto portfolio = await api.GetPortfolioAsync(default);
         portfolio.TotalUsd.Should().NotBeNullOrWhiteSpace();

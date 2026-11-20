@@ -19,7 +19,7 @@ public class WireJsonFoldTests
         const string json = """{"coraEnabled":false,"assetsLayout":"combined","appLockIdleSec":90}""";
         PrefsWireDto? dto = JsonSerializer.Deserialize<PrefsWireDto>(json);
         dto.Should().NotBeNull();
-        UserPrefs prefs = new UserPrefs(TestPreferenceDefaults.Value);
+        UserPrefs prefs = new(TestPreferenceDefaults.Value);
         dto!.ApplyOnto(prefs);
         prefs.CoraEnabled.Should().BeFalse();
         prefs.AssetsLayout.Should().Be("combined");
@@ -60,13 +60,13 @@ public class WireJsonFoldTests
     [Fact]
     public void BootstrapRecipientDto_SyntheticIdIncludesAccountIdentity()
     {
-        BootstrapRecipientDto a = new BootstrapRecipientDto
+        BootstrapRecipientDto a = new()
         {
             DisplayName = "Same Name",
             RoutingNumber = "021000021",
             AccountLast4 = "1111",
         };
-        BootstrapRecipientDto b = new BootstrapRecipientDto
+        BootstrapRecipientDto b = new()
         {
             DisplayName = "Same Name",
             RoutingNumber = "021000021",

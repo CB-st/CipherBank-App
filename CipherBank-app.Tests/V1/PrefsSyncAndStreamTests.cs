@@ -15,9 +15,9 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public async Task PrefsSync_RoundTripsThroughMockApi()
     {
-        MemPrefs store = new MemPrefs();
-        InMemoryProductClient api = new InMemoryProductClient();
-        PrefsSyncService sync = new PrefsSyncService(store, api);
+        MemPrefs store = new();
+        InMemoryProductClient api = new();
+        PrefsSyncService sync = new(store, api);
 
         store.Current.CoraEnabled = false;
         store.Current.AssetsLayout = "combined";
@@ -32,8 +32,8 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public void PrefsMerge_KeepsLocalAssetsLayout_WhenRemoteOmitsIt()
     {
-        UserPrefs local = new UserPrefs(TestPreferenceDefaults.Value) { AssetsLayout = "combined", CoraEnabled = true };
-        PrefsWireDto remote = new PrefsWireDto { CoraEnabled = false };
+        UserPrefs local = new(TestPreferenceDefaults.Value) { AssetsLayout = "combined", CoraEnabled = true };
+        PrefsWireDto remote = new() { CoraEnabled = false };
         PrefsMerge.Merge(local, remote);
         local.AssetsLayout.Should().Be("combined");
         local.CoraEnabled.Should().BeFalse();
@@ -42,8 +42,8 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public void StreamHub_FansOutOnce_WithoutDoubleSubscribe()
     {
-        InMemoryStreamService stream = new InMemoryStreamService();
-        StreamHub hub = new StreamHub(stream);
+        InMemoryStreamService stream = new();
+        StreamHub hub = new(stream);
         int count = 0;
         hub.EventReceived += (_, _) => count++;
         hub.Start();
@@ -58,7 +58,7 @@ public class PrefsSyncAndStreamTests
     [Fact]
     public async Task EventDebouncer_CoalescesBursts()
     {
-        EventDebouncer debounce = new EventDebouncer(TimeSpan.FromMilliseconds(40));
+        EventDebouncer debounce = new(TimeSpan.FromMilliseconds(40));
         int runs = 0;
         await Task.WhenAll(
             debounce.DebounceAsync(

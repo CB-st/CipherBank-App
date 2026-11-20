@@ -130,7 +130,7 @@ public sealed class InMemoryStreamServiceTests
 
         await stream.ConnectAsync(CancellationToken.None);
         (await received.Task.WaitAsync(TimeSpan.FromSeconds(10))).Should().Be("RATE.TICK");
-        Func<Task> disconnect = () => stream.DisconnectAsync();
+        Func<Task> disconnect = stream.DisconnectAsync;
 
         await disconnect.Should().NotThrowAsync();
         stream.IsConnected.Should().BeFalse();
