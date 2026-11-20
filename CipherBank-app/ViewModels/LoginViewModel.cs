@@ -41,6 +41,7 @@ public partial class LoginViewModel(
     private readonly INavigationService _navigation;
     private readonly IDialogService _dialog;
     private readonly ISettingsService _settings;
+    private readonly bool _showDevelopmentIndicators;
     private readonly bool _useMockServices;
 #else
     private readonly ILogger<LoginViewModel> _logger = logger;
@@ -69,32 +70,42 @@ public partial class LoginViewModel(
         _navigation = navigation;
         _dialog = dialog;
         _settings = settings;
-        _useMockServices = hostBehavior.Value.UseMockServices;
+        _showDevelopmentIndicators = hostBehavior.Value.ShowDevelopmentIndicators;
+        _useMockServices = settings.UseMockServices;
 
-        // Check if we're in a test environment
-        UpdateEnvironmentIndicator();
+        if (_showDevelopmentIndicators)
+        {
+            UpdateEnvironmentIndicator();
+        }
     }
 #endif
 
+    /// <summary>Gets or sets the login username.</summary>
     [ObservableProperty]
     public partial string Username { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the login password.</summary>
     [ObservableProperty]
     public partial string Password { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets a value indicating whether a login is in progress.</summary>
     [ObservableProperty]
     public partial bool IsBusy { get; set; }
 
+    /// <summary>Gets or sets the login error message.</summary>
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
 
 #if DEBUG
+    /// <summary>Gets or sets a value indicating whether the app is using the test environment.</summary>
     [ObservableProperty]
     public partial bool IsTestEnvironment { get; set; }
 
+    /// <summary>Gets or sets the environment badge text.</summary>
     [ObservableProperty]
     public partial string? EnvironmentBadge { get; set; }
 
+    /// <summary>Gets or sets the login status message.</summary>
     [ObservableProperty]
     public partial string? StatusMessage { get; set; }
 #endif
@@ -210,7 +221,7 @@ public partial class LoginViewModel(
             RollbackLogin(identity);
             LogNetworkError(_logger, ex);
             ErrorMessage = "Network error. Please check your connection and try again.";
-            await _dialog.ShowAlertAsync("Connection Error", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Connection Error", ErrorMessage);
         }
         catch (OperationCanceledException)
         {
@@ -223,14 +234,14 @@ public partial class LoginViewModel(
             RollbackLogin(identity);
             LogInvalidOperation(_logger, ex);
             ErrorMessage = "Invalid credentials or server error";
-            await _dialog.ShowAlertAsync("Login Failed", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Login Failed", ErrorMessage);
         }
         catch (Exception ex)
         {
             RollbackLogin(identity);
             LogUnexpectedError(_logger, ex);
             ErrorMessage = "An unexpected error occurred. Please try again.";
-            await _dialog.ShowAlertAsync("Error", ErrorMessage, "OK");
+            await _dialog.ShowAlertAsync("Error", ErrorMessage);
         }
         finally
         {
@@ -251,6 +262,11 @@ public partial class LoginViewModel(
     [RelayCommand]
     private async Task UseTestCredentialsAsync()
     {
+        if (!_showDevelopmentIndicators)
+        {
+            return;
+        }
+
         if (_useMockServices)
         {
             Username = "testuser";
@@ -264,8 +280,7 @@ public partial class LoginViewModel(
         {
             await _dialog.ShowAlertAsync(
                 "Not Available",
-                "Test credentials are only available when using mock services.",
-                "OK");
+                "Test credentials are only available when using mock services.");
         }
     }
 
@@ -288,6 +303,7 @@ public partial class LoginViewModel(
             };
         }
     }
+
 #endif
 
 #pragma warning disable SA1204 // Static members should appear before non-static members - LoggerMessage source generators
