@@ -1,11 +1,18 @@
-# Test agent contract
+# Unit Test Contract
 
 - Characterize existing observable behavior before refactoring it.
-- Use unit tests for pure policy, integration tests for adapters, contract tests for serialized/external boundaries, and end-to-end tests for high-value journeys.
-- Avoid wall-clock delays, external network calls, order dependence, and shared mutable fixtures.
-- Use fixed clocks, deterministic data, and explicit cultures.
+- Test externally visible behavior through public interfaces. Use Moq for a small
+  collaborator contract; use an in-memory implementation when stateful behavior
+  is itself under test.
+- One test owns its database and temporary path. Never share an on-device database
+  or secure-store state across tests.
+- Every bug fix gets a regression test that fails without the fix. Every
+  configuration options class gets a default/binding validation test.
+- Architecture and repository-structure rules are merge gates, not documentation.
+  `CipherBank-app.Analyzers` enforces CPM versions, AssemblyInfo, Core SQL, and retired names.
+- Avoid timing-only assertions. Synchronize concurrent tests with tasks, gates, or
+  injected schedulers.
 - Do not mock EF query providers, serializers, or framework internals.
-- Every bug fix requires a regression test that fails without the fix.
 
 ## This project
 

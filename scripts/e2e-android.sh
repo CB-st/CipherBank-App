@@ -40,6 +40,29 @@ declare -A WAVE_STORIES=(
   [cards]="CB-CARD-001"
 )
 
+# Waves whose Facts live on CoraShellSmokeTests need a sealed wallet + Appium noReset.
+# wallets/cards are catalog-only (not on that smoke class) so they stay on the default fresh profile.
+declare -A SEALED_SMOKE_WAVES=(
+  [market]=1
+  [fund]=1
+  [pay]=1
+)
+
+# Story IDs carried by CoraShellSmokeTests Facts. A single --story selection of one of these
+# needs the sealed device profile (noReset) just like its wave, otherwise the fresh reset lands
+# on Welcome and EnsureUnlockScreen aborts before the story runs.
+declare -A SEALED_SMOKE_STORIES=(
+  [US-LCK-01]=1
+  [US-CNV-01]=1
+  [US-RCV-01]=1
+  [CB-FUND-001]=1
+  [US-HOM-05]=1
+  [CB-MARKET-001]=1
+  [US-SND-01]=1
+  [US-POS-01]=1
+  [CB-PAY-003]=1
+)
+
 # Explicit executable M7 catalog. --all never drops its filter and therefore
 # cannot select legacy tests that do not carry a Story trait.
 ALL_STORIES="CB-ACCOUNT-001 CB-ACCOUNT-002 CB-ACCOUNT-PIN-CHANGE US-ONB-01 US-ONB-02 US-ONB-03 US-ONB-04 US-LCK-01 US-CNV-01 US-RCV-01 CB-FUND-001 US-HOM-05 CB-MARKET-001 US-SND-01 US-POS-01 CB-PAY-003"
@@ -53,19 +76,17 @@ CipherBank MAUI Android Appium E2E harness
 Usage:
   scripts/e2e-android.sh --story <CB-ID>   Run one story (e.g. CB-ACCOUNT-001)
   scripts/e2e-android.sh --wave <name>     Run one wave (account|market|wallets|fund|pay|cards)
-  scripts/e2e-android.sh --all             Fresh AccountStories then sealed smoke (M7 Story Facts required)
+  scripts/e2e-android.sh --all             Fresh AccountStories, seal-and-lock handoff, then sealed CoraShellSmoke
   scripts/e2e-android.sh --help            Show this help
 
-Harness credentials (required once Story-trait Facts land on M7):
+Harness credentials:
   E2E_TEST_PIN / E2E_TEST_PIN_ALT / E2E_RECOVERY_PASSWORD
   Copy docs/tests/e2e-local.env.example → artifacts/e2e-local.env (gitignored)
   Optional ANDROID_CERT_PINS=<current>,<backup> stamps a pin-set into the Appium Debug APK.
 
-Until CipherBank-app.E2ETests contains [Trait("Story", …)] Facts, --story/--wave/--all
-  exit with a clear deferral (those Facts ship on M7 / prototype/maui-m7).
-
 Each run is a new-device session: uninstall the package, install the APK,
   then pm clear so PIN / LocalDb / secure store do not survive across installs.
+  Sealed smoke waves keep data only after that fresh install, via noReset.
 
 Requires: CB_AVD emulator image, ANDROID_HOME, DOTNET_ROOT (see scripts/lib/android-env.sh).
 EOF
@@ -141,6 +162,7 @@ resolve_test_filter() {
       join_story_filter "$stories"
       ;;
     all)
+      # Preflight the explicit catalog; main runs fresh and sealed classes separately.
       join_story_filter "$ALL_STORIES"
       ;;
   esac
@@ -414,6 +436,15 @@ apply_e2e_env_file_if_unset() {
     value="${line#*=}"
     key="${key%"${key##*[![:space:]]}"}"
     key="${key#"${key%%[![:space:]]*}"}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    # Strip matching surrounding quotes so shell matches E2EHarnessCredentials.ParseEnvFile.
+    if [[ ${#value} -ge 2 ]]; then
+      if { [[ "${value:0:1}" == '"' && "${value: -1}" == '"' ]]; } \
+        || { [[ "${value:0:1}" == "'" && "${value: -1}" == "'" ]]; }; then
+        value="${value:1:${#value}-2}"
+      fi
+    fi
     [[ -z "$key" ]] && continue
     if [[ ! -v "$key" ]]; then
       export "$key=$value"
@@ -421,6 +452,53 @@ apply_e2e_env_file_if_unset() {
   done < "$file"
 }
 
+
+# After AccountStories (Fact order is not a contract), establishes a sealed locked wallet:
+# runs SealedWalletHandoffTests under E2E_DEVICE_PROFILE=sealed (Welcome → Fresh→seal→Lock,
+# Home → Profile→Lock, or already Unlock), then verifies UnlockPinEntry on a cold start.
+# Use: High (--all handoff). Scope: scripts/e2e-android.sh.
+ensure_sealed_wallet_or_die() {
+  local apk="$1"
+  log "Establishing sealed locked wallet (explicit handoff; AccountStories order is not a contract)"
+  E2E_DEVICE_PROFILE=sealed run_e2e_tests "$apk" "FullyQualifiedName~SealedWalletHandoffTests"
+  verify_cold_start_unlock_or_die
+}
+
+# Force-stops the package, cold-starts it without pm clear, and requires UnlockPinEntry.
+# Welcome means the handoff did not leave a sealed wallet.
+# Use: High (--all handoff). Scope: scripts/e2e-android.sh.
+verify_cold_start_unlock_or_die() {
+  local journal_dir="${E2E_JOURNAL_DIR:-artifacts/e2e-journal}"
+  local package="${CB_MAUI_PACKAGE:-com.companyname.cipherbankapp}"
+  local activity="${CB_MAUI_ACTIVITY:-crc6452ffdc5b3340e214.MainActivity}"
+  if ! find "$journal_dir" -type f 2>/dev/null | grep -q .; then
+    die "--all smoke half needs a sealed wallet journal under $journal_dir"
+  fi
+  if ! command -v adb >/dev/null 2>&1; then
+    die "--all smoke half needs adb to verify sealed cold-start reaches Unlock"
+  fi
+
+  adb shell am force-stop "$package" >/dev/null 2>&1 || true
+  # Cold start without clearing app data (custody must survive).
+  adb shell am start -W -n "${package}/${activity}" >/dev/null 2>&1 \
+    || adb shell monkey -p "$package" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 \
+    || die "failed to cold-start $package for sealed Unlock verification"
+
+  local attempt dump
+  for attempt in $(seq 1 30); do
+    dump="$(adb exec-out uiautomator dump /dev/tty 2>/dev/null || true)"
+    if grep -q 'UnlockPinEntry' <<<"$dump"; then
+      log "Sealed handoff OK (journal + cold-start UnlockPinEntry); smoke uses E2E_DEVICE_PROFILE=sealed / noReset"
+      adb shell am force-stop "$package" >/dev/null 2>&1 || true
+      return 0
+    fi
+    if grep -qE 'WelcomeCreateButton|WelcomeRestoreButton|WelcomePrimaryButton' <<<"$dump"; then
+      die "--all smoke half cold-started to Welcome after seal-and-lock handoff; device is not sealed"
+    fi
+    sleep 1
+  done
+  die "--all smoke half did not reach UnlockPinEntry after sealed cold-start (dump lacked Unlock/Welcome anchors)"
+}
 
 # Runs the E2E suite against the installed APK, scoped by the resolved Story-trait filter.
 # Use: High (every harness run). Scope: CipherBank-app.E2ETests process.
@@ -431,11 +509,12 @@ run_e2e_tests() {
   local appium_server_url="${APPIUM_SERVER_URL:-http://127.0.0.1:${APPIUM_PORT}}"
   local -a test_args=("$E2E_PROJECT" --nologo)
   [[ -n "$filter" ]] && test_args+=(--filter "$filter")
-  log "Running: dotnet test ${test_args[*]} (Appium $appium_server_url)"
+  log "Running: dotnet test ${test_args[*]} (Appium $appium_server_url profile=${E2E_DEVICE_PROFILE:-fresh})"
   APPIUM_SERVER_URL="$appium_server_url" \
   APPIUM_PORT="$APPIUM_PORT" \
   E2E_RUN=1 TEST_PLATFORM=android \
     ANDROID_APK_PATH="$apk" \
+    E2E_DEVICE_PROFILE="${E2E_DEVICE_PROFILE:-}" \
     E2E_TEST_PIN="${E2E_TEST_PIN:-}" \
     E2E_TEST_PIN_ALT="${E2E_TEST_PIN_ALT:-}" \
     E2E_RECOVERY_PASSWORD="${E2E_RECOVERY_PASSWORD:-}" \
@@ -459,7 +538,25 @@ main() {
   apk="$(locate_apk)"
   install_apk "$apk"
   ensure_appium_running
-  run_e2e_tests "$apk" "$filter"
+  if [[ "$MODE" == "all" ]] && [[ -f "$ROOT/CipherBank-app.E2ETests/Tests/CoraShellSmokeTests.cs" ]]; then
+    # Fresh-reset account Facts and sealed-device smoke share an Appium collection but need
+    # incompatible boot screens — run them as separate processes so order cannot interleave.
+    # Smoke half sets E2E_DEVICE_PROFILE=sealed so AppiumFixture uses noReset and keeps the
+    # wallet produced by AccountStories (Appium default reset would wipe custody).
+    log "Running --all as Fresh AccountStories, explicit seal-and-lock handoff, then sealed CoraShellSmoke (noReset)"
+    run_e2e_tests "$apk" "FullyQualifiedName~AccountStories"
+    ensure_sealed_wallet_or_die "$apk"
+    E2E_DEVICE_PROFILE=sealed run_e2e_tests "$apk" "FullyQualifiedName~CoraShellSmokeTests"
+  else
+    if [[ "$MODE" == "wave" && -n "${SEALED_SMOKE_WAVES[$MODE_VALUE]:-}" ]]; then
+      export E2E_DEVICE_PROFILE=sealed
+      log "Wave '$MODE_VALUE' uses E2E_DEVICE_PROFILE=sealed (CoraShellSmoke Facts)"
+    elif [[ "$MODE" == "story" && -n "${SEALED_SMOKE_STORIES[$MODE_VALUE]:-}" ]]; then
+      export E2E_DEVICE_PROFILE=sealed
+      log "Story '$MODE_VALUE' uses E2E_DEVICE_PROFILE=sealed (CoraShellSmoke Fact)"
+    fi
+    run_e2e_tests "$apk" "$filter"
+  fi
 }
 
 main "$@"

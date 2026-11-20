@@ -1,6 +1,6 @@
 # CipherBank repository contract
 
-This file governs the M5 ChallengePass slice (stacked on M4 harness / M2 Persist). More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
+This file governs the M7 E2E slice (stacked on M6 Cora Shell / M2 Persist). More specific `AGENTS.md` files apply in their subtrees and may tighten these rules.
 
 Start with this file, then read the nearest subtree contract and the relevant documentation index in `docs/README.md`.
 
