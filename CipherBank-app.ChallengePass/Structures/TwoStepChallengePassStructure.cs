@@ -10,14 +10,9 @@ namespace CipherBank_app.ChallengePass.Structures;
 /// <summary>
 /// A1 structure slot: request challenge → open → seal pass → POST /session body as <see cref="SessionPassDto"/>.
 /// </summary>
-public sealed class TwoStepChallengePassStructure : IChallengePassStructure
+public sealed class TwoStepChallengePassStructure(ISessionChallengeClient client) : IChallengePassStructure
 {
-    private readonly ISessionChallengeClient _client;
-
-    public TwoStepChallengePassStructure(ISessionChallengeClient client)
-    {
-        _client = client;
-    }
+    private readonly ISessionChallengeClient _client = client;
 
     public static string StructureIdValue => "two-step-challenge-pass-v1";
 

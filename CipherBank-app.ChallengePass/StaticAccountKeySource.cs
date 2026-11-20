@@ -8,21 +8,15 @@ using CipherBank_app.ChallengePass.Hybrid;
 namespace CipherBank_app.ChallengePass;
 
 /// <summary>Test/lab account key source with a fixed in-memory keypair / hybrid identity.</summary>
-public sealed class StaticAccountKeySource : IAccountKeySource, IDisposable
+public sealed class StaticAccountKeySource(AccountKeyPair pair, HybridPrivateIdentity? hybrid) : IAccountKeySource, IDisposable
 {
-    private readonly AccountKeyPair _pair;
-    private readonly HybridPrivateIdentity? _hybrid;
+    private readonly AccountKeyPair _pair = new(CopyBuffer(pair.PublicKey), CopyBuffer(pair.PrivateKey));
+    private readonly HybridPrivateIdentity? _hybrid = CopyHybrid(hybrid);
     private bool _disposed;
 
     public StaticAccountKeySource(AccountKeyPair pair)
         : this(pair, null)
     {
-    }
-
-    public StaticAccountKeySource(AccountKeyPair pair, HybridPrivateIdentity? hybrid)
-    {
-        _pair = new AccountKeyPair(CopyBuffer(pair.PublicKey), CopyBuffer(pair.PrivateKey));
-        _hybrid = CopyHybrid(hybrid);
     }
 
     /// <summary>
@@ -36,7 +30,7 @@ public sealed class StaticAccountKeySource : IAccountKeySource, IDisposable
 
         // Hand out copies so callers (e.g. ChallengePassSessionProofBuilder) can ZeroMemory
         // their buffers without destroying the lab fixture's retained key material.
-        return new AccountKeyPair(_pair.PublicKey.ToArray(), _pair.PrivateKey.ToArray());
+        return new AccountKeyPair([.. _pair.PublicKey], [.. _pair.PrivateKey]);
     }
 
     /// <summary>
@@ -55,10 +49,10 @@ public sealed class StaticAccountKeySource : IAccountKeySource, IDisposable
         // PQ structure zeroes the adopted buffers and must not brick the fixture for a second build.
         return new HybridPrivateIdentity
         {
-            X25519PublicKey = _hybrid.X25519PublicKey.ToArray(),
-            X25519PrivateKey = _hybrid.X25519PrivateKey.ToArray(),
-            MlKemPublicKey = _hybrid.MlKemPublicKey.ToArray(),
-            MlKemPrivateKey = _hybrid.MlKemPrivateKey.ToArray(),
+            X25519PublicKey = [.. _hybrid.X25519PublicKey],
+            X25519PrivateKey = [.. _hybrid.X25519PrivateKey],
+            MlKemPublicKey = [.. _hybrid.MlKemPublicKey],
+            MlKemPrivateKey = [.. _hybrid.MlKemPrivateKey],
         };
     }
 
@@ -102,6 +96,6 @@ public sealed class StaticAccountKeySource : IAccountKeySource, IDisposable
     private static byte[] CopyBuffer(byte[] source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        return source.ToArray();
+        return [.. source];
     }
 }

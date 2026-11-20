@@ -10,24 +10,18 @@ using CipherBank_app.V1;
 namespace CipherBank_app.ChallengePass.Hybrid;
 
 /// <summary>Mock challenge issuer using the same channel key as <see cref="InMemoryPqKeyShareClient"/>.</summary>
-public sealed class InMemoryPqChannelChallengeSource : IPqChannelChallengeSource, IDisposable
+public sealed class InMemoryPqChannelChallengeSource(InMemoryPqKeyShareClient keyShare, IChallengeTemplate? template) : IPqChannelChallengeSource, IDisposable
 {
     private const int ChallengeIdHexLength = 16;
 
-    private readonly InMemoryPqKeyShareClient _keyShare;
-    private readonly IChallengeTemplate _template;
+    private readonly InMemoryPqKeyShareClient _keyShare = keyShare;
+    private readonly IChallengeTemplate _template = template ?? new ChallengeIdNonceSha256Template();
     private readonly PqSymmetricChannel _serverChannel = new();
     private bool _disposed;
 
     public InMemoryPqChannelChallengeSource(InMemoryPqKeyShareClient keyShare)
         : this(keyShare, null)
     {
-    }
-
-    public InMemoryPqChannelChallengeSource(InMemoryPqKeyShareClient keyShare, IChallengeTemplate? template)
-    {
-        _keyShare = keyShare;
-        _template = template ?? new ChallengeIdNonceSha256Template();
     }
 
     public Task<SessionChallengeDto> RequestChallengeAsync()

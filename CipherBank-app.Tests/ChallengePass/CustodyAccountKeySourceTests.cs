@@ -16,15 +16,15 @@ public sealed class CustodyAccountKeySourceTests
     [Fact]
     public async Task Unlocked_custody_derives_stable_a1_and_hybrid_keys()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
         string mnemonic = MnemonicHelper.Generate();
         await custody.SealAsync(mnemonic, "123456");
         (await custody.UnlockAsync("123456")).Should().BeTrue();
 
-        CustodyAccountKeySource source = new CustodyAccountKeySource(custody);
-        X25519ChaChaSealAlgorithm algo = new X25519ChaChaSealAlgorithm();
+        CustodyAccountKeySource source = new(custody);
+        X25519ChaChaSealAlgorithm algo = new();
         AccountKeyPair a = source.RequireUnlockedKeyPair(algo);
         AccountKeyPair b = source.RequireUnlockedKeyPair(algo);
         a.PublicKey.Should().Equal(b.PublicKey);
@@ -38,11 +38,11 @@ public sealed class CustodyAccountKeySourceTests
     [Fact]
     public void Locked_custody_throws()
     {
-        MemStore store = new MemStore();
-        PinService pin = new PinService(store);
-        CustodyService custody = new CustodyService(store, pin);
-        CustodyAccountKeySource source = new CustodyAccountKeySource(custody);
-        Assert.Throws<InvalidOperationException>(() => source.RequireHybridIdentity());
+        MemStore store = new();
+        PinService pin = new(store);
+        CustodyService custody = new(store, pin);
+        CustodyAccountKeySource source = new(custody);
+        Assert.Throws<InvalidOperationException>(source.RequireHybridIdentity);
     }
 
     private sealed class MemStore : ISecureStore
