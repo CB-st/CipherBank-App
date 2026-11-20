@@ -48,7 +48,7 @@ public static partial class AddressValidator
     /// <param name="address">The address to validate.</param>
     /// <param name="symbol">The normalized asset symbol.</param>
     /// <returns>True if the address format is valid, false otherwise.</returns>
-    public static bool IsValidAddress(string address, AssetSymbol symbol)
+    public static bool IsValidAddress(string address, AssetSymbol? symbol)
     {
         if (string.IsNullOrWhiteSpace(address) || symbol is null)
         {
@@ -95,12 +95,7 @@ public static partial class AddressValidator
             return IsValidLegacyBase58Address(address);
         }
 
-        if (address.StartsWith("tb1", StringComparison.OrdinalIgnoreCase))
-        {
-            return IsValidBech32Range(address);
-        }
-
-        return false;
+        return address.StartsWith("tb1", StringComparison.OrdinalIgnoreCase) && IsValidBech32Range(address);
     }
 
     /// <summary>
@@ -119,12 +114,7 @@ public static partial class AddressValidator
             return false;
         }
 
-        if (address.Length != EthereumAddressLength)
-        {
-            return false;
-        }
-
-        return EthereumAddressRegex().IsMatch(address);
+        return address.Length == EthereumAddressLength && EthereumAddressRegex().IsMatch(address);
     }
 
     /// <summary>
@@ -138,12 +128,7 @@ public static partial class AddressValidator
             return false;
         }
 
-        if (address.Length < SolanaMinLength || address.Length > SolanaMaxLength)
-        {
-            return false;
-        }
-
-        return IsValidBase58(address);
+        return address.Length is >= SolanaMinLength and <= SolanaMaxLength && IsValidBase58(address);
     }
 
     /// <summary>
@@ -175,7 +160,7 @@ public static partial class AddressValidator
     /// Checks if a string contains only valid Base58 characters.
     /// </summary>
     private static bool IsValidBase58(string value)
-        => !string.IsNullOrEmpty(value) && value.All(c => _base58Alphabet.Contains(c));
+        => !string.IsNullOrEmpty(value) && value.All(_base58Alphabet.Contains);
 
     /// <summary>
     /// Validates Bech32 address format (simplified validation).

@@ -91,8 +91,8 @@ public class CryptoBoxBoundaryTests
     [Fact]
     public void Constructor_CopiesOptions_SoLaterMutationHasNoEffect()
     {
-        CryptographyOptions options = new CryptographyOptions();
-        AesGcmCryptoBox box = new AesGcmCryptoBox(options);
+        CryptographyOptions options = new();
+        AesGcmCryptoBox box = new(options);
         options.BlobFormatVersion = 0x7F;
 
         string sealedB64 = box.Seal("secret", Pin);
@@ -104,7 +104,7 @@ public class CryptoBoxBoundaryTests
     [Fact]
     public void Length_ThrowsAfterDispose()
     {
-        SensitiveBuffer buffer = new SensitiveBuffer(new byte[4]);
+        SensitiveBuffer buffer = new(new byte[4]);
         buffer.Dispose();
 
         Action read = () => _ = buffer.Length;

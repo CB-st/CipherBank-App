@@ -35,7 +35,7 @@ public class CryptoBoxTests
     [Fact]
     public void Open_RoundTripsVersionedLayout_AndRejectsTamper()
     {
-        AesGcmCryptoBox box = new AesGcmCryptoBox(CryptographyOptions.Default);
+        AesGcmCryptoBox box = new(CryptographyOptions.Default);
         const string pin = "123456";
         const string plaintext = "custody-secret";
 
@@ -60,7 +60,7 @@ public class CryptoBoxTests
     public void Open_RejectsUnversionedLayout(byte? saltPrefix)
     {
         CryptographyOptions options = CryptographyOptions.Default;
-        AesGcmCryptoBox box = new AesGcmCryptoBox(options);
+        AesGcmCryptoBox box = new(options);
         Action act = () => box.Open(UnversionedBlob(box, options, "123456", "custody-secret", saltPrefix), "123456");
         act.Should().Throw<CryptographicException>();
     }
@@ -72,7 +72,7 @@ public class CryptoBoxTests
     [Fact]
     public void Open_RejectsWrongVersionAndShortBlob()
     {
-        AesGcmCryptoBox box = new AesGcmCryptoBox(CryptographyOptions.Default);
+        AesGcmCryptoBox box = new(CryptographyOptions.Default);
         byte[] bytes = Convert.FromBase64String(box.Seal("custody-secret", "123456"));
         bytes[0] = 0x02;
         Action wrongVersion = () => box.Open(Convert.ToBase64String(bytes), "123456");
@@ -90,7 +90,7 @@ public class CryptoBoxTests
         byte? saltPrefix)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(options.SaltSizeBytes);
-        if (saltPrefix is byte prefix)
+        if (saltPrefix is { } prefix)
         {
             salt[0] = prefix;
         }
@@ -103,7 +103,7 @@ public class CryptoBoxTests
         byte[] tag = new byte[options.TagSizeBytes];
         try
         {
-            using AesGcm aes = new AesGcm(key, options.TagSizeBytes);
+            using AesGcm aes = new(key, options.TagSizeBytes);
             aes.Encrypt(nonce, plain, cipher, tag);
         }
         finally

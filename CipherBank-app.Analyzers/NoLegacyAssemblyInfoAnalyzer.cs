@@ -18,7 +18,7 @@ public sealed class NoLegacyAssemblyInfoAnalyzer : DiagnosticAnalyzer
 {
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-        => ImmutableArray.Create(CipherBankDiagnostics.LegacyAssemblyInfo);
+        => [CipherBankDiagnostics.LegacyAssemblyInfo];
 
     /// <summary>
     /// Registers a compilation action that inspects trees and additional files.
