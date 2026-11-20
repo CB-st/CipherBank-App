@@ -89,7 +89,7 @@ public partial class AppShell : Shell
     /// </summary>
     private static DataTemplate DiTemplate<TPage>(IServiceProvider services)
         where TPage : class
-        => new(() => services.GetRequiredService<TPage>());
+        => new(services.GetRequiredService<TPage>);
 
     /// <summary>
     /// Boots local DB / seeding / session, then routes to Unlock or Welcome after splash.

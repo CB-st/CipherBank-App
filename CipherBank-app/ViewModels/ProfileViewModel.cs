@@ -551,10 +551,7 @@ public partial class ProfileViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void Lock()
-    {
-        _session.Lock();
-    }
+    private void Lock() => _session.Lock();
 
     /// <summary>
     /// Cancels any pending mnemonic auto-clear when Profile leaves DI scope.

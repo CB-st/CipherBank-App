@@ -126,8 +126,5 @@ public partial class RestoreBackupViewModel : ObservableObject
     }
 
     /// <summary>Clears the recovery password (call when leaving the page too).</summary>
-    public void ClearSensitiveFields()
-    {
-        RecoveryPassword = string.Empty;
-    }
+    public void ClearSensitiveFields() => RecoveryPassword = string.Empty;
 }
