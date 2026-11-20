@@ -120,6 +120,9 @@ public static class UserDataPackCodec
     /// <summary>
     /// Opens a pack with an injected block cipher. Use: Medium (suite). Scope: userdata restore.
     /// </summary>
+    /// <remarks>
+    /// Null entries and entries without a type are reported as malformed even when unknown types are skipped.
+    /// </remarks>
     public static UserDataPackOpenResult OpenPack(
         UserDataPackWire pack,
         string username,
@@ -136,10 +139,25 @@ public static class UserDataPackCodec
         Dictionary<string, string> opened = new(StringComparer.Ordinal);
         List<UserDataBlockFailure> failed = [];
 
-        foreach (UserDataBlockWire block in pack.Blocks)
+        foreach (UserDataBlockWire? block in pack.Blocks)
         {
+            if (block is null || string.IsNullOrEmpty(block.Type))
+            {
+                failed.Add(CreateMalformedFailure(block));
+                continue;
+            }
+
             if (skipUnknownTypes && !UserDataBlockTypes.IsKnown(block.Type))
             {
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(block.Id)
+                || block.NonceBase64 is null
+                || block.TagBase64 is null
+                || block.CiphertextBase64 is null)
+            {
+                failed.Add(CreateMalformedFailure(block));
                 continue;
             }
 
@@ -155,7 +173,7 @@ public static class UserDataPackCodec
             catch (FormatException)
             {
                 // Malformed Base64 nonce/tag/ciphertext: report it rather than returning a silent partial restore.
-                failed.Add(new UserDataBlockFailure(block.Id, block.Type, UserDataBlockFailureReason.Malformed));
+                failed.Add(CreateMalformedFailure(block));
             }
         }
 
@@ -225,6 +243,9 @@ public static class UserDataPackCodec
         uint contentVersion,
         ReadOnlySpan<byte> nonce)
         => DefaultBlocks.SealWithNonce(plain, kek, usernameHashHex, contentVersion, nonce);
+
+    private static UserDataBlockFailure CreateMalformedFailure(UserDataBlockWire? block)
+        => new(block?.Id ?? string.Empty, block?.Type ?? string.Empty, UserDataBlockFailureReason.Malformed);
 
     private static void EnsureKek(ReadOnlySpan<byte> kek)
     {

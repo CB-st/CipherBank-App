@@ -3,6 +3,8 @@
 // </copyright>
 
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json.Nodes;
 using CipherBank_app.UserData;
 using FluentAssertions;
 using Xunit;
@@ -142,6 +144,92 @@ public class UserDataPackCodecTests
     }
 
     [Fact]
+    public void OpenPack_DecodedNullEntry_ReportsMalformedAndKeepsGoodBlock()
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        UserDataPackWire pack = UserDataPackCodec.SealPack(
+            Username,
+            contentVersion: 1,
+            keys.Kek,
+            [new UserDataPlainBlock(UserDataBlockTypes.Prefs, UserDataBlockTypes.Prefs, "{}")]);
+
+        JsonObject json = EncodePackJson(pack);
+        json["blocks"]!.AsArray().Insert(0, null);
+
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(DecodePackJson(json), Username, keys.Kek);
+
+        result.Blocks.Should().HaveCount(1).And.Contain(UserDataBlockTypes.Prefs, "{}");
+        result.IsComplete.Should().BeFalse();
+        result.FailedBlocks.Should().ContainSingle().Which.Should().Be(
+            new UserDataBlockFailure(string.Empty, string.Empty, UserDataBlockFailureReason.Malformed));
+    }
+
+    [Theory]
+    [InlineData("nonce_b64", false)]
+    [InlineData("tag_b64", false)]
+    [InlineData("ciphertext_b64", false)]
+    [InlineData("id", false)]
+    [InlineData("type", false)]
+    [InlineData("id", true)]
+    [InlineData("type", true)]
+    public void OpenPack_DecodedNullOrMissingBlockField_ReportsMalformedAndKeepsGoodBlock(string field, bool removeField)
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        const string badBlockId = "config";
+        UserDataPackWire pack = UserDataPackCodec.SealPack(
+            Username,
+            contentVersion: 1,
+            keys.Kek,
+            [
+                new UserDataPlainBlock(badBlockId, UserDataBlockTypes.AppConfig, """{"cfg":1}"""),
+                new UserDataPlainBlock(UserDataBlockTypes.Prefs, UserDataBlockTypes.Prefs, "{}"),
+            ]);
+
+        JsonObject json = EncodePackJson(pack);
+        JsonObject badBlock = json["blocks"]![0]!.AsObject();
+        if (removeField)
+        {
+            badBlock.Remove(field);
+        }
+        else
+        {
+            badBlock[field] = null;
+        }
+
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(DecodePackJson(json), Username, keys.Kek);
+
+        result.Blocks.Should().HaveCount(1).And.Contain(UserDataBlockTypes.Prefs, "{}");
+        result.IsComplete.Should().BeFalse();
+        result.FailedBlocks.Should().ContainSingle().Which.Should().Be(new UserDataBlockFailure(
+            field == "id" ? string.Empty : badBlockId,
+            field == "type" ? string.Empty : UserDataBlockTypes.AppConfig,
+            UserDataBlockFailureReason.Malformed));
+    }
+
+    [Fact]
+    public void OpenPack_DecodedUnknownTypeWithNullNonce_SkipsBlockByDefault()
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        UserDataPackWire pack = UserDataPackCodec.SealPack(
+            Username,
+            contentVersion: 1,
+            keys.Kek,
+            [
+                new UserDataPlainBlock("extension", "future_extension", "{}"),
+                new UserDataPlainBlock(UserDataBlockTypes.Prefs, UserDataBlockTypes.Prefs, "{}"),
+            ]);
+
+        JsonObject json = EncodePackJson(pack);
+        json["blocks"]![0]!["nonce_b64"] = null;
+
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(DecodePackJson(json), Username, keys.Kek);
+
+        result.Blocks.Should().HaveCount(1).And.Contain(UserDataBlockTypes.Prefs, "{}");
+        result.IsComplete.Should().BeTrue();
+        result.FailedBlocks.Should().BeEmpty();
+    }
+
+    [Fact]
     public void OpenBlock_WrongContentVersion_Throws()
     {
         using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
@@ -176,4 +264,10 @@ public class UserDataPackCodecTests
         UserDataPackCodec.OpenBlock(block, keys.Kek, hash, 1)
             .Should().Be("""{"APPEARANCE":"dark"}""");
     }
+
+    private static JsonObject EncodePackJson(UserDataPackWire pack)
+        => JsonNode.Parse(Convert.FromBase64String(UserDataPackCodec.EncodeBlob(pack)))!.AsObject();
+
+    private static UserDataPackWire DecodePackJson(JsonObject json)
+        => UserDataPackCodec.DecodeBlob(Convert.ToBase64String(Encoding.UTF8.GetBytes(json.ToJsonString())));
 }

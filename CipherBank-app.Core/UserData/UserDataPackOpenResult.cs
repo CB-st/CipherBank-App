@@ -25,9 +25,10 @@ public sealed class UserDataPackOpenResult
     /// <summary>Gets the authenticated plaintext blocks, keyed by block id.</summary>
     public IReadOnlyDictionary<string, string> Blocks { get; }
 
-    /// <summary>Gets the blocks that failed authentication or decoding, in pack order.</summary>
+    /// <summary>Gets malformed blocks and blocks that failed authentication, in pack order.</summary>
+    /// <remarks>A missing block id or type is represented by <see cref="string.Empty"/>.</remarks>
     public IReadOnlyList<UserDataBlockFailure> FailedBlocks { get; }
 
-    /// <summary>Gets a value indicating whether every opened block authenticated.</summary>
+    /// <summary>Gets a value indicating whether the pack was opened without block failures.</summary>
     public bool IsComplete => FailedBlocks.Count == 0;
 }
