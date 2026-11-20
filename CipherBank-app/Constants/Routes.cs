@@ -32,6 +32,7 @@ public static class Routes
     public const string Wallet = "//WalletPage";
     public const string Purchase = "//PurchasePage";
     public const string Settings = "//SettingsPage";
+    public const string Unlock = "//UnlockPage";
 
     public static string PurchaseWithSymbol(AssetSymbol symbol)
         => $"{Purchase}?symbol={Uri.EscapeDataString(symbol.Value)}";

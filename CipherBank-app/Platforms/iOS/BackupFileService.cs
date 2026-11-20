@@ -4,7 +4,7 @@
 
 namespace CipherBank_app.Services;
 
-/// <inheritdoc />
+/// <summary>Provides iOS shared-storage support for recovery exports.</summary>
 public sealed partial class BackupFileService
 {
     /// <summary>
