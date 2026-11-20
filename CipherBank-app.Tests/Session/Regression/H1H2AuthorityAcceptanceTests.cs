@@ -36,7 +36,7 @@ public sealed class H1H2AuthorityAcceptanceTests
         services.AddProductSessionServices();
         services.AddTransient<IProductSessionStore, InMemoryProductSessionStore>();
         using ServiceProvider provider = services.BuildServiceProvider();
-        Assert.Throws<InvalidOperationException>(() => provider.GetRequiredService<ProductSessionAuthority>());
+        Assert.Throws<InvalidOperationException>(provider.GetRequiredService<ProductSessionAuthority>);
     }
 
     [Fact]
@@ -184,10 +184,12 @@ public sealed class H1H2AuthorityAcceptanceTests
     [Fact]
     public void PublishAsync_PublicOverloads_TakeCancellationTokenLast()
     {
-        MethodInfo[] overloads = typeof(ProductSessionAuthority)
-            .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-            .Where(method => method.Name == nameof(ProductSessionAuthority.PublishAsync))
-            .ToArray();
+        MethodInfo[] overloads =
+        [
+            .. typeof(ProductSessionAuthority)
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(method => method.Name == nameof(ProductSessionAuthority.PublishAsync)),
+        ];
         Assert.NotEmpty(overloads);
         foreach (MethodInfo overload in overloads)
         {

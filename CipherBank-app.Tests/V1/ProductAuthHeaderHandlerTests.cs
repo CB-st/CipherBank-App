@@ -14,7 +14,7 @@ public sealed class ProductAuthHeaderHandlerTests
     [Fact]
     public async Task SendAsync_AddsBearer_WhenSessionPresent()
     {
-        InMemoryProductSessionStore sessions = new InMemoryProductSessionStore();
+        InMemoryProductSessionStore sessions = new();
         await sessions.SaveAsync(new SessionDto
         {
             AccessToken = "tok-abc",
@@ -22,12 +22,12 @@ public sealed class ProductAuthHeaderHandlerTests
             ExpiresAt = 9_999_999_999_000,
         });
 
-        CaptureHandler inner = new CaptureHandler();
-        ProductAuthHeaderHandler handler = new ProductAuthHeaderHandler(sessions)
+        CaptureHandler inner = new();
+        ProductAuthHeaderHandler handler = new(sessions)
         {
             InnerHandler = inner,
         };
-        using HttpMessageInvoker invoker = new HttpMessageInvoker(handler);
+        using HttpMessageInvoker invoker = new(handler);
 
         using HttpResponseMessage resp = await invoker.SendAsync(
             new HttpRequestMessage(HttpMethod.Get, "https://product.test/v1/portfolio"),
@@ -40,12 +40,12 @@ public sealed class ProductAuthHeaderHandlerTests
     [Fact]
     public async Task SendAsync_SkipsAuthorization_WhenSessionMissing()
     {
-        CaptureHandler inner = new CaptureHandler();
-        ProductAuthHeaderHandler handler = new ProductAuthHeaderHandler(new InMemoryProductSessionStore())
+        CaptureHandler inner = new();
+        ProductAuthHeaderHandler handler = new(new InMemoryProductSessionStore())
         {
             InnerHandler = inner,
         };
-        using HttpMessageInvoker invoker = new HttpMessageInvoker(handler);
+        using HttpMessageInvoker invoker = new(handler);
 
         await invoker.SendAsync(
             new HttpRequestMessage(HttpMethod.Get, "https://product.test/v1/portfolio"),
@@ -57,11 +57,11 @@ public sealed class ProductAuthHeaderHandlerTests
     [Fact]
     public async Task SendAsync_Throws_WhenRequestNull()
     {
-        ProductAuthHeaderHandler handler = new ProductAuthHeaderHandler(new InMemoryProductSessionStore())
+        ProductAuthHeaderHandler handler = new(new InMemoryProductSessionStore())
         {
             InnerHandler = new CaptureHandler(),
         };
-        using HttpMessageInvoker invoker = new HttpMessageInvoker(handler);
+        using HttpMessageInvoker invoker = new(handler);
 
         Func<Task> act = () => invoker.SendAsync(null!, CancellationToken.None);
 

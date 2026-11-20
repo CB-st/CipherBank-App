@@ -12,20 +12,12 @@ namespace CipherBank_app.Services.Handlers;
 /// HTTP message handler that injects Bearer tokens from the product session store.
 /// Use: High (every authenticated product HTTP call). Scope: Shell HTTP pipeline.
 /// </summary>
-public sealed partial class AuthHeaderHandler : DelegatingHandler
+public sealed partial class AuthHeaderHandler(IServiceProvider serviceProvider, TimeProvider timeProvider) : DelegatingHandler
 {
     private const int ProductTokenSkewMinutes = 1;
 
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<AuthHeaderHandler>? _logger;
-    private readonly TimeProvider _timeProvider;
-
-    public AuthHeaderHandler(IServiceProvider serviceProvider, TimeProvider timeProvider)
-    {
-        _timeProvider = timeProvider;
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-        _logger = serviceProvider.GetService<ILogger<AuthHeaderHandler>>();
-    }
+    private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    private readonly ILogger<AuthHeaderHandler>? _logger = serviceProvider.GetService<ILogger<AuthHeaderHandler>>();
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -50,7 +42,7 @@ public sealed partial class AuthHeaderHandler : DelegatingHandler
             {
                 authority = _serviceProvider.GetService<ProductSessionAuthority>() ?? ProductSessionAuthority.For(productSessions);
                 product = await ProductSessionDispatch.ReadAsync(request, authority, CancellationToken.None).ConfigureAwait(false);
-                if (product is { } p && p.Expires > _timeProvider.GetUtcNow().AddMinutes(ProductTokenSkewMinutes))
+                if (product is { } p && p.Expires > timeProvider.GetUtcNow().AddMinutes(ProductTokenSkewMinutes))
                 {
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", p.Access);
                 }

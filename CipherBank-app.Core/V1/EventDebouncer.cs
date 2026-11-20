@@ -5,17 +5,12 @@
 namespace CipherBank_app.V1;
 
 /// <summary>Coalesces rapid events into a single delayed action.</summary>
-public sealed class EventDebouncer
+public sealed class EventDebouncer(TimeSpan delay)
 {
-    private readonly TimeSpan _delay;
+    private readonly TimeSpan _delay = delay;
     private readonly object _gate = new();
     private CancellationTokenSource? _cts;
     private int _fireCount;
-
-    public EventDebouncer(TimeSpan delay)
-    {
-        _delay = delay;
-    }
 
     public int FireCount => _fireCount;
 

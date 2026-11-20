@@ -183,7 +183,7 @@ public sealed class LoginViewModelTests
 #if DEBUG
         Mock<ISettingsService> settings = new();
         settings.SetupGet(s => s.Environment).Returns("Production");
-        return new LoginViewModel(
+        return new(
             NullLogger<LoginViewModel>.Instance,
             session,
             navigation,
@@ -191,7 +191,7 @@ public sealed class LoginViewModelTests
             settings.Object,
             Options.Create(new HostBehaviorOptions()));
 #else
-        return new LoginViewModel(NullLogger<LoginViewModel>.Instance, session, navigation, Mock.Of<IDialogService>());
+        return new(NullLogger<LoginViewModel>.Instance, session, navigation, Mock.Of<IDialogService>());
 #endif
     }
 }

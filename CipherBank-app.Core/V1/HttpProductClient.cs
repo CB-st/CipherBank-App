@@ -11,7 +11,12 @@ using System.Text.Json;
 namespace CipherBank_app.V1;
 
 /// <summary>HTTP IProductClient for session, prefs, bootstrap, and product /v1 routes.</summary>
-public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — single IProductClient surface by design
+public sealed class HttpProductClient(
+    HttpClient http,
+    IProductSessionStore sessions,
+    ISessionProofBuilder sessionProof,
+    ProductSessionAuthority? authority)
+    : IProductClient // NOSONAR S1200 — single IProductClient surface by design
 {
     // --- Route constants (relative to CipherBankEndpointBase) ---
     private const string PortfolioPath = "v1/portfolio";
@@ -42,9 +47,9 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
         PropertyNameCaseInsensitive = true,
     };
 
-    private readonly HttpClient _http;
-    private readonly ProductSessionAuthority _sessions;
-    private readonly ISessionProofBuilder _sessionProof;
+    private readonly HttpClient _http = http;
+    private readonly ProductSessionAuthority _sessions = authority ?? ProductSessionAuthority.For(sessions);
+    private readonly ISessionProofBuilder _sessionProof = sessionProof;
 
     public HttpProductClient(
         HttpClient http,
@@ -52,13 +57,6 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
         ISessionProofBuilder sessionProof)
         : this(http, sessions, sessionProof, null)
     {
-    }
-
-    public HttpProductClient(HttpClient http, IProductSessionStore sessions, ISessionProofBuilder sessionProof, ProductSessionAuthority? authority)
-    {
-        _http = http;
-        _sessions = authority ?? ProductSessionAuthority.For(sessions);
-        _sessionProof = sessionProof;
     }
 
     public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct)
@@ -75,7 +73,7 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
 
     public async Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionChallengePath, UriKind.Relative))
+        using HttpRequestMessage req = new(HttpMethod.Post, new Uri(SessionChallengePath, UriKind.Relative))
         {
             Content = JsonContent.Create(new { ACCOUNT_PUBLIC_KEY = accountPublicKeyWire }),
         };
@@ -87,7 +85,7 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
 
     public async Task<KeyShareResponseDto> EstablishKeyShareAsync(KeyShareRequestDto request, CancellationToken ct)
     {
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionKeySharePath, UriKind.Relative))
+        using HttpRequestMessage req = new(HttpMethod.Post, new Uri(SessionKeySharePath, UriKind.Relative))
         {
             Content = JsonContent.Create(request),
         };
@@ -179,7 +177,7 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
         _sessions.Check(operation, ct);
         // The proof builder owns the custody proof protocol behind this call site.
         object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
-        using HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Post, new Uri(SessionPath, UriKind.Relative))
+        using HttpRequestMessage req = new(HttpMethod.Post, new Uri(SessionPath, UriKind.Relative))
         {
             Content = JsonContent.Create(body),
         };
@@ -280,7 +278,7 @@ public sealed class HttpProductClient : IProductClient // NOSONAR S1200 — sing
         CancellationToken ct)
     {
         _sessions.Check(operation, ct);
-        using HttpRequestMessage req = new HttpRequestMessage(method, new Uri(path, UriKind.Relative));
+        using HttpRequestMessage req = new(method, new Uri(path, UriKind.Relative));
         if (bodyUtf8 is not null)
         {
             req.Content = new ByteArrayContent(bodyUtf8);

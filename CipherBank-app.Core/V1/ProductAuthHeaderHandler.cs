@@ -9,19 +9,14 @@ namespace CipherBank_app.V1;
 /// <summary>
 /// Injects Bearer access tokens from <see cref="IProductSessionStore"/> onto product HTTP calls.
 /// </summary>
-public sealed class ProductAuthHeaderHandler : DelegatingHandler
+public sealed class ProductAuthHeaderHandler(IProductSessionStore sessions, ProductSessionAuthority? authority) : DelegatingHandler
 {
-    private readonly ProductSessionAuthority _sessions;
+    private readonly ProductSessionAuthority _sessions = authority ?? ProductSessionAuthority.For(sessions);
 
     public ProductAuthHeaderHandler(
         IProductSessionStore sessions)
         : this(sessions, null)
     {
-    }
-
-    public ProductAuthHeaderHandler(IProductSessionStore sessions, ProductSessionAuthority? authority)
-    {
-        _sessions = authority ?? ProductSessionAuthority.For(sessions);
     }
 
     /// <inheritdoc />
