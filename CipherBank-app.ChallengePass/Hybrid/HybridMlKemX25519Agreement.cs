@@ -51,7 +51,7 @@ public sealed class HybridMlKemX25519Agreement
             ssX = PortableX25519.Agree(ephSk, deviceX25519Pk);
             byte[] channelKey = Combine(ssKem, ssX);
 
-            PqKeyShareResponse response = new PqKeyShareResponse
+            PqKeyShareResponse response = new()
             {
                 KeyShareId = "ks_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..KeyShareIdHexLength],
                 MlKemCiphertextWire = WireEncoding.ToWire(kemCt),

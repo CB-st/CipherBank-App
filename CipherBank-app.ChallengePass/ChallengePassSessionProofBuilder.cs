@@ -12,16 +12,10 @@ namespace CipherBank_app.ChallengePass;
 /// <see cref="ISessionProofBuilder"/> that delegates to the active challenge/pass suite.
 /// Account keypair is supplied by <see cref="IAccountKeySource"/> (custody-backed in app).
 /// </summary>
-public sealed class ChallengePassSessionProofBuilder : ISessionProofBuilder
+public sealed class ChallengePassSessionProofBuilder(IChallengePassCatalog catalog, IAccountKeySource keys) : ISessionProofBuilder
 {
-    private readonly IChallengePassCatalog _catalog;
-    private readonly IAccountKeySource _keys;
-
-    public ChallengePassSessionProofBuilder(IChallengePassCatalog catalog, IAccountKeySource keys)
-    {
-        _catalog = catalog;
-        _keys = keys;
-    }
+    private readonly IChallengePassCatalog _catalog = catalog;
+    private readonly IAccountKeySource _keys = keys;
 
     /// <summary>
     /// Builds the active suite's session-open body: A2 via fused identity API, A1 with private-key wipe.

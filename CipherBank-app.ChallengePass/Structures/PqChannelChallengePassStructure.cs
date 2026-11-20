@@ -10,25 +10,18 @@ namespace CipherBank_app.ChallengePass.Hybrid;
 /// <summary>
 /// Structure slot: ensure hybrid key-share → open challenge with channel key → seal pass with channel key.
 /// </summary>
-public sealed class PqChannelChallengePassStructure : IChallengePassStructure, IDisposable
+public sealed class PqChannelChallengePassStructure(
+    IPqKeyShareClient keyShare,
+    IPqChannel channel,
+    IPqChannelChallengeSource challenges) : IChallengePassStructure, IDisposable
 {
-    private readonly IPqKeyShareClient _keyShare;
-    private readonly IPqChannel _channel;
-    private readonly IPqChannelChallengeSource _challenges;
+    private readonly IPqKeyShareClient _keyShare = keyShare;
+    private readonly IPqChannel _channel = channel;
+    private readonly IPqChannelChallengeSource _challenges = challenges;
     private readonly SemaphoreSlim _buildGate = new(1, 1);
     private readonly object _identityGate = new();
     private HybridPrivateIdentity? _identity;
     private byte[]? _channelIdentityPublicKey;
-
-    public PqChannelChallengePassStructure(
-        IPqKeyShareClient keyShare,
-        IPqChannel channel,
-        IPqChannelChallengeSource challenges)
-    {
-        _keyShare = keyShare;
-        _channel = channel;
-        _challenges = challenges;
-    }
 
     public static string StructureIdValue => "pq-channel-challenge-pass-v1";
 
@@ -163,7 +156,7 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
         try
         {
             ApplyIdentityUnlocked(identity);
-            AccountKeyPair pair = new AccountKeyPair(identity.X25519PublicKey, identity.X25519PrivateKey);
+            AccountKeyPair pair = new(identity.X25519PublicKey, identity.X25519PrivateKey);
             string wire = WireEncoding.ToWire(identity.X25519PublicKey);
             return await BuildBodyCoreAsync(algorithm, challengeTemplate, pair, wire, identity, ct)
                 .ConfigureAwait(false);
@@ -264,7 +257,7 @@ public sealed class PqChannelChallengePassStructure : IChallengePassStructure, I
         try
         {
             _channel.SetChannelKey(channelKey, share.KeyShareId);
-            _channelIdentityPublicKey = identity.X25519PublicKey.ToArray();
+            _channelIdentityPublicKey = [.. identity.X25519PublicKey];
         }
         finally
         {

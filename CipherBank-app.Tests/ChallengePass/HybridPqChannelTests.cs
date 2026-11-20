@@ -17,7 +17,7 @@ public sealed class HybridPqChannelTests
     [Fact]
     public void Hybrid_key_share_produces_matching_channel_keys()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         byte[] entropy = RandomNumberGenerator.GetBytes(16);
         HybridPrivateIdentity device = agreement.DeriveIdentity(entropy);
 
@@ -42,16 +42,16 @@ public sealed class HybridPqChannelTests
     [Fact]
     public async Task Pq_channel_challenge_pass_after_key_share()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         HybridPrivateIdentity device = agreement.DeriveIdentity(RandomNumberGenerator.GetBytes(16));
 
-        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
-        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
-        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
+        InMemoryPqKeyShareClient keyShare = new();
+        PqSymmetricChannel deviceChannel = new();
+        InMemoryPqChannelChallengeSource challenges = new(keyShare);
+        ChallengeIdNonceSha256Template template = new();
+        PqChannelChallengePassStructure structure = new(keyShare, deviceChannel, challenges);
 
-        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
+        ChannelSealAlgorithm seal = new(deviceChannel);
         object body = await structure.BuildSessionOpenBodyWithIdentityAsync(
             seal,
             template,
@@ -67,7 +67,7 @@ public sealed class HybridPqChannelTests
         json.Should().NotContain("seed");
 
         // Server can open the pass with the shared channel key.
-        using PqSymmetricChannel serverChannel = new PqSymmetricChannel();
+        using PqSymmetricChannel serverChannel = new();
         serverChannel.SetChannelKey(keyShare.LastChannelKey!, keyShare.LastKeyShareId!);
         byte[] payload = serverChannel.Open(WireEncoding.FromWire(pass.PassCiphertext));
         payload.Should().HaveCount(32);
@@ -80,16 +80,16 @@ public sealed class HybridPqChannelTests
     [Fact]
     public async Task Pq_channel_re_establishes_when_device_identity_changes()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         HybridPrivateIdentity first = agreement.DeriveIdentity(RandomNumberGenerator.GetBytes(16));
         HybridPrivateIdentity second = agreement.DeriveIdentity(RandomNumberGenerator.GetBytes(16));
 
-        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
-        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
-        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
-        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
+        InMemoryPqKeyShareClient keyShare = new();
+        PqSymmetricChannel deviceChannel = new();
+        InMemoryPqChannelChallengeSource challenges = new(keyShare);
+        ChallengeIdNonceSha256Template template = new();
+        PqChannelChallengePassStructure structure = new(keyShare, deviceChannel, challenges);
+        ChannelSealAlgorithm seal = new(deviceChannel);
 
         await structure.BuildSessionOpenBodyWithIdentityAsync(seal, template, first, CancellationToken.None);
 
@@ -105,19 +105,21 @@ public sealed class HybridPqChannelTests
     [Fact]
     public async Task Pq_channel_concurrent_builds_do_not_fault()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         HybridPrivateIdentity device = agreement.DeriveIdentity(RandomNumberGenerator.GetBytes(16));
 
-        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
-        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
-        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
-        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
+        InMemoryPqKeyShareClient keyShare = new();
+        PqSymmetricChannel deviceChannel = new();
+        InMemoryPqChannelChallengeSource challenges = new(keyShare);
+        ChallengeIdNonceSha256Template template = new();
+        PqChannelChallengePassStructure structure = new(keyShare, deviceChannel, challenges);
+        ChannelSealAlgorithm seal = new(deviceChannel);
 
-        Task<object>[] builds = Enumerable.Range(0, 4)
-            .Select(_ => structure.BuildSessionOpenBodyWithIdentityAsync(seal, template, device, CancellationToken.None))
-            .ToArray();
+        Task<object>[] builds =
+        [
+            .. Enumerable.Range(0, 4)
+                .Select(_ => structure.BuildSessionOpenBodyWithIdentityAsync(seal, template, device, CancellationToken.None)),
+        ];
 
         object[] results = await Task.WhenAll(builds);
         results.Should().AllSatisfy(r => Assert.IsType<SessionPassDto>(r));
@@ -130,15 +132,15 @@ public sealed class HybridPqChannelTests
     [Fact]
     public async Task Pq_channel_fused_identity_build_without_prior_set()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         HybridPrivateIdentity device = agreement.DeriveIdentity(RandomNumberGenerator.GetBytes(16));
 
-        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
-        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
-        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
-        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
+        InMemoryPqKeyShareClient keyShare = new();
+        PqSymmetricChannel deviceChannel = new();
+        InMemoryPqChannelChallengeSource challenges = new(keyShare);
+        ChallengeIdNonceSha256Template template = new();
+        PqChannelChallengePassStructure structure = new(keyShare, deviceChannel, challenges);
+        ChannelSealAlgorithm seal = new(deviceChannel);
 
         object body = await structure.BuildSessionOpenBodyWithIdentityAsync(
             seal,
@@ -150,7 +152,7 @@ public sealed class HybridPqChannelTests
         pass.Algorithm.Should().Be(HybridMlKemX25519Agreement.ChannelAlgorithmId);
         keyShare.EstablishCount.Should().Be(1);
 
-        using PqSymmetricChannel serverChannel = new PqSymmetricChannel();
+        using PqSymmetricChannel serverChannel = new();
         serverChannel.SetChannelKey(keyShare.LastChannelKey!, keyShare.LastKeyShareId!);
         byte[] payload = serverChannel.Open(WireEncoding.FromWire(pass.PassCiphertext));
         payload.Should().HaveCount(32);
@@ -163,24 +165,24 @@ public sealed class HybridPqChannelTests
     [Fact]
     public async Task Proof_builder_a2_uses_fused_identity_path()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         HybridPrivateIdentity device = agreement.DeriveIdentity(RandomNumberGenerator.GetBytes(16));
 
-        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
-        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
-        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
-        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
+        InMemoryPqKeyShareClient keyShare = new();
+        PqSymmetricChannel deviceChannel = new();
+        InMemoryPqChannelChallengeSource challenges = new(keyShare);
+        ChallengeIdNonceSha256Template template = new();
+        PqChannelChallengePassStructure structure = new(keyShare, deviceChannel, challenges);
+        ChannelSealAlgorithm seal = new(deviceChannel);
 
-        ChallengePassSuite suite = new ChallengePassSuite(
+        ChallengePassSuite suite = new(
             ChallengePassServiceCollectionExtensions.SuiteA2Id,
             seal,
             template,
             structure);
-        ChallengePassCatalog catalog = new ChallengePassCatalog([suite], suite.SuiteId);
-        AccountKeyPair account = new AccountKeyPair(device.X25519PublicKey, device.X25519PrivateKey);
-        ChallengePassSessionProofBuilder builder = new ChallengePassSessionProofBuilder(
+        ChallengePassCatalog catalog = new([suite], suite.SuiteId);
+        AccountKeyPair account = new(device.X25519PublicKey, device.X25519PrivateKey);
+        ChallengePassSessionProofBuilder builder = new(
             catalog,
             new StaticAccountKeySource(account, device));
 
@@ -197,7 +199,7 @@ public sealed class HybridPqChannelTests
     [Fact]
     public async Task Pq_fused_same_pubkey_reuses_channel_without_new_key_share()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         byte[] entropy = RandomNumberGenerator.GetBytes(16);
         HybridPrivateIdentity first = agreement.DeriveIdentity(entropy);
         HybridPrivateIdentity second = agreement.DeriveIdentity(entropy);
@@ -205,12 +207,12 @@ public sealed class HybridPqChannelTests
         first.X25519PublicKey.Should().Equal(second.X25519PublicKey);
         ReferenceEquals(first, second).Should().BeFalse();
 
-        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
-        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
-        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        using PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
-        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
+        InMemoryPqKeyShareClient keyShare = new();
+        PqSymmetricChannel deviceChannel = new();
+        InMemoryPqChannelChallengeSource challenges = new(keyShare);
+        ChallengeIdNonceSha256Template template = new();
+        using PqChannelChallengePassStructure structure = new(keyShare, deviceChannel, challenges);
+        ChannelSealAlgorithm seal = new(deviceChannel);
 
         await structure.BuildSessionOpenBodyWithIdentityAsync(seal, template, first, CancellationToken.None);
         keyShare.EstablishCount.Should().Be(1);
@@ -226,17 +228,17 @@ public sealed class HybridPqChannelTests
     [Fact]
     public async Task Static_hybrid_source_survives_clear_after_fused_build()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         HybridPrivateIdentity device = agreement.DeriveIdentity(RandomNumberGenerator.GetBytes(16));
-        AccountKeyPair account = new AccountKeyPair(device.X25519PublicKey.ToArray(), device.X25519PrivateKey.ToArray());
-        StaticAccountKeySource source = new StaticAccountKeySource(account, device);
+        AccountKeyPair account = new([.. device.X25519PublicKey], [.. device.X25519PrivateKey]);
+        StaticAccountKeySource source = new(account, device);
 
-        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
-        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
-        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        using PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
-        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
+        InMemoryPqKeyShareClient keyShare = new();
+        PqSymmetricChannel deviceChannel = new();
+        InMemoryPqChannelChallengeSource challenges = new(keyShare);
+        ChallengeIdNonceSha256Template template = new();
+        using PqChannelChallengePassStructure structure = new(keyShare, deviceChannel, challenges);
+        ChannelSealAlgorithm seal = new(deviceChannel);
 
         HybridPrivateIdentity handed = source.RequireHybridIdentity();
         await structure.BuildSessionOpenBodyWithIdentityAsync(seal, template, handed, CancellationToken.None);
@@ -263,19 +265,19 @@ public sealed class HybridPqChannelTests
     [Fact]
     public async Task Fused_build_cancelled_before_gate_wipes_incoming_identity()
     {
-        HybridMlKemX25519Agreement agreement = new HybridMlKemX25519Agreement();
+        HybridMlKemX25519Agreement agreement = new();
         HybridPrivateIdentity identity = agreement.DeriveIdentity(RandomNumberGenerator.GetBytes(16));
         identity.X25519PrivateKey.Should().Contain(b => b != 0);
         identity.MlKemPrivateKey.Should().Contain(b => b != 0);
 
-        InMemoryPqKeyShareClient keyShare = new InMemoryPqKeyShareClient();
-        PqSymmetricChannel deviceChannel = new PqSymmetricChannel();
-        InMemoryPqChannelChallengeSource challenges = new InMemoryPqChannelChallengeSource(keyShare);
-        ChallengeIdNonceSha256Template template = new ChallengeIdNonceSha256Template();
-        using PqChannelChallengePassStructure structure = new PqChannelChallengePassStructure(keyShare, deviceChannel, challenges);
-        ChannelSealAlgorithm seal = new ChannelSealAlgorithm(deviceChannel);
+        InMemoryPqKeyShareClient keyShare = new();
+        PqSymmetricChannel deviceChannel = new();
+        InMemoryPqChannelChallengeSource challenges = new(keyShare);
+        ChallengeIdNonceSha256Template template = new();
+        using PqChannelChallengePassStructure structure = new(keyShare, deviceChannel, challenges);
+        ChannelSealAlgorithm seal = new(deviceChannel);
 
-        using CancellationTokenSource cts = new CancellationTokenSource();
+        using CancellationTokenSource cts = new();
         cts.Cancel();
         Func<Task<object>> act = async () => await structure.BuildSessionOpenBodyWithIdentityAsync(
             seal,
