@@ -18,33 +18,33 @@ public class ProductSessionCoordinatorTests
     public async Task StartAsync_PreservesLocalIdleTimeoutWhenRefreshFails()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        PrefsStore prefs = new PrefsStore(db, TestPreferenceDefaults.Options);
+        PrefsStore prefs = new(db, TestPreferenceDefaults.Options);
         UserPrefs local = await prefs.LoadAsync();
         local.LockIdleSeconds = 180;
         await prefs.SaveAsync(local);
 
-        Mock<IProductClient> client = new Mock<IProductClient>(MockBehavior.Strict);
+        Mock<IProductClient> client = new(MockBehavior.Strict);
         client.Setup(c => c.CreateSessionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SessionDto { AccessToken = "tok", RefreshToken = "ref" });
 
-        Mock<IStreamService> stream = new Mock<IStreamService>(MockBehavior.Strict);
+        Mock<IStreamService> stream = new(MockBehavior.Strict);
         stream.Setup(s => s.ConnectAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        Mock<IStreamHub> hub = new Mock<IStreamHub>(MockBehavior.Strict);
+        Mock<IStreamHub> hub = new(MockBehavior.Strict);
         bool started = false;
         hub.Setup(h => h.Start()).Callback(() => started = true);
         hub.Setup(h => h.StopStreaming());
 
-        Mock<IPrefsSyncService> prefsSync = new Mock<IPrefsSyncService>(MockBehavior.Strict);
+        Mock<IPrefsSyncService> prefsSync = new(MockBehavior.Strict);
         prefsSync.Setup(p => p.PullMergeAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("offline"));
 
-        Mock<IAccountBootstrapService> bootstrap = new Mock<IAccountBootstrapService>(MockBehavior.Strict);
-        InMemoryProductSessionStore sessions = new InMemoryProductSessionStore();
+        Mock<IAccountBootstrapService> bootstrap = new(MockBehavior.Strict);
+        InMemoryProductSessionStore sessions = new();
 
-        ProductSessionCoordinator coordinator = new ProductSessionCoordinator(
+        ProductSessionCoordinator coordinator = new(
             client.Object,
             stream.Object,
             hub.Object,
@@ -63,23 +63,25 @@ public class ProductSessionCoordinatorTests
     public async Task StartAsync_StopsHubWhenConnectFails()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        PrefsStore prefs = new PrefsStore(db, TestPreferenceDefaults.Options);
+        PrefsStore prefs = new(db, TestPreferenceDefaults.Options);
 
-        Mock<IProductClient> client = new Mock<IProductClient>(MockBehavior.Strict);
+        Mock<IProductClient> client = new(MockBehavior.Strict);
         client.Setup(c => c.CreateSessionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SessionDto { AccessToken = "tok", RefreshToken = "ref" });
 
-        Mock<IStreamService> stream = new Mock<IStreamService>(MockBehavior.Strict);
+        Mock<IStreamService> stream = new(MockBehavior.Strict);
         stream.Setup(s => s.ConnectAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("connect failed"));
+        // The ownership lane also drains a possibly partial connection before releasing it.
+        stream.Setup(s => s.DisconnectAsync()).Returns(Task.CompletedTask);
 
-        Mock<IStreamHub> hub = new Mock<IStreamHub>(MockBehavior.Strict);
+        Mock<IStreamHub> hub = new(MockBehavior.Strict);
         hub.Setup(h => h.Start());
         hub.Setup(h => h.StopStreaming());
 
-        ProductSessionCoordinator coordinator = new ProductSessionCoordinator(
+        ProductSessionCoordinator coordinator = new(
             client.Object,
             stream.Object,
             hub.Object,
@@ -98,28 +100,28 @@ public class ProductSessionCoordinatorTests
     public async Task StartAsync_CanceledRefresh_RollsBackSessionAndPropagatesCancellation()
     {
         string path = Path.Combine(Path.GetTempPath(), "cb-sess-" + Guid.NewGuid().ToString("N") + ".db");
-        LocalDb db = new LocalDb(new FileInfo(path));
+        LocalDb db = new(new FileInfo(path));
         await db.InitializeAsync();
-        PrefsStore prefs = new PrefsStore(db, TestPreferenceDefaults.Options);
-        using CancellationTokenSource cancellation = new CancellationTokenSource();
-        Mock<IProductClient> client = new Mock<IProductClient>(MockBehavior.Strict);
+        PrefsStore prefs = new(db, TestPreferenceDefaults.Options);
+        using CancellationTokenSource cancellation = new();
+        Mock<IProductClient> client = new(MockBehavior.Strict);
         client.Setup(c => c.CreateSessionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SessionDto { AccessToken = "tok", RefreshToken = "ref" });
-        Mock<IStreamService> stream = new Mock<IStreamService>(MockBehavior.Strict);
+        Mock<IStreamService> stream = new(MockBehavior.Strict);
         stream.Setup(s => s.ConnectAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         stream.Setup(s => s.DisconnectAsync()).Returns(Task.CompletedTask);
-        Mock<IStreamHub> hub = new Mock<IStreamHub>(MockBehavior.Strict);
+        Mock<IStreamHub> hub = new(MockBehavior.Strict);
         hub.Setup(h => h.Start());
         hub.Setup(h => h.StopStreaming());
-        Mock<IPrefsSyncService> prefsSync = new Mock<IPrefsSyncService>(MockBehavior.Strict);
+        Mock<IPrefsSyncService> prefsSync = new(MockBehavior.Strict);
         prefsSync.Setup(p => p.PullMergeAsync(It.IsAny<CancellationToken>()))
             .Returns<CancellationToken>(async ct =>
             {
                 await cancellation.CancelAsync();
                 await Task.Delay(Timeout.InfiniteTimeSpan, ct);
             });
-        InMemoryProductSessionStore sessions = new InMemoryProductSessionStore();
-        ProductSessionCoordinator coordinator = new ProductSessionCoordinator(
+        InMemoryProductSessionStore sessions = new();
+        ProductSessionCoordinator coordinator = new(
             client.Object,
             stream.Object,
             hub.Object,

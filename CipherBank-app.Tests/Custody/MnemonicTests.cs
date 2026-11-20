@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using System.Security.Cryptography;
 using CipherBank_app.Custody;
 using FluentAssertions;
 using NBitcoin;
@@ -72,7 +73,7 @@ public class MnemonicTests
     {
         for (int i = 0; i < 64; i++)
         {
-            byte[] expected = System.Security.Cryptography.RandomNumberGenerator.GetBytes(entropyBytes);
+            byte[] expected = RandomNumberGenerator.GetBytes(entropyBytes);
             string phrase = new Mnemonic(Wordlist.English, expected).ToString();
 
             MnemonicHelper.Entropy(phrase).Should().Equal(expected);

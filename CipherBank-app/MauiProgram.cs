@@ -87,7 +87,7 @@ public static class MauiProgram
             throw new InvalidOperationException("Host behavior configuration is invalid.");
         }
 
-        var logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
+        string logPath = Path.Combine(FileSystem.Current.AppDataDirectory, "Logs", "cipherbank-.log");
 
         LoggerConfiguration config = new LoggerConfiguration()
             .MinimumLevel.Is(minimumLevel)

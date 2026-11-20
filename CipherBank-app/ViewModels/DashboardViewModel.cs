@@ -20,13 +20,14 @@ namespace CipherBank_app.ViewModels;
 /// <summary>
 /// ViewModel for the Dashboard page displaying cryptocurrency prices and market data.
 /// </summary>
-public partial class DashboardViewModel : ObservableObject, IDisposable
+public partial class DashboardViewModel(
+    ILogger<DashboardViewModel> logger,
+    IProductClient product,
+    IErrorHandler errorHandler,
+    INavigationService navigation,
+    IDialogService dialog)
+    : ObservableObject, IDisposable
 {
-    private readonly ILogger<DashboardViewModel> _logger;
-    private readonly IProductClient _product;
-    private readonly IErrorHandler _errorHandler;
-    private readonly INavigationService _navigation;
-    private readonly IDialogService _dialog;
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
@@ -54,27 +55,13 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial decimal TotalPortfolioValue { get; set; }
 
-    public DashboardViewModel(
-        ILogger<DashboardViewModel> logger,
-        IProductClient product,
-        IErrorHandler errorHandler,
-        INavigationService navigation,
-        IDialogService dialog)
-    {
-        _logger = logger;
-        _product = product;
-        _errorHandler = errorHandler;
-        _navigation = navigation;
-        _dialog = dialog;
-    }
-
     /// <summary>
     /// Cancels any ongoing operations when leaving the page.
     /// </summary>
     public void OnDisappearing()
     {
         _cts?.Cancel();
-        LogDashboardDisappearing(_logger);
+        LogDashboardDisappearing(logger);
     }
 
     /// <inheritdoc/>
@@ -121,17 +108,17 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         {
             if (isRefresh)
             {
-                LogRefreshingPrices(_logger);
+                LogRefreshingPrices(logger);
             }
             else
             {
-                LogLoadingPrices(_logger);
+                LogLoadingPrices(logger);
             }
 
-            var success = await _errorHandler.HandleApiErrorsAsync(
+            bool success = await errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    PortfolioDto portfolio = await _product.GetPortfolioAsync(_cts.Token);
+                    PortfolioDto portfolio = await product.GetPortfolioAsync(_cts.Token);
                     Cryptocurrencies.Clear();
                     foreach (HoldingDto holding in portfolio.Holdings)
                     {
@@ -140,11 +127,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
                     if (isRefresh)
                     {
-                        LogRefreshedCount(_logger, portfolio.Holdings.Count);
+                        LogRefreshedCount(logger, portfolio.Holdings.Count);
                     }
                     else
                     {
-                        LogLoadedCount(_logger, portfolio.Holdings.Count);
+                        LogLoadedCount(logger, portfolio.Holdings.Count);
                     }
                 },
                 msg => ErrorMessage = msg,
@@ -156,11 +143,11 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 {
                     if (isRefresh)
                     {
-                        LogRefreshCancelled(_logger);
+                        LogRefreshCancelled(logger);
                     }
                     else
                     {
-                        LogLoadPricesCancelled(_logger);
+                        LogLoadPricesCancelled(logger);
                     }
                 }
 
@@ -169,7 +156,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            LogErrorLoadingPrices(_logger, ex);
+            LogErrorLoadingPrices(logger, ex);
             ErrorMessage = isRefresh ? "Failed to refresh. Pull down to try again." : "Failed to load prices. Please try again.";
         }
         finally
@@ -193,12 +180,12 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     {
         if (SelectedCrypto == null)
         {
-            LogNoCryptoSelected(_logger);
+            LogNoCryptoSelected(logger);
             return;
         }
 
-        LogNavigatingToPurchase(_logger, SelectedCrypto.Symbol.Value);
-        await _navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
+        LogNavigatingToPurchase(logger, SelectedCrypto.Symbol.Value);
+        await navigation.GoToAsync(Routes.PurchaseWithSymbol(SelectedCrypto.Symbol));
     }
 
     /// <summary>
@@ -207,8 +194,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task NavigateToWalletsAsync()
     {
-        LogNavigatingToWallets(_logger);
-        await _navigation.GoToAsync(Routes.Wallet);
+        LogNavigatingToWallets(logger);
+        await navigation.GoToAsync(Routes.Wallet);
     }
 
     /// <summary>
@@ -222,12 +209,12 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             return;
         }
 
-        LogViewingDetails(_logger, crypto.Symbol.Value);
+        LogViewingDetails(logger, crypto.Symbol.Value);
         SelectedCrypto = crypto;
 
         // Could navigate to a details page here
-        var detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
-        await _dialog.ShowAlertAsync(
+        string detailMessage = $"Price: {crypto.FormattedPrice}\nChange: {crypto.FormattedPercentChange}\nMarket Cap: ${crypto.MarketCap:N0}";
+        await dialog.ShowAlertAsync(
             crypto.Name,
             detailMessage,
             "OK");
@@ -273,14 +260,16 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            if (disposing)
-            {
-                _cts?.Dispose();
-            }
-
-            _disposed = true;
+            return;
         }
+
+        if (disposing)
+        {
+            _cts?.Dispose();
+        }
+
+        _disposed = true;
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
+using CipherBank_app.Models;
 using CipherBank_app.V1;
 using FluentAssertions;
 using Xunit;
@@ -17,7 +18,7 @@ public sealed class ProductSurfaceMapTests
     {
         HoldingDto holding = new() { Symbol = "BTC", Name = " ", UsdValue = "1234.5", Change24HPct = "-2.25" };
 
-        var crypto = ProductSurfaceMap.ToCryptoCurrency(holding);
+        CryptoCurrency crypto = ProductSurfaceMap.ToCryptoCurrency(holding);
 
         crypto.Symbol.ToString().Should().Be("BTC");
         crypto.Name.Should().Be("BTC");
@@ -31,7 +32,7 @@ public sealed class ProductSurfaceMapTests
     {
         HoldingDto holding = new() { Symbol = "ETH", Name = "Ether", Balance = "not-a-number" };
 
-        var wallet = ProductSurfaceMap.ToWallet(holding);
+        Wallet wallet = ProductSurfaceMap.ToWallet(holding);
 
         wallet.Id.Should().Be("ETH");
         wallet.CryptoName.Should().Be("Ether");
@@ -45,7 +46,7 @@ public sealed class ProductSurfaceMapTests
     {
         HoldingDto holding = new() { Symbol = "BTC", Name = "Bitcoin", Balance = "0.5", UsdValue = "30000", Change24HPct = "1.5" };
 
-        var card = ProductSurfaceMap.ToWalletCard(holding);
+        WalletCardItem card = ProductSurfaceMap.ToWalletCard(holding);
 
         card.Wallet.Balance.Should().Be(0.5m);
         card.UsdValue.Should().Be(30000m);
@@ -57,7 +58,7 @@ public sealed class ProductSurfaceMapTests
     {
         CreateWalletResultDto created = new() { WalletId = "w-1", Symbol = "BTC", Label = string.Empty, Address = null };
 
-        var wallet = ProductSurfaceMap.ToWallet(created, new FixedClock(FixedNow));
+        Wallet wallet = ProductSurfaceMap.ToWallet(created, new FixedClock(FixedNow));
 
         wallet.Id.Should().Be("w-1");
         wallet.CryptoName.Should().Be("BTC");
@@ -72,7 +73,7 @@ public sealed class ProductSurfaceMapTests
         CreateWalletResultDto created = new() { WalletId = "w-2", Symbol = "ETH", Label = "Savings", Address = "0xabc" };
         DateTimeOffset before = DateTimeOffset.UtcNow;
 
-        var wallet = ProductSurfaceMap.ToWallet(created);
+        Wallet wallet = ProductSurfaceMap.ToWallet(created);
 
         wallet.CryptoName.Should().Be("Savings");
         wallet.Address.Should().Be("0xabc");

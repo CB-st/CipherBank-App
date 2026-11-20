@@ -21,7 +21,7 @@ public sealed class CentralPackageVersionAnalyzer : DiagnosticAnalyzer
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-        => ImmutableArray.Create(CipherBankDiagnostics.CentralPackageVersion);
+        => [CipherBankDiagnostics.CentralPackageVersion];
 
     /// <summary>
     /// Registers a compilation action that scans additional MSBuild files.

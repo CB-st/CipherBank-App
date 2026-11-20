@@ -34,14 +34,14 @@ public class MacCatalystCertificatePinningHandler : NSUrlSessionHandler
         try
         {
             // Get the leaf certificate (index 0)
-            var certificateCount = trust.Count;
+            nint certificateCount = trust.Count;
             if (certificateCount == 0)
             {
                 Serilog.Log.Debug("[Certificate Pinning] No certificates in chain");
                 return false;
             }
 
-            var leafCertificate = trust[0];
+            SecCertificate? leafCertificate = trust[0];
             if (leafCertificate == null)
             {
                 Serilog.Log.Debug("[Certificate Pinning] Leaf certificate is null");
@@ -78,13 +78,13 @@ public class MacCatalystCertificatePinningHandler : NSUrlSessionHandler
     {
         try
         {
-            var uri = new Uri(url);
-            var hostname = uri.Host;
+            Uri uri = new(url);
+            string hostname = uri.Host;
 
-            var policy = SecPolicy.CreateSslPolicy(true, hostname);
+            SecPolicy policy = SecPolicy.CreateSslPolicy(true, hostname);
             trust.SetPolicy(policy);
 
-            if (!trust.Evaluate(out var error))
+            if (!trust.Evaluate(out Foundation.NSError? error))
             {
                 Serilog.Log.Debug($"[Certificate Validation] Failed for {hostname}: {error?.LocalizedDescription}");
                 return false;

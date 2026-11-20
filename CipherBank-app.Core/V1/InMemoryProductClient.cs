@@ -11,7 +11,7 @@ namespace CipherBank_app.V1;
 /// Rebase note: parse asset fields through <c>AssetSymbol</c> at this V1 boundary,
 /// while preserving the existing string wire representation.
 /// </summary>
-public sealed class InMemoryProductClient : IProductClient
+public sealed class InMemoryProductClient(TimeProvider timeProvider) : IProductClient
 {
     // --- Fixture constants ---
     private const string MockAccessToken = "mock-access";
@@ -46,23 +46,17 @@ public sealed class InMemoryProductClient : IProductClient
     private const long MockBootstrapSyncedAtUnixMs = 1_720_900_000_000L;
     private const string MockReceiveAddress = "bc1qmockreceiveaddress0000000000000000";
 
-    private readonly TimeProvider _timeProvider;
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     private readonly List<VaultCardDto> _vaultCards =
     [
         new() { CardId = "card_lab_1", Last4 = "4242", Brand = "visa", Label = "Hardware test", HardwareTest = true },
     ];
 
-    private PrefsWireDto _prefs;
+    private PrefsWireDto _prefs = CreateDefaultPrefs();
 
     public InMemoryProductClient()
         : this(TimeProvider.System)
     {
-    }
-
-    public InMemoryProductClient(TimeProvider timeProvider)
-    {
-        _timeProvider = timeProvider ?? TimeProvider.System;
-        _prefs = CreateDefaultPrefs();
     }
 
     public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct)
@@ -82,7 +76,7 @@ public sealed class InMemoryProductClient : IProductClient
     {
         long now = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
         (int points, int stepSeconds) = ResolveHistoryShape(range);
-        List<HistoryPointDto> pts = new List<HistoryPointDto>(points + 1);
+        List<HistoryPointDto> pts = new(points + 1);
         double v = HistoryBaseValue;
         for (int i = points; i >= 0; i--)
         {
@@ -193,7 +187,7 @@ public sealed class InMemoryProductClient : IProductClient
     {
         ct.ThrowIfCancellationRequested();
         _ = idempotencyKey;
-        VaultCardDto added = new VaultCardDto
+        VaultCardDto added = new()
         {
             CardId = string.IsNullOrWhiteSpace(card.CardId) ? "card_" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture)[..MockCardIdSuffixLength] : card.CardId,
             Last4 = card.Last4,

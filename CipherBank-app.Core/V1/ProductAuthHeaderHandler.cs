@@ -9,13 +9,14 @@ namespace CipherBank_app.V1;
 /// <summary>
 /// Injects Bearer access tokens from <see cref="IProductSessionStore"/> onto product HTTP calls.
 /// </summary>
-public sealed class ProductAuthHeaderHandler : DelegatingHandler
+public sealed class ProductAuthHeaderHandler(IProductSessionStore sessions, ProductSessionAuthority? authority) : DelegatingHandler
 {
-    private readonly IProductSessionStore _sessions;
+    private readonly ProductSessionAuthority _sessions = authority ?? ProductSessionAuthority.For(sessions);
 
-    public ProductAuthHeaderHandler(IProductSessionStore sessions)
+    public ProductAuthHeaderHandler(
+        IProductSessionStore sessions)
+        : this(sessions, null)
     {
-        _sessions = sessions;
     }
 
     /// <inheritdoc />
@@ -31,11 +32,15 @@ public sealed class ProductAuthHeaderHandler : DelegatingHandler
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        (string Access, string Refresh, DateTimeOffset Expires)? stored =
-            await _sessions.GetAsync().ConfigureAwait(false);
+        ProductSessionSnapshot? stored = await ProductSessionDispatch.ReadAsync(request, _sessions, CancellationToken.None).ConfigureAwait(false);
         if (stored is { } session && !string.IsNullOrWhiteSpace(session.Access))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session.Access);
+        }
+
+        if (stored is not null)
+        {
+            _sessions.Check(stored.Operation, CancellationToken.None);
         }
 
         return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
