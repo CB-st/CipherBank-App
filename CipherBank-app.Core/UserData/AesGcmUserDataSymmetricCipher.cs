@@ -63,7 +63,6 @@ public sealed class AesGcmUserDataSymmetricCipher : IUserDataSymmetricCipher
         ReadOnlySpan<byte> key32,
         ReadOnlySpan<byte> aad)
     {
-        ArgumentNullException.ThrowIfNull(blob);
         EnsureKey(key32);
         if (blob.Nonce.Length != UserDataConstants.NonceSize ||
             blob.Tag.Length != UserDataConstants.TagSize)

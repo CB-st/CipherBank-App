@@ -11,7 +11,8 @@ public enum UserDataBlockFailureReason
     AuthenticationFailed,
 
     /// <summary>
-    /// The block entry was null, its id or type was null or missing, or its nonce, tag, or ciphertext was null or invalid Base64.
+    /// The block entry was null, its id or type was missing, null, empty, or whitespace-only,
+    /// or its nonce, tag, or ciphertext was null or invalid Base64.
     /// </summary>
     Malformed,
 }

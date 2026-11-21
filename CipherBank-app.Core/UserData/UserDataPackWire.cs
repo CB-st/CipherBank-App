@@ -11,15 +11,15 @@ namespace CipherBank_app.UserData;
 public sealed class UserDataPackWire
 {
     [JsonPropertyName("format")]
-    public string Format { get; set; } = UserDataConstants.PackFormat;
+    public string? Format { get; set; } = UserDataConstants.PackFormat;
 
     [JsonPropertyName("content_version")]
     public uint ContentVersion { get; set; }
 
     [JsonPropertyName("username_hash_prefix")]
-    public string UsernameHashPrefix { get; set; } = string.Empty;
+    public string? UsernameHashPrefix { get; set; } = string.Empty;
 
     [JsonPropertyName("blocks")]
     [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
-    public Collection<UserDataBlockWire> Blocks { get; } = [];
+    public Collection<UserDataBlockWire?> Blocks { get; } = [];
 }
