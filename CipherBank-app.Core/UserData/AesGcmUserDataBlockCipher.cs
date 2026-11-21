@@ -7,20 +7,14 @@ using System.Text;
 
 namespace CipherBank_app.UserData;
 
-/// <summary>Pack-block cipher: AES-GCM via <see cref="IUserDataSymmetricCipher"/> + userdata AAD.</summary>
-public sealed class AesGcmUserDataBlockCipher : IUserDataBlockCipher
+/// <summary>
+/// Pack-block cipher: AES-GCM via <see cref="IUserDataSymmetricCipher"/> + userdata AAD.
+/// Use: Low (suite build). Scope: userdata crypto.
+/// </summary>
+/// <param name="symmetric">Symmetric AEAD used to seal and open pack blocks.</param>
+public sealed class AesGcmUserDataBlockCipher(IUserDataSymmetricCipher symmetric) : IUserDataBlockCipher
 {
-    private readonly IUserDataSymmetricCipher _symmetric;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="AesGcmUserDataBlockCipher"/> class.
-    /// Wraps a symmetric AEAD for pack seal/open. Use: Low (suite build). Scope: userdata crypto.
-    /// </summary>
-    public AesGcmUserDataBlockCipher(IUserDataSymmetricCipher symmetric)
-    {
-        ArgumentNullException.ThrowIfNull(symmetric);
-        _symmetric = symmetric;
-    }
+    private readonly IUserDataSymmetricCipher _symmetric = symmetric;
 
     public AesGcmUserDataBlockCipher()
         : this(new AesGcmUserDataSymmetricCipher())
@@ -36,7 +30,6 @@ public sealed class AesGcmUserDataBlockCipher : IUserDataBlockCipher
         string usernameHashHex,
         uint contentVersion)
     {
-        ArgumentNullException.ThrowIfNull(plain);
         byte[] plaintext = Encoding.UTF8.GetBytes(plain.PlaintextUtf8);
         byte[] aad = UserDataAad.Build(usernameHashHex, plain.Type, plain.Id, contentVersion);
         try
@@ -58,13 +51,12 @@ public sealed class AesGcmUserDataBlockCipher : IUserDataBlockCipher
         string usernameHashHex,
         uint contentVersion)
     {
-        ArgumentNullException.ThrowIfNull(block);
-        ValidateHeader(block);
+        (string id, string type) = ValidateHeader(block);
 
-        byte[] nonce = Convert.FromBase64String(block.NonceBase64);
-        byte[] tag = Convert.FromBase64String(block.TagBase64);
-        byte[] ciphertext = Convert.FromBase64String(block.CiphertextBase64);
-        byte[] aad = UserDataAad.Build(usernameHashHex, block.Type, block.Id, contentVersion);
+        byte[] nonce = DecodeBase64(block.NonceBase64);
+        byte[] tag = DecodeBase64(block.TagBase64);
+        byte[] ciphertext = DecodeBase64(block.CiphertextBase64);
+        byte[] aad = UserDataAad.Build(usernameHashHex, type, id, contentVersion);
         UserDataSymmetricBlob blob = new(nonce, tag, ciphertext);
         byte[] plain = _symmetric.Open(blob, kek, aad);
         try
@@ -88,7 +80,6 @@ public sealed class AesGcmUserDataBlockCipher : IUserDataBlockCipher
         uint contentVersion,
         ReadOnlySpan<byte> nonce12)
     {
-        ArgumentNullException.ThrowIfNull(plain);
         byte[] plaintext = Encoding.UTF8.GetBytes(plain.PlaintextUtf8);
         byte[] aad = UserDataAad.Build(usernameHashHex, plain.Type, plain.Id, contentVersion);
         try
@@ -115,16 +106,27 @@ public sealed class AesGcmUserDataBlockCipher : IUserDataBlockCipher
             CiphertextBase64 = Convert.ToBase64String(blob.Ciphertext),
         };
 
-    private static void ValidateHeader(UserDataBlockWire block)
+    private static (string Id, string Type) ValidateHeader(UserDataBlockWire block)
     {
         if (block.Algorithm != UserDataConstants.BlockAlgorithm)
         {
             throw new CryptographicException("Unsupported userdata block algorithm.");
         }
 
-        if (string.IsNullOrWhiteSpace(block.Id) || string.IsNullOrWhiteSpace(block.Type))
+        string? id = block.Id;
+        string? type = block.Type;
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(type))
         {
             throw new CryptographicException("Userdata block id/type missing.");
         }
+
+        return (id, type);
+    }
+
+    private static byte[] DecodeBase64(string? s)
+    {
+        // Preserve the exception contract of Convert.FromBase64String for a null field.
+        ArgumentNullException.ThrowIfNull(s);
+        return Convert.FromBase64String(s);
     }
 }
