@@ -16,8 +16,6 @@ public sealed class UserDataPlainBlock
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
         ArgumentException.ThrowIfNullOrWhiteSpace(type);
-        ArgumentNullException.ThrowIfNull(plaintextUtf8);
-
         Id = id;
         Type = type;
         PlaintextUtf8 = plaintextUtf8;
