@@ -26,7 +26,6 @@ public sealed class UserDataCryptoCatalog : IUserDataCryptoCatalog
     /// </summary>
     public UserDataCryptoCatalog(IEnumerable<UserDataCryptoSuite> suites, string activeSuiteId)
     {
-        ArgumentNullException.ThrowIfNull(suites);
         ArgumentException.ThrowIfNullOrWhiteSpace(activeSuiteId);
 
         _suites = new Dictionary<string, UserDataCryptoSuite>(StringComparer.Ordinal);
