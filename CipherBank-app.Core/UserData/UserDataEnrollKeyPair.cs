@@ -28,7 +28,6 @@ public sealed class UserDataEnrollKeyPair : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(algorithmId);
         ArgumentException.ThrowIfNullOrWhiteSpace(publicKeyPem);
         ArgumentException.ThrowIfNullOrWhiteSpace(spkiFingerprintSha256Hex);
-        ArgumentNullException.ThrowIfNull(privateKeyPkcs8Der);
         if (privateKeyPkcs8Der.Length == 0)
         {
             throw new ArgumentException("Private key DER is empty.", nameof(privateKeyPkcs8Der));
