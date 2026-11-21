@@ -7,7 +7,10 @@ using System.Text;
 
 namespace CipherBank_app.UserData;
 
-/// <summary>Pack-block cipher: AES-GCM via <see cref="IUserDataSymmetricCipher"/> + userdata AAD.</summary>
+/// <summary>
+/// Pack-block cipher: AES-GCM via <see cref="IUserDataSymmetricCipher"/> + userdata AAD.
+/// Use: Low (suite build). Scope: userdata crypto.
+/// </summary>
 /// <param name="symmetric">Symmetric AEAD used to seal and open pack blocks.</param>
 public sealed class AesGcmUserDataBlockCipher(IUserDataSymmetricCipher symmetric) : IUserDataBlockCipher
 {

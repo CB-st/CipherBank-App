@@ -4,6 +4,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using CipherBank_app.UserData;
 using FluentAssertions;
@@ -17,6 +18,9 @@ public class UserDataPackCodecTests
         "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
     private const string Username = "alice";
+
+    private const string NullFormatPackJson =
+        """{"format":null,"content_version":1,"username_hash_prefix":"2bd806c9","blocks":[]}""";
 
     // AES-GCM vectors: zero nonce + fixture KEK + AAD for alice/prefs/prefs/v1.
     private const string ExpectedZeroNonceTagB64 = "VG+E7OtAqIML1QgpsCaB+g==";
@@ -75,6 +79,81 @@ public class UserDataPackCodecTests
 
         parsed.ContentVersion.Should().Be(1u);
         UserDataPackCodec.OpenPack(parsed, Username, keys.Kek).Blocks["prefs"].Should().Be("{}");
+    }
+
+    [Fact]
+    public void DecodeBlob_JsonNullFormat_ThrowsCryptographicException()
+    {
+        string blob = Convert.ToBase64String(Encoding.UTF8.GetBytes(NullFormatPackJson));
+
+        Assert.Throws<CryptographicException>(() => UserDataPackCodec.DecodeBlob(blob));
+    }
+
+    [Fact]
+    public void OpenPack_JsonNullFormat_ThrowsCryptographicException()
+    {
+        UserDataPackWire pack = Assert.IsType<UserDataPackWire>(JsonSerializer.Deserialize<UserDataPackWire>(NullFormatPackJson));
+        byte[] kek = new byte[UserDataConstants.KekLength];
+
+        Assert.Throws<CryptographicException>(() => UserDataPackCodec.OpenPack(pack, Username, kek));
+    }
+
+    [Fact]
+    public void OpenPack_DecodedNullUsernameHashPrefix_ThrowsCryptographicException()
+    {
+        const string json =
+            """{"format":"cipherbank-userdata-pack-v1","content_version":1,"username_hash_prefix":null,"blocks":[]}""";
+        string blob = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+        UserDataPackWire pack = UserDataPackCodec.DecodeBlob(blob);
+        Assert.Null(pack.UsernameHashPrefix);
+        byte[] kek = new byte[UserDataConstants.KekLength];
+
+        Assert.Throws<CryptographicException>(() => UserDataPackCodec.OpenPack(pack, Username, kek));
+    }
+
+    [Fact]
+    public void OpenPack_DecodedNullAlgorithm_ReportsAuthenticationFailed()
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        UserDataPackWire pack = DecodePackWithBlockField("alg", null, keys.Kek);
+
+        UserDataPackOpenResult result = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
+
+        result.Blocks.Should().BeEmpty();
+        result.FailedBlocks.Should().ContainSingle().Which.Should().Be(
+            new UserDataBlockFailure("prefs", UserDataBlockTypes.Prefs, UserDataBlockFailureReason.AuthenticationFailed));
+    }
+
+    [Theory]
+    [InlineData("alg", null)]
+    [InlineData("id", null)]
+    [InlineData("id", "   ")]
+    [InlineData("type", null)]
+    [InlineData("type", "   ")]
+    public void CipherOpen_DecodedInvalidBlockHeader_ThrowsCryptographicException(string field, string? value)
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        UserDataPackWire pack = DecodePackWithBlockField(field, value, keys.Kek);
+        UserDataBlockWire block = Assert.IsType<UserDataBlockWire>(Assert.Single(pack.Blocks));
+        AesGcmUserDataBlockCipher cipher = new();
+        string hash = UserDataUsernameHash.HashHex(Username);
+
+        Assert.Throws<CryptographicException>(() => cipher.Open(block, keys.Kek, hash, pack.ContentVersion));
+    }
+
+    [Theory]
+    [InlineData("nonce_b64")]
+    [InlineData("tag_b64")]
+    [InlineData("ciphertext_b64")]
+    public void CipherOpen_DecodedNullBase64Field_ThrowsArgumentNullException(string field)
+    {
+        using UserDataKeyMaterial keys = UserDataKeyDerivation.Derive(FixtureMnemonic);
+        UserDataPackWire pack = DecodePackWithBlockField(field, null, keys.Kek);
+        UserDataBlockWire block = Assert.IsType<UserDataBlockWire>(Assert.Single(pack.Blocks));
+        AesGcmUserDataBlockCipher cipher = new();
+        string hash = UserDataUsernameHash.HashHex(Username);
+
+        Assert.Throws<ArgumentNullException>(() => cipher.Open(block, keys.Kek, hash, pack.ContentVersion));
     }
 
     [Fact]
@@ -278,6 +357,19 @@ public class UserDataPackCodecTests
 
         UserDataPackCodec.OpenBlock(block, keys.Kek, hash, 1)
             .Should().Be("""{"APPEARANCE":"dark"}""");
+    }
+
+    private static UserDataPackWire DecodePackWithBlockField(string field, string? value, ReadOnlySpan<byte> kek)
+    {
+        UserDataPackWire pack = UserDataPackCodec.SealPack(
+            Username,
+            contentVersion: 1,
+            kek,
+            [new UserDataPlainBlock("prefs", UserDataBlockTypes.Prefs, "{}")]);
+
+        JsonObject json = EncodePackJson(pack);
+        GetFirstBlockJson(json)[field] = value;
+        return DecodePackJson(json);
     }
 
     private static UserDataPackWire DecodePackWithUnknownTypeAndNullNonce(ReadOnlySpan<byte> kek)
