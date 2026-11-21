@@ -104,9 +104,11 @@ public class UserDataPackCodecTests
                 new UserDataPlainBlock(UserDataBlockTypes.AppConfig, UserDataBlockTypes.AppConfig, """{"cfg":1}"""),
             ]);
 
-        byte[] cipher = Convert.FromBase64String(pack.Blocks[1].CiphertextBase64);
+        UserDataBlockWire tamperedBlock = Assert.IsType<UserDataBlockWire>(pack.Blocks[1]);
+        string ciphertextBase64 = Assert.IsType<string>(tamperedBlock.CiphertextBase64);
+        byte[] cipher = Convert.FromBase64String(ciphertextBase64);
         cipher[0] ^= 0xFF;
-        pack.Blocks[1].CiphertextBase64 = Convert.ToBase64String(cipher);
+        tamperedBlock.CiphertextBase64 = Convert.ToBase64String(cipher);
 
         UserDataPackOpenResult result = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
         IReadOnlyDictionary<string, string> opened = result.Blocks;
@@ -131,7 +133,8 @@ public class UserDataPackCodecTests
                 new UserDataPlainBlock(UserDataBlockTypes.AppConfig, UserDataBlockTypes.AppConfig, """{"cfg":1}"""),
             ]);
 
-        pack.Blocks[1].NonceBase64 = "not-base64";
+        UserDataBlockWire malformedBlock = Assert.IsType<UserDataBlockWire>(pack.Blocks[1]);
+        malformedBlock.NonceBase64 = "not-base64";
 
         UserDataPackOpenResult result = UserDataPackCodec.OpenPack(pack, Username, keys.Kek);
         IReadOnlyDictionary<string, string> opened = result.Blocks;
@@ -154,7 +157,7 @@ public class UserDataPackCodecTests
             [new UserDataPlainBlock(UserDataBlockTypes.Prefs, UserDataBlockTypes.Prefs, "{}")]);
 
         JsonObject json = EncodePackJson(pack);
-        json["blocks"]!.AsArray().Insert(0, null);
+        Assert.IsType<JsonArray>(json["blocks"]).Insert(0, null);
 
         UserDataPackOpenResult result = UserDataPackCodec.OpenPack(DecodePackJson(json), Username, keys.Kek);
 
@@ -188,7 +191,7 @@ public class UserDataPackCodecTests
             ]);
 
         JsonObject json = EncodePackJson(pack);
-        JsonObject badBlock = json["blocks"]![0]!.AsObject();
+        JsonObject badBlock = GetFirstBlockJson(json);
         if (removeField)
         {
             badBlock.Remove(field);
@@ -267,6 +270,12 @@ public class UserDataPackCodecTests
         block.TagBase64.Should().Be(ExpectedZeroNonceTagB64);
         block.CiphertextBase64.Should().Be(ExpectedZeroNonceCipherB64);
 
+        UserDataPackWire pack = new() { ContentVersion = 1, UsernameHashPrefix = "2bd806c9" };
+        pack.Blocks.Add(block);
+        string json = Encoding.UTF8.GetString(Convert.FromBase64String(UserDataPackCodec.EncodeBlob(pack)));
+        json.Should().Be(
+            """{"format":"cipherbank-userdata-pack-v1","content_version":1,"username_hash_prefix":"2bd806c9","blocks":[{"id":"prefs","type":"prefs","seq":0,"alg":"AES-256-GCM","nonce_b64":"AAAAAAAAAAAAAAAA","tag_b64":"VG\u002BE7OtAqIML1QgpsCaB\u002Bg==","ciphertext_b64":"MdzUOSWkOwN15\u002BhJB/NkSyMpq3pu"}]}""");
+
         UserDataPackCodec.OpenBlock(block, keys.Kek, hash, 1)
             .Should().Be("""{"APPEARANCE":"dark"}""");
     }
@@ -283,12 +292,15 @@ public class UserDataPackCodecTests
             ]);
 
         JsonObject json = EncodePackJson(pack);
-        json["blocks"]![0]!["nonce_b64"] = null;
+        GetFirstBlockJson(json)["nonce_b64"] = null;
         return DecodePackJson(json);
     }
 
     private static JsonObject EncodePackJson(UserDataPackWire pack)
-        => JsonNode.Parse(Convert.FromBase64String(UserDataPackCodec.EncodeBlob(pack)))!.AsObject();
+        => Assert.IsType<JsonObject>(JsonNode.Parse(Convert.FromBase64String(UserDataPackCodec.EncodeBlob(pack))));
+
+    private static JsonObject GetFirstBlockJson(JsonObject pack)
+        => Assert.IsType<JsonObject>(Assert.IsType<JsonArray>(pack["blocks"])[0]);
 
     private static UserDataPackWire DecodePackJson(JsonObject json)
         => UserDataPackCodec.DecodeBlob(Convert.ToBase64String(Encoding.UTF8.GetBytes(json.ToJsonString())));

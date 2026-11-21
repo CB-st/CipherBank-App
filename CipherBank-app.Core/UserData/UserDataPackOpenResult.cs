@@ -26,7 +26,7 @@ public sealed class UserDataPackOpenResult
     public IReadOnlyDictionary<string, string> Blocks { get; }
 
     /// <summary>Gets malformed blocks and blocks that failed authentication, in pack order.</summary>
-    /// <remarks>A missing block id or type is represented by <see cref="string.Empty"/>.</remarks>
+    /// <remarks>A missing, null, empty, or whitespace-only block id or type is represented by <see cref="string.Empty"/>.</remarks>
     public IReadOnlyList<UserDataBlockFailure> FailedBlocks { get; }
 
     /// <summary>Gets a value indicating whether the pack was opened without block failures.</summary>
