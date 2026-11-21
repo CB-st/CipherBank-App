@@ -20,7 +20,6 @@ public static class UserDataUsernameHash
     /// </summary>
     public static string NormalizeUsername(string username)
     {
-        ArgumentNullException.ThrowIfNull(username);
         ReadOnlySpan<char> trimmed = username.AsSpan().Trim();
         return string.Create(
             trimmed.Length,
