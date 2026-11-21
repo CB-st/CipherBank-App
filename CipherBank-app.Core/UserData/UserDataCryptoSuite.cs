@@ -21,10 +21,6 @@ public sealed class UserDataCryptoSuite
         IUserDataSymmetricCipher symmetric)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(suiteId);
-        ArgumentNullException.ThrowIfNull(enroll);
-        ArgumentNullException.ThrowIfNull(blocks);
-        ArgumentNullException.ThrowIfNull(symmetric);
-
         SuiteId = suiteId;
         Enroll = enroll;
         Blocks = blocks;
