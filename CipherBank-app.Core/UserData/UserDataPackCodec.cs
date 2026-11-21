@@ -43,8 +43,6 @@ public static class UserDataPackCodec
         IReadOnlyList<UserDataPlainBlock> plainBlocks,
         IUserDataBlockCipher blockCipher)
     {
-        ArgumentNullException.ThrowIfNull(plainBlocks);
-        ArgumentNullException.ThrowIfNull(blockCipher);
         EnsureKek(kek);
 
         string usernameHashHex = UserDataUsernameHash.HashHex(username);
@@ -121,7 +119,8 @@ public static class UserDataPackCodec
     /// Opens a pack with an injected block cipher. Use: Medium (suite). Scope: userdata restore.
     /// </summary>
     /// <remarks>
-    /// Null entries and entries without a type are reported as malformed even when unknown types are skipped.
+    /// Null entries and entries with a missing, null, empty, or whitespace-only type are reported as malformed
+    /// even when unknown types are skipped.
     /// </remarks>
     public static UserDataPackOpenResult OpenPack(
         UserDataPackWire pack,
@@ -130,8 +129,6 @@ public static class UserDataPackCodec
         IUserDataBlockCipher blockCipher,
         bool skipUnknownTypes)
     {
-        ArgumentNullException.ThrowIfNull(pack);
-        ArgumentNullException.ThrowIfNull(blockCipher);
         EnsureKek(kek);
         ValidatePackHeader(pack, username);
 
@@ -153,7 +150,6 @@ public static class UserDataPackCodec
     /// </summary>
     public static string EncodeBlob(UserDataPackWire pack)
     {
-        ArgumentNullException.ThrowIfNull(pack);
         byte[] utf8 = JsonSerializer.SerializeToUtf8Bytes(pack, JsonOptions);
         return Convert.ToBase64String(utf8);
     }
@@ -220,18 +216,20 @@ public static class UserDataPackCodec
         bool skipUnknownTypes,
         (Dictionary<string, string> Opened, List<UserDataBlockFailure> Failed) results)
     {
-        if (block is null || string.IsNullOrWhiteSpace(block.Type))
+        string? type = block?.Type;
+        if (block is null || string.IsNullOrWhiteSpace(type))
         {
             results.Failed.Add(CreateMalformedFailure(block));
             return;
         }
 
-        if (skipUnknownTypes && !UserDataBlockTypes.IsKnown(block.Type))
+        if (skipUnknownTypes && !UserDataBlockTypes.IsKnown(type))
         {
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(block.Id)
+        string? id = block.Id;
+        if (string.IsNullOrWhiteSpace(id)
             || block.NonceBase64 is null
             || block.TagBase64 is null
             || block.CiphertextBase64 is null)
@@ -242,12 +240,12 @@ public static class UserDataPackCodec
 
         try
         {
-            results.Opened[block.Id] = blockCipher.Open(block, kek, usernameHashHex, contentVersion);
+            results.Opened[id] = blockCipher.Open(block, kek, usernameHashHex, contentVersion);
         }
         catch (CryptographicException)
         {
             // Keep authenticated blocks, but report the failure so the caller can mark it dirty.
-            results.Failed.Add(new UserDataBlockFailure(block.Id, block.Type, UserDataBlockFailureReason.AuthenticationFailed));
+            results.Failed.Add(new UserDataBlockFailure(id, type, UserDataBlockFailureReason.AuthenticationFailed));
         }
         catch (FormatException)
         {

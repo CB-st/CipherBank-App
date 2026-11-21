@@ -63,7 +63,6 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
     /// <inheritdoc />
     public byte[] DecryptChallenge(ReadOnlySpan<byte> encryptedChallenge, UserDataEnrollKeyPair keys)
     {
-        ArgumentNullException.ThrowIfNull(keys);
         if (encryptedChallenge.Length == 0)
         {
             throw new CryptographicException("Encrypted challenge is empty.");
