@@ -29,9 +29,6 @@ public static class UserDataKeyDerivation
     /// </summary>
     public static UserDataKeyMaterial Derive(string mnemonic, string bip39Passphrase)
     {
-        ArgumentNullException.ThrowIfNull(mnemonic);
-        ArgumentNullException.ThrowIfNull(bip39Passphrase);
-
         if (!MnemonicHelper.Validate(mnemonic))
         {
             throw new ArgumentException("Mnemonic is invalid.", nameof(mnemonic));

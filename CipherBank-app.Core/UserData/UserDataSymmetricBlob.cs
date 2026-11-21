@@ -5,21 +5,14 @@
 namespace CipherBank_app.UserData;
 
 /// <summary>Nonce/tag/ciphertext triple from <see cref="IUserDataSymmetricCipher"/>.</summary>
-public sealed class UserDataSymmetricBlob
+/// <param name="nonce">Nonce used to seal the blob.</param>
+/// <param name="tag">Authentication tag.</param>
+/// <param name="ciphertext">Encrypted payload.</param>
+public sealed class UserDataSymmetricBlob(byte[] nonce, byte[] tag, byte[] ciphertext)
 {
-    public UserDataSymmetricBlob(byte[] nonce, byte[] tag, byte[] ciphertext)
-    {
-        ArgumentNullException.ThrowIfNull(nonce);
-        ArgumentNullException.ThrowIfNull(tag);
-        ArgumentNullException.ThrowIfNull(ciphertext);
-        Nonce = nonce;
-        Tag = tag;
-        Ciphertext = ciphertext;
-    }
+    public byte[] Nonce { get; } = nonce;
 
-    public byte[] Nonce { get; }
+    public byte[] Tag { get; } = tag;
 
-    public byte[] Tag { get; }
-
-    public byte[] Ciphertext { get; }
+    public byte[] Ciphertext { get; } = ciphertext;
 }
