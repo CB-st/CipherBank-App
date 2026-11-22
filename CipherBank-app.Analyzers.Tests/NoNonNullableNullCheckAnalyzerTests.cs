@@ -76,12 +76,14 @@ public sealed class NoNonNullableNullCheckAnalyzerTests
 
     [Theory]
     [InlineData("int", "{|CB1006:System.ArgumentNullException.ThrowIfNull(value)|};")]
+    [InlineData("int", "_ = {|CB1006:value == null|};")]
     [InlineData("System.Guid", "_ = {|CB1006:value is null|};")]
     [InlineData("System.Guid", "_ = {|CB1006:value is not null|};")]
     [InlineData("System.Guid", "_ = {|CB1006:object.ReferenceEquals(value, null)|};")]
     [InlineData("int[]", "_ = {|CB1006:value?[0]|};")]
     [InlineData("string[]", "_ = {|CB1006:value[0] is null|};")]
     [InlineData("string", "_ = {|CB1006:new Sample() is null|};")]
+    [InlineData("string", "_ = {|CB1006:new Sample() == null|};")]
     public async Task ReportsNullChecksOnValueTypesAndArraysAsync(string parameterType, string statement)
     {
         CSharpAnalyzerTest<NoNonNullableNullCheckAnalyzer, DefaultVerifier> test = CreateTest(
@@ -237,6 +239,41 @@ public sealed class NoNonNullableNullCheckAnalyzerTests
                 {
                     result = input;
                     return input is not null;
+                }
+            }
+            """);
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task IgnoresUserDefinedEqualityOperatorsAgainstNullAsync()
+    {
+        CSharpAnalyzerTest<NoNonNullableNullCheckAnalyzer, DefaultVerifier> test = CreateTest("""
+            #nullable enable
+            #pragma warning disable CS0660, CS0661
+            sealed class SentinelRef
+            {
+                public bool IsEmpty { get; init; }
+                public static bool operator ==(SentinelRef left, SentinelRef? right) => right is null && left.IsEmpty;
+                public static bool operator !=(SentinelRef left, SentinelRef? right) => !(left == right);
+            }
+
+            readonly struct SentinelValue
+            {
+                public bool IsEmpty { get; init; }
+                public static bool operator ==(SentinelValue left, object? right) => right is null && left.IsEmpty;
+                public static bool operator !=(SentinelValue left, object? right) => !(left == right);
+            }
+
+            class Sample
+            {
+                void Execute(SentinelRef refValue, SentinelValue structValue)
+                {
+                    _ = refValue == null;
+                    _ = refValue != null;
+                    _ = structValue == null;
+                    _ = structValue != null;
                 }
             }
             """);
