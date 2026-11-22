@@ -38,7 +38,6 @@ public static class BackupQuiz
         int count,
         Func<int, int, int>? nextInclusiveExclusive)
     {
-        ArgumentNullException.ThrowIfNull(words);
         ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (words.Length == 0 || count == 0)

@@ -59,7 +59,6 @@ public sealed class PrefsStore(
 
     public Task SaveAsync(UserPrefs prefs, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(prefs);
         prefs.NormalizeHomeSections();
         return SaveCoreAsync(prefs, ct);
     }

@@ -9,22 +9,15 @@ using SQLitePCL;
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc cref="ILocalDatabaseInitializer" />
-public sealed class LocalDatabaseInitializer : ILocalDatabaseInitializer
+public sealed class LocalDatabaseInitializer(
+    IDbContextFactory<CipherBankDbContext> contexts,
+    FileInfo databaseFile)
+    : ILocalDatabaseInitializer
 {
     private readonly Lock _gate = new();
-    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
-    private readonly FileInfo _databaseFile;
+    private readonly IDbContextFactory<CipherBankDbContext> _contexts = contexts;
+    private readonly FileInfo _databaseFile = databaseFile;
     private Task? _initialization;
-
-    public LocalDatabaseInitializer(
-        IDbContextFactory<CipherBankDbContext> contexts,
-        FileInfo databaseFile)
-    {
-        ArgumentNullException.ThrowIfNull(contexts);
-        ArgumentNullException.ThrowIfNull(databaseFile);
-        _contexts = contexts;
-        _databaseFile = databaseFile;
-    }
 
     public Task InitializeAsync(CancellationToken cancellationToken)
     {

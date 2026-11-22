@@ -23,9 +23,6 @@ public static class CustodyFeatureExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
-
         services.AddSingleton<ISecureStore, SecureStorageStore>();
         services.AddSingleton<IStepUpChallenges, ShellStepUpChallenges>();
         return services.AddCustodyServices(configuration);

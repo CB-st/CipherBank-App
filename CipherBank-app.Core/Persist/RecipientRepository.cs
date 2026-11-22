@@ -8,19 +8,9 @@ using Microsoft.EntityFrameworkCore;
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc />
-public sealed class RecipientRepository : IRecipientRepository
+public sealed class RecipientRepository(IDbContextFactory<CipherBankDbContext> contexts) : IRecipientRepository
 {
-    private readonly IDbContextFactory<CipherBankDbContext> _contexts;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RecipientRepository"/> class.
-    /// Use: Medium (host composition). Scope: application database.
-    /// </summary>
-    public RecipientRepository(IDbContextFactory<CipherBankDbContext> contexts)
-    {
-        ArgumentNullException.ThrowIfNull(contexts);
-        _contexts = contexts;
-    }
+    private readonly IDbContextFactory<CipherBankDbContext> _contexts = contexts;
 
     public Task<IReadOnlyList<AchRecipientRow>> ListAsync()
         => ListAsync(CancellationToken.None);
@@ -46,10 +36,7 @@ public sealed class RecipientRepository : IRecipientRepository
         => UpsertAsync(row, CancellationToken.None);
 
     public Task UpsertAsync(AchRecipientRow row, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        return UpsertCoreAsync(row, ct);
-    }
+        => UpsertCoreAsync(row, ct);
 
     public Task DeleteAsync(string id) => DeleteAsync(id, CancellationToken.None);
 

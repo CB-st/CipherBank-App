@@ -47,7 +47,6 @@ public sealed partial class RateLimiter : IDisposable
         int maxRequests,
         TimeSpan windowDuration)
     {
-        ArgumentNullException.ThrowIfNull(timeProvider);
         _logger = logger;
         _timeProvider = timeProvider;
         MaxRequests = maxRequests > 0 ? maxRequests : throw new ArgumentOutOfRangeException(nameof(maxRequests), @"Must be positive");

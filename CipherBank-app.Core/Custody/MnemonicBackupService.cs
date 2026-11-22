@@ -140,7 +140,6 @@ public sealed class MnemonicBackupService(TimeProvider timeProvider) : IMnemonic
 
     private static void ValidatePassword(string recoveryPassword)
     {
-        ArgumentNullException.ThrowIfNull(recoveryPassword);
         if (recoveryPassword.Length < MinimumPasswordLength)
         {
             throw new ArgumentException(

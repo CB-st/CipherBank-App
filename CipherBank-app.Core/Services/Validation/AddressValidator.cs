@@ -38,17 +38,15 @@ public static partial class AddressValidator
     /// <param name="address">The address to validate</param>
     /// <param name="symbol">The cryptocurrency symbol (BTC, ETH, SOL, etc.)</param>
     /// <returns>True if the address format is valid, false otherwise</returns>
-    public static bool IsValidAddress(string address, string symbol)
-    {
-        return AssetSymbol.TryParse(symbol, out AssetSymbol? parsed)
-            && IsValidAddress(address, parsed);
-    }
+    public static bool IsValidAddress(string? address, string? symbol) =>
+        AssetSymbol.TryParse(symbol, out AssetSymbol? parsed)
+        && IsValidAddress(address, parsed);
 
     /// <summary>Validates an address for a normalized asset symbol.</summary>
     /// <param name="address">The address to validate.</param>
     /// <param name="symbol">The normalized asset symbol.</param>
     /// <returns>True if the address format is valid, false otherwise.</returns>
-    public static bool IsValidAddress(string address, AssetSymbol? symbol)
+    public static bool IsValidAddress(string? address, AssetSymbol? symbol)
     {
         if (string.IsNullOrWhiteSpace(address) || symbol is null)
         {

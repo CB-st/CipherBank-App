@@ -16,7 +16,6 @@ public static class HoldingVisibility
         IEnumerable<string>? enabledCurrencies,
         UserPreferenceDefaults defaults)
     {
-        ArgumentNullException.ThrowIfNull(defaults);
         HashSet<AssetSymbol> enabled = [.. (enabledCurrencies ?? Array.Empty<string>())
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
             .Select(AssetSymbol.Parse)];

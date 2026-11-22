@@ -14,9 +14,6 @@ public sealed class SingleFlightJobFactory : ISingleFlightJobFactory
     /// <inheritdoc />
     public Task GetOrCreateAsync(SyncJobKey key, Func<Task> create)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(create);
-
         Lazy<Task> candidate = null!;
         candidate = new Lazy<Task>(
             () => RunAndReleaseAsync(key, candidate, create),

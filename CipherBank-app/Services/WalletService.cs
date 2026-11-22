@@ -116,8 +116,6 @@ public sealed partial class WalletService(ILogger<WalletService> logger, HttpCli
 
     public async Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cryptoSymbol);
-
         LogCreatingWallet(logger, cryptoSymbol.Value);
 
         try

@@ -8,26 +8,9 @@ using CipherBank_app.Models;
 namespace CipherBank_app.Persist;
 
 /// <summary>Mutable per-user device preferences initialized from configured defaults.</summary>
-public sealed class UserPrefs
+public sealed class UserPrefs(UserPreferenceDefaults defaults)
 {
-    private readonly UserPreferenceDefaults _defaults;
-
-    public UserPrefs(UserPreferenceDefaults defaults)
-    {
-        ArgumentNullException.ThrowIfNull(defaults);
-        _defaults = defaults;
-        HomeOrder = new Collection<string>([.. defaults.HomeOrder]);
-        HomeVisible = new Dictionary<string, bool>(defaults.HomeVisible, StringComparer.Ordinal);
-        EnabledCurrencies = new Collection<string>(
-            [.. defaults.EnabledCurrencies.Select(symbol => symbol.Value)]);
-        AssetsLayout = defaults.AssetsLayout;
-        ValuesHiddenOnLaunch = defaults.ValuesHiddenOnLaunch;
-        CoraEnabled = defaults.CoraEnabled;
-        DefaultSendSpeed = defaults.DefaultSendSpeed;
-        Appearance = defaults.Appearance;
-        BaseCurrency = defaults.BaseCurrency.Value;
-        LockIdleSeconds = defaults.LockIdleSeconds;
-    }
+    private readonly UserPreferenceDefaults _defaults = defaults;
 
     public static string SectionHoldings { get; } = "holdings";
 
@@ -35,27 +18,29 @@ public sealed class UserPrefs
 
     public static string SectionLegacyAssets { get; } = "assets";
 
-    public Collection<string> HomeOrder { get; private set; }
+    public Collection<string> HomeOrder { get; private set; } = [.. defaults.HomeOrder];
 
-    public Dictionary<string, bool> HomeVisible { get; private set; }
+    public Dictionary<string, bool> HomeVisible { get; private set; } =
+        new(defaults.HomeVisible, StringComparer.Ordinal);
 
     /// <summary>separate (default) = two tables; combined = one table with green/gold row accents.</summary>
-    public string AssetsLayout { get; set; }
+    public string AssetsLayout { get; set; } = defaults.AssetsLayout;
 
-    public bool ValuesHiddenOnLaunch { get; set; }
+    public bool ValuesHiddenOnLaunch { get; set; } = defaults.ValuesHiddenOnLaunch;
 
-    public bool CoraEnabled { get; set; }
+    public bool CoraEnabled { get; set; } = defaults.CoraEnabled;
 
-    public string DefaultSendSpeed { get; set; }
+    public string DefaultSendSpeed { get; set; } = defaults.DefaultSendSpeed;
 
-    public string Appearance { get; set; }
+    public string Appearance { get; set; } = defaults.Appearance;
 
-    public string BaseCurrency { get; set; }
+    public string BaseCurrency { get; set; } = defaults.BaseCurrency.Value;
 
     /// <summary>Symbols visible on Home selectors / charts (uppercase tickers).</summary>
-    public Collection<string> EnabledCurrencies { get; private set; }
+    public Collection<string> EnabledCurrencies { get; private set; } =
+        [.. defaults.EnabledCurrencies.Select(symbol => symbol.Value)];
 
-    public int LockIdleSeconds { get; set; }
+    public int LockIdleSeconds { get; set; } = defaults.LockIdleSeconds;
 
     /// <summary>
     /// Replaces <see cref="HomeOrder"/> contents (JSON/wire apply and tests).

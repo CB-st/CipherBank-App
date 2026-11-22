@@ -104,8 +104,6 @@ public sealed partial class MockWalletService : IWalletService
 
     public async Task<Wallet> CreateWalletAsync(AssetSymbol cryptoSymbol, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(cryptoSymbol);
-
         LogCreatingWallet(_logger, cryptoSymbol.Value);
         await SimulateNetworkDelayAsync(cancellationToken);
 

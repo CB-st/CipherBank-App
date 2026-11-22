@@ -49,8 +49,6 @@ public sealed partial class CryptoApiService(ILogger<CryptoApiService> logger, H
 
     public async Task<CryptoCurrency> GetCryptoPriceAsync(AssetSymbol symbol, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(symbol);
-
         LogFetchingPriceForSymbol(logger, symbol.Value);
 
         try
@@ -84,7 +82,6 @@ public sealed partial class CryptoApiService(ILogger<CryptoApiService> logger, H
 
     public async Task<PriceHistory> GetPriceHistoryAsync(AssetSymbol symbol, string period, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(symbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(period);
 
         LogFetchingHistory(logger, symbol.Value, period);

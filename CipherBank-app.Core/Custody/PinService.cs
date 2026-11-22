@@ -45,7 +45,6 @@ public sealed class PinService(ISecureStore store, TimeProvider timeProvider) : 
 
     public Task SetPinAsync(string pin)
     {
-        ArgumentNullException.ThrowIfNull(pin);
         if (pin.Length < MinimumPinLength)
         {
             throw new ArgumentException(

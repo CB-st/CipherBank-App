@@ -14,7 +14,7 @@ namespace CipherBank_app.Services.Handlers;
 /// </summary>
 public sealed partial class AuthHeaderHandler(IServiceProvider serviceProvider) : DelegatingHandler
 {
-    private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ILogger<AuthHeaderHandler>? _logger = serviceProvider.GetService<ILogger<AuthHeaderHandler>>();
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -63,7 +63,7 @@ public sealed partial class AuthHeaderHandler(IServiceProvider serviceProvider) 
                     try
                     {
                         AuthToken newToken = await authService.RefreshAsync(token.RefreshToken, cancellationToken);
-                        if (newToken != null && !string.IsNullOrEmpty(newToken.AccessToken))
+                        if (!string.IsNullOrEmpty(newToken.AccessToken))
                         {
                             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newToken.AccessToken);
 

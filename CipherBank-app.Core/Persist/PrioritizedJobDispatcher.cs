@@ -23,7 +23,6 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
     /// <param name="options">Validated queue concurrency options.</param>
     public PrioritizedJobDispatcher(IOptions<SyncSchedulerOptions> options)
     {
-        ArgumentNullException.ThrowIfNull(options);
         int maxConcurrency = options.Value.Resolve();
         _channel = Channel.CreateUnboundedPrioritized(
             new UnboundedPrioritizedChannelOptions<QueuedWork>
@@ -44,8 +43,6 @@ public sealed class PrioritizedJobDispatcher : IPrioritizedJobDispatcher, IDispo
         Func<CancellationToken, Task> work,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(work);
-
         lock (_gate)
         {
             ObjectDisposedException.ThrowIf(_jobs is null || _shutdown is null, this);

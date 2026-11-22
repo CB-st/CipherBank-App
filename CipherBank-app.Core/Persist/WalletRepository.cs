@@ -32,10 +32,7 @@ public sealed class WalletRepository(IDbContextFactory<CipherBankDbContext> cont
         => UpsertAsync(row, CancellationToken.None);
 
     public Task UpsertAsync(LocalWalletDescriptor row, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(row);
-        return UpsertCoreAsync(row, ct);
-    }
+        => UpsertCoreAsync(row, ct);
 
     public Task DeleteAsync(string id) => DeleteAsync(id, CancellationToken.None);
 

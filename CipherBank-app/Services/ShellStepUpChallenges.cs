@@ -18,7 +18,6 @@ public sealed class ShellStepUpChallenges : IStepUpChallenges
     /// <inheritdoc />
     public Task<bool> TryBiometricsAsync(string prompt, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(prompt);
         ct.ThrowIfCancellationRequested();
         return Task.FromResult(false);
     }

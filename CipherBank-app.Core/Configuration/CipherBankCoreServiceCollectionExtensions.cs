@@ -18,10 +18,9 @@ public static class CipherBankCoreServiceCollectionExtensions
     /// <param name="databaseDirectory">Platform-owned application-data directory.</param>
     public static IServiceCollection AddCipherBankCore(
         this IServiceCollection services,
-        IConfiguration configuration,
+        IConfiguration? configuration,
         string databaseDirectory)
     {
-        ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentException.ThrowIfNullOrWhiteSpace(databaseDirectory);
 

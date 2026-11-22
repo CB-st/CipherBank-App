@@ -45,7 +45,7 @@ public class LocalWalletSeederTests
         FakeWallets wallets = new();
         LocalWalletSeeder seeder = new(wallets);
 
-        Func<Task> act = () => seeder.EnsureDerivedAsync("abandon about", [new AssetSymbol("BTC"), null!]);
+        Func<Task> act = () => seeder.EnsureDerivedAsync("abandon about", [new AssetSymbol("BTC"), null]);
 
         await act.Should().ThrowAsync<ArgumentException>().WithParameterName("symbols");
         wallets.Rows.Should().BeEmpty();

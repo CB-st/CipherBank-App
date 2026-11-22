@@ -23,7 +23,6 @@ public sealed record UserPreferenceDefaults(
 {
     public static UserPreferenceDefaults FromOptions(UserPreferenceDefaultsOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
         if (!options.IsValid())
         {
             throw new ArgumentException("User preference defaults are invalid.", nameof(options));

@@ -62,7 +62,7 @@ public class CipherBankCoreDiTests
     public void AddCipherBankCore_RejectsInvalidArguments()
     {
         ServiceCollection services = new();
-        Action nullConfig = () => services.AddCipherBankCore(null!, Path.GetTempPath());
+        Action nullConfig = () => services.AddCipherBankCore(null, Path.GetTempPath());
         Action blankDir = () => services.AddCipherBankCore(CipherBankDefaultsConfiguration.Build(), " ");
 
         nullConfig.Should().Throw<ArgumentNullException>();

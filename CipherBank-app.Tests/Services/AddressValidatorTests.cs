@@ -220,7 +220,7 @@ public class AddressValidatorTests
     public void IsValidAddress_NullAddress_ReturnsFalse()
     {
         // Act
-        bool result = AddressValidator.IsValidAddress(null!, "BTC");
+        bool result = AddressValidator.IsValidAddress(null, "BTC");
 
         // Assert
         result.Should().BeFalse();
@@ -230,7 +230,7 @@ public class AddressValidatorTests
     public void IsValidAddress_NullSymbol_ReturnsFalse()
     {
         // Act
-        bool result = AddressValidator.IsValidAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", null!);
+        bool result = AddressValidator.IsValidAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", (string?)null);
 
         // Assert
         result.Should().BeFalse();

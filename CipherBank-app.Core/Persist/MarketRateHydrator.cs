@@ -8,27 +8,17 @@ using CipherBank_app.Services;
 namespace CipherBank_app.Persist;
 
 /// <summary>Hydrates and refreshes the local USD-rate snapshot.</summary>
-public sealed class MarketRateHydrator
+public sealed class MarketRateHydrator(
+    IRateSnapshotStore cache,
+    IPublicQuoteService publicQuotes,
+    TimeProvider timeProvider)
 {
     /// <summary>Maximum age of a cached rate before it is refreshed.</summary>
     public static readonly TimeSpan MaxRateAge = TimeSpan.FromMinutes(15);
 
-    private readonly IRateSnapshotStore _cache;
-    private readonly IPublicQuoteService _publicQuotes;
-    private readonly TimeProvider _timeProvider;
-
-    public MarketRateHydrator(
-        IRateSnapshotStore cache,
-        IPublicQuoteService publicQuotes,
-        TimeProvider timeProvider)
-    {
-        ArgumentNullException.ThrowIfNull(cache);
-        ArgumentNullException.ThrowIfNull(publicQuotes);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-        _cache = cache;
-        _publicQuotes = publicQuotes;
-        _timeProvider = timeProvider;
-    }
+    private readonly IRateSnapshotStore _cache = cache;
+    private readonly IPublicQuoteService _publicQuotes = publicQuotes;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     /// <summary>
     /// Reuses a complete fresh snapshot or refreshes all requested symbols.
@@ -37,10 +27,7 @@ public sealed class MarketRateHydrator
     public Task HydrateAndRefreshAsync(
         IEnumerable<AssetSymbol> symbols,
         CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(symbols);
-        return HydrateAndRefreshCoreAsync(symbols, ct);
-    }
+        => HydrateAndRefreshCoreAsync(symbols, ct);
 
     private static bool IsFresh(RateRow row, DateTimeOffset now)
     {

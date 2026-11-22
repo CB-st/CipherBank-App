@@ -5,25 +5,13 @@
 namespace CipherBank_app.Persist;
 
 /// <inheritdoc cref="ISyncJobScheduler" />
-public sealed class SyncJobScheduler : ISyncJobScheduler
+public sealed class SyncJobScheduler(
+    ISingleFlightJobFactory singleFlight,
+    IPrioritizedJobDispatcher queue)
+    : ISyncJobScheduler
 {
-    private readonly ISingleFlightJobFactory _singleFlight;
-    private readonly IPrioritizedJobDispatcher _queue;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SyncJobScheduler"/> class.
-    /// </summary>
-    /// <param name="singleFlight">Keyed in-flight operation policy.</param>
-    /// <param name="queue">Prioritized whole-operation queue.</param>
-    public SyncJobScheduler(
-        ISingleFlightJobFactory singleFlight,
-        IPrioritizedJobDispatcher queue)
-    {
-        ArgumentNullException.ThrowIfNull(singleFlight);
-        ArgumentNullException.ThrowIfNull(queue);
-        _singleFlight = singleFlight;
-        _queue = queue;
-    }
+    private readonly ISingleFlightJobFactory _singleFlight = singleFlight;
+    private readonly IPrioritizedJobDispatcher _queue = queue;
 
     /// <inheritdoc />
     public Task EnqueueAsync(
@@ -35,14 +23,10 @@ public sealed class SyncJobScheduler : ISyncJobScheduler
     public Task EnqueueAsync(
         SyncJobKey key,
         Func<CancellationToken, Task> work,
-        CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(key);
-        ArgumentNullException.ThrowIfNull(work);
-        return _singleFlight.GetOrCreateAsync(
+        CancellationToken ct) =>
+        _singleFlight.GetOrCreateAsync(
             key,
             () => _queue.EnqueueAsync(key.Priority, work, ct));
-    }
 
     /// <inheritdoc />
     public Task DrainAsync() => DrainAsync(CancellationToken.None);
