@@ -20,10 +20,10 @@ public class UserDataPackCodecTests
     private const string Username = "alice";
 
     private const string NullFormatPackJson =
-        """{"format":null,"content_version":1,"username_hash_prefix":"2bd806c9","blocks":[]}""";
+        """{"format":null,"content_version":1,"username_hash_prefix":"e7dcee3c","blocks":[]}""";
 
-    // AES-GCM vectors: zero nonce + fixture KEK + AAD for alice/prefs/prefs/v1.
-    private const string ExpectedZeroNonceTagB64 = "VG+E7OtAqIML1QgpsCaB+g==";
+    // AES-GCM vectors: zero nonce + fixture KEK + AAD for normalized (uppercase) alice/prefs/prefs/v1.
+    private const string ExpectedZeroNonceTagB64 = "R64Qdy84/k5LklOCkE8sSw==";
 
     private const string ExpectedZeroNonceCipherB64 = "MdzUOSWkOwN15+hJB/NkSyMpq3pu";
 
@@ -41,7 +41,7 @@ public class UserDataPackCodecTests
 
         pack.Format.Should().Be(UserDataConstants.PackFormat);
         pack.ContentVersion.Should().Be(3u);
-        pack.UsernameHashPrefix.Should().Be("2bd806c9");
+        pack.UsernameHashPrefix.Should().Be("e7dcee3c");
         pack.Blocks.Should().HaveCount(1);
 
         IReadOnlyDictionary<string, string> opened = UserDataPackCodec.OpenPack(pack, Username, keys.Kek).Blocks;
@@ -349,11 +349,11 @@ public class UserDataPackCodecTests
         block.TagBase64.Should().Be(ExpectedZeroNonceTagB64);
         block.CiphertextBase64.Should().Be(ExpectedZeroNonceCipherB64);
 
-        UserDataPackWire pack = new() { ContentVersion = 1, UsernameHashPrefix = "2bd806c9" };
+        UserDataPackWire pack = new() { ContentVersion = 1, UsernameHashPrefix = "e7dcee3c" };
         pack.Blocks.Add(block);
         string json = Encoding.UTF8.GetString(Convert.FromBase64String(UserDataPackCodec.EncodeBlob(pack)));
         json.Should().Be(
-            """{"format":"cipherbank-userdata-pack-v1","content_version":1,"username_hash_prefix":"2bd806c9","blocks":[{"id":"prefs","type":"prefs","seq":0,"alg":"AES-256-GCM","nonce_b64":"AAAAAAAAAAAAAAAA","tag_b64":"VG\u002BE7OtAqIML1QgpsCaB\u002Bg==","ciphertext_b64":"MdzUOSWkOwN15\u002BhJB/NkSyMpq3pu"}]}""");
+            """{"format":"cipherbank-userdata-pack-v1","content_version":1,"username_hash_prefix":"e7dcee3c","blocks":[{"id":"prefs","type":"prefs","seq":0,"alg":"AES-256-GCM","nonce_b64":"AAAAAAAAAAAAAAAA","tag_b64":"R64Qdy84/k5LklOCkE8sSw==","ciphertext_b64":"MdzUOSWkOwN15\u002BhJB/NkSyMpq3pu"}]}""");
 
         UserDataPackCodec.OpenBlock(block, keys.Kek, hash, 1)
             .Should().Be("""{"APPEARANCE":"dark"}""");
