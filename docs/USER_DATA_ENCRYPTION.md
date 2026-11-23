@@ -220,7 +220,7 @@ Backend stores **one** opaque `USER_DATA_BLOB`. The “series of blocks” is a 
 |-------|-------|
 | `format` | Must equal `cipherbank-userdata-pack-v1` |
 | `content_version` | Monotonic `uint` per successful local commit before OVERWRITE |
-| `username_hash_prefix` | First 8 hex chars of SHA-256(normalized username); integrity hint only |
+| `username_hash_prefix` | First 8 hex chars of SHA-256(username trimmed and uppercased invariantly); integrity hint only |
 | `blocks[].id` | Stable slug (`prefs`, `app_config`, `recipients`) or UUID for future custom blocks |
 | `blocks[].type` | Type registry below |
 | `blocks[].seq` | Order hint within the pack |
@@ -404,8 +404,8 @@ Implementations MUST pin these before shipping.
 | HKDF `…/kek` | `7a820e2ef0b659c68c3f9b447f04ab25df9ba7df6d64cd08696a4d9ac047e3a2` |
 | HKDF `…/enroll-seed` | `06ede38b…4a058a` (64 bytes) |
 | RSA-2048 SPKI fingerprint (SHA-256) | `4b23a249439ab9c80705fc2785ec5625f3eb556f8632b054bd88008a5d04957d` |
-| `alice` username hash prefix | `2bd806c9` |
-| Seal `prefs` / zero nonce / version 1 | tag `VG+E7OtAqIML1QgpsCaB+g==`, ct `MdzUOSWkOwN15+hJB/NkSyMpq3pu` |
+| `alice` username hash prefix (SHA-256 of `ALICE`) | `e7dcee3c` |
+| Seal `prefs` / zero nonce / version 1 | tag `R64Qdy84/k5LklOCkE8sSw==`, ct `MdzUOSWkOwN15+hJB/NkSyMpq3pu` |
 | Open pack from fixture Base64 `USER_DATA_BLOB` | Round-trip equals original prefs JSON |
 | Wrong username hash in AAD | Open throws / authentication failure |
 | Dispose key material / enroll keys | Further access throws `ObjectDisposedException` |
