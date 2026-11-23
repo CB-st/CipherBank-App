@@ -856,24 +856,15 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     /// <summary>
     /// An invocation whose delegate target may be assigned in another partial-class part.
     /// </summary>
-    private readonly struct DeferredInvoke : IEquatable<DeferredInvoke>
+    /// <param name="instance">Delegate instance that was not fully traced.</param>
+    /// <param name="location">Invocation location to report when the alias is raw SQL.</param>
+    private readonly struct DeferredInvoke(IOperation instance, Location location) : IEquatable<DeferredInvoke>
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DeferredInvoke"/> struct.
-        /// </summary>
-        /// <param name="instance">Delegate instance that was not fully traced.</param>
-        /// <param name="location">Invocation location to report when the alias is raw SQL.</param>
-        public DeferredInvoke(IOperation instance, Location location)
-        {
-            Instance = instance;
-            Location = location;
-        }
-
         /// <summary>Gets the delegate instance that was not fully traced.</summary>
-        public IOperation Instance { get; }
+        public IOperation Instance { get; } = instance;
 
         /// <summary>Gets the invocation location to report when the alias is raw SQL.</summary>
-        public Location Location { get; }
+        public Location Location { get; } = location;
 
         /// <inheritdoc />
         public bool Equals(DeferredInvoke other)

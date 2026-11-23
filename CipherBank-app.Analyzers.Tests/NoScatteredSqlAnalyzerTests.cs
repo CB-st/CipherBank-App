@@ -2,7 +2,6 @@
 // Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
 // </copyright>
 
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
@@ -14,9 +13,9 @@ public sealed class NoScatteredSqlAnalyzerTests
     // 10.0.12 matches Directory.Packages.props (Sqlite.Core pulls this Relational package).
     private static readonly ReferenceAssemblies _efCoreReferences =
         ReferenceAssemblies.Net.Net100.AddPackages(
-            ImmutableArray.Create(new PackageIdentity(
+            [new PackageIdentity(
                 "Microsoft.EntityFrameworkCore.Relational",
-                "10.0.12")));
+                "10.0.12")]);
 
     [Fact]
     public async Task ReportsCommandTextOutsideOwnerAsync()
@@ -197,7 +196,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsCommandTextObjectInitializerAndAddAssignmentAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -234,7 +233,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsParenthesizedCommandTextAssignmentTargetsAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -262,7 +261,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsNullConditionalCommandTextAssignmentAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -295,7 +294,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsEfRelationalRawSqlEntryPointsAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -350,7 +349,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsMethodGroupAndDelegateAliasesAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -427,7 +426,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsDelegateAliasAcrossPartialClassFilesAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -481,7 +480,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task IgnoresUnrelatedDelegateAcrossPartialClassFilesAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -530,7 +529,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsPropertyLocalAndParameterAssignmentsAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -567,7 +566,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsCoalescedAndConditionalDelegateAliasesAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -602,7 +601,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsDelegatesReturnedFromBlockAndLocalFunctionsAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -649,7 +648,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task ReportsPropertyInitializerAndAccessorLocalAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -690,7 +689,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task IgnoresCyclicHarmlessAliasesAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
@@ -720,7 +719,7 @@ public sealed class NoScatteredSqlAnalyzerTests
     [Fact]
     public async Task IgnoresSqlNamesThatAreNotInvocationsOrAssignmentsAsync()
     {
-        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
         {
             TestState =
             {
