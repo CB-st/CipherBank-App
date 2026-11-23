@@ -189,6 +189,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     {
         return left switch
         {
+            ParenthesizedExpressionSyntax parenthesized => CommandTextToken(parenthesized.Expression),
             MemberAccessExpressionSyntax member when member.Name.Identifier.ValueText == CommandTextName
                 => member.Name.Identifier,
             MemberBindingExpressionSyntax binding when binding.Name.Identifier.ValueText == CommandTextName

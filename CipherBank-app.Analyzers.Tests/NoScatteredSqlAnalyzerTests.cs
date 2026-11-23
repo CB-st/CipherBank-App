@@ -232,6 +232,34 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
+    public async Task ReportsParenthesizedCommandTextAssignmentTargetsAsync()
+    {
+        var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
+        {
+            TestState =
+            {
+                Sources =
+                {
+                    ("CipherBank-app.Core/Persist/Migrations/ParenthesizedCommandText.cs", """
+                        class ParenthesizedCommandText
+                        {
+                            void Run(System.Data.IDbCommand command)
+                            {
+                                (command.{|CB1003:CommandText|}) = "SELECT 1";
+                                ((command.{|CB1003:CommandText|})) += " OR 1=1";
+                                (command!).{|CB1003:CommandText|} ??= "SELECT 1";
+                                command!.{|CB1003:CommandText|} = "SELECT 1";
+                                command.CommandTimeout = 1;
+                            }
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
     public async Task ReportsNullConditionalCommandTextAssignmentAsync()
     {
         var test = new CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier>
