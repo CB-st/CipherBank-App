@@ -124,7 +124,7 @@ public class CarouselMathTests
         int steps,
         out double maxPosition)
     {
-        var state = new SpringState(start, startVelocity);
+        SpringState state = new(start, startVelocity);
         maxPosition = start;
         for (int i = 0; i < steps; i++)
         {

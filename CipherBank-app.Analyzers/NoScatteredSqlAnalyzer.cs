@@ -43,7 +43,7 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
 
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-        => ImmutableArray.Create(CipherBankDiagnostics.ScatteredSql);
+        => [CipherBankDiagnostics.ScatteredSql];
 
     /// <summary>
     /// Registers assignment, invocation, and delegate-creation actions for Core trees.

@@ -13,7 +13,7 @@ public class NfcPresentmentPayloadTests
     [Fact]
     public void ToJson_RoundTripsWithoutPan()
     {
-        NfcPresentmentPayload payload = new NfcPresentmentPayload
+        NfcPresentmentPayload payload = new()
         {
             SessionId = "sess_abc",
             TokenRef = "tok_xyz",
@@ -27,7 +27,7 @@ public class NfcPresentmentPayloadTests
 
         NfcPresentmentPayload? parsed = NfcPresentmentPayload.TryParse(json);
         parsed.Should().NotBeNull();
-        parsed!.SessionId.Should().Be("sess_abc");
+        parsed.SessionId.Should().Be("sess_abc");
         parsed.TokenRef.Should().Be("tok_xyz");
         parsed.MerchantId.Should().Be("m1");
     }
@@ -55,7 +55,7 @@ public class NfcPresentmentPayloadTests
         NfcPresentmentPayload? parsed = NfcPresentmentPayload.TryParse(
             """{"sessionId":"sess","tokenRef":"tok"}""");
         parsed.Should().NotBeNull();
-        parsed!.V.Should().Be(NfcPresentmentPayload.SupportedVersion);
+        parsed.V.Should().Be(NfcPresentmentPayload.SupportedVersion);
         parsed.SessionId.Should().Be("sess");
         parsed.TokenRef.Should().Be("tok");
     }
