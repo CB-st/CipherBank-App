@@ -61,7 +61,17 @@ public class UserDataKeyDerivationTests
     public void UsernameHash_AlicePrefix_IsPinned()
     {
         UserDataUsernameHash.HashHex("Alice")
-            .Should().Be("2bd806c97f0e00af1a1fc3328fa763a9269723c8db8fac4f93af71db186d6e90");
-        UserDataUsernameHash.HashPrefix("Alice").Should().Be("2bd806c9");
+            .Should().Be("e7dcee3cc63d170ba049da2c754a63ea55dcdd8d36f19c552cb59e0d4063b660");
+        UserDataUsernameHash.HashPrefix("Alice").Should().Be("e7dcee3c");
+    }
+
+    [Theory]
+    [InlineData("alice")]
+    [InlineData("Alice")]
+    [InlineData("  ALICE\t")]
+    public void NormalizeUsername_TrimsAndUppercases_AndHashesEqually(string username)
+    {
+        UserDataUsernameHash.NormalizeUsername(username).Should().Be("ALICE");
+        UserDataUsernameHash.HashHex(username).Should().Be(UserDataUsernameHash.HashHex("ALICE"));
     }
 }
