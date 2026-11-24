@@ -52,9 +52,21 @@ public class RsaOaepSha256UserDataEnrollAlgorithmTests
 
         byte[] challenge = RandomNumberGenerator.GetBytes(96);
         byte[] cipher = _enroll.EncryptChallenge(challenge, keys.PublicKeyPem);
-        byte[] plain = _enroll.DecryptChallenge(cipher, keys);
+        byte[] privateKeyCopy = [];
+        try
+        {
+            RsaOaepSha256UserDataEnrollAlgorithm.SetPrivateKeyCopyCreatedCallback(copy => privateKeyCopy = copy);
 
-        plain.Should().Equal(challenge);
+            byte[] plain = _enroll.DecryptChallenge(cipher, keys);
+
+            plain.Should().Equal(challenge);
+            privateKeyCopy.Should().NotBeEmpty();
+            privateKeyCopy.Should().OnlyContain(value => value == 0);
+        }
+        finally
+        {
+            RsaOaepSha256UserDataEnrollAlgorithm.SetPrivateKeyCopyCreatedCallback(static _ => { });
+        }
     }
 
     [Fact]

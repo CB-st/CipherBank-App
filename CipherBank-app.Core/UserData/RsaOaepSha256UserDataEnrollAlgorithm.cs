@@ -25,6 +25,7 @@ namespace CipherBank_app.UserData;
 public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgorithm
 {
     private const int PemBase64LineLength = 64;
+    private static Action<byte[]> _privateKeyCopyCreated = static _ => { };
 
     public string AlgorithmId => UserDataConstants.EnrollAlgorithmRsaOaepSha256V1;
 
@@ -68,10 +69,19 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
             throw new CryptographicException("Encrypted challenge is empty.");
         }
 
-        AsymmetricKeyParameter privateKey = PrivateKeyFactory.CreateKey(keys.PrivateKeyPkcs8Der.ToArray());
-        OaepEncoding engine = CreateOaepEngine();
-        engine.Init(forEncryption: false, privateKey);
-        return engine.ProcessBlock(encryptedChallenge.ToArray(), 0, encryptedChallenge.Length);
+        byte[] privateKeyCopy = keys.PrivateKeyPkcs8Der.ToArray();
+        try
+        {
+            AsymmetricKeyParameter privateKey = PrivateKeyFactory.CreateKey(privateKeyCopy);
+            _privateKeyCopyCreated(privateKeyCopy);
+            OaepEncoding engine = CreateOaepEngine();
+            engine.Init(forEncryption: false, privateKey);
+            return engine.ProcessBlock(encryptedChallenge.ToArray(), 0, encryptedChallenge.Length);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(privateKeyCopy);
+        }
     }
 
     /// <inheritdoc />
@@ -96,6 +106,9 @@ public sealed class RsaOaepSha256UserDataEnrollAlgorithm : IUserDataEnrollAlgori
             CryptographicOperations.ZeroMemory(plain);
         }
     }
+
+    internal static void SetPrivateKeyCopyCreatedCallback(Action<byte[]> callback)
+        => _privateKeyCopyCreated = callback;
 
     /// <summary>
     /// SHA-256 DigestRandomGenerator seeded solely from enroll-seed (no OS entropy).
