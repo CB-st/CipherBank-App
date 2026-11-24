@@ -31,12 +31,11 @@ internal sealed class HttpProductTransport
 
     internal HttpProductTransport(
         HttpClient http,
-        IProductSessionStore sessions,
-        ISessionProofBuilder sessionProof,
-        ProductSessionAuthority? authority)
+        ProductSessionAuthority sessions,
+        ISessionProofBuilder sessionProof)
     {
         _http = http;
-        _sessions = authority ?? ProductSessionAuthority.For(sessions);
+        _sessions = sessions;
         _sessionProof = sessionProof;
     }
 
@@ -108,6 +107,22 @@ internal sealed class HttpProductTransport
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<T>(JsonOptions, ct).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Empty response for {path}");
+    }
+
+    internal async Task<PrefsWireDto?> GetPrefsOrNullAsync(string path, CancellationToken ct)
+    {
+        try
+        {
+            return await GetAsync<PrefsWireDto>(path, ct).ConfigureAwait(false);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     internal async Task<T> PostMutationAsync<T>(string path, object body, string idempotencyKey, CancellationToken ct) // NOSONAR S4018 — response-only type param

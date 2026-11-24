@@ -27,7 +27,10 @@ public sealed class HttpProductClient(
     private const string PrefsPath = "v1/prefs";
     private const string AccountBootstrapPath = "v1/account/bootstrap";
 
-    private readonly HttpProductTransport _transport = new(http, sessions, sessionProof, authority);
+    private readonly HttpProductTransport _transport = new(
+        http,
+        authority ?? ProductSessionAuthority.For(sessions),
+        sessionProof);
 
     public HttpProductClient(
         HttpClient http,
@@ -40,10 +43,10 @@ public sealed class HttpProductClient(
     public Task<PortfolioDto> GetPortfolioAsync(CancellationToken ct)
         => _transport.GetAsync<PortfolioDto>(PortfolioPath, ct);
 
-    public async Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
+    public Task<IReadOnlyList<HistoryPointDto>> GetHistoryAsync(string symbol, string range, CancellationToken ct)
     {
         string path = $"{HistoryPath}?symbols={HttpProductTransport.EscapePathComponent(symbol)}&range={HttpProductTransport.EscapePathComponent(range)}";
-        return await _transport.GetAsync<List<HistoryPointDto>>(path, ct).ConfigureAwait(false);
+        return _transport.GetAsync<IReadOnlyList<HistoryPointDto>>(path, ct);
     }
 
     public Task<SessionDto> CreateSessionAsync(CancellationToken ct)
@@ -79,8 +82,8 @@ public sealed class HttpProductClient(
     public Task<ReceiveDto> GetReceiveAsync(string asset, CancellationToken ct)
         => _transport.GetAsync<ReceiveDto>(ReceivePathPrefix + HttpProductTransport.EscapePathComponent(asset), ct);
 
-    public async Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct)
-        => await _transport.GetAsync<List<VaultCardDto>>(VaultCardsPath, ct).ConfigureAwait(false);
+    public Task<IReadOnlyList<VaultCardDto>> GetVaultCardsAsync(CancellationToken ct)
+        => _transport.GetAsync<IReadOnlyList<VaultCardDto>>(VaultCardsPath, ct);
 
     public Task<VaultCardDto> AddVaultCardAsync(VaultCardDto card, string idempotencyKey, CancellationToken ct)
         => _transport.PostMutationAsync<VaultCardDto>(VaultCardsPath, card, idempotencyKey, ct);
@@ -88,8 +91,8 @@ public sealed class HttpProductClient(
     public Task DeleteVaultCardAsync(string cardId, CancellationToken ct)
         => _transport.PostAsync($"{VaultCardsPath}/{HttpProductTransport.EscapePathComponent(cardId)}/delete", new { }, ct);
 
-    public async Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct)
-        => await _transport.GetAsync<List<VaultBinaryDto>>(VaultBinariesPath, ct).ConfigureAwait(false);
+    public Task<IReadOnlyList<VaultBinaryDto>> GetVaultBinariesAsync(CancellationToken ct)
+        => _transport.GetAsync<IReadOnlyList<VaultBinaryDto>>(VaultBinariesPath, ct);
 
     public Task<PosSessionDto> CreatePosSessionAsync(CancellationToken ct)
         => _transport.PostMutationAsync<PosSessionDto>(PosSessionsPath, new { }, HttpProductTransport.CreateIdempotencyKey(), ct);
@@ -108,21 +111,8 @@ public sealed class HttpProductClient(
             HttpProductTransport.CreateIdempotencyKey(),
             ct);
 
-    public async Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct)
-    {
-        try
-        {
-            return await _transport.GetAsync<PrefsWireDto>(PrefsPath, ct).ConfigureAwait(false);
-        }
-        catch (HttpRequestException)
-        {
-            return null;
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
-    }
+    public Task<PrefsWireDto?> GetPrefsAsync(CancellationToken ct)
+        => _transport.GetPrefsOrNullAsync(PrefsPath, ct);
 
     public Task PutPrefsAsync(PrefsWireDto prefs, CancellationToken ct)
         => _transport.PutAsync(PrefsPath, prefs, ct);

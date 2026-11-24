@@ -41,6 +41,27 @@ public sealed class HttpProductClientTests
     }
 
     [Fact]
+    public async Task CreateSessionAsync_WithOperation_SavesTokensFromResponse()
+    {
+        StubHandler handler = new(_ => JsonResponse(
+            """{"ACCESS_TOKEN":"access-1","REFRESH_TOKEN":"refresh-1","EXPIRES_AT":1720900000000}"""));
+        InMemoryProductSessionStore sessions = new();
+        ProductSessionAuthority authority = ProductSessionAuthority.For(sessions);
+        HttpProductClient client = new(
+            new HttpClient(handler) { BaseAddress = new Uri("https://product.test/") },
+            sessions,
+            new LabSessionProofBuilder(),
+            authority);
+
+        SessionDto session = await client.CreateSessionAsync(authority.Begin(), CancellationToken.None);
+
+        session.AccessToken.Should().Be("access-1");
+        (await sessions.GetAsync()).Should().NotBeNull();
+        (await sessions.GetAsync())!.Value.Access.Should().Be("access-1");
+        handler.Requests.Should().ContainSingle(r => r.Method == HttpMethod.Post && r.Path == "v1/session");
+    }
+
+    [Fact]
     public async Task GetAsync_RefreshesOnce_OnUnauthorized()
     {
         int portfolioCalls = 0;
