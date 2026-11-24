@@ -49,6 +49,28 @@ internal sealed class HttpProductTransport
     internal async Task<SessionDto> CreateSessionAsync(CancellationToken ct)
         => await CreateSessionAsync(_sessions.Begin(), ct).ConfigureAwait(false);
 
+    internal async Task<SessionDto> CreateSessionAsync(ProductSessionOperation operation, CancellationToken ct)
+    {
+        _sessions.Check(operation, ct);
+
+        // The proof builder owns the custody proof protocol behind this call site.
+        object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
+        using HttpRequestMessage req = new(HttpMethod.Post, new Uri(SessionPath, UriKind.Relative))
+        {
+            Content = JsonContent.Create(body),
+        };
+        _sessions.Check(operation, ct);
+        ProductSessionDispatch.SetOperation(req, operation);
+        using HttpResponseMessage resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
+        _sessions.Check(operation, ct);
+        resp.EnsureSuccessStatusCode();
+        SessionDto? session = await resp.Content.ReadFromJsonAsync<SessionDto>(JsonOptions, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Empty session response.");
+        await _sessions.PublishAsync(operation, session, ct).ConfigureAwait(false);
+        _sessions.Check(operation, ct);
+        return session;
+    }
+
     internal async Task<SessionChallengeDto> CreateSessionChallengeAsync(string accountPublicKeyWire, CancellationToken ct)
     {
         using HttpRequestMessage req = new(HttpMethod.Post, new Uri(SessionChallengePath, UriKind.Relative))
@@ -71,27 +93,6 @@ internal sealed class HttpProductTransport
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<KeyShareResponseDto>(JsonOptions, ct).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Empty key-share response.");
-    }
-
-    internal async Task<SessionDto> CreateSessionAsync(ProductSessionOperation operation, CancellationToken ct)
-    {
-        _sessions.Check(operation, ct);
-        // The proof builder owns the custody proof protocol behind this call site.
-        object body = await _sessionProof.BuildOpenBodyAsync(ct).ConfigureAwait(false);
-        using HttpRequestMessage req = new(HttpMethod.Post, new Uri(SessionPath, UriKind.Relative))
-        {
-            Content = JsonContent.Create(body),
-        };
-        _sessions.Check(operation, ct);
-        ProductSessionDispatch.SetOperation(req, operation);
-        using HttpResponseMessage resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
-        _sessions.Check(operation, ct);
-        resp.EnsureSuccessStatusCode();
-        SessionDto? session = await resp.Content.ReadFromJsonAsync<SessionDto>(JsonOptions, ct).ConfigureAwait(false)
-            ?? throw new InvalidOperationException("Empty session response.");
-        await _sessions.PublishAsync(operation, session, ct).ConfigureAwait(false);
-        _sessions.Check(operation, ct);
-        return session;
     }
 
     internal async Task PutAsync(string path, object body, CancellationToken ct)
