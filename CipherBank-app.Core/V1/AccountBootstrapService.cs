@@ -7,69 +7,33 @@ using CipherBank_app.Persist;
 namespace CipherBank_app.V1;
 
 /// <inheritdoc />
-public sealed class AccountBootstrapService : IAccountBootstrapService
+public sealed class AccountBootstrapService(
+    IProductClient api,
+    IPrefsStore prefs,
+    IAccountBootstrapStateStore stateStore,
+    TimeProvider timeProvider,
+    ProductSessionAuthority? authority) : IAccountBootstrapService
 {
-    private readonly IProductClient _api;
-    private readonly IPrefsStore _prefs;
-    private readonly IAccountBootstrapStateStore? _stateStore;
-    private readonly TimeProvider _timeProvider;
-    private readonly ProductSessionAuthority? _authority;
+    private readonly IProductClient _api = api;
+    private readonly IPrefsStore _prefs = prefs;
+    private readonly IAccountBootstrapStateStore _stateStore = stateStore;
+    private readonly TimeProvider _timeProvider = timeProvider;
+    private readonly ProductSessionAuthority? _authority = authority;
+
+    /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
+    public AccountBootstrapService(IProductClient api, IPrefsStore prefs, IAccountBootstrapStateStore stateStore)
+        : this(api, prefs, stateStore, TimeProvider.System, null)
+    {
+    }
 
     /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
     public AccountBootstrapService(
         IProductClient api,
         IPrefsStore prefs,
-        IRecipientRepository recipients,
         IAccountBootstrapStateStore stateStore,
-        TimeProvider timeProvider,
-        ProductSessionAuthority? authority)
-    {
-        _api = api;
-        _prefs = prefs;
-        _stateStore = stateStore;
-        _timeProvider = timeProvider;
-        _authority = authority;
-    }
-
-    /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
-    public AccountBootstrapService(IProductClient api, IPrefsStore prefs, IRecipientRepository recipients)
-        : this(api, prefs, (IAccountBootstrapStateStore?)null, TimeProvider.System, null)
-    {
-    }
-
-    /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
-    public AccountBootstrapService(
-        IProductClient api,
-        IPrefsStore prefs,
-        IRecipientRepository recipients,
         TimeProvider timeProvider)
-        : this(api, prefs, (IAccountBootstrapStateStore?)null, timeProvider, null)
+        : this(api, prefs, stateStore, timeProvider, null)
     {
-    }
-
-    /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
-    public AccountBootstrapService(
-        IProductClient api,
-        IPrefsStore prefs,
-        IRecipientRepository recipients,
-        TimeProvider timeProvider,
-        ProductSessionAuthority? authority)
-        : this(api, prefs, (IAccountBootstrapStateStore?)null, timeProvider, authority)
-    {
-    }
-
-    private AccountBootstrapService(
-        IProductClient api,
-        IPrefsStore prefs,
-        IAccountBootstrapStateStore? stateStore,
-        TimeProvider timeProvider,
-        ProductSessionAuthority? authority)
-    {
-        _api = api;
-        _prefs = prefs;
-        _stateStore = stateStore;
-        _timeProvider = timeProvider;
-        _authority = authority;
     }
 
     public Task ApplyAsync(CancellationToken ct)
@@ -101,11 +65,6 @@ public sealed class AccountBootstrapService : IAccountBootstrapService
 
     private async Task ApplyLocalAsync(AccountBootstrapDto bootstrap, CancellationToken ct)
     {
-        if (_stateStore is null)
-        {
-            throw new InvalidOperationException("Account bootstrap requires the atomic state store.");
-        }
-
         UserPrefs local = await _prefs.LoadAsync(ct).ConfigureAwait(false);
         List<AchRecipientRow> rows = BuildRecipients(bootstrap.ResolvedRecipients);
         PrefsMerge.Merge(local, bootstrap.ResolvedPrefs);

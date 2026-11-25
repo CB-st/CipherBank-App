@@ -46,7 +46,7 @@ public class AccountBootstrapServiceTests
         });
 
         MemBootstrapStateStore state = new(prefs, recipients);
-        AccountBootstrapService svc = new(api, prefs, recipients, state, TimeProvider.System, null);
+        AccountBootstrapService svc = new(api, prefs, state, TimeProvider.System, null);
         await svc.ApplyAsync(CancellationToken.None);
 
         recipients.Rows.Should().ContainSingle(r => r.Id == "with-last4");
@@ -70,7 +70,7 @@ public class AccountBootstrapServiceTests
         });
 
         MemBootstrapStateStore state = new(prefs, recipients);
-        AccountBootstrapService svc = new(api, prefs, recipients, state, TimeProvider.System, null);
+        AccountBootstrapService svc = new(api, prefs, state, TimeProvider.System, null);
         await svc.ApplyAsync(CancellationToken.None);
 
         prefs.Current.DefaultSendSpeed.Should().Be("ach");
@@ -154,7 +154,7 @@ public class AccountBootstrapServiceTests
             ? () => throw new InvalidOperationException("Injected failure after SaveChanges.")
             : null;
         AccountBootstrapStateStore state = new(database, failWhileStaged, failAfterSaveChanges);
-        AccountBootstrapService svc = new(api, prefs, recipients, state, TimeProvider.System, null);
+        AccountBootstrapService svc = new(api, prefs, state, TimeProvider.System, null);
 
         Func<Task> apply = () => svc.ApplyAsync(CancellationToken.None);
         await apply.Should().ThrowAsync<InvalidOperationException>();
