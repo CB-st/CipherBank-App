@@ -4,8 +4,10 @@
 
 using CipherBank_app.Cora;
 using CipherBank_app.Custody;
+using CipherBank_app.Persist;
 using CipherBank_app.Pos;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace CipherBank_app.Configuration;
 
@@ -32,6 +34,8 @@ internal static class CipherBankCoreServiceRegistration
         services.AddSingleton<IEmvExchangeSimulator, EmvExchangeSimulator>();
         services.AddCipherBankPersistence(databaseDirectory);
         services.AddCipherBankSync();
+        services.AddSingleton(provider => UserPreferenceDefaults.FromOptions(
+            provider.GetRequiredService<IOptions<UserPreferenceDefaultsOptions>>().Value));
         services.AddProductSessionServices();
     }
 }

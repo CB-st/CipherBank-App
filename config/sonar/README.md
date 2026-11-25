@@ -2,7 +2,7 @@
 
 Sonar is the only source of truth for the quality gate. There is no
 checked-in copy for CI to verify against, and no repo-side script that
-pushes conditions to the server..
+pushes conditions to the server.
 
 The earlier `quality-gate.yaml` + Python verifier, and later
 `provision_quality_gate.py`, were retired so this repo does not keep a

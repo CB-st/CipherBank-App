@@ -1,0 +1,5 @@
+is_global = true
+
+# The linked MAUI handler retains its host copyright text under the test project's StyleCop settings.
+[@RepositoryRoot@/CipherBank-app/Services/Handlers/AuthHeaderHandler.cs]
+dotnet_diagnostic.SA1636.severity = none

@@ -1,0 +1,27 @@
+{
+  "Network": {
+    "DefaultEnvironment": "Sandbox",
+    "Environments": {
+      "Production": {
+        "ApiBase": "https://api.cipherbank.money",
+        "PublicApiBase": "https://api.cipherbank.money/",
+        "StreamEndpoint": "wss://api.cipherbank.money/v1/stream"
+      },
+      "Sandbox": {
+        "ApiBase": "https://api.sandbox.cipherbank.money",
+        "PublicApiBase": "https://api.cipherbank.money/",
+        "StreamEndpoint": "wss://api.sandbox.cipherbank.money/v1/stream"
+      },
+      "Development": {
+        "ApiBase": "https://api.dev.cipherbank.money",
+        "PublicApiBase": "https://api.cipherbank.money/",
+        "StreamEndpoint": "wss://api.dev.cipherbank.money/v1/stream"
+      },
+      "Local": {
+        "ApiBase": "http://localhost:5000",
+        "PublicApiBase": "http://localhost:5000/",
+        "StreamEndpoint": "ws://localhost:5000/v1/stream"
+      }
+    }
+  }
+}

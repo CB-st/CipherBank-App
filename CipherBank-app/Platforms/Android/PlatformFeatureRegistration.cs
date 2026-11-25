@@ -5,6 +5,7 @@
 using CipherBank_app.Controls;
 using CipherBank_app.Handlers;
 using CipherBank_app.Platforms.Android;
+using CipherBank_app.Pos;
 using CipherBank_app.Services;
 
 namespace CipherBank_app.Extensions;
@@ -12,10 +13,12 @@ namespace CipherBank_app.Extensions;
 /// <summary>Registers Android-owned host capabilities.</summary>
 public static class PlatformFeatureRegistration
 {
+    /// <summary>Registers transport, motion, and NFC adapters. Use: Low (startup). Scope: this platform.</summary>
     public static IServiceCollection AddPlatformFeatures(this IServiceCollection services)
     {
         services.AddSingleton<IPlatformHttpMessageHandlerFactory, AndroidHttpMessageHandlerFactory>();
         services.AddSingleton<IMotionPreference, AndroidMotionPreference>();
+        services.AddSingleton<INfcPresentmentService, CipherBank_app.Platforms.Android.Nfc.AndroidNdefPresentmentService>();
         return services;
     }
 
