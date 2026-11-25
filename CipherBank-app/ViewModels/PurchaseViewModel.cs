@@ -7,6 +7,7 @@ using System.Globalization;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
+using CipherBank_app.V1;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -18,8 +19,7 @@ namespace CipherBank_app.ViewModels;
 /// </summary>
 public partial class PurchaseViewModel(
     ILogger<PurchaseViewModel> logger,
-    ICryptoApiService cryptoService,
-    ITransactionService transactionService,
+    IProductClient product,
     IErrorHandler errorHandler,
     INavigationService navigation,
     IDialogService dialog)
@@ -30,47 +30,36 @@ public partial class PurchaseViewModel(
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
-    /// <summary>Gets or sets the cryptocurrencies available to purchase.</summary>
     [ObservableProperty]
     public partial ObservableCollection<CryptoCurrency> AvailableCryptos { get; set; } = [];
 
-    /// <summary>Gets or sets the selected cryptocurrency.</summary>
     [ObservableProperty]
     public partial CryptoCurrency? SelectedCrypto { get; set; }
 
-    /// <summary>Gets or sets the focused cryptocurrency card.</summary>
     [ObservableProperty]
     public partial CryptoCurrency? FocusedCrypto { get; set; }
 
-    /// <summary>Gets or sets the optional payment note.</summary>
     [ObservableProperty]
     public partial string PaymentNote { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the purchase amount.</summary>
     [ObservableProperty]
     public partial decimal Amount { get; set; }
 
-    /// <summary>Gets or sets the total purchase cost.</summary>
     [ObservableProperty]
     public partial decimal TotalCost { get; set; }
 
-    /// <summary>Gets or sets the purchase fee.</summary>
     [ObservableProperty]
     public partial decimal Fee { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether a purchase is in progress.</summary>
     [ObservableProperty]
     public partial bool IsPurchasing { get; set; }
 
-    /// <summary>Gets or sets a value indicating whether purchase data is loading.</summary>
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
 
-    /// <summary>Gets or sets the purchase error message.</summary>
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
 
-    /// <summary>Gets or sets the amount text entered by the user.</summary>
     [ObservableProperty]
     public partial string AmountText { get; set; } = string.Empty;
 
@@ -139,17 +128,14 @@ public partial class PurchaseViewModel(
     private async Task SelectCryptoBySymbolAsync(string symbol)
     {
         await LoadAvailableCryptosAsync();
-        if (!AssetSymbol.TryParse(symbol, out AssetSymbol? parsedSymbol))
-        {
-            return;
-        }
 
-        CryptoCurrency? crypto = AvailableCryptos.FirstOrDefault(c => c.Symbol == parsedSymbol);
+        CryptoCurrency? crypto = AvailableCryptos.FirstOrDefault(c =>
+            AssetSymbol.TryParse(symbol, out AssetSymbol? wanted) && c.Symbol == wanted);
 
         if (crypto != null)
         {
             SelectedCrypto = crypto;
-            LogPreSelectedSymbol(logger, parsedSymbol.Value);
+            LogPreSelectedSymbol(logger, symbol);
         }
     }
 
@@ -177,12 +163,11 @@ public partial class PurchaseViewModel(
             bool success = await errorHandler.HandleApiErrorsAsync(
                 async () =>
                 {
-                    List<CryptoCurrency> cryptos = await cryptoService.GetCryptoPricesAsync(_cts.Token);
-
                     AvailableCryptos.Clear();
-                    foreach (CryptoCurrency crypto in cryptos)
+                    PortfolioDto portfolio = await product.GetPortfolioAsync(_cts.Token);
+                    foreach (HoldingDto holding in portfolio.Holdings.Where(h => CurrencySymbolMap.IsSupported(h.Symbol)))
                     {
-                        AvailableCryptos.Add(crypto);
+                        AvailableCryptos.Add(ProductSurfaceMap.ToCryptoCurrency(holding));
                     }
 
                     if (AvailableCryptos.Count > 0)
@@ -195,7 +180,7 @@ public partial class PurchaseViewModel(
                         SelectedCrypto = restored ?? AvailableCryptos.First();
                     }
 
-                    LogLoadedCryptos(logger, cryptos.Count);
+                    LogLoadedCryptos(logger, AvailableCryptos.Count);
                 },
                 msg => ErrorMessage = msg);
 
@@ -205,6 +190,8 @@ public partial class PurchaseViewModel(
                 {
                     LogLoadCryptosCancelled(logger);
                 }
+
+                return;
             }
         }
         catch (Exception ex)
@@ -271,7 +258,8 @@ public partial class PurchaseViewModel(
         bool confirm = await dialog.ShowConfirmAsync(
             "Confirm Purchase",
             confirmMessage,
-            "Purchase");
+            "Purchase",
+            "Cancel");
 
         if (!confirm)
         {
@@ -288,16 +276,21 @@ public partial class PurchaseViewModel(
         {
             LogPurchasing(logger, Amount, SelectedCrypto.Symbol.Value);
 
-            Transaction transaction = await transactionService.PurchaseCryptoAsync(
-                SelectedCrypto.Symbol, Amount, _cts.Token);
+            MoneyMoveDto move = await product.ConvertAsync(
+                "USD",
+                SelectedCrypto.Symbol.Value,
+                Amount.ToString(CultureInfo.InvariantCulture),
+                Guid.NewGuid().ToString("N"),
+                _cts.Token);
 
             string successMessage =
-                $"Successfully purchased {transaction.Amount:F8} {transaction.CryptoSymbol}!\n\n" +
-                $"Transaction ID: {transaction.Id}\n" +
-                $"Fee: {transaction.FeeAmount:F8} {transaction.CryptoSymbol}";
+                $"Successfully purchased {Amount:F8} {SelectedCrypto.Symbol}!\n\n" +
+                $"Transaction ID: {move.Id}\n" +
+                $"Status: {move.Status}";
             await dialog.ShowAlertAsync(
                 "Purchase Complete",
-                successMessage);
+                successMessage,
+                "OK");
 
             // Clear form
             AmountText = string.Empty;
@@ -305,7 +298,7 @@ public partial class PurchaseViewModel(
             PaymentNote = string.Empty;
             CalculateTotalCost();
 
-            LogPurchaseCompleted(logger, transaction.Id);
+            LogPurchaseCompleted(logger, move.Id);
 
             // Optionally navigate to wallet
             bool viewWallet = await dialog.ShowConfirmAsync(
@@ -338,7 +331,8 @@ public partial class PurchaseViewModel(
             LogErrorProcessingPurchase(logger, ex);
             await dialog.ShowAlertAsync(
                 "Error",
-                "Failed to complete purchase. Please try again.");
+                "Failed to complete purchase. Please try again.",
+                "OK");
         }
         finally
         {
