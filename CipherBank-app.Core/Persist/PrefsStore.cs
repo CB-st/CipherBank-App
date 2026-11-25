@@ -66,8 +66,6 @@ public sealed class PrefsStore(
 
     internal static async Task ApplyAsync(CipherBankDbContext context, UserPrefs prefs, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(prefs);
         prefs.NormalizeHomeSections();
         string json = JsonSerializer.Serialize(UserPrefsWireDto.FromPrefs(prefs));
         PreferenceEntity? entity = await context.Preferences.FindAsync([Key], ct).ConfigureAwait(false);

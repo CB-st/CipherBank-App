@@ -87,6 +87,63 @@ public class AccountBootstrapServiceTests
     }
 
     [Fact]
+    public async Task ApplyAsync_CommitsMergedPrefsAndUpdatedAndNewRecipientsToSqlite()
+    {
+        string path = Path.Combine(Path.GetTempPath(), "cb-bootstrap-" + Guid.NewGuid().ToString("N") + ".db");
+        await using TemporaryDatabase database = new(new FileInfo(path));
+        await database.InitializeAsync();
+        PrefsStore prefs = new(database, TestPreferenceDefaults.Options);
+        RecipientRepository recipients = new(database);
+
+        UserPrefs originalPrefs = await prefs.LoadAsync();
+        originalPrefs.Appearance = "light";
+        originalPrefs.DefaultSendSpeed = "instant";
+        await prefs.SaveAsync(originalPrefs);
+        await recipients.UpsertAsync(new AchRecipientRow(
+            "existing",
+            "Old Payee",
+            "Old Holder",
+            "Old Bank",
+            null,
+            null,
+            "checking",
+            "old memo",
+            "••••1111",
+            "••••0021",
+            DateTimeOffset.UnixEpoch));
+
+        BootstrapApi api = new(new AccountBootstrapDto
+        {
+            Prefs = new PrefsWireDto { DefaultSendSpeed = "ach", CoraEnabled = true },
+            Recipients =
+            {
+                CreateRecipient("existing", "Updated Payee", "1234"),
+                CreateRecipient("new", "New Payee", "9876"),
+            },
+        });
+        AccountBootstrapStateStore state = new(database);
+        AccountBootstrapService svc = new(api, prefs, state, TimeProvider.System, null);
+
+        await svc.ApplyAsync(CancellationToken.None);
+
+        PrefsStore freshPrefs = new(database, TestPreferenceDefaults.Options);
+        UserPrefs persistedPrefs = await freshPrefs.LoadAsync();
+        persistedPrefs.Appearance.Should().Be("light");
+        persistedPrefs.DefaultSendSpeed.Should().Be("ach");
+        persistedPrefs.CoraEnabled.Should().BeTrue();
+
+        RecipientRepository freshRecipients = new(database);
+        IReadOnlyList<AchRecipientRow> persistedRecipients = await freshRecipients.ListAsync();
+        persistedRecipients.Should().HaveCount(2);
+        persistedRecipients.Should().ContainSingle(row => row.Id == "existing"
+            && row.Name == "Updated Payee"
+            && row.AccountMask == AchRecipientValidation.MaskAccount("****1234"));
+        persistedRecipients.Should().ContainSingle(row => row.Id == "new"
+            && row.Name == "New Payee"
+            && row.AccountMask == AchRecipientValidation.MaskAccount("****9876"));
+    }
+
+    [Fact]
     public Task ApplyAsync_MidWriteFailureLeavesDatabaseUnchanged()
         => AssertFailedTransactionLeavesDatabaseUnchangedAsync(1);
 

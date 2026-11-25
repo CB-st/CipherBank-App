@@ -26,7 +26,6 @@ public sealed class AccountBootstrapStateStore : IAccountBootstrapStateStore
         Action<int>? recipientStaged,
         Action? afterSaveChanges = null)
     {
-        ArgumentNullException.ThrowIfNull(contexts);
         _contexts = contexts;
         _recipientStaged = recipientStaged;
         _afterSaveChanges = afterSaveChanges;
@@ -35,9 +34,6 @@ public sealed class AccountBootstrapStateStore : IAccountBootstrapStateStore
     /// <inheritdoc />
     public async Task CommitAsync(UserPrefs prefs, IReadOnlyList<AchRecipientRow> recipients, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(prefs);
-        ArgumentNullException.ThrowIfNull(recipients);
-
         CipherBankDbContext context = await _contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
