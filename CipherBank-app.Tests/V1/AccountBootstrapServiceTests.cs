@@ -53,6 +53,88 @@ public class AccountBootstrapServiceTests
         recipients.Rows.Single().AccountMask.Should().Be(AchRecipientValidation.MaskAccount("****4021"));
     }
 
+    [Fact]
+    public async Task ApplyAsync_PersistsMergedPrefsAndAllValidRecipients()
+    {
+        MemPrefs prefs = new();
+        MemRecipients recipients = new();
+        BootstrapApi api = new(new AccountBootstrapDto
+        {
+            Prefs = new PrefsWireDto { DefaultSendSpeed = "ach", CoraEnabled = true },
+            Recipients =
+            {
+                CreateRecipient("first", "First Payee", "1234"),
+                CreateRecipient("second", "Second Payee", "9876"),
+            },
+        });
+
+        AccountBootstrapService svc = new(api, prefs, recipients);
+        await svc.ApplyAsync(CancellationToken.None);
+
+        prefs.Current.DefaultSendSpeed.Should().Be("ach");
+        prefs.Current.CoraEnabled.Should().BeTrue();
+        recipients.Rows.Should().HaveCount(2);
+        recipients.Rows.Should().ContainSingle(row => row.Id == "first"
+            && row.Name == "First Payee"
+            && row.AccountMask == AchRecipientValidation.MaskAccount("****1234")
+            && row.RoutingMask == AchRecipientValidation.MaskRouting("021000021"));
+        recipients.Rows.Should().ContainSingle(row => row.Id == "second"
+            && row.Name == "Second Payee"
+            && row.AccountMask == AchRecipientValidation.MaskAccount("****9876")
+            && row.RoutingMask == AchRecipientValidation.MaskRouting("021000021"));
+    }
+
+    [Fact]
+    public async Task ApplyAsync_RestoresPrefsAndRecipientsWhenLaterWriteFails()
+    {
+        MemPrefs prefs = new();
+        prefs.Current.Appearance = "dark";
+        prefs.Current.CoraEnabled = false;
+        MemRecipients recipients = new() { ThrowAfterUpsertNumber = 2 };
+        AchRecipientRow existing = new(
+            "existing",
+            "Existing Payee",
+            "Existing Payee",
+            "Bank",
+            null,
+            null,
+            "checking",
+            null,
+            "••••1111",
+            "••••0021",
+            DateTimeOffset.UnixEpoch);
+        recipients.Rows.Add(existing);
+        BootstrapApi api = new(new AccountBootstrapDto
+        {
+            Prefs = new PrefsWireDto { DefaultSendSpeed = "ach", CoraEnabled = true },
+            Recipients =
+            {
+                CreateRecipient("first", "First Payee", "1234"),
+                CreateRecipient("second", "Second Payee", "9876"),
+            },
+        });
+        AccountBootstrapService svc = new(api, prefs, recipients);
+        Func<Task> apply = () => svc.ApplyAsync(CancellationToken.None);
+        await apply.Should().ThrowAsync<InvalidOperationException>();
+
+        prefs.Current.DefaultSendSpeed.Should().Be("instant");
+        prefs.Current.CoraEnabled.Should().BeFalse();
+        prefs.Current.Appearance.Should().Be("dark");
+        recipients.Rows.Should().BeEquivalentTo([existing]);
+    }
+
+    private static BootstrapRecipientDto CreateRecipient(string id, string name, string last4)
+        => new()
+        {
+            Id = id,
+            DisplayName = name,
+            AccountHolderName = name,
+            BankName = "Chase",
+            RoutingNumber = "021000021",
+            AccountLast4 = last4,
+            AccountType = "checking",
+        };
+
     private sealed class BootstrapApi(AccountBootstrapDto bootstrap) : IProductClient
     {
         private readonly AccountBootstrapDto _bootstrap = bootstrap;
@@ -135,15 +217,25 @@ public class AccountBootstrapServiceTests
 
     private sealed class MemRecipients : IRecipientRepository
     {
+        private int _upsertCount;
+
         public List<AchRecipientRow> Rows { get; } = [];
+
+        public int? ThrowAfterUpsertNumber { get; init; }
 
         public Task<IReadOnlyList<AchRecipientRow>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<AchRecipientRow>>(Rows);
 
         public Task UpsertAsync(AchRecipientRow row, CancellationToken ct = default)
         {
+            _upsertCount++;
             Rows.RemoveAll(r => r.Id == row.Id);
             Rows.Add(row);
+            if (_upsertCount == ThrowAfterUpsertNumber)
+            {
+                throw new InvalidOperationException("Injected recipient write failure.");
+            }
+
             return Task.CompletedTask;
         }
 
