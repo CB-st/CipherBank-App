@@ -7,31 +7,69 @@ using CipherBank_app.Persist;
 namespace CipherBank_app.V1;
 
 /// <inheritdoc />
-public sealed class AccountBootstrapService(
-    IProductClient api,
-    IPrefsStore prefs,
-    IRecipientRepository recipients,
-    TimeProvider timeProvider,
-    ProductSessionAuthority? authority) : IAccountBootstrapService
+public sealed class AccountBootstrapService : IAccountBootstrapService
 {
-    private readonly IProductClient _api = api;
-    private readonly IPrefsStore _prefs = prefs;
-    private readonly IRecipientRepository _recipients = recipients;
-    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
-    private readonly ProductSessionAuthority? _authority = authority;
+    private readonly IProductClient _api;
+    private readonly IPrefsStore _prefs;
+    private readonly IAccountBootstrapStateStore? _stateStore;
+    private readonly TimeProvider _timeProvider;
+    private readonly ProductSessionAuthority? _authority;
 
+    /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
+    public AccountBootstrapService(
+        IProductClient api,
+        IPrefsStore prefs,
+        IRecipientRepository recipients,
+        IAccountBootstrapStateStore stateStore,
+        TimeProvider timeProvider,
+        ProductSessionAuthority? authority)
+    {
+        _api = api;
+        _prefs = prefs;
+        _stateStore = stateStore;
+        _timeProvider = timeProvider;
+        _authority = authority;
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
     public AccountBootstrapService(IProductClient api, IPrefsStore prefs, IRecipientRepository recipients)
-        : this(api, prefs, recipients, TimeProvider.System)
+        : this(api, prefs, (IAccountBootstrapStateStore?)null, TimeProvider.System, null)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
     public AccountBootstrapService(
         IProductClient api,
         IPrefsStore prefs,
         IRecipientRepository recipients,
         TimeProvider timeProvider)
-        : this(api, prefs, recipients, timeProvider, null)
+        : this(api, prefs, (IAccountBootstrapStateStore?)null, timeProvider, null)
     {
+    }
+
+    /// <summary>Initializes a new instance of the <see cref="AccountBootstrapService"/> class.</summary>
+    public AccountBootstrapService(
+        IProductClient api,
+        IPrefsStore prefs,
+        IRecipientRepository recipients,
+        TimeProvider timeProvider,
+        ProductSessionAuthority? authority)
+        : this(api, prefs, (IAccountBootstrapStateStore?)null, timeProvider, authority)
+    {
+    }
+
+    private AccountBootstrapService(
+        IProductClient api,
+        IPrefsStore prefs,
+        IAccountBootstrapStateStore? stateStore,
+        TimeProvider timeProvider,
+        ProductSessionAuthority? authority)
+    {
+        _api = api;
+        _prefs = prefs;
+        _stateStore = stateStore;
+        _timeProvider = timeProvider;
+        _authority = authority;
     }
 
     public Task ApplyAsync(CancellationToken ct)
@@ -63,27 +101,15 @@ public sealed class AccountBootstrapService(
 
     private async Task ApplyLocalAsync(AccountBootstrapDto bootstrap, CancellationToken ct)
     {
-        UserPrefs local = await _prefs.LoadAsync(ct).ConfigureAwait(false);
-        IReadOnlyList<AchRecipientRow> existingRecipients = [.. await _recipients.ListAsync(ct).ConfigureAwait(false)];
-        UserPrefsSnapshot prefsSnapshot = new(local);
-        List<AchRecipientRow> rows = BuildRecipients(bootstrap.ResolvedRecipients);
-        List<string> attemptedIds = [];
+        if (_stateStore is null)
+        {
+            throw new InvalidOperationException("Account bootstrap requires the atomic state store.");
+        }
 
-        try
-        {
-            PrefsMerge.Merge(local, bootstrap.ResolvedPrefs);
-            await _prefs.SaveAsync(local, ct).ConfigureAwait(false);
-            foreach (AchRecipientRow row in rows)
-            {
-                attemptedIds.Add(row.Id);
-                await _recipients.UpsertAsync(row, ct).ConfigureAwait(false);
-            }
-        }
-        catch
-        {
-            await RestoreAsync(local, prefsSnapshot, existingRecipients, attemptedIds).ConfigureAwait(false);
-            throw;
-        }
+        UserPrefs local = await _prefs.LoadAsync(ct).ConfigureAwait(false);
+        List<AchRecipientRow> rows = BuildRecipients(bootstrap.ResolvedRecipients);
+        PrefsMerge.Merge(local, bootstrap.ResolvedPrefs);
+        await _stateStore.CommitAsync(local, rows, ct).ConfigureAwait(false);
     }
 
     private List<AchRecipientRow> BuildRecipients(IReadOnlyList<BootstrapRecipientDto> contacts)
@@ -132,55 +158,5 @@ public sealed class AccountBootstrapService(
         }
 
         return rows;
-    }
-
-    private async Task RestoreAsync(
-        UserPrefs local,
-        UserPrefsSnapshot prefsSnapshot,
-        IEnumerable<AchRecipientRow> existingRecipients,
-        IEnumerable<string> attemptedIds)
-    {
-        prefsSnapshot.Restore(local);
-        await _prefs.SaveAsync(local, CancellationToken.None).ConfigureAwait(false);
-        foreach (string id in attemptedIds.Distinct(StringComparer.Ordinal))
-        {
-            AchRecipientRow? previous = existingRecipients.FirstOrDefault(row => row.Id == id);
-            if (previous is null)
-            {
-                await _recipients.DeleteAsync(id, CancellationToken.None).ConfigureAwait(false);
-            }
-            else
-            {
-                await _recipients.UpsertAsync(previous, CancellationToken.None).ConfigureAwait(false);
-            }
-        }
-    }
-
-    private sealed class UserPrefsSnapshot(UserPrefs source)
-    {
-        private readonly string[] _homeOrder = [.. source.HomeOrder];
-        private readonly Dictionary<string, bool> _homeVisible = new(source.HomeVisible, StringComparer.Ordinal);
-        private readonly string _assetsLayout = source.AssetsLayout;
-        private readonly bool _valuesHiddenOnLaunch = source.ValuesHiddenOnLaunch;
-        private readonly bool _coraEnabled = source.CoraEnabled;
-        private readonly string _defaultSendSpeed = source.DefaultSendSpeed;
-        private readonly string _appearance = source.Appearance;
-        private readonly string _baseCurrency = source.BaseCurrency;
-        private readonly string[] _enabledCurrencies = [.. source.EnabledCurrencies];
-        private readonly int _lockIdleSeconds = source.LockIdleSeconds;
-
-        public void Restore(UserPrefs target)
-        {
-            target.ReplaceHomeOrder(_homeOrder);
-            target.ReplaceHomeVisible(_homeVisible);
-            target.AssetsLayout = _assetsLayout;
-            target.ValuesHiddenOnLaunch = _valuesHiddenOnLaunch;
-            target.CoraEnabled = _coraEnabled;
-            target.DefaultSendSpeed = _defaultSendSpeed;
-            target.Appearance = _appearance;
-            target.BaseCurrency = _baseCurrency;
-            target.ReplaceEnabledCurrencies(_enabledCurrencies);
-            target.LockIdleSeconds = _lockIdleSeconds;
-        }
     }
 }

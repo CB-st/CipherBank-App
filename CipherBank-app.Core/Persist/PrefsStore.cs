@@ -64,22 +64,29 @@ public sealed class PrefsStore(
         return SaveCoreAsync(prefs, ct);
     }
 
+    internal static async Task ApplyAsync(CipherBankDbContext context, UserPrefs prefs, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(prefs);
+        prefs.NormalizeHomeSections();
+        string json = JsonSerializer.Serialize(UserPrefsWireDto.FromPrefs(prefs));
+        PreferenceEntity? entity = await context.Preferences.FindAsync([Key], ct).ConfigureAwait(false);
+        if (entity is null)
+        {
+            context.Preferences.Add(new PreferenceEntity { Key = Key, Value = json });
+        }
+        else
+        {
+            entity.Value = json;
+        }
+    }
+
     private async Task SaveCoreAsync(UserPrefs prefs, CancellationToken ct)
     {
-        string json = JsonSerializer.Serialize(UserPrefsWireDto.FromPrefs(prefs));
         CipherBankDbContext context = await contexts.CreateDbContextAsync(ct).ConfigureAwait(false);
         await using (context)
         {
-            PreferenceEntity? entity = await context.Preferences.FindAsync([Key], ct).ConfigureAwait(false);
-            if (entity is null)
-            {
-                context.Preferences.Add(new PreferenceEntity { Key = Key, Value = json });
-            }
-            else
-            {
-                entity.Value = json;
-            }
-
+            await ApplyAsync(context, prefs, ct).ConfigureAwait(false);
             await context.SaveChangesAsync(ct).ConfigureAwait(false);
         }
     }

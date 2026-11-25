@@ -45,7 +45,8 @@ public class AccountBootstrapServiceTests
             },
         });
 
-        AccountBootstrapService svc = new(api, prefs, recipients);
+        MemBootstrapStateStore state = new(prefs, recipients);
+        AccountBootstrapService svc = new(api, prefs, recipients, state, TimeProvider.System, null);
         await svc.ApplyAsync(CancellationToken.None);
 
         recipients.Rows.Should().ContainSingle(r => r.Id == "with-last4");
@@ -68,7 +69,8 @@ public class AccountBootstrapServiceTests
             },
         });
 
-        AccountBootstrapService svc = new(api, prefs, recipients);
+        MemBootstrapStateStore state = new(prefs, recipients);
+        AccountBootstrapService svc = new(api, prefs, recipients, state, TimeProvider.System, null);
         await svc.ApplyAsync(CancellationToken.None);
 
         prefs.Current.DefaultSendSpeed.Should().Be("ach");
@@ -85,42 +87,83 @@ public class AccountBootstrapServiceTests
     }
 
     [Fact]
-    public async Task ApplyAsync_RestoresPrefsAndRecipientsWhenLaterWriteFails()
+    public Task ApplyAsync_MidWriteFailureLeavesDatabaseUnchanged()
+        => AssertFailedTransactionLeavesDatabaseUnchangedAsync(1);
+
+    [Fact]
+    public Task ApplyAsync_FailureAfterSaveChangesLeavesDatabaseUnchanged()
+        => AssertFailedTransactionLeavesDatabaseUnchangedAsync(0);
+
+    private static async Task AssertFailedTransactionLeavesDatabaseUnchangedAsync(int failAfterStagedRecipientCount)
     {
-        MemPrefs prefs = new();
-        prefs.Current.Appearance = "dark";
-        prefs.Current.CoraEnabled = false;
-        MemRecipients recipients = new() { ThrowAfterUpsertNumber = 2 };
-        AchRecipientRow existing = new(
-            "existing",
-            "Existing Payee",
-            "Existing Payee",
+        string path = Path.Combine(Path.GetTempPath(), "cb-bootstrap-" + Guid.NewGuid().ToString("N") + ".db");
+        await using TemporaryDatabase database = new(new FileInfo(path));
+        await database.InitializeAsync();
+        PrefsStore prefs = new(database, TestPreferenceDefaults.Options);
+        RecipientRepository recipients = new(database);
+        UserPrefs originalPrefs = await prefs.LoadAsync();
+        originalPrefs.Appearance = "light";
+        originalPrefs.CoraEnabled = false;
+        originalPrefs.DefaultSendSpeed = "instant";
+        await prefs.SaveAsync(originalPrefs);
+        AchRecipientRow original = new(
+            "first",
+            "Prior First Payee",
+            "Prior Holder",
+            "Prior Bank",
+            null,
+            null,
+            "checking",
+            "prior memo",
+            "••••1111",
+            "••••0021",
+            DateTimeOffset.UnixEpoch);
+        await recipients.UpsertAsync(original);
+        AchRecipientRow retained = new(
+            "retained",
+            "Retained Payee",
+            "Retained Holder",
             "Bank",
             null,
             null,
             "checking",
             null,
-            "••••1111",
+            "••••2222",
             "••••0021",
             DateTimeOffset.UnixEpoch);
-        recipients.Rows.Add(existing);
+        await recipients.UpsertAsync(retained);
+        IReadOnlyList<AchRecipientRow> beforeRecipients = await recipients.ListAsync();
+
         BootstrapApi api = new(new AccountBootstrapDto
         {
-            Prefs = new PrefsWireDto { DefaultSendSpeed = "ach", CoraEnabled = true },
+            Prefs = new PrefsWireDto { DefaultSendSpeed = "ach", CoraEnabled = true, Appearance = "dark" },
             Recipients =
             {
-                CreateRecipient("first", "First Payee", "1234"),
-                CreateRecipient("second", "Second Payee", "9876"),
+                CreateRecipient("first", "New First Payee", "1234"),
+                CreateRecipient("second", "New Second Payee", "9876"),
             },
         });
-        AccountBootstrapService svc = new(api, prefs, recipients);
+        Action<int> failWhileStaged = stagedCount =>
+        {
+            if (failAfterStagedRecipientCount > 0 && stagedCount == failAfterStagedRecipientCount)
+            {
+                throw new InvalidOperationException("Injected failure while transaction is staged.");
+            }
+        };
+        Action? failAfterSaveChanges = failAfterStagedRecipientCount == 0
+            ? () => throw new InvalidOperationException("Injected failure after SaveChanges.")
+            : null;
+        AccountBootstrapStateStore state = new(database, failWhileStaged, failAfterSaveChanges);
+        AccountBootstrapService svc = new(api, prefs, recipients, state, TimeProvider.System, null);
+
         Func<Task> apply = () => svc.ApplyAsync(CancellationToken.None);
         await apply.Should().ThrowAsync<InvalidOperationException>();
 
-        prefs.Current.DefaultSendSpeed.Should().Be("instant");
-        prefs.Current.CoraEnabled.Should().BeFalse();
-        prefs.Current.Appearance.Should().Be("dark");
-        recipients.Rows.Should().BeEquivalentTo([existing]);
+        UserPrefs afterPrefs = await prefs.LoadAsync();
+        afterPrefs.DefaultSendSpeed.Should().Be("instant");
+        afterPrefs.CoraEnabled.Should().BeFalse();
+        afterPrefs.Appearance.Should().Be("light");
+        (await recipients.ListAsync()).Should().BeEquivalentTo(beforeRecipients);
     }
 
     private static BootstrapRecipientDto CreateRecipient(string id, string name, string last4)
@@ -217,31 +260,36 @@ public class AccountBootstrapServiceTests
 
     private sealed class MemRecipients : IRecipientRepository
     {
-        private int _upsertCount;
-
         public List<AchRecipientRow> Rows { get; } = [];
-
-        public int? ThrowAfterUpsertNumber { get; init; }
 
         public Task<IReadOnlyList<AchRecipientRow>> ListAsync(CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<AchRecipientRow>>(Rows);
 
         public Task UpsertAsync(AchRecipientRow row, CancellationToken ct = default)
         {
-            _upsertCount++;
             Rows.RemoveAll(r => r.Id == row.Id);
             Rows.Add(row);
-            if (_upsertCount == ThrowAfterUpsertNumber)
-            {
-                throw new InvalidOperationException("Injected recipient write failure.");
-            }
-
             return Task.CompletedTask;
         }
 
         public Task DeleteAsync(string id, CancellationToken ct = default)
         {
             Rows.RemoveAll(r => r.Id == id);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class MemBootstrapStateStore(MemPrefs prefs, MemRecipients recipients) : IAccountBootstrapStateStore
+    {
+        public Task CommitAsync(UserPrefs mergedPrefs, IReadOnlyList<AchRecipientRow> rows, CancellationToken ct)
+        {
+            prefs.Current = mergedPrefs;
+            foreach (AchRecipientRow row in rows)
+            {
+                recipients.Rows.RemoveAll(existing => existing.Id == row.Id);
+                recipients.Rows.Add(row);
+            }
+
             return Task.CompletedTask;
         }
     }

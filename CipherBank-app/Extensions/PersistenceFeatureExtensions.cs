@@ -42,6 +42,7 @@ public static class PersistenceFeatureExtensions
         });
         services.AddSingleton<ILocalDatabaseInitializer, LocalDatabaseInitializer>();
         services.AddSingleton<IPrefsStore, PrefsStore>();
+        services.AddSingleton<IAccountBootstrapStateStore, AccountBootstrapStateStore>();
         services.AddSingleton<IWalletRepository, WalletRepository>();
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
         services.AddSingleton<IRecipientSeedInitializer, RecipientSeedInitializer>();

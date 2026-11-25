@@ -18,6 +18,7 @@ internal static class CipherBankSyncRegistration
     {
         services.AddSingleton<IMarketRepository, MarketRepository>();
         services.AddSingleton<IPrefsStore, PrefsStore>();
+        services.AddSingleton<IAccountBootstrapStateStore, AccountBootstrapStateStore>();
         services.AddSingleton<IRateSnapshotStore, SqliteRateSnapshotStore>();
         services.AddSingleton<IRecipientRepository, RecipientRepository>();
         services.AddSingleton<IWalletRepository, WalletRepository>();
