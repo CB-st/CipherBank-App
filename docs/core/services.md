@@ -66,6 +66,23 @@ Service for managing cryptocurrency transactions.
 
 ---
 
+## IPublicQuoteService
+
+**File**: `Services/IPublicQuoteService.cs`
+
+Client for the live public quote surface (`/currencies`, `/quote`, `/iquote`, `/test`).
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| TestConnectionAsync(ct) | Task<bool> | Probe connectivity via `POST /test` |
+| GetCurrenciesAsync(ct) | Task<IReadOnlyList<AssetSymbol>> | Supported currency codes as app tickers |
+| GetInverseQuoteAsync(inputSymbol, inputAmount, outputSymbol, ct) | Task<PublicQuote> | Output for a fixed input amount (`POST /iquote`) |
+| GetQuoteAsync(inputSymbol, outputAmount, outputSymbol, ct) | Task<PublicQuote> | Input required for a fixed output amount (`POST /quote`) |
+
+Each method also has an overload without a cancellation token that passes `CancellationToken.None`. The `GetInverseQuoteAsync` and `GetQuoteAsync` overloads retain their symbol and amount parameters.
+
+---
+
 ## RateLimiter
 
 **File**: `Services/RateLimiter.cs`

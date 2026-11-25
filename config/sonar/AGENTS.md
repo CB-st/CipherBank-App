@@ -13,9 +13,12 @@ evaluated by Sonar.
 - Never reintroduce a repo-side copy of the gate conditions (YAML, Python,
   or otherwise) that CI verifies against or pushes to the server.
 - Repository-structure rules (CPM, AssemblyInfo, Core SQL, retired names)
-  live in `CipherBank-app.Analyzers` and run on every `dotnet build`. Sibling
-  product trees are also fed as additional files so structure diagnostics
-  still fire when a job builds only part of the solution.
+  live in `CipherBank-app.Analyzers` and run on every `dotnet build`.
+  `Directory.Build.targets` adds additional files only for
+  `Directory.Packages.props`, `Directory.Build.props`,
+  `Directory.Build.targets`, `*/*.csproj`, and
+  `**/Properties/AssemblyInfo.cs`. Sibling product trees are not additional
+  files.
 
 ## Construction rules
 
