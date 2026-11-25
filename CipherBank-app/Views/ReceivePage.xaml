@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.ReceivePage"
+             Title="Receive"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
+  <ScrollView>
+    <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
+      <controls:CoraBar ScreenKey="receive" Line="{Binding CoraLine}" />
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Asset" Style="{StaticResource BodyStrong}" />
+            <HorizontalStackLayout Spacing="8">
+              <Button Text="BTC" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="BTC" />
+              <Button Text="ETH" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="ETH" />
+              <Button Text="USD" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="USD" />
+              <Button Text="LTC" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="LTC" />
+              <Button Text="XMR" Style="{StaticResource PillButton}" Command="{Binding SelectAssetCommand}" CommandParameter="XMR" />
+            </HorizontalStackLayout>
+            <Label Text="{Binding Asset, StringFormat='Selected: {0}'}" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Entry Text="{Binding Amount}" Placeholder="Amount (optional)" Keyboard="Numeric" />
+            <Button Text="Refresh QR" Command="{Binding LoadCommand}" AutomationId="ReceiveRefreshButton" />
+            <Image Source="{Binding QrImage}" HeightRequest="220" WidthRequest="220" HorizontalOptions="Center" AutomationId="ReceiveQrImage" />
+            <Label Text="{Binding Address}" Style="{StaticResource AddressText}" LineBreakMode="CharacterWrap" AutomationId="ReceiveAddressLabel" />
+            <Label Text="{Binding DerivationPath}" Style="{StaticResource MonoCaption}"
+                   IsVisible="{Binding HasDerivationPath}"
+                   />
+            <Label Text="{Binding UriText}" FontSize="12" LineBreakMode="CharacterWrap" />
+            <Button Text="Copy" Command="{Binding CopyCommand}" />
+            <Button Text="Share" Command="{Binding ShareCommand}" />
+            <Button Text="Derive new address" Command="{Binding DeriveNewCommand}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+  <controls:CoraFab ScreenKey="receive" Line="{Binding CoraLine}" AutomationId="CoraFab" />
+  </Grid>
+</ContentPage>

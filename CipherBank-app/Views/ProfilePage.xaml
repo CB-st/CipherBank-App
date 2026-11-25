@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CipherBank_app.Controls"
+             x:Class="CipherBank_app.Views.ProfilePage"
+             Title="Profile"
+             BackgroundColor="{AppThemeBinding Light={StaticResource Background}, Dark={StaticResource BackgroundDark}}">
+  <Grid>
+  <ScrollView>
+    <VerticalStackLayout Padding="20,20,20,110" Spacing="14">
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Security" Style="{StaticResource SectionHeader}" />
+            <Button Text="Change PIN" Command="{Binding OpenChangePinCommand}"
+                    AutomationId="ProfileChangePinButton" />
+            <Button Text="Lock app" Command="{Binding LockCommand}"
+                    AutomationId="ProfileLockButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Preferences" Style="{StaticResource SectionHeader}" />
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Cora assistant" VerticalOptions="Center" />
+              <Switch Grid.Column="1" IsToggled="{Binding CoraEnabled}" />
+            </Grid>
+            <Label Text="Appearance" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Picker Title="Appearance" ItemsSource="{Binding AppearanceOptions}" SelectedItem="{Binding Appearance}"
+                    AutomationId="ProfileAppearancePicker" />
+            <Label Text="Base currency" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Picker Title="Base currency" ItemsSource="{Binding BaseCurrencyOptions}" SelectedItem="{Binding BaseCurrency}"
+                    AutomationId="ProfileBaseCurrencyPicker" />
+            <Label Text="Default send speed" FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Picker Title="Send speed" ItemsSource="{Binding SendSpeedOptions}" SelectedItem="{Binding DefaultSendSpeed}"
+                    AutomationId="ProfileSendSpeedPicker" />
+            <Entry Text="{Binding LockIdleSeconds}" Placeholder="Lock idle seconds" Keyboard="Numeric"
+                   AutomationId="ProfileLockIdleEntry" />
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Hide balances on launch" VerticalOptions="Center" />
+              <Switch Grid.Column="1" IsToggled="{Binding ValuesHiddenOnLaunch}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Combine holdings + local" VerticalOptions="Center" />
+              <Switch Grid.Column="1" IsToggled="{Binding CombineAssets}" />
+            </Grid>
+            <Label Text="Enabled currencies" FontAttributes="Bold" Margin="0,8,0,0" />
+            <CollectionView ItemsSource="{Binding EnabledCurrencyRows}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,6" ColumnDefinitions="*,Auto">
+                    <Label Text="{Binding Symbol}" VerticalOptions="Center" />
+                    <Switch Grid.Column="1" IsToggled="{Binding Enabled}" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Label Text="Home sections" FontAttributes="Bold" Margin="0,8,0,0" />
+            <CollectionView ItemsSource="{Binding HomeSections}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Grid Padding="0,6" ColumnDefinitions="*,Auto">
+                    <Label Text="{Binding Label}" VerticalOptions="Center" />
+                    <Switch Grid.Column="1" IsToggled="{Binding Visible}" />
+                  </Grid>
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="Save prefs" Command="{Binding SavePrefsCommand}" AutomationId="ProfileSavePrefsButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Vault" Style="{StaticResource SectionHeader}" />
+            <Label Text="Cards (token refs only — never PAN)" FontSize="12" />
+            <Picker Title="Active POS card"
+                    ItemsSource="{Binding Cards}"
+                    ItemDisplayBinding="{Binding Label}"
+                    SelectedItem="{Binding SelectedCard}" />
+            <Label Text="{Binding ActiveCardLabel}" FontSize="12" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Text="Add demo card"
+                      Command="{Binding AddDemoCardCommand}"
+                      AutomationId="ProfileAddDemoCardButton" />
+              <Button Grid.Column="1"
+                      Text="Remove selected"
+                      Command="{Binding RemoveCardCommand}"
+                      CommandParameter="{Binding SelectedCard}"
+                      AutomationId="ProfileRemoveCardButton" />
+            </Grid>
+            <Label Text="Binaries" FontAttributes="Bold" Margin="0,8,0,0" />
+            <CollectionView ItemsSource="{Binding Binaries}">
+              <CollectionView.ItemTemplate>
+                <DataTemplate>
+                  <Label Text="{Binding Label}" />
+                </DataTemplate>
+              </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Entry Text="{Binding RevealPin}" IsPassword="True" Keyboard="Numeric" Placeholder="PIN to reveal mnemonic"
+                   AutomationId="ProfileRevealPinEntry" />
+            <Button Text="Reveal mnemonic" Command="{Binding RevealMnemonicCommand}"
+                    AutomationId="ProfileRevealMnemonicButton" />
+            <Label Text="{Binding MnemonicReveal}" LineBreakMode="WordWrap" Style="{StaticResource MnemonicText}"
+                   IsVisible="{Binding MnemonicReveal, Converter={StaticResource StringToBoolConverter}}"
+                   AutomationId="ProfileMnemonicRevealLabel" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <controls:GlassCard>
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Label Text="Backup recovery file" Style="{StaticResource SectionHeader}" />
+            <Label Text="Encrypts your recovery phrase with a separate password you choose. Store the file offline — CipherBank never receives it."
+                   FontSize="12"
+                   TextColor="{AppThemeBinding Light={StaticResource TextSubtle}, Dark={StaticResource TextSubtleDark}}" />
+            <Entry Text="{Binding BackupPassword}" IsPassword="True" Placeholder="Recovery password (12+ characters)"
+                   AutomationId="ProfileBackupPasswordEntry" />
+            <Entry Text="{Binding BackupPasswordConfirm}" IsPassword="True" Placeholder="Confirm recovery password"
+                   AutomationId="ProfileBackupPasswordConfirmEntry" />
+            <Entry Text="{Binding BackupHint}" Placeholder="Optional hint (never the password)"
+                   AutomationId="ProfileBackupHintEntry" />
+            <Button Text="Create and save backup file" Command="{Binding ExportBackupCommand}"
+                    IsEnabled="{Binding IsBackupBusy, Converter={StaticResource InvertedBoolConverter}}"
+                    AutomationId="ProfileExportBackupButton" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+
+      <Button Text="Tap to pay lab" Command="{Binding OpenPosLabCommand}" />
+
+      <Button Text="{Binding ShowAdvanced, StringFormat='Advanced ({0})'}" Command="{Binding ToggleAdvancedCommand}" />
+      <controls:GlassCard IsVisible="{Binding ShowAdvanced}">
+        <controls:GlassCard.Body>
+          <VerticalStackLayout Spacing="10">
+            <Entry Text="{Binding ApiEndpoint}" Placeholder="API endpoint" />
+            <Grid ColumnDefinitions="*,Auto">
+              <Label Text="Use mocks" VerticalOptions="Center" />
+              <Switch Grid.Column="1" IsToggled="{Binding UseMockServices}" />
+            </Grid>
+            <Button Text="Save advanced" Command="{Binding SaveAdvancedCommand}" />
+          </VerticalStackLayout>
+        </controls:GlassCard.Body>
+      </controls:GlassCard>
+    </VerticalStackLayout>
+  </ScrollView>
+  <controls:CoraFab ScreenKey="profile"
+                    Line="{Binding CoraLine}"
+                    IsVisible="{Binding CoraEnabled}"
+                    AutomationId="CoraFab" />
+  </Grid>
+</ContentPage>

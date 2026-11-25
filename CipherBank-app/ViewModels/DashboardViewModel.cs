@@ -1,8 +1,12 @@
 // <copyright file="DashboardViewModel.cs" company="CipherBank">
-// Copyright (c) CipherBank. Licensed under the BSD 3-Clause License.
+// Copyright (c) CipherBank. All rights reserved.
 // </copyright>
 
+using System;
 using System.Collections.ObjectModel;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using CipherBank_app.Constants;
 using CipherBank_app.Models;
 using CipherBank_app.Services;
@@ -27,21 +31,27 @@ public partial class DashboardViewModel(
     private CancellationTokenSource? _cts;
     private bool _disposed;
 
+    /// <summary>Gets or sets the cryptocurrencies shown on the dashboard.</summary>
     [ObservableProperty]
     public partial ObservableCollection<CryptoCurrency> Cryptocurrencies { get; set; } = [];
 
+    /// <summary>Gets or sets the selected cryptocurrency.</summary>
     [ObservableProperty]
     public partial CryptoCurrency? SelectedCrypto { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether prices are loading.</summary>
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether a refresh is in progress.</summary>
     [ObservableProperty]
     public partial bool IsRefreshing { get; set; }
 
+    /// <summary>Gets or sets the dashboard error message.</summary>
     [ObservableProperty]
     public partial string? ErrorMessage { get; set; }
 
+    /// <summary>Gets or sets the total portfolio value.</summary>
     [ObservableProperty]
     public partial decimal TotalPortfolioValue { get; set; }
 
