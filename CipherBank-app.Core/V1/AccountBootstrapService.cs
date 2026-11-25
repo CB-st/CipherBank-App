@@ -137,8 +137,8 @@ public sealed class AccountBootstrapService(
     private async Task RestoreAsync(
         UserPrefs local,
         UserPrefsSnapshot prefsSnapshot,
-        IReadOnlyList<AchRecipientRow> existingRecipients,
-        IReadOnlyList<string> attemptedIds)
+        IEnumerable<AchRecipientRow> existingRecipients,
+        IEnumerable<string> attemptedIds)
     {
         prefsSnapshot.Restore(local);
         await _prefs.SaveAsync(local, CancellationToken.None).ConfigureAwait(false);
