@@ -53,6 +53,7 @@ Day-to-day implementer rules (function docs, ownership, complexity, E2E, **Sonar
 | [tests/unit-tests.md](tests/unit-tests.md) | Unit tests |
 | [tests/integration-tests.md](tests/integration-tests.md) | Integration tests |
 | [tests/e2e-tests.md](tests/e2e-tests.md) | End-to-end Appium overview (full story map lands on M4) |
+| [tests/STORY_ID_MAP.md](tests/STORY_ID_MAP.md) | M7 story ownership, executable coverage, and backlog status |
 | [tests/e2e-local.env.example](tests/e2e-local.env.example) | Template for gitignored harness credentials |
 | [config/README.md](config/README.md) | Build config, analyzers, tooling |
 | [config/sonar/README.md](config/sonar/README.md) | Sonar quality-gate policy and local SonarQube-for-IDE setup |

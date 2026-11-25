@@ -20,8 +20,9 @@ CipherBank-app.E2ETests/
 │   ├── PosLabPage.cs
 │   └── … (legacy Login/Dashboard/Wallet/Purchase)
 └── Tests/
-    ├── CoraShellSmokeTests.cs   # preferred
-    └── CriticalUserJourneyTests.cs  # legacy (skipped when Cora Shell is primary)
+    ├── CoraShellSmokeTests.cs
+    ├── AccountStories.cs
+    └── HarnessFilterContractTests.cs / … (host-only harness Facts)
 ```
 
 ## Dependencies
@@ -76,13 +77,43 @@ Or export `E2E_TEST_PIN`, `E2E_TEST_PIN_ALT`, and `E2E_RECOVERY_PASSWORD` in the
 Committed template (placeholders only): [`e2e-local.env.example`](e2e-local.env.example).  
 Never commit `artifacts/e2e-local.env`, `artifacts/e2e-journal/`, or recovery pulls.
 
+## Public forks, org secrets, and third-party databases
+
+This repository is public; the org's pipeline credentials are GitHub secrets
+and are never exposed to forks. The test suites are presence-gated so a clone
+with no configuration **skips** credential-bound work instead of failing:
+
+- Without `E2E_RUN=1`, device Facts skip — plain `dotnet test` on any machine
+  stays green with zero org values.
+- With `E2E_RUN=1` but missing credentials, the harness fails closed with a
+  message naming the variables to set — it never falls back to embedded
+  defaults, because there are none in source.
+- The org pipeline maps its secrets (`E2E_TEST_PIN`, `E2E_TEST_PIN_ALT`,
+  `E2E_RECOVERY_PASSWORD`, optional `ANDROID_CERT_PINS`) into these same
+  variables. Pipeline wallet-backup testing targets the **Sandbox**
+  environment (`config/network/endpoints.json` default); Production is
+  reserved for real profile backups and is never a test target.
+
+To run the full suite against **your own** backend (the app is config-driven —
+many databases, many devices):
+
+1. Point `config/network/endpoints.json` at your API hosts.
+2. Fill `artifacts/e2e-local.env` (or CI secrets) with your own synthetic
+   PIN/recovery values.
+3. Optionally set `ANDROID_CERT_PINS` with your own current+backup SPKI pins
+   (`docs/config/CERTIFICATE_PINNING_SETUP.md` has the recipe and the
+   release-gate contract).
+4. Run `scripts/e2e-android.sh` as documented above — nothing in the harness
+   assumes the CipherBank org's infrastructure.
+
 ## Local Android harness (`scripts/e2e-android.sh`)
 
 Wave 0 one-shot runner for `CipherBank_API34`. Boots the AVD if not already
 attached, builds the MAUI app (`-f net10.0-android -c Debug
--p:EmbedAssembliesIntoApk=true`), installs the APK, starts Appium on `:4723`
-if it isn't already up, then runs the requested slice of
-`CipherBank-app.E2ETests`.
+-p:EmbedAssembliesIntoApk=true`), **uninstalls any leftover package**, installs
+the APK (`adb install`, not `-r`), `pm clear`s application data so PIN/LocalDb
+do not survive across sessions, starts Appium on `:4723` if it isn't already
+up, then runs the requested slice of `CipherBank-app.E2ETests`.
 
 ```bash
 ./scripts/e2e-android.sh --story CB-ACCOUNT-001   # one story
@@ -92,9 +123,8 @@ if it isn't already up, then runs the requested slice of
 ```
 
 `--wave account` runs every Wave 0–1 account/onboarding Fact in `AccountStories.cs`: `CB-ACCOUNT-001`,
-`US-ONB-03`, `US-ONB-04`, `CB-ACCOUNT-PIN-CHANGE`, `CB-ACCOUNT-002` — not only the `CB_ACCOUNT_*`-named
-methods, since the two negative Facts (`US-ONB-03`/`04`) keep a `US_ONB_*` method-name prefix. See
-`WAVE_STORIES` map in `scripts/e2e-android.sh`.
+`US-ONB-03`, `US-ONB-04`, `CB-ACCOUNT-PIN-CHANGE`, and `CB-ACCOUNT-002`. Selection is based on stable
+`Story` traits rather than test method names. See the `WAVE_STORIES` map in `scripts/e2e-android.sh`.
 
 Env/path setup (`ANDROID_HOME`, `ANDROID_SDK_ROOT`, `DOTNET_ROOT`, `CB_MAUI_PACKAGE`,
 `CB_AVD`) lives in `scripts/lib/android-env.sh` and is sourced automatically.
@@ -123,9 +153,4 @@ Page objects use `By.Id()` which maps to `AutomationId` in MAUI. All interactive
 | PosLabPage | PosStartSessionButton, PosSimulateButton |
 | ProfilePage | ProfileChangePinButton, ProfileLockButton, ProfileBackupPasswordEntry, ProfileBackupPasswordConfirmEntry, ProfileBackupHintEntry, ProfileExportBackupButton, ProfileRevealPinEntry, ProfileRevealMnemonicButton, ProfileMnemonicRevealLabel |
 | RestoreBackupPage | RestoreBackupPickFileButton, RestoreBackupFileStatusLabel, RestoreBackupPasswordEntry, RestoreBackupOpenButton, RestoreBackupErrorLabel |
-| LoginPage (legacy) | UsernameEntry, PasswordEntry, LoginButton, ErrorLabel |
-| DashboardPage (legacy) | WelcomeLabel, TotalBalanceLabel, WalletButton, PurchaseButton, RefreshButton, ErrorLabel, RecentTransactionsList |
-| WalletPage (legacy) | WalletBalanceLabel, WalletAddressLabel, RecipientAddressEntry, SendAmountEntry, SendButton, TransactionHistoryList, ErrorLabel |
-| PurchasePage (legacy) | CryptoSelector, AmountEntry, PurchaseButton, FeeLabel, ErrorLabel |
-
 When adding new UI elements used by E2E flows, add the corresponding `AutomationId` and update PageObjects.

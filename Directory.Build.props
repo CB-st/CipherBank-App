@@ -19,8 +19,11 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 
-  <!-- One repository-wide StyleCop configuration; do not add per-project stylecop.json copies. -->
-  <ItemGroup>
+  <!-- One repository-wide StyleCop configuration; do not add per-project stylecop.json copies.
+       Exception: CipherBank-app.E2ETests keeps its own stylecop.json because its file headers
+       use the "All rights reserved." ownership text (a deliberate policy split; see AGENTS.md
+       licensing rules before touching it). -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'CipherBank-app.E2ETests'">
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json"
                      Link="stylecop.json" />
   </ItemGroup>
