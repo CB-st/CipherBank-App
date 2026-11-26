@@ -20,13 +20,10 @@ public sealed record RateRow(AssetSymbol Symbol, decimal Usd, decimal Change24H,
     }
 
     /// <summary>Maps a one-unit inverse quote to its persisted USD rate.</summary>
-    public static RateRow FromQuote(PublicQuote quote, long updatedAtMs)
-    {
-        ArgumentNullException.ThrowIfNull(quote);
-        return new RateRow(
+    public static RateRow FromQuote(PublicQuote quote, long updatedAtMs) =>
+        new(
             quote.InputCurrency,
             quote.Rate,
             Change24H: 0m,
             updatedAtMs);
-    }
 }

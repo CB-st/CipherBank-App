@@ -40,11 +40,10 @@ public static class CurrencySymbolMap
     /// <param name="appSymbol">App or API symbol.</param>
     /// <returns>Uppercase API currency code.</returns>
     /// <exception cref="ArgumentException">When the symbol is unsupported.</exception>
-    public static string ToApiCurrency(AssetSymbol appSymbol)
-    {
-        ArgumentNullException.ThrowIfNull(appSymbol);
-        return _appToApi.TryGetValue(appSymbol, out AssetSymbol? api) ? api.Value : throw new ArgumentException($"Unsupported currency symbol '{appSymbol.Value}'.", nameof(appSymbol));
-    }
+    public static string ToApiCurrency(AssetSymbol appSymbol) =>
+        _appToApi.TryGetValue(appSymbol, out AssetSymbol? api)
+            ? api.Value
+            : throw new ArgumentException($"Unsupported currency symbol '{appSymbol.Value}'.", nameof(appSymbol));
 
     /// <summary>
     /// Converts ticker text to a public API currency code.
@@ -60,11 +59,8 @@ public static class CurrencySymbolMap
     /// </summary>
     /// <param name="apiCurrency">API currency code.</param>
     /// <returns>App ticker symbol.</returns>
-    public static AssetSymbol ToAppSymbol(AssetSymbol apiCurrency)
-    {
-        ArgumentNullException.ThrowIfNull(apiCurrency);
-        return _apiToApp.TryGetValue(apiCurrency, out AssetSymbol? app) ? app : apiCurrency;
-    }
+    public static AssetSymbol ToAppSymbol(AssetSymbol apiCurrency) =>
+        _apiToApp.TryGetValue(apiCurrency, out AssetSymbol? app) ? app : apiCurrency;
 
     /// <summary>
     /// Converts a public API currency code to an app ticker.

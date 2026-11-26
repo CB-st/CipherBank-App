@@ -31,7 +31,6 @@ public sealed class StartupPage : ContentPage
 
     public void SetRetry(Func<Task> retry)
     {
-        ArgumentNullException.ThrowIfNull(retry);
         _indicator.IsRunning = false;
         _indicator.IsVisible = false;
         _message.Text = "CipherBank could not initialize local data.";

@@ -22,7 +22,7 @@ public abstract class BasePage(AppiumDriver driver)
     /// <summary>
     /// Gets the Appium driver used by this page object.
     /// </summary>
-    protected AppiumDriver Driver { get; } = driver ?? throw new ArgumentNullException(nameof(driver));
+    protected AppiumDriver Driver { get; } = driver;
 
     /// <summary>
     /// Gets the explicit wait helper for this page object.
@@ -62,7 +62,7 @@ public abstract class BasePage(AppiumDriver driver)
         {
             IWebElement element = driver.FindElement(locator);
             return element.Displayed ? element : null;
-        }) ?? throw new NoSuchElementException($"Element not found: {locator}");
+        });
     }
 
     /// <summary>

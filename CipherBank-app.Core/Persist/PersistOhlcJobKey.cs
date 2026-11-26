@@ -7,19 +7,5 @@ using CipherBank_app.Models;
 namespace CipherBank_app.Persist;
 
 /// <summary>Identifies interactive chart persistence for one asset.</summary>
-public sealed record PersistOhlcJobKey : SyncJobKey
-{
-    /// <summary>
-    /// Initializes a new instance of the <see cref="PersistOhlcJobKey"/> class.
-    /// </summary>
-    /// <param name="symbol">Asset whose chart history is being persisted.</param>
-    public PersistOhlcJobKey(AssetSymbol symbol)
-        : base(SyncJobKind.PersistOhlc)
-    {
-        ArgumentNullException.ThrowIfNull(symbol);
-        Symbol = symbol;
-    }
-
-    /// <summary>Gets the scoped asset.</summary>
-    public AssetSymbol Symbol { get; }
-}
+/// <param name="Symbol">Asset whose chart history is being persisted.</param>
+public sealed record PersistOhlcJobKey(AssetSymbol Symbol) : SyncJobKey(SyncJobKind.PersistOhlc);

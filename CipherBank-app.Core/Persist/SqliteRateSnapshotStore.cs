@@ -22,10 +22,7 @@ public sealed class SqliteRateSnapshotStore(IDbContextFactory<CipherBankDbContex
 
     /// <inheritdoc />
     public Task UpsertAsync(IEnumerable<RateRow> rows, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(rows);
-        return UpsertCoreAsync(rows, ct);
-    }
+        => UpsertCoreAsync(rows, ct);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<RateRow>> GetAsync(

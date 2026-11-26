@@ -19,10 +19,6 @@ public static class OptionsRegistrationExtensions
         TOptions optionsMarker)
         where TOptions : class
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
-        ArgumentNullException.ThrowIfNull(optionsMarker);
-
         // Runtime class name (decision 9), not CipherBankOptions<T>.SectionName:
         // a subclass cannot publish a different key.
         IConfigurationSection section =
@@ -41,9 +37,6 @@ public static class OptionsRegistrationExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
-
         services.AddSingleton<IValidateOptions<SyncSchedulerOptions>, SyncSchedulerOptionsValidator>();
         services.AddRequiredOptions(configuration, new SyncSchedulerOptions())
             .ValidateOnStart();

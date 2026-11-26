@@ -11,26 +11,24 @@ namespace CipherBank_app.Services.Handlers;
 /// HTTP message handler that applies rate limiting to outgoing requests.
 /// Uses a sliding window algorithm to enforce request limits.
 /// </summary>
-public sealed partial class RateLimitingHandler : DelegatingHandler
+public sealed partial class RateLimitingHandler(
+    RateLimiter rateLimiter,
+    ILogger<RateLimitingHandler>? logger = null)
+    : DelegatingHandler
 {
     /// <summary>
     /// Maximum time to wait for rate limit to clear before timing out.
     /// </summary>
     private static readonly TimeSpan _maxWaitTime = TimeSpan.FromSeconds(30);
 
-    private readonly RateLimiter _rateLimiter;
-    private readonly ILogger<RateLimitingHandler>? _logger;
+    private readonly RateLimiter _rateLimiter = rateLimiter;
+    private readonly ILogger<RateLimitingHandler>? _logger = logger;
 
     public RateLimitingHandler(IServiceProvider serviceProvider)
+        : this(
+            serviceProvider.GetRequiredService<RateLimiter>(),
+            serviceProvider.GetService<ILogger<RateLimitingHandler>>())
     {
-        _rateLimiter = serviceProvider.GetRequiredService<RateLimiter>();
-        _logger = serviceProvider.GetService<ILogger<RateLimitingHandler>>();
-    }
-
-    public RateLimitingHandler(RateLimiter rateLimiter, ILogger<RateLimitingHandler>? logger = null)
-    {
-        _rateLimiter = rateLimiter ?? throw new ArgumentNullException(nameof(rateLimiter));
-        _logger = logger;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

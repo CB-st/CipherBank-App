@@ -10,18 +10,10 @@ namespace CipherBank_app.Custody;
 /// Owns a secret byte array and zeroes it on <see cref="Dispose"/>.
 /// Use with <c>using</c> so keys and plaintext are wiped when they leave scope.
 /// </summary>
-public sealed class SensitiveBuffer : IDisposable
+public sealed class SensitiveBuffer(byte[] bytes) : IDisposable
 {
-    private readonly byte[] _bytes;
+    private readonly byte[] _bytes = bytes;
     private bool _disposed;
-
-    /// <summary>Initializes a new instance of the <see cref="SensitiveBuffer"/> class.</summary>
-    /// <param name="bytes">Array to own. The caller must not keep another reference to it.</param>
-    public SensitiveBuffer(byte[] bytes)
-    {
-        ArgumentNullException.ThrowIfNull(bytes);
-        _bytes = bytes;
-    }
 
     /// <summary>Finalizes an instance of the <see cref="SensitiveBuffer"/> class.</summary>
     /// <remarks>Zeroes bytes a caller forgot to dispose.</remarks>

@@ -21,13 +21,10 @@ public static class WalletRegistry
         }.ToFrozenDictionary(module => module.Symbol);
 
     /// <summary>Returns the module for <paramref name="symbol"/>, or a watch-only fallback.</summary>
-    public static IWalletModule Get(AssetSymbol symbol)
-    {
-        ArgumentNullException.ThrowIfNull(symbol);
-        return _modules.TryGetValue(symbol, out IWalletModule? module)
+    public static IWalletModule Get(AssetSymbol symbol) =>
+        _modules.TryGetValue(symbol, out IWalletModule? module)
             ? module
             : new FallbackWalletModule(symbol);
-    }
 
     /// <summary>Returns dedicated modules in ticker order. Fallbacks are not included.</summary>
     public static IReadOnlyList<IWalletModule> All()

@@ -23,10 +23,6 @@ public static class PersistenceFeatureExtensions
         IConfiguration configuration,
         DirectoryInfo databaseDirectory)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
-        ArgumentNullException.ThrowIfNull(databaseDirectory);
-
         services.AddValidatedPersistenceOptions(configuration);
 
         services.AddSingleton(provider => new FileInfo(Path.Combine(

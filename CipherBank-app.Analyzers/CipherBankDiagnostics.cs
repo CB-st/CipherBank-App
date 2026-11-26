@@ -76,6 +76,18 @@ public static class CipherBankDiagnostics
         isEnabledByDefault: true,
         customTags: WellKnownDiagnosticTags.CompilationEnd);
 
+    /// <summary>
+    /// Describes CB1006.
+    /// Use: High (every compilation). Scope: C# null-check expressions.
+    /// </summary>
+    public static readonly DiagnosticDescriptor NonNullableNullCheck = new(
+        "CB1006",
+        "Null checks are not allowed on non-nullable types",
+        "Null check on non-nullable type '{0}'; make the type nullable or remove the check",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     /// <summary>Gets the analyzer diagnostic category.</summary>
     public static string Category => "CipherBank.Structure";
 }

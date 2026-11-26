@@ -35,9 +35,5 @@ public sealed class AssetSymbolJsonConverter : JsonConverter<AssetSymbol>
         Utf8JsonWriter writer,
         AssetSymbol value,
         JsonSerializerOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(writer);
-        ArgumentNullException.ThrowIfNull(value);
-        writer.WriteStringValue(value.Value);
-    }
+        => writer.WriteStringValue(value.Value);
 }

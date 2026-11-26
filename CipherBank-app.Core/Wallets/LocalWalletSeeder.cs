@@ -21,13 +21,12 @@ public sealed class LocalWalletSeeder(IWalletRepository wallets, TimeProvider ti
     public Task EnsureDerivedAsync(string mnemonic)
         => EnsureDerivedAsync(mnemonic, _defaultSymbols);
 
-    public Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol> symbols)
+    public Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol?> symbols)
     {
-        ArgumentNullException.ThrowIfNull(symbols);
-        AssetSymbol[] list = [.. symbols];
-        return Array.Exists(list, symbol => symbol is null)
+        AssetSymbol?[] list = [.. symbols];
+        return Array.Exists(list, static symbol => symbol is null)
             ? throw new ArgumentException("Symbols must not contain null entries.", nameof(symbols))
-            : EnsureDerivedCoreAsync(mnemonic, list);
+            : EnsureDerivedCoreAsync(mnemonic, list.OfType<AssetSymbol>());
     }
 
     /// <summary>

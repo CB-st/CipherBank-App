@@ -11,5 +11,5 @@ public interface ILocalWalletSeeder
 {
     Task EnsureDerivedAsync(string mnemonic);
 
-    Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol> symbols);
+    Task EnsureDerivedAsync(string mnemonic, IEnumerable<AssetSymbol?> symbols);
 }

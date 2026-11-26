@@ -16,11 +16,7 @@ public sealed class MarketRepository(IDbContextFactory<CipherBankDbContext> cont
         AssetSymbol symbol,
         IEnumerable<PricePoint> points,
         CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(symbol);
-        ArgumentNullException.ThrowIfNull(points);
-        return UpsertOhlcCoreAsync(symbol, points, ct);
-    }
+        => UpsertOhlcCoreAsync(symbol, points, ct);
 
     /// <inheritdoc />
     public Task<IReadOnlyList<PricePoint>> GetOhlcAsync(
@@ -84,10 +80,7 @@ public sealed class MarketRepository(IDbContextFactory<CipherBankDbContext> cont
         AssetSymbol symbol,
         long? fromT,
         CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(symbol);
-        return GetOhlcFromDatabaseAsync(symbol.Value, fromT, ct);
-    }
+        => GetOhlcFromDatabaseAsync(symbol.Value, fromT, ct);
 
     private async Task<IReadOnlyList<PricePoint>> GetOhlcFromDatabaseAsync(
         string normalizedSymbol,

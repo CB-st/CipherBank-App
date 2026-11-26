@@ -57,7 +57,6 @@ public sealed partial class MockTransactionService : ITransactionService
 
     public async Task<Transaction> PurchaseCryptoAsync(AssetSymbol symbol, decimal amount, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(symbol);
         if (amount <= 0)
         {
             throw new ArgumentException(@"Amount must be positive", nameof(amount));
