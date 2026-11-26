@@ -424,6 +424,47 @@ public sealed class NoScatteredSqlAnalyzerTests
     }
 
     [Fact]
+    public async Task ReportsParenthesizedMethodGroupPassedToExternalConsumerAsync()
+    {
+        CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()
+        {
+            TestState =
+            {
+                ReferenceAssemblies = _efCoreReferences,
+                Sources =
+                {
+                    ("CipherBank-app/ExternalConsumer.cs", """
+                        static class ExternalConsumer
+                        {
+                            public static void Run(System.Func<System.FormattableString, int> command)
+                                => command($"SELECT 1");
+                        }
+                        """),
+                    ("CipherBank-app.Core/Persist/ParenthesizedMethodGroup.cs", """
+                        using Microsoft.EntityFrameworkCore;
+                        using Microsoft.EntityFrameworkCore.Infrastructure;
+
+                        sealed class ParenthesizedMethodGroup
+                        {
+                            void Run(DatabaseFacade database)
+                            {
+                                ExternalConsumer.Run(({|CB1003:database.ExecuteSqlInterpolated|}));
+                                ExternalConsumer.Run((({|CB1003:database.ExecuteSqlInterpolated|})));
+                                ExternalConsumer.Run(((System.Func<System.FormattableString, int>)({|CB1003:database.ExecuteSqlInterpolated|})));
+
+                                ExternalConsumer.Run((Safe));
+                            }
+
+                            static int Safe(System.FormattableString command) => 0;
+                        }
+                        """),
+                },
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
     public async Task ReportsDelegateAliasAcrossPartialClassFilesAsync()
     {
         CSharpAnalyzerTest<NoScatteredSqlAnalyzer, DefaultVerifier> test = new()

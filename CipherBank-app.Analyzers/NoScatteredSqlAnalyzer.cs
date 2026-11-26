@@ -778,12 +778,20 @@ public sealed class NoScatteredSqlAnalyzer : DiagnosticAnalyzer
     private static IMethodReferenceOperation? MethodGroup(IOperation operation)
     {
         IOperation current = operation;
-        while (current is IConversionOperation conversion)
+        while (true)
         {
-            current = conversion.Operand;
+            switch (current)
+            {
+                case IConversionOperation conversion:
+                    current = conversion.Operand;
+                    break;
+                case IParenthesizedOperation parenthesized:
+                    current = parenthesized.Operand;
+                    break;
+                default:
+                    return current as IMethodReferenceOperation;
+            }
         }
-
-        return current as IMethodReferenceOperation;
     }
 
     /// <summary>
